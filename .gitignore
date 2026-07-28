@@ -1,0 +1,25 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.venv/
+venv/
+dist/
+build/
+*.egg-info/
+.idea/
+.vscode/
+.DS_Store
+
+# 仿真产生的数据与输出
+data/raw/
+data/processed/
+results/
+artifacts/
+*.parquet
+*.feather
+
+!.gitkeep
