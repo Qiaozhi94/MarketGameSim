@@ -1,6 +1,9 @@
 # MarketGameSim
 
-多代理金融市场博弈仿真实验平台。
+多代理加密现货市场博弈仿真实验平台。
+
+模型中不存在外生基本面信息通道：价格路径完全由订单流互动内生产生。这使项目可以
+集中研究市场行为本身，以及价格走势如何反过来影响交易者决策。
 
 项目采用规格驱动开发（Specification-Driven Development，SDD）：
 
@@ -18,6 +21,14 @@
 
 - `docs/product/prd.md`：产品目标、MVP 范围、成功指标、风险和交付路线图。
 - `docs/product/methodology.md`：代理经济学、博弈分析、价格涌现和模型验证方法。
+
+## 已生效架构决策
+
+- `docs/adr/001-discrete-event-time-kernel.md`：离散事件内核，整数时间戳，分流 RNG。
+- `docs/adr/002-build-minimal-kernel.md`：自建最小内核，外部框架仅作设计参考。
+- `docs/adr/003-crypto-spot-market-without-fundamentals.md`：加密现货标的，
+  以内生锚替代外生基本价值，允许极端行情。
+- `docs/adr/004-replay-based-visualization.md`：可视化采用事件日志回放。
 
 ## 建议工作流
 
