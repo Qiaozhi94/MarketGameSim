@@ -7,7 +7,7 @@
 **产品阶段**：实验性 MVP  
 **关联宪章**：[`../../.specify/memory/constitution.md`](../../.specify/memory/constitution.md)  
 **当前交付规格**：[`../../specs/001-market-simulation-foundation/spec.md`](../../specs/001-market-simulation-foundation/spec.md)  
-**方法论说明**：[`methodology.md`](methodology.md)  
+**方法论说明**：[`methodology.md`](methodology.md)　**指标字典**：[`metrics-dictionary.md`](metrics-dictionary.md)  
 **已生效决策记录**：[ADR-001](../adr/001-discrete-event-time-kernel.md)、[ADR-002](../adr/002-build-minimal-kernel.md)、[ADR-003](../adr/003-crypto-spot-market-without-fundamentals.md)、[ADR-004](../adr/004-replay-based-visualization.md)
 
 ## 1. 产品摘要
@@ -320,10 +320,14 @@ M4 立项，避免在合成订单流阶段过早引入真实数据依赖。后�
 
 - 评审本 PRD、项目宪章和基础规格；
 - ~~决定时间内核及 MVP 交易规则~~ 已由 ADR-001 至 ADR-004 完成；
-- 定义事件 schema、指标字典（含"事件"与"代理动作"的精确定义）和基准实验协议；
-- 冻结事件优先级类别清单；
-- 定义 PR-017 的退化状态行为与发散样本判定标准；
-- 提交基准配置 `benchmarks/BENCH-001.yaml` 及参考硬件说明。
+- ~~定义指标字典~~ 已完成 → [`metrics-dictionary.md`](metrics-dictionary.md)；
+- ~~定义事件 schema 并冻结优先级类别清单~~ 已完成 →
+  [`event-schema.md`](../../specs/001-market-simulation-foundation/event-schema.md)；
+- ~~定义 PR-017 的退化状态行为与发散样本判定标准~~ 已完成 →
+  [`degenerate-states.md`](../../specs/001-market-simulation-foundation/degenerate-states.md)；
+- 确定各定义文档的待定项（D-001—D-004、E-001—E-003、G-001—G-002）；
+- 提交基准配置 `benchmarks/BENCH-001.yaml` 及参考硬件说明；
+- 定义基准实验协议。
 
 **退出条件**：关键未决问题有决策记录，001 规格进入 Approved。
 

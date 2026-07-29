@@ -21,6 +21,12 @@
 
 - `docs/product/prd.md`：产品目标、MVP 范围、成功指标、风险和交付路线图。
 - `docs/product/methodology.md`：代理经济学、博弈分析、价格涌现和模型验证方法。
+- `docs/product/metrics-dictionary.md`：术语与指标的口径合同，含守恒不变量。
+
+## 实现契约
+
+- `specs/001-.../event-schema.md`：事件全序键、冻结的优先级类别、各类事件字段。
+- `specs/001-.../degenerate-states.md`：退化状态行为与发散样本判定标准。
 
 ## 已生效架构决策
 
