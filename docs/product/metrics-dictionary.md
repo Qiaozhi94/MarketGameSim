@@ -1,7 +1,7 @@
 # MarketGameSim 指标字典
 
 **文档版本**：0.1.0  
-**状态**：Draft  
+**状态**：**Frozen**（T000i，2026-07-31，见 [冻结记录](../../specs/001-market-simulation-foundation/freeze-record.md)）  
 **创建日期**：2026-07-29  
 **关联 PRD**：[`prd.md`](prd.md)　**关联方法论**：[`methodology.md`](methodology.md)  
 **对应任务**：001 / T000c　**支撑需求**：PR-014、PR-015、KPI-004、KPI-006

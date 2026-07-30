@@ -16,6 +16,9 @@
 ## 当前规格
 
 - `specs/001-market-simulation-foundation/`：单品种连续竞价市场、异质交易代理、可复现实验和行为归因的基础版本。
+  **状态 Approved**，M0 已于 2026-07-31 冻结 →
+  [`freeze-record.md`](specs/001-market-simulation-foundation/freeze-record.md)。
+  实现合同的变更须按该记录 §2 留下 ADR 与 `schema_version` 痕迹。
 
 ## 产品文档
 
@@ -25,6 +28,7 @@
 
 ## 实现契约
 
+- `specs/001-.../freeze-record.md`：M0 冻结范围、变更规则与明示的未决项。
 - `specs/001-.../event-schema.md`：事件全序键、冻结的优先级类别、各类事件字段。
 - `specs/001-.../degenerate-states.md`：退化状态行为与发散样本判定标准。
 - `benchmarks/`：性能基准配置、三层判定协议与参考机计时口径。

@@ -1,7 +1,7 @@
 # Implementation Plan: Market Simulation Foundation
 
 **对应规格**：`specs/001-market-simulation-foundation/spec.md`  
-**状态**：Draft
+**状态**：**Approved**（T000i，2026-07-31）
 
 ## 技术上下文
 

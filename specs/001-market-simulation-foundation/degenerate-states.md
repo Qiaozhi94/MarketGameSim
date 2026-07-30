@@ -1,7 +1,7 @@
 # 退化状态行为定义
 
 **规格**：001-market-simulation-foundation  
-**状态**：Draft  
+**状态**：**Frozen**（T000i，2026-07-31，见 [冻结记录](freeze-record.md)）  
 **创建日期**：2026-07-29  
 **对应任务**：T000e、T007b　**支撑需求**：FR-012、SC-005、KPI-008  
 **关联**：[ADR-003](../../docs/adr/003-crypto-spot-market-without-fundamentals.md)、[指标字典](../../docs/product/metrics-dictionary.md)

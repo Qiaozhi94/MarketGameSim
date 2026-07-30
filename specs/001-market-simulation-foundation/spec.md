@@ -1,9 +1,9 @@
 # Feature Specification: Market Simulation Foundation
 
 **规格编号**：001-market-simulation-foundation  
-**状态**：Draft  
+**状态**：**Approved**（T000i 冻结，2026-07-31，见 [冻结记录](freeze-record.md)）  
 **创建日期**：2026-07-28  
-**更新日期**：2026-07-30  
+**更新日期**：2026-07-31  
 **已生效决策**：[ADR-001](../../docs/adr/001-discrete-event-time-kernel.md)、[ADR-002](../../docs/adr/002-build-minimal-kernel.md)、[ADR-003](../../docs/adr/003-crypto-spot-market-without-fundamentals.md)、[ADR-004](../../docs/adr/004-replay-based-visualization.md)、[ADR-005](../../docs/adr/005-numeric-and-serialization-contract.md)、[ADR-006](../../docs/adr/006-same-timestamp-event-scheduling.md)
 
 ## 问题与目标

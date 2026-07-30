@@ -1,7 +1,7 @@
 # 事件 Schema 与优先级类别
 
 **规格**：001-market-simulation-foundation  
-**状态**：Draft（清单冻结后转 Frozen）  
+**状态**：**Frozen**（T000i，2026-07-31，见 [冻结记录](freeze-record.md)）  
 **创建日期**：2026-07-29  
 **对应任务**：T000d、T000j、T004　**支撑需求**：FR-008、KR-001—KR-003、KR-006、
 KPI-002、KPI-007  

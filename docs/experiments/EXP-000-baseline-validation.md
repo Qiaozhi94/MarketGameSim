@@ -1,6 +1,6 @@
 # EXP-000：基准市场验证与内生锚稳定性
 
-**状态**：Protocol（预注册，未运行）  
+**状态**：**Registered**（预注册已冻结，未运行；T000i，2026-07-31）  
 **创建日期**：2026-07-29　**对应任务**：T014b、T015　**支撑需求**：SC-005、KPI-008  
 **关联**：[ADR-003](../adr/003-crypto-spot-market-without-fundamentals.md)、
 [指标字典](../product/metrics-dictionary.md)、

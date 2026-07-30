@@ -337,9 +337,11 @@ M4 立项，避免在合成订单流阶段过早引入真实数据依赖。后�
 - ~~关闭文档检视发现的实现合同缺口~~ 已完成（2026-07-30）→
   [ADR-005](../adr/005-numeric-and-serialization-contract.md)（数值与序列化口径）、
   [ADR-006](../adr/006-same-timestamp-event-scheduling.md)（同时间戳调度与因果链）；
-- **评审并冻结上述文档，001 规格转 Approved（M0 唯一剩余项）**。
+- ~~评审并冻结上述文档，001 规格转 Approved~~ 已完成（2026-07-31）→
+  [`freeze-record.md`](../../specs/001-market-simulation-foundation/freeze-record.md)。
 
-**退出条件**：关键未决问题有决策记录，001 规格进入 Approved。
+**退出条件**：关键未决问题有决策记录，001 规格进入 Approved。**M0 已达成**——
+剩余未决项（Q-008、Q-010）各有归属阶段与解冻条件，见冻结记录 §3。
 
 ### M1：可信撮合与账本
 
