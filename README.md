@@ -27,6 +27,8 @@
 
 - `specs/001-.../event-schema.md`：事件全序键、冻结的优先级类别、各类事件字段。
 - `specs/001-.../degenerate-states.md`：退化状态行为与发散样本判定标准。
+- `benchmarks/`：性能基准配置、三层判定协议与参考机计时口径。
+- `docs/experiments/EXP-000-baseline-validation.md`：基准市场验证的预注册协议。
 
 ## 已生效架构决策
 
@@ -35,6 +37,10 @@
 - `docs/adr/003-crypto-spot-market-without-fundamentals.md`：加密现货标的，
   以内生锚替代外生基本价值，允许极端行情。
 - `docs/adr/004-replay-based-visualization.md`：可视化采用事件日志回放。
+- `docs/adr/005-numeric-and-serialization-contract.md`：金额与数量以最小单位整数
+  承载，手续费为唯一舍入点，日志缺失值用 `null`。
+- `docs/adr/006-same-timestamp-event-scheduling.md`：新事件全序键严格递增
+  （禁止零延迟），因果外键写入事件 Schema。
 
 ## 建议工作流
 
@@ -56,6 +62,7 @@ specs/                按功能编号保存的规格、计划和任务
 docs/product/         PRD 与产品级路线图
 docs/adr/             架构决策记录
 docs/experiments/     实验协议与结果索引
+docs/reviews/         文档与代码检视报告
 src/market_game_sim/  Python 源码
 tests/                单元、集成和仿真测试
 ```

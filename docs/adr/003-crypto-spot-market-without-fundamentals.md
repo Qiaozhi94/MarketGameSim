@@ -1,7 +1,9 @@
 # ADR-003：市场标的设为加密现货，并以内生锚替代外生基本价值
 
 日期：2026-07-29  
-状态：Accepted  
+状态：Accepted（§4 的 NaN 表述已由
+[ADR-005](005-numeric-and-serialization-contract.md) §6 细化：领域层不产生未定义
+状态，未定义的量在日志中写 `null`，NaN 仅是分析层的统计表示）  
 关联规格：[`../../specs/001-market-simulation-foundation/spec.md`](../../specs/001-market-simulation-foundation/spec.md)  
 解决问题：PRD Q-001、Q-003、Q-007  
 关联方法论：[`../product/methodology.md`](../product/methodology.md)

@@ -3,8 +3,12 @@
 **规格**：001-market-simulation-foundation  
 **状态**：Draft（清单冻结后转 Frozen）  
 **创建日期**：2026-07-29  
-**对应任务**：T000d、T004　**支撑需求**：FR-008、KR-001—KR-003、KPI-002、KPI-007  
-**关联**：[ADR-001](../../docs/adr/001-discrete-event-time-kernel.md)、[指标字典](../../docs/product/metrics-dictionary.md)
+**对应任务**：T000d、T000j、T004　**支撑需求**：FR-008、KR-001—KR-003、KR-006、
+KPI-002、KPI-007  
+**关联**：[ADR-001](../../docs/adr/001-discrete-event-time-kernel.md)、
+[ADR-005](../../docs/adr/005-numeric-and-serialization-contract.md)、
+[ADR-006](../../docs/adr/006-same-timestamp-event-scheduling.md)、
+[指标字典](../../docs/product/metrics-dictionary.md)
 
 ## 1. 全序键
 
@@ -21,6 +25,27 @@
 **任何定序不得依赖字典/集合遍历顺序、对象标识或哈希值。** 订单簿的「时间优先」以
 订单到达事件的 `seq` 判定，而非 `timestamp`——同一纳秒到达的两笔订单必须有确定
 先后。
+
+### 1.1 事件产生规则（KR-006）
+
+处理事件 `e` 期间产生的任何新事件 `e'` 必须满足：
+
+```text
+key(e') > key(e)
+```
+
+违反时内核立即抛出异常并终止运行，**不得静默重排**（ADR-006 §1）。
+
+推论：**同一 `timestamp` 内只允许沿 `priority_class` 递增方向推进**。要回到更小的
+class，`timestamp` 必须先前进——因此 `AGENT_DECIDE`（class 4）产生的
+`ORDER_ARRIVAL`（class 0）永远落在更晚的时间戳上。
+
+为此**禁止零通信延迟**：所有代理的 `latency_ns ≥ 1`，观察到决策的间隔 `≥ 1`
+（FR-007）。零值配置在校验阶段拒绝，不静默替换为 1。纳秒粒度下 1 ns 已足以表达
+「几乎无延迟」，且零延迟无现实对应。
+
+若无此规则，`AGENT_DECIDE` 在同一时间戳插入 class 0 事件会破坏事件队列的单调性，
+「数值越小越先处理」在实现层无法成立，KPI-002 的哈希输入顺序随之不确定。
 
 ## 2. 冻结约束
 
@@ -69,30 +94,37 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | `agent_id` | 提交方 |
 | `order_id` | 订单标识 |
 | `action` | `SUBMIT` \| `CANCEL` |
+| `target_order_id` | `CANCEL` 时指向被撤销的订单；`SUBMIT` 时为 null |
 | `side` | `BUY` \| `SELL` |
 | `order_type` | `LIMIT` \| `MARKET` |
 | `price_ticks` | 整数 tick 价；市价单为 null |
-| `quantity` | 数量 |
+| `quantity_units` | 整数最小数量单位（ADR-005 §1） |
+| `intent_id` | 产生该订单/撤单的意图标识（因果外键） |
+| `decision_event_id` | 该意图所属的 `AGENT_DECIDE` 事件（因果外键） |
 | `submitted_at` | 代理提交时刻（与 `timestamp` 之差即通信延迟） |
 | `accepted` | 是否通过准入校验 |
 | `reject_reason` | 拒绝原因，未拒绝为 null |
 
 `submitted_at` 与 `timestamp` 并存是速度优势可归因的前提（A-003）。
+`intent_id` 与 `decision_event_id` 是 KPI-007 追溯链的中间环节（§5）。
 
 ### 4.2 TRADE_SETTLE（class 1）
 
 | 字段 | 说明 |
 |---|---|
 | `trade_id` | 成交标识 |
+| `caused_by_event_id` | 触发本次撮合的 `ORDER_ARRIVAL`（因果外键） |
 | `maker_order_id` / `taker_order_id` | 双方订单 |
 | `maker_agent_id` / `taker_agent_id` | 双方代理 |
-| `price_ticks` / `quantity` | 成交价与量 |
-| `maker_fee` / `taker_fee` | 分别计费（FR-003） |
-| `mid_before` | 成交前中间价，用于有效点差与滑点 |
+| `price_ticks` / `quantity_units` | 成交价与量（整数，ADR-005 §1） |
+| `notional_cash_units` | 成交名义金额，整数且无舍入（ADR-005 §2） |
+| `maker_fee_cash_units` / `taker_fee_cash_units` | 分别计费（FR-003），整数，舍入方向见 ADR-005 §3 |
+| `mid_before_half_ticks` | 成交前中间价，以 **半 tick** 为单位的整数（`best_bid + best_ask`），任一侧空时为 null |
 
 ### 4.3 MARKET_DATA_PUBLISH（class 2）
 
-盘口摘要：`best_bid`、`best_ask`、各侧 k 档深度、`last`。未定义值记 NaN
+盘口摘要：`best_bid`、`best_ask`、各侧 k 档深度、`last`。**未定义值写 `null`**
+（ADR-005 §6）——不得写 `NaN`：JSON 标准无 NaN 字面量。分析层读取后再映射为 NaN
 （指标字典 §3.1）。
 
 ### 4.4 AGENT_OBSERVE（class 3）
@@ -111,9 +143,15 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | 字段 | 说明 |
 |---|---|
 | `agent_id` | 决策方 |
+| `observation_event_id` | 本次决策所依据的 `AGENT_OBSERVE`（因果外键） |
 | `rule_id` | 触发的决策规则标识 |
 | `intents` | 产生的订单意图列表，可为空 |
 | `internal_state` | 决策相关的内部状态（如均值回复代理的当前锚值与半衰期） |
+
+`intents` 的每个元素必须携带 **`intent_id`**（本次运行内唯一的稳定标识），以及
+`action`、`side`、`order_type`、`price_ticks`、`quantity_units`。一次决策产生多笔
+意图时（做市商双边报价即产生 2 笔），`intent_id` 是与后续 `ORDER_ARRIVAL` 一一对应
+的唯一依据——仅靠「同代理、时间相近」无法区分，且这种不可靠无法被检出。
 
 `rule_id` 与 `internal_state` 使「为什么下这一单」可解释，支撑 US-3 与 KPI-007。
 
@@ -125,20 +163,100 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | `payload` | 账户或订单簿完整状态 |
 
 账户快照频率可配置（FR-008），是回放中绘制持仓与 PnL 演化曲线的数据来源
-（ADR-004）。
+（ADR-004）。快照是状态观测而非状态转移，**不携带因果外键**。
 
-## 5. 运行元数据
+## 5. 因果链与引用完整性（KPI-007）
+
+### 5.1 追溯路径
+
+因果外键（ADR-006 §3）使下列路径完全在日志内可解析，无需重放：
+
+```text
+trade_id
+  → caused_by_event_id        （ORDER_ARRIVAL：哪笔订单触发了撮合）
+  → maker_order_id / taker_order_id
+  → intent_id                 （哪个意图产生了该订单）
+  → decision_event_id         （哪次决策产生了该意图）
+  → observation_event_id      （该决策基于哪次观察）
+  → information_set           （当时的信息集）
+```
+
+账户变化经 `trade_id` 与其后的 `SNAPSHOT`（`ACCOUNT`）关联，构成 US-3 要求的
+「成交 → 观察 → 决策 → 订单 → 账户」完整链条。
+
+### 5.2 引用完整性断言（SC-008）
+
+对每次运行的事件日志：
+
+- **遍历全部** `TRADE_SETTLE`（非抽样），沿 §5.1 逐跳解析；
+- 每一跳的目标事件必须在日志中**唯一存在**，且其全序键**严格小于**引用方；
+- 断链、悬空引用或多重匹配即判定该运行不合格。
+
+该断言不依赖重放，因而不随代码版本失效——这是 KPI-007 从「展示层可读」升级为
+「可机器验证」的关键。
+
+## 6. 运行元数据
 
 每次运行的日志头部必须记录（PR-012）：`run_id`、代码版本、配置哈希、
-`master_seed`、开始时间、完成状态、`schema_version`。
+`master_seed`、开始时间、完成状态、`schema_version`，以及数值单位定义
+`tick_size`、`min_quantity`、`cash_unit`（ADR-005 §7）。
 
-## 6. 事件摘要哈希（KPI-002）
+## 7. 事件摘要哈希（KPI-002）
 
 对事件序列按全序逐个计算滚动哈希，输入为各事件的**语义字段**（排除
 `event_id` 等实现细节标识）。参与哈希的字段集合须显式声明并随 schema 版本管理。
 
-## 7. 待定项
+哈希在 §9 的规范序列化之上计算，因而与语言、平台的浮点实现无关（ADR-005 §7）。
 
-- **E-001**：`information_set` 存完整内容还是摘要哈希，取决于日志体积实测；
-- **E-002**：参与摘要哈希的字段白名单；
-- **E-003**：`MARKET_DATA_PUBLISH` 的深度档位 k（与指标字典 D-003 一致）。
+## 8. 参数取值
+
+### E-001：information_set 的记录方式
+
+**默认记录摘要哈希**，并提供 `information_set_mode: full` 配置开关用于追溯特定运行。
+
+理由：每个 `AGENT_OBSERVE` 事件都完整存储可见盘口，将使日志体积被观察事件主导
+（代理数 × 观察频率），而观察事件是所有事件类型中数量最多的一类。
+
+**digest 模式仅用于性能基准。** 任何用于研究结论的运行必须使用
+`information_set_mode: full`，或产出可独立还原信息集的版本化证据包（ADR-006 §5）。
+
+理由：digest 模式下完整追溯依赖「用同一份代码重跑」，而代码版本会随时间变化——
+KPI-007 的证据能力因此逐年衰减。§5 的引用完整性断言在两种模式下都成立，但信息集
+内容本身只有 full 模式才在日志内自包含。性能门槛由 BENCH-001 单独承载，研究运行的
+日志体积是可接受的代价（须在 M2 首次运行前实测确认）。
+
+### E-002：参与摘要哈希的字段
+
+**纳入**：`timestamp`、`priority_class`、`seq`、`event_type`，以及各事件类型的
+外部可观察语义字段——`agent_id`、`order_id`、`side`、`order_type`、`price_ticks`、
+`quantity_units`、`accepted`、`reject_reason`、成交双方标识、成交价量、
+`notional_cash_units`、`maker_fee_cash_units`、`taker_fee_cash_units`，以及撤单的
+`target_order_id`——**撤销哪一笔订单是外部可观察的市场行为**，与 `order_id` 同属
+一类，不可排除。
+
+**排除**：`event_id`、`run_id`、墙钟时间、`information_set`、`internal_state`，
+以及指向事件的因果外键——`observation_event_id`、`decision_event_id`、`intent_id`、
+`caused_by_event_id`（ADR-006 §6）。它们与 `event_id` 同属实现标识，其生成方式属
+实现细节；引用完整性由 §5.2 的独立断言保证，不需要哈希参与。
+
+排除 `internal_state` 与 `information_set` 是关键选择：哈希应捕捉**市场结果的
+确定性**，而非代理实现的内部细节。若纳入，一次不改变任何行为的内部状态表示重构
+就会使哈希变化，KPI-002 将频繁误报，最终导致该断言被忽视。
+
+### E-003：深度档位
+
+`k = ±10 tick`，与指标字典 D-003 一致。
+
+## 9. 序列化合同
+
+规范序列化规则随 `schema_version` 管理，变更须提升版本号（ADR-005 §7）：
+
+- 数值字段一律为 **JSON 整数字面量**，不得出现浮点字面量、指数记法或引号包裹的
+  数字。所有金额与数量以最小单位整数表达（ADR-005 §1），单位定义写在运行元数据
+  头部（§6），事件体内不重复携带；
+- **缺失值一律为 `null`**，不得使用 `NaN`、`Infinity`、空字符串或省略字段；
+- 对象键按 UTF-8 码位升序排列；
+- Parquet 输出的缺失值写 null，与 JSONL 一致。
+
+统计层的 NaN 语义只在分析代码读取日志之后成立，不进入日志本身——这正是 FR-012
+（领域层不得产出未定义状态）与指标字典 §3.1（未定义报价的统计表示）之间的分层。

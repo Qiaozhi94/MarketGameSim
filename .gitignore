@@ -14,6 +14,12 @@ build/
 .vscode/
 .DS_Store
 
+# 本机 Claude Code 授权配置：含本机用户名路径与本地授权，不可移植
+.claude/settings.local.json
+
+# 编辑器本地历史（VS Code Local History 扩展）
+.history/
+
 # 仿真产生的数据与输出
 data/raw/
 data/processed/

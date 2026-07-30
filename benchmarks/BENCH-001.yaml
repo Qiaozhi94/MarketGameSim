@@ -1,0 +1,96 @@
+# BENCH-001：性能基准配置
+#
+# 用途：KPI-004 / NFR-003 的性能门槛载体。
+# 这是**性能基准**，不是研究基准——代理构成只求有代表性，不追求统计特征。
+# 研究用的基准市场配置见 docs/experiments/EXP-000-baseline-validation.md。
+#
+# 状态：规格产物。字段名构成实现契约，实现时如需调整须同步本文与 event-schema.md。
+# 本配置在首次实现完成后须按实测吞吐量校准一次（见 benchmarks/README.md §4）。
+
+benchmark_id: BENCH-001
+schema_version: 1
+
+# --- 终止条件 -------------------------------------------------------------
+# 按已处理事件数精确终止，而非按仿真时长——保证跨机器、跨版本的工作量完全一致。
+termination:
+  max_events: 100000
+
+# --- 随机性 ---------------------------------------------------------------
+# 单一主种子，各代理 RNG 流按 agent_id 派生（KR-004）。
+random:
+  master_seed: 20260729
+
+# --- 市场 -----------------------------------------------------------------
+market:
+  symbol: SYNTH-PERP-FREE        # 合成标的，不对应任何真实币种
+  venue_type: crypto_spot        # 24/7，无涨跌停、无 T+1、无整手
+  tick_size: 0.01
+  min_quantity: 0.001
+  # 最小结算单位（ADR-005 §1）。校验断言：tick_size × min_quantity 须为其整数倍
+  # ——此处 1e-5 = 1000 × 1e-8，故成交名义金额无舍入。
+  cash_unit: 1e-8
+  fees:
+    maker_bps: -1.0              # 负值表示 maker 返佣，用于检验费率不对称的影响
+    taker_bps: 5.0
+  initial_price: 100.00
+
+# --- 代理构成 -------------------------------------------------------------
+# 共 75 个代理。比例参考 M2 最小代理集合，但数量按性能测试需要缩减。
+agents:
+  - type: noise
+    count: 40
+    initial_cash: 100000.0
+    initial_position: 100.0
+    observe_interval_ns: 1000000000      # 1 秒
+    latency_ns: 50000000                 # 50 毫秒
+
+  - type: trend
+    count: 15
+    initial_cash: 200000.0
+    initial_position: 200.0
+    observe_interval_ns: 500000000       # 0.5 秒
+    latency_ns: 20000000
+    lookback_trades: 50
+
+  - type: mean_revert
+    count: 15
+    initial_cash: 200000.0
+    initial_position: 200.0
+    observe_interval_ns: 500000000
+    latency_ns: 20000000
+    # EWMA 内生锚（ADR-003 §2.2）。半衰期以成交笔数计（指标字典 §1.5）。
+    anchor:
+      half_life_center_trades: 200       # τ
+      half_life_dispersion: 0.5          # σ，对数正态分布的形状参数
+      distribution: lognormal
+
+  - type: inventory_market_maker
+    count: 5
+    initial_cash: 1000000.0
+    initial_position: 1000.0
+    observe_interval_ns: 100000000       # 0.1 秒，做市商观察更频繁
+    latency_ns: 5000000                  # 5 毫秒，速度优势显式表达
+    max_inventory: 5000.0
+    quote_size: 10.0
+
+# --- 记录 -----------------------------------------------------------------
+# 性能基准下关闭高开销记录，避免 I/O 掩盖内核性能。
+logging:
+  account_snapshot_interval_ns: 10000000000   # 10 秒
+  book_snapshot_interval_ns: 10000000000
+  information_set_mode: digest                # 摘要哈希（E-001）
+  write_event_log: false                      # 计时运行不落盘
+
+# --- 指标采样 -------------------------------------------------------------
+metrics:
+  sampling_interval_ns: 1000000000            # Δt = 1 秒（D-001）
+  volatility_window_samples: 30               # W（D-002）
+  depth_ticks: 10                             # k（D-003）
+  impact_bucket_percentiles: [20, 40, 60, 80, 95]   # D-004
+
+# --- 性能门槛 -------------------------------------------------------------
+# 判定见 benchmarks/README.md。thresholds 在首次实现后校准。
+thresholds:
+  normalized_wall_seconds_max: 10.0
+  # 硬件无关的算法回归断言：给定配置与种子，该计数完全确定。
+  book_operations_golden: null                # 首次实现后写入
