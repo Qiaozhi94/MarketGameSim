@@ -56,13 +56,22 @@ KPI-007 在展示层看似可用，却没有可机器验证的完整性。
 
 ### 2. 禁止零通信延迟
 
-配置校验断言：所有代理的 `latency_ns ≥ 1`，观察到决策的间隔 `≥ 1`。零值配置直接
-拒绝，不静默替换为 1。
+配置校验断言：**所有代理的 `latency_ns ≥ 1`**。零值配置直接拒绝，不静默替换为 1。
 
-在纳秒粒度下，1 ns 已足以表达「几乎无延迟」，同时使 `AGENT_DECIDE → ORDER_ARRIVAL`
-必然落在更大的 `timestamp` 上，§1 的不变量自动满足。速度优势的建模能力不受影响：
-延迟仍是显式配置的连续量，做市商与散户的差异照常表达（BENCH-001 已配置
-5 ms—50 ms）。
+约束只施加于**通信延迟**这一处，因为 `AGENT_DECIDE`（class 4）→ `ORDER_ARRIVAL`
+（class 0）是唯一会**回退 class** 的跳转，必须靠 `timestamp` 前进来满足 §1。其余
+跳转（0→1→2→3→4→5）都沿 class 递增方向，键本就严格递增，**不需要任何时间间隔**：
+
+- `TRADE_SETTLE`(1) → `MARKET_DATA_PUBLISH`(2)：可同时间戳；
+- `MARKET_DATA_PUBLISH`(2) → `AGENT_OBSERVE`(3)：可同时间戳（观察延迟允许为 0）；
+- `AGENT_OBSERVE`(3) → `AGENT_DECIDE`(4)：**可同时间戳**，观察到决策的间隔允许为 0。
+
+这一点须写准：观察与决策分成两个 class 的目的是让信息集独立记录（§3.1），不是要求
+两者在时间上分开。给它们强加非零间隔是多余约束，且会掩盖规则的真实理由——真正的
+规则只有「键严格递增」一条。
+
+在纳秒粒度下，1 ns 已足以表达「几乎无延迟」。速度优势的建模能力不受影响：延迟仍是
+显式配置的连续量，做市商与散户的差异照常表达（BENCH-001 已配置 5 ms—50 ms）。
 
 ### 3. 因果外键为必备字段
 
@@ -70,6 +79,7 @@ KPI-007 在展示层看似可用，却没有可机器验证的完整性。
 
 | 事件 | 新增字段 | 指向 |
 |---|---|---|
+| `AGENT_OBSERVE` | `market_data_event_id` | 本次观察所对应的 `MARKET_DATA_PUBLISH` |
 | `AGENT_DECIDE` | `observation_event_id` | 本次决策所依据的 `AGENT_OBSERVE` |
 | `AGENT_DECIDE` | `intents[].intent_id` | 本次决策产生的每笔意图的稳定标识 |
 | `ORDER_ARRIVAL` | `intent_id` | 产生该订单或撤单的意图 |
@@ -82,12 +92,13 @@ KPI-007 在展示层看似可用，却没有可机器验证的完整性。
 
 ```text
 trade_id → caused_by_event_id → taker/maker order_id
-        → intent_id → decision_event_id → observation_event_id → information_set
+        → intent_id → decision_event_id → observation_event_id
+        → information_set / market_data_event_id
 ```
 
 账户变化经 `TRADE_SETTLE` 的 `trade_id` 与账户快照关联，构成 US-3 要求的完整链条。
 
-### 4. 引用完整性作为验收断言（SC-007）
+### 4. 引用完整性作为验收断言（SC-008）
 
 对每次运行的事件日志：
 
@@ -110,9 +121,13 @@ E-001 的 `information_set_mode: digest` 仅用于性能基准（BENCH-001）。
 ### 6. 因果外键不参与事件摘要哈希
 
 `observation_event_id`、`decision_event_id`、`intent_id`、`caused_by_event_id`、
-`target_order_id` 与 `event_id` 同属实现标识，按 E-002 的既有理由**排除在哈希之外**。
-哈希捕捉市场结果的确定性，标识的生成方式属实现细节。引用完整性由 §4 的独立断言
-保证，不需要哈希参与。
+`market_data_event_id` 与 `event_id` 同属实现标识，按 E-002 的既有理由**排除在哈希
+之外**。哈希捕捉市场结果的确定性，标识的生成方式属实现细节。引用完整性由 §4 的
+独立断言保证，不需要哈希参与。
+
+**`target_order_id` 是例外，必须纳入哈希**（与 event-schema E-002 一致）：撤销哪一
+笔订单是外部可观察的市场行为，与已纳入的 `order_id` 同类。若排除，两次运行撤销了
+不同订单也会得到相同哈希，KPI-002 会漏报真实的行为差异。
 
 ## 备选方案
 

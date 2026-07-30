@@ -6,6 +6,10 @@
 #
 # 状态：规格产物。字段名构成实现契约，实现时如需调整须同步本文与 event-schema.md。
 # 本配置在首次实现完成后须按实测吞吐量校准一次（见 benchmarks/README.md §4）。
+#
+# 数值书写约定（ADR-005 §2）：所有非整数值写成带引号的字符串，由 Decimal 解析。
+# 裸写 0.01 会被 yaml.safe_load 解析为 float，使「禁止 float 中转」在第一步失效。
+# 整数（计数、纳秒时长、种子、分位点）无精度问题，照常书写。
 
 benchmark_id: BENCH-001
 schema_version: 1
@@ -24,54 +28,54 @@ random:
 market:
   symbol: SYNTH-PERP-FREE        # 合成标的，不对应任何真实币种
   venue_type: crypto_spot        # 24/7，无涨跌停、无 T+1、无整手
-  tick_size: 0.01
-  min_quantity: 0.001
+  tick_size: "0.01"
+  min_quantity: "0.001"
   # 最小结算单位（ADR-005 §1）。校验断言：tick_size × min_quantity 须为其整数倍
   # ——此处 1e-5 = 1000 × 1e-8，故成交名义金额无舍入。
-  cash_unit: 1e-8
+  cash_unit: "1e-8"
   fees:
-    maker_bps: -1.0              # 负值表示 maker 返佣，用于检验费率不对称的影响
-    taker_bps: 5.0
-  initial_price: 100.00
+    maker_bps: "-1.0"              # 负值表示 maker 返佣，用于检验费率不对称的影响
+    taker_bps: "5.0"
+  initial_price: "100.00"
 
 # --- 代理构成 -------------------------------------------------------------
 # 共 75 个代理。比例参考 M2 最小代理集合，但数量按性能测试需要缩减。
 agents:
   - type: noise
     count: 40
-    initial_cash: 100000.0
-    initial_position: 100.0
+    initial_cash: "100000.0"
+    initial_position: "100.0"
     observe_interval_ns: 1000000000      # 1 秒
     latency_ns: 50000000                 # 50 毫秒
 
   - type: trend
     count: 15
-    initial_cash: 200000.0
-    initial_position: 200.0
+    initial_cash: "200000.0"
+    initial_position: "200.0"
     observe_interval_ns: 500000000       # 0.5 秒
     latency_ns: 20000000
     lookback_trades: 50
 
   - type: mean_revert
     count: 15
-    initial_cash: 200000.0
-    initial_position: 200.0
+    initial_cash: "200000.0"
+    initial_position: "200.0"
     observe_interval_ns: 500000000
     latency_ns: 20000000
     # EWMA 内生锚（ADR-003 §2.2）。半衰期以成交笔数计（指标字典 §1.5）。
     anchor:
       half_life_center_trades: 200       # τ
-      half_life_dispersion: 0.5          # σ，对数正态分布的形状参数
+      half_life_dispersion: "0.5"          # σ，对数正态分布的形状参数
       distribution: lognormal
 
   - type: inventory_market_maker
     count: 5
-    initial_cash: 1000000.0
-    initial_position: 1000.0
+    initial_cash: "1000000.0"
+    initial_position: "1000.0"
     observe_interval_ns: 100000000       # 0.1 秒，做市商观察更频繁
     latency_ns: 5000000                  # 5 毫秒，速度优势显式表达
-    max_inventory: 5000.0
-    quote_size: 10.0
+    max_inventory: "5000.0"
+    quote_size: "10.0"
 
 # --- 记录 -----------------------------------------------------------------
 # 性能基准下关闭高开销记录，避免 I/O 掩盖内核性能。
@@ -91,6 +95,7 @@ metrics:
 # --- 性能门槛 -------------------------------------------------------------
 # 判定见 benchmarks/README.md。thresholds 在首次实现后校准。
 thresholds:
+  # 墙钟阈值是性能测量值，不参与领域运算，故不适用 ADR-005 的整数/Decimal 约定。
   normalized_wall_seconds_max: 10.0
   # 硬件无关的算法回归断言：给定配置与种子，该计数完全确定。
   book_operations_golden: null                # 首次实现后写入

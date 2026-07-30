@@ -40,9 +40,16 @@ key(e') > key(e)
 class，`timestamp` 必须先前进——因此 `AGENT_DECIDE`（class 4）产生的
 `ORDER_ARRIVAL`（class 0）永远落在更晚的时间戳上。
 
-为此**禁止零通信延迟**：所有代理的 `latency_ns ≥ 1`，观察到决策的间隔 `≥ 1`
-（FR-007）。零值配置在校验阶段拒绝，不静默替换为 1。纳秒粒度下 1 ns 已足以表达
-「几乎无延迟」，且零延迟无现实对应。
+为此**禁止零通信延迟**：所有代理的 `latency_ns ≥ 1`（FR-007）。零值配置在校验阶段
+拒绝，不静默替换为 1。纳秒粒度下 1 ns 已足以表达「几乎无延迟」，且零延迟无现实
+对应。
+
+该约束**只针对通信延迟**——`AGENT_DECIDE`(4) → `ORDER_ARRIVAL`(0) 是唯一回退 class
+的跳转。其余跳转沿 class 递增，键本就严格递增：`TRADE_SETTLE`(1) →
+`MARKET_DATA_PUBLISH`(2)、`MARKET_DATA_PUBLISH`(2) → `AGENT_OBSERVE`(3)、
+`AGENT_OBSERVE`(3) → `AGENT_DECIDE`(4) **均允许同时间戳，间隔可为 0**
+（ADR-006 §2）。观察与决策分为两个 class 是为了让信息集独立记录（§3.1），不意味着
+两者必须在时间上分开。
 
 若无此规则，`AGENT_DECIDE` 在同一时间戳插入 class 0 事件会破坏事件队列的单调性，
 「数值越小越先处理」在实现层无法成立，KPI-002 的哈希输入顺序随之不确定。
@@ -132,11 +139,16 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | 字段 | 说明 |
 |---|---|
 | `agent_id` | 观察方 |
+| `market_data_event_id` | 所观察的 `MARKET_DATA_PUBLISH` 事件（因果外键） |
 | `observed_at` | 所观察行情的产生时刻 |
 | `information_set` | 该代理本次可见内容的快照或其摘要哈希 |
 
 `timestamp - observed_at` 即观察延迟。`information_set` 是 KPI-007 追溯链的起点。
-完整记录成本高时可只存摘要哈希，但须保证可由配置与种子重放还原。
+完整记录成本高时可只存摘要哈希（E-001），但须保证可由配置与种子重放还原。
+
+`market_data_event_id` 使追溯链一路闭合到行情发布本身：仅有 `observed_at` 时刻时，
+只能回答「代理看到了什么」，不能机器验证「看到的是哪一次发布」——同一纳秒可能有
+多条发布，digest 模式下更无从比对。
 
 ### 4.5 AGENT_DECIDE（class 4）
 
@@ -179,6 +191,7 @@ trade_id
   → decision_event_id         （哪次决策产生了该意图）
   → observation_event_id      （该决策基于哪次观察）
   → information_set           （当时的信息集）
+  → market_data_event_id      （该观察来自哪一次行情发布）
 ```
 
 账户变化经 `trade_id` 与其后的 `SNAPSHOT`（`ACCOUNT`）关联，构成 US-3 要求的
@@ -236,7 +249,7 @@ KPI-007 的证据能力因此逐年衰减。§5 的引用完整性断言在两�
 
 **排除**：`event_id`、`run_id`、墙钟时间、`information_set`、`internal_state`，
 以及指向事件的因果外键——`observation_event_id`、`decision_event_id`、`intent_id`、
-`caused_by_event_id`（ADR-006 §6）。它们与 `event_id` 同属实现标识，其生成方式属
+`caused_by_event_id`、`market_data_event_id`（ADR-006 §6）。它们与 `event_id` 同属实现标识，其生成方式属
 实现细节；引用完整性由 §5.2 的独立断言保证，不需要哈希参与。
 
 排除 `internal_state` 与 `information_set` 是关键选择：哈希应捕捉**市场结果的
