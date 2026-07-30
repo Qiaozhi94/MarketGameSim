@@ -111,6 +111,7 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | `submitted_at` | 代理提交时刻（与 `timestamp` 之差即通信延迟） |
 | `accepted` | 是否通过准入校验 |
 | `reject_reason` | 拒绝原因，未拒绝为 null |
+| `reserved_cash_delta_units` | 冻结现金变动：下单预冻结为正，撤单/拒绝释放为负（§4.2.1） |
 
 `submitted_at` 与 `timestamp` 并存是速度优势可归因的前提（A-003）。
 `intent_id` 与 `decision_event_id` 是 KPI-007 追溯链的中间环节（§5）。
@@ -127,6 +128,31 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | `notional_cash_units` | 成交名义金额，整数且无舍入（ADR-005 §2） |
 | `maker_fee_cash_units` / `taker_fee_cash_units` | 分别计费（FR-003），整数，舍入方向见 ADR-005 §3 |
 | `mid_before_half_ticks` | 成交前中间价，以 **半 tick** 为单位的整数（`best_bid + best_ask`），任一侧空时为 null |
+| `postings` | **账户分录**，长度恒为 2（maker 与 taker 各一条），见 §4.2.1 |
+
+#### 4.2.1 账户分录 `postings`
+
+每条分录记录该成交对**一个代理**账户的完整影响，全部为最小单位整数：
+
+| 字段 | 说明 |
+|---|---|
+| `agent_id` | 该分录所属代理 |
+| `role` | `MAKER` \| `TAKER` |
+| `cash_delta_units` | 现金变动（含手续费；返佣为正） |
+| `position_delta_units` | 持仓变动（买入为正） |
+| `fee_delta_units` | 该方手续费（正为付出，负为返佣） |
+| `reserved_cash_delta_units` | 冻结现金的变动（预冻结释放为负） |
+| `cash_after_units` / `position_after_units` | 结算后余额，用于逐事件守恒断言 |
+| `cost_after_cash_units` | 结算后持仓累计成本（ADR-005 §5） |
+
+**账户变化必须内嵌于引发它的事件，不能靠「时间上位于成交之后的周期快照」推断。**
+周期快照可能聚合多笔成交，无法从单笔成交唯一确定其账户影响——那不是因果关联，
+SC-008 的「每一跳唯一存在」在快照上无法成立。
+
+同理，非成交引起的账户变化也记录在引发它的事件上：`ORDER_ARRIVAL` 携带
+`reserved_cash_delta_units`（下单预冻结、撤单或拒绝时释放），字段语义与上表一致。
+由此**每一次账户变动都由某个事件承载，且该事件自带因果外键**，无需新增事件类别，
+`priority_class` 冻结清单（§3）不受影响。
 
 ### 4.3 MARKET_DATA_PUBLISH（class 2）
 
@@ -175,7 +201,9 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | `payload` | 账户或订单簿完整状态 |
 
 账户快照频率可配置（FR-008），是回放中绘制持仓与 PnL 演化曲线的数据来源
-（ADR-004）。快照是状态观测而非状态转移，**不携带因果外键**。
+（ADR-004）。快照是状态观测而非状态转移，**不携带因果外键，也不承担账户追溯**
+——账户追溯由 §4.2.1 的分录承担。快照的作用是回放与图表，以及与分录累加值的
+交叉核对（两者不一致即为实现缺陷）。
 
 ## 5. 因果链与引用完整性（KPI-007）
 
@@ -194,8 +222,10 @@ trade_id
   → market_data_event_id      （该观察来自哪一次行情发布）
 ```
 
-账户变化经 `trade_id` 与其后的 `SNAPSHOT`（`ACCOUNT`）关联，构成 US-3 要求的
-「成交 → 观察 → 决策 → 订单 → 账户」完整链条。
+账户侧由同一 `TRADE_SETTLE` 内的 `postings` 承担（§4.2.1）：两条分录直接给出双方的
+现金、持仓、费用与冻结变动及结算后余额。加上 `ORDER_ARRIVAL` 的
+`reserved_cash_delta_units`，US-3 要求的「成交 → 观察 → 决策 → 订单 → 账户」在日志内
+闭合，且每一环都是事件自带字段，不依赖时间上的邻近关系。
 
 ### 5.2 引用完整性断言（SC-008）
 
@@ -203,7 +233,10 @@ trade_id
 
 - **遍历全部** `TRADE_SETTLE`（非抽样），沿 §5.1 逐跳解析；
 - 每一跳的目标事件必须在日志中**唯一存在**，且其全序键**严格小于**引用方；
-- 断链、悬空引用或多重匹配即判定该运行不合格。
+- 断链、悬空引用或多重匹配即判定该运行不合格；
+- **账户侧**：每笔成交的 `postings` 恰为 2 条且 `agent_id` 与 `maker/taker_agent_id`
+  一致；分录的 `*_after_units` 等于该代理上一条分录的 `*_after_units` 加本次
+  `*_delta_units`（首次以初始值为基），且与同代理最近一次 `ACCOUNT` 快照一致。
 
 该断言不依赖重放，因而不随代码版本失效——这是 KPI-007 从「展示层可读」升级为
 「可机器验证」的关键。
