@@ -1,14 +1,14 @@
 # 事件 Schema 与优先级类别
 
-**规格**：001-market-simulation-foundation  
-**状态**：**Frozen**（T000i，2026-07-31，见 [冻结记录](freeze-record.md)）  
+**适用范围**：跨规格实现合同（当前交付规格 002）  
+**状态**：Stable（跨规格实现合同；变更须记 ADR 并提升 `schema_version`）  
 **创建日期**：2026-07-29  
 **对应任务**：T000d、T000j、T004　**支撑需求**：FR-008、KR-001—KR-003、KR-006、
 KPI-002、KPI-007  
-**关联**：[ADR-001](../../docs/adr/001-discrete-event-time-kernel.md)、
-[ADR-005](../../docs/adr/005-numeric-and-serialization-contract.md)、
-[ADR-006](../../docs/adr/006-same-timestamp-event-scheduling.md)、
-[指标字典](../../docs/product/metrics-dictionary.md)
+**关联**：[ADR-001](../adr/001-discrete-event-time-kernel.md)、
+[ADR-005](../adr/005-numeric-and-serialization-contract.md)、
+[ADR-006](../adr/006-same-timestamp-event-scheduling.md)、
+[指标字典](../product/metrics-dictionary.md)
 
 ## 1. 全序键
 

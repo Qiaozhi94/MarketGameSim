@@ -2,11 +2,11 @@
 
 日期：2026-07-30  
 状态：Accepted  
-关联规格：[`../../specs/001-market-simulation-foundation/spec.md`](../../specs/001-market-simulation-foundation/spec.md)  
+关联规格：[`../../specs/002-belief-testing-laboratory/spec.md`](../../specs/002-belief-testing-laboratory/spec.md)  
 解决问题：PRD Q-011  
 关联文档：[指标字典](../product/metrics-dictionary.md)、
-[事件 Schema](../../specs/001-market-simulation-foundation/event-schema.md)、
-[退化状态定义](../../specs/001-market-simulation-foundation/degenerate-states.md)
+[事件 Schema](../contracts/event-schema.md)、
+[退化状态定义](../contracts/degenerate-states.md)
 
 ## 背景
 

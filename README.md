@@ -15,10 +15,8 @@
 
 ## 当前规格
 
-- `specs/001-market-simulation-foundation/`：单品种连续竞价市场、异质交易代理、可复现实验和行为归因的基础版本。
-  **状态 Approved**，M0 已于 2026-07-31 冻结 →
-  [`freeze-record.md`](specs/001-market-simulation-foundation/freeze-record.md)。
-  实现合同的变更须按该记录 §2 留下 ADR 与 `schema_version` 痕迹。
+- `specs/002-belief-testing-laboratory/`：含杠杆与强制平仓的市场实验环境，用于把
+  交易信念改写成可证伪的条件性命题。**状态 Draft**。
 
 ## 产品文档
 
@@ -28,23 +26,25 @@
 
 ## 实现契约
 
-- `specs/001-.../freeze-record.md`：M0 冻结范围、变更规则与明示的未决项。
-- `specs/001-.../event-schema.md`：事件全序键、冻结的优先级类别、各类事件字段。
-- `specs/001-.../degenerate-states.md`：退化状态行为与发散样本判定标准。
+- `docs/contracts/event-schema.md`：事件全序键、冻结的优先级类别、各类事件字段。
+- `docs/contracts/degenerate-states.md`：退化状态行为与发散样本判定标准。
 - `benchmarks/`：性能基准配置、三层判定协议与参考机计时口径。
-- `docs/experiments/EXP-000-baseline-validation.md`：基准市场验证的预注册协议。
 
 ## 已生效架构决策
 
 - `docs/adr/001-discrete-event-time-kernel.md`：离散事件内核，整数时间戳，分流 RNG。
 - `docs/adr/002-build-minimal-kernel.md`：自建最小内核，外部框架仅作设计参考。
-- `docs/adr/003-crypto-spot-market-without-fundamentals.md`：加密现货标的，
-  以内生锚替代外生基本价值，允许极端行情。
 - `docs/adr/004-replay-based-visualization.md`：可视化采用事件日志回放。
 - `docs/adr/005-numeric-and-serialization-contract.md`：金额与数量以最小单位整数
   承载，手续费为唯一舍入点，日志缺失值用 `null`。
 - `docs/adr/006-same-timestamp-event-scheduling.md`：新事件全序键严格递增
   （禁止零延迟），因果外键写入事件 Schema。
+- `docs/adr/007-pluggable-market-regimes.md`：市场制度可插拔，同一内核承载股票式
+  与加密式。
+- `docs/adr/008-leverage-and-forced-liquidation.md`：杠杆、保证金与强制平仓进入
+  第一版；强平连锁不得被限速。
+- `docs/adr/009-agent-belief-space.md`：以连续信念空间取代离散代理类型；不引入
+  外生基本价值。
 
 ## 建议工作流
 
@@ -65,6 +65,7 @@
 specs/                按功能编号保存的规格、计划和任务
 docs/product/         PRD 与产品级路线图
 docs/adr/             架构决策记录
+docs/contracts/       跨规格实现合同（事件 Schema、退化状态）
 docs/experiments/     实验协议与结果索引
 docs/reviews/         文档与代码检视报告
 src/market_game_sim/  Python 源码
@@ -74,4 +75,4 @@ tests/                单元、集成和仿真测试
 ## 开始开发
 
 环境与依赖会在技术选型确认后加入。当前阶段先评审
-`specs/001-market-simulation-foundation/spec.md` 中的研究边界和验收指标。
+`specs/002-belief-testing-laboratory/spec.md` 中的研究边界和验收指标。

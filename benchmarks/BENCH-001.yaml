@@ -2,7 +2,7 @@
 #
 # 用途：KPI-004 / NFR-003 的性能门槛载体。
 # 这是**性能基准**，不是研究基准——代理构成只求有代表性，不追求统计特征。
-# 研究用的基准市场配置见 docs/experiments/EXP-000-baseline-validation.md。
+# 研究用的基准市场配置由 002 规格的 M2 实验协议定义（待制定）。
 #
 # 状态：规格产物。字段名构成实现契约，实现时如需调整须同步本文与 event-schema.md。
 # 本配置在首次实现完成后须按实测吞吐量校准一次（见 benchmarks/README.md §4）。
@@ -62,7 +62,7 @@ agents:
     initial_position: "200.0"
     observe_interval_ns: 500000000
     latency_ns: 20000000
-    # EWMA 内生锚（ADR-003 §2.2）。半衰期以成交笔数计（指标字典 §1.5）。
+    # EWMA 内生锚（ADR-009 §5）。半衰期以成交笔数计（指标字典 §1.5）。
     anchor:
       half_life_center_trades: 200       # τ
       half_life_dispersion: "0.5"          # σ，对数正态分布的形状参数

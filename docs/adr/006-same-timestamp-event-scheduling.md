@@ -2,10 +2,10 @@
 
 日期：2026-07-30  
 状态：Accepted  
-关联规格：[`../../specs/001-market-simulation-foundation/spec.md`](../../specs/001-market-simulation-foundation/spec.md)  
+关联规格：[`../../specs/002-belief-testing-laboratory/spec.md`](../../specs/002-belief-testing-laboratory/spec.md)  
 解决问题：PRD Q-012  
 关联决策：[ADR-001](001-discrete-event-time-kernel.md)  
-关联文档：[事件 Schema](../../specs/001-market-simulation-foundation/event-schema.md)
+关联文档：[事件 Schema](../contracts/event-schema.md)
 
 ## 背景
 

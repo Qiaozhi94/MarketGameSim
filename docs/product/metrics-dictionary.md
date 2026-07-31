@@ -1,7 +1,7 @@
 # MarketGameSim 指标字典
 
 **文档版本**：0.1.0  
-**状态**：**Frozen**（T000i，2026-07-31，见 [冻结记录](../../specs/001-market-simulation-foundation/freeze-record.md)）  
+**状态**：Stable（跨规格口径合同；变更须记 ADR 并评估既有实验可比性）  
 **创建日期**：2026-07-29  
 **关联 PRD**：[`prd.md`](prd.md)　**关联方法论**：[`methodology.md`](methodology.md)  
 **对应任务**：001 / T000c　**支撑需求**：PR-014、PR-015、KPI-004、KPI-006
@@ -19,7 +19,7 @@
 
 **一次从事件队列弹出并被处理的原子状态转移。** 每个事件持有唯一的全序键
 `(timestamp, priority_class, seq)`（KR-003）。事件类型清单与优先级见
-[`../../specs/001-market-simulation-foundation/event-schema.md`](../../specs/001-market-simulation-foundation/event-schema.md)。
+[`../contracts/event-schema.md`](../contracts/event-schema.md)。
 
 **事件是内核工作量的计量单位**，KPI-004 / NFR-003 的性能门槛以「已处理事件数」
 表达。
@@ -51,7 +51,7 @@ PRD 早期文本中的「10,000 次代理动作」已由基准配置 `benchmarks
 
 ### 1.5 半衰期（Half-life，τ）
 
-内生锚 EWMA 权重衰减至 1/2 所经过的时间（ADR-003 §2.2）。
+内生锚 EWMA 权重衰减至 1/2 所经过的时间（ADR-009 §2）。
 
 **τ 以成交笔数计（事件时间轴），而非逻辑时间。** 理由：锚是价格统计量，价格仅在
 成交时更新；无成交时锚不应自行漂移。该选择使锚的记忆随市场活跃度自适应。
@@ -203,7 +203,7 @@ impact(Q) = (成交加权均价 - 成交前中间价) / 成交前中间价
 **手续费必须在下单时预冻结**（按上界，ADR-005 §4）。否则 taker 单成交后扣费可能使
 现金为负，违反 FR-003 的约束语义并破坏第一条等式。
 
-## 6. 稳定性诊断指标（ADR-003 §2.3）
+## 6. 稳定性诊断指标（ADR-009 §2）
 
 用于识别内生锚的三种失效形态，均复用既有指标，不新增采集：
 

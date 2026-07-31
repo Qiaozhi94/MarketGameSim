@@ -2,7 +2,7 @@
 
 日期：2026-07-29  
 状态：Accepted  
-关联规格：[`../../specs/001-market-simulation-foundation/spec.md`](../../specs/001-market-simulation-foundation/spec.md)  
+关联规格：[`../../specs/002-belief-testing-laboratory/spec.md`](../../specs/002-belief-testing-laboratory/spec.md)  
 解决问题：PRD Q-005
 
 ## 背景
