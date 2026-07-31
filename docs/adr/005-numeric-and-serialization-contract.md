@@ -199,5 +199,5 @@ fee_cash_units = round_away_from_agent(notional_cash_units × bps / 10000)
 - metrics-dictionary.md：§3.1 未定义值表述分层；§5 守恒等式声明为整数精确等式；
   新增 §1.8 最小单位。
 - degenerate-states.md：§0 与 §1.2 的 NaN 表述按 §6 分层。
-- `benchmarks/BENCH-001.yaml`：新增 `cash_unit` 字段。
+- `benchmarks/*.yaml`：新增 `cash_unit` 字段，非整数领域量改为带引号字符串。
 - 002 实现任务：账户与预冻结须含舍入方向的属性测试。

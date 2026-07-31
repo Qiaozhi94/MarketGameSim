@@ -1,0 +1,129 @@
+# BENCH-002：性能基准配置（股票式制度）
+#
+# 用途：与 BENCH-001 相同的性能门槛载体，但运行股票式制度。
+# 存在两份的理由：股票式多出收盘判定、T+2 结算与熔断检查，每事件成本与事件构成
+# 都与加密式不同，用同一份门槛无法判定退化发生在哪一侧（002 / D-1）。
+#
+# **除 regime_params、margin、市场标识与部分代理参数外，本文件与 BENCH-001 逐字
+# 相同**——这是刻意的：跨制度性能对比要求其余条件完全一致，否则差异无法归因到制度。
+#
+# 状态：规格产物。首次实现后按实测吞吐量单独校准（见 README.md §4）。
+# 数值书写约定同 BENCH-001（ADR-005 §2）。
+
+benchmark_id: BENCH-002
+schema_version: 1
+regime: equity_margin
+
+# --- 终止条件 -------------------------------------------------------------
+# 与 BENCH-001 相同的事件数。注意：同样 100k 事件下，股票式覆盖的逻辑时间更长
+# ——收盘期间无事件产生，时间直接跳到下一开盘。
+termination:
+  max_events: 100000
+
+# --- 随机性 ---------------------------------------------------------------
+# 与 BENCH-001 同一主种子：跨制度对比须使用相同种子集合（配对比较）。
+random:
+  master_seed: 20260731
+
+# --- 市场 -----------------------------------------------------------------
+market:
+  symbol: SYNTH-EQUITY
+  tick_size: "0.01"
+  min_quantity: "1"                # 股票以「股」为最小单位，非小数
+  cash_unit: "1e-8"
+  # 校验断言：tick_size × min_quantity = 0.01 = 1000000 × 1e-8，整数倍成立。
+  initial_price: "100.00"
+  fees:
+    maker_bps: "0.0"               # 股票式无 maker 返佣
+    taker_bps: "3.0"
+
+# --- 制度（002 / D-1）-----------------------------------------------------
+regime_params:
+  session: continuous_with_close
+  # 一个交易日的连续交易时长；收盘期间订单簿冻结，不接受新订单、不撮合。
+  session_open_ns: 0
+  session_length_ns: 23400000000000        # 6.5 小时
+  overnight_gap_ns: 63000000000000         # 17.5 小时，与上一行合计 24 小时
+  # 隔夜跳空由开盘后的订单流自然产生，不人为注入价格缺口（002 / D-1）。
+  settlement: t_plus_2                     # 买入持仓 T+2 前不可卖出
+  short_selling: forbidden                 # 第一版不做融券
+  price_limit: null                        # 美股式：无涨跌停
+  circuit_breaker:
+    # 相对当日开盘价的跌幅触发全市场暂停；万分数整数。
+    levels_bp: [700, 1300, 2000]           # 7% / 13% / 20%
+    halt_ns: 900000000000                  # 前两级暂停 15 分钟
+    # 第三级当日剩余时间全部暂停，等价于提前收盘。
+
+# --- 保证金与强平（002 / P-2）---------------------------------------------
+margin:
+  initial_ratio_bp: 20000          # 200%，即融资保证金比例 50%、杠杆上限 2x
+  maintenance_ratio_bp: 13000      # 130%，融资融券平仓线；FINRA 维持保证金 25% ≈ 133%
+  target_ratio_bp: 15000           # 150%
+  grace_ns: 0
+  leverage_tiers: [1, 2]
+  # 收盘时点另判定一次，触发的强平单于下一时段开盘执行（002 / FR-006）。
+  # 这是股票式独有的「隔夜爆仓」形态，加密式下不存在。
+  evaluate_at_session_close: true
+
+# --- 参与者 ---------------------------------------------------------------
+# 构成与 BENCH-001 完全一致，只有杠杆档位随制度改变。
+agents:
+  - role: retail
+    count: 180
+    initial_cash: "100000.0"
+    initial_position: "100"
+    observe_interval_ns: 1000000000
+    latency_ns: 50000000
+    leverage_distribution:
+      "1": 6000                            # 60% 无杠杆
+      "2": 4000                            # 40% 满杠杆（股票式上限仅 2x）
+    belief:
+      distribution: dirichlet
+      alpha: ["1.0", "1.0", "0.8", "0.8", "1.5"]
+    factors:
+      - name: momentum
+        lookback_bars: [5, 20, 60]
+      - name: reversion
+        half_life_trades:
+          distribution: lognormal
+          center: 200
+          dispersion: "0.5"
+      - name: herding
+        window_bars: [1, 5]
+      - name: book
+        depth_ticks: 10
+      - name: noise
+
+  - role: inventory_market_maker
+    count: 10
+    initial_cash: "1000000.0"
+    initial_position: "1000"
+    observe_interval_ns: 100000000
+    latency_ns: 5000000
+    leverage_distribution:
+      "1": 10000
+    max_inventory: "5000"
+    quote_size: "10"
+
+# --- 记录 -----------------------------------------------------------------
+logging:
+  run_mode: research
+  account_snapshot_interval_ns: 10000000000
+  book_snapshot_interval_ns: 10000000000
+  information_set_mode: digest
+  write_event_log: false
+
+# --- 指标采样 -------------------------------------------------------------
+metrics:
+  bar_ns: 60000000000
+  sampling_interval_ns: 1000000000
+  volatility_window_samples: 30
+  depth_ticks: 10
+  impact_bucket_percentiles: [20, 40, 60, 80, 95]
+  # 收盘跨越不产生 K 线；开盘首根 K 线的 open 与前一时段 close 之差即隔夜跳空，
+  # 须单独统计（指标字典 §1.9）。
+
+# --- 性能门槛 -------------------------------------------------------------
+thresholds:
+  normalized_wall_seconds_max: 10.0
+  book_operations_golden: null                # 首次实现后单独写入，与 BENCH-001 不同

@@ -111,12 +111,12 @@ trade_id → caused_by_event_id → taker/maker order_id
 
 ### 5. 正式研究运行强制 full 信息集
 
-E-001 的 `information_set_mode: digest` 仅用于性能基准（BENCH-001）。**任何用于研究
+E-001 的 `information_set_mode: digest` 仅用于性能基准（BENCH-001 / BENCH-002）。**任何用于研究
 结论的运行必须使用 `full`**，或产出可独立还原信息集的版本化证据包。
 
 理由：digest 模式下追溯依赖「用当前代码重跑」，而代码版本会变化——一年后无法用当时
 的代码复现，KPI-007 的证据能力随时间衰减。研究运行的日志体积是可接受的代价，性能
-门槛由 BENCH-001 单独承载。
+门槛由性能基准配置单独承载。
 
 ### 6. 因果外键不参与事件摘要哈希
 
