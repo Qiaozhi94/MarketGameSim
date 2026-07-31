@@ -62,7 +62,7 @@ agents:
     initial_position: "200.0"
     observe_interval_ns: 500000000
     latency_ns: 20000000
-    # EWMA 内生锚（ADR-009 §5）。半衰期以成交笔数计（指标字典 §1.5）。
+    # EWMA 内生锚（002 / D-4）。半衰期以成交笔数计（指标字典 §1.5）。
     anchor:
       half_life_center_trades: 200       # τ
       half_life_dispersion: "0.5"          # σ，对数正态分布的形状参数

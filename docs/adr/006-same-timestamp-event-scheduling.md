@@ -4,7 +4,7 @@
 状态：Accepted  
 关联规格：[`../../specs/002-belief-testing-laboratory/spec.md`](../../specs/002-belief-testing-laboratory/spec.md)  
 解决问题：PRD Q-012  
-关联决策：[ADR-001](001-discrete-event-time-kernel.md)  
+关联决策：002 规格 D-5（离散事件内核）  
 关联文档：[事件 Schema](../contracts/event-schema.md)
 
 ## 背景

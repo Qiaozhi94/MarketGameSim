@@ -32,19 +32,13 @@
 
 ## 已生效架构决策
 
-- `docs/adr/001-discrete-event-time-kernel.md`：离散事件内核，整数时间戳，分流 RNG。
-- `docs/adr/002-build-minimal-kernel.md`：自建最小内核，外部框架仅作设计参考。
-- `docs/adr/004-replay-based-visualization.md`：可视化采用事件日志回放。
+ADR 只记录**跨规格生效、且已被多轮检视验证**的工程合同。尚未被实现检验的设计意图
+写在规格的「设计决策与理由」章（002 / D-1—D-7），不占用 ADR 编号。
+
 - `docs/adr/005-numeric-and-serialization-contract.md`：金额与数量以最小单位整数
   承载，手续费为唯一舍入点，日志缺失值用 `null`。
 - `docs/adr/006-same-timestamp-event-scheduling.md`：新事件全序键严格递增
-  （禁止零延迟），因果外键写入事件 Schema。
-- `docs/adr/007-pluggable-market-regimes.md`：市场制度可插拔，同一内核承载股票式
-  与加密式。
-- `docs/adr/008-leverage-and-forced-liquidation.md`：杠杆、保证金与强制平仓进入
-  第一版；强平连锁不得被限速。
-- `docs/adr/009-agent-belief-space.md`：以连续信念空间取代离散代理类型；不引入
-  外生基本价值。
+  （禁止零延迟），因果外键与账户分录写入事件 Schema。
 
 ## 建议工作流
 
