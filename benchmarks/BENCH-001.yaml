@@ -4,8 +4,7 @@
 # 这是**性能基准**，不是研究基准——参与者构成只求覆盖代码路径，不追求统计特征。
 # 研究用的基准市场配置由 M2 实验协议定义（待制定）。
 #
-# 股票式制度的对应配置见 BENCH-002.yaml。两者共享同一撮合核心，差异只在
-# regime_params 与 margin 段（002 / D-1）。
+# 第一版只有加密式一套制度（002 / D-1）。股票式配置随收盘、T+2、熔断一并后移。
 #
 # 状态：规格产物。字段名构成实现契约，实现时如需调整须同步本文与 event-schema.md。
 # 本配置在首次实现完成后须按实测吞吐量校准一次（见 README.md §4）。
@@ -57,7 +56,9 @@ margin:
   maintenance_ratio_bp: 10500      # 105%
   target_ratio_bp: 11000           # 110%，高于维持线以免立即二次触发
   grace_ns: 0                      # 第一版无代理会补保证金，宽限等价于纯延迟
-  leverage_tiers: [1, 3, 5, 10]
+  liquidation_latency_ns: 1000000  # 1 毫秒：风控判定到强平单入簿（事件 Schema §1.2）
+                                   # 不得为 0——class 1→0 是回退跳转，须跨越时间
+  leverage_tiers: [1, 3, 10]     # 与下方 leverage_distribution 的档位一致
   # 强平连锁不得限速或打断（002 / D-2、FR-007）。
 
 # --- 参与者 ---------------------------------------------------------------
@@ -109,7 +110,8 @@ agents:
 # --- 记录 -----------------------------------------------------------------
 # 性能基准下关闭高开销记录，避免 I/O 掩盖内核性能。
 logging:
-  run_mode: research                          # research | interactive（002 / D-7）
+  run_mode: benchmark                         # benchmark | research | interactive（002 / D-7）
+  # benchmark 模式：digest 信息集 + 不落日志，仅用于计时，不产出研究结论
   account_snapshot_interval_ns: 10000000000   # 10 秒
   book_snapshot_interval_ns: 10000000000
   information_set_mode: digest                # 摘要哈希（E-001）；研究运行须用 full
@@ -130,3 +132,12 @@ thresholds:
   normalized_wall_seconds_max: 10.0
   # 硬件无关的算法回归断言：给定配置与种子，该计数完全确定。
   book_operations_golden: null                # 首次实现后写入
+
+# --- 覆盖断言（README §1.1）-----------------------------------------------
+# 基准必须真的走过要测的路径，否则门槛达标无意义。任一不满足即判定基准无效。
+coverage_assertions:
+  min_liquidations: 1
+  min_chained_liquidations: 1                 # chain_depth >= 1
+  min_partial_fills: 1
+  min_cancels: 1
+  min_one_sided_book_events: 1

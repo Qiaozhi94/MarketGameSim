@@ -111,7 +111,7 @@ trade_id → caused_by_event_id → taker/maker order_id
 
 ### 5. 正式研究运行强制 full 信息集
 
-E-001 的 `information_set_mode: digest` 仅用于性能基准（BENCH-001 / BENCH-002）。**任何用于研究
+E-001 的 `information_set_mode: digest` 仅用于性能基准（BENCH-001）。**任何用于研究
 结论的运行必须使用 `full`**，或产出可独立还原信息集的版本化证据包。
 
 理由：digest 模式下追溯依赖「用当前代码重跑」，而代码版本会变化——一年后无法用当时
@@ -166,7 +166,7 @@ E-001 的 `information_set_mode: digest` 仅用于性能基准（BENCH-001 / BEN
 
 ## 文档同步清单
 
-- spec.md：新增 KR-006；FR-007 增加延迟下界；FR-008 增加因果外键要求；新增 SC-008
+- spec.md：新增 KR-006；FR-013 增加延迟下界；FR-015 增加因果外键要求；新增 SC-006
   （因果链引用完整性）。
 - event-schema.md：§1 增加事件产生规则；§4 各事件表增加外键字段；新增 §5 因果链与
   引用完整性；§8 的 E-001 补充研究运行的 full 要求；E-002 排除清单补充外键字段。
