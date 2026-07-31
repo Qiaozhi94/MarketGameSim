@@ -3,8 +3,7 @@
 **适用范围**：跨规格实现合同（当前交付规格 002）  
 **状态**：Stable（跨规格实现合同；变更须记 ADR 并提升 `schema_version`）  
 **创建日期**：2026-07-29  
-**对应任务**：T000d、T000j、T004　**支撑需求**：FR-008、KR-001—KR-003、KR-006、
-KPI-002、KPI-007  
+**支撑需求**：002 / FR-004、FR-008、FR-015、KR-001—KR-006；PRD / KPI-002、KPI-006  
 **关联**：
 [ADR-005](../adr/005-numeric-and-serialization-contract.md)、
 [ADR-006](../adr/006-same-timestamp-event-scheduling.md)、
@@ -36,9 +35,10 @@ key(e') > key(e)
 
 违反时内核立即抛出异常并终止运行，**不得静默重排**（ADR-006 §1）。
 
-推论：**同一 `timestamp` 内只允许沿 `priority_class` 递增方向推进**。要回到更小的
-class，`timestamp` 必须先前进——因此 `AGENT_DECIDE`（class 4）产生的
-`ORDER_ARRIVAL`（class 0）永远落在更晚的时间戳上。
+推论：**同一 `timestamp` 内 `priority_class` 不得减小**。允许保持不变——同 class 的
+后继事件靠 `seq` 严格递增即满足不变量（例如 `TRADE_SETTLE` 产生 `MARGIN_CALL`，
+两者同为 class 1，见 §4.2.2）。要回到**更小**的 class，`timestamp` 必须先前进——因此
+`AGENT_DECIDE`（class 4）产生的 `ORDER_ARRIVAL`（class 0）永远落在更晚的时间戳上。
 
 为此**禁止零通信延迟**：所有代理的 `latency_ns ≥ 1`（FR-007）。零值配置在校验阶段
 拒绝，不静默替换为 1。纳秒粒度下 1 ns 已足以表达「几乎无延迟」，且零延迟无现实
@@ -63,6 +63,10 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 
 事件日志顶层必须携带 `schema_version` 字段。
 
+**当前 `schema_version = 1`。** 2026-07-31 的方向重置新增了 `MARGIN_CALL`（§4.2.2）
+与杠杆相关字段，但**未提升版本号**——此前没有任何实验运行过，不存在可比性问题。
+首次正式运行之后，任何字段或 class 变更都必须提升版本号。
+
 ## 3. 优先级类别（冻结清单）
 
 数值越小越先处理。
@@ -71,6 +75,7 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 |---|---|---|
 | 0 | `ORDER_ARRIVAL` | 订单或撤单到达交易所，触发准入校验与撮合 |
 | 1 | `TRADE_SETTLE` | 成交结算，账户现金/持仓/费用更新 |
+| 1 | `MARGIN_CALL` | 保证金判定与强平触发；同 class 内排在结算之后（§4.2.2） |
 | 2 | `MARKET_DATA_PUBLISH` | 行情发布（成交与盘口变化对外可见） |
 | 3 | `AGENT_OBSERVE` | 代理接收行情，其信息集在此刻确定 |
 | 4 | `AGENT_DECIDE` | 代理决策，产生新的订单意图 |
@@ -112,9 +117,15 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | `accepted` | 是否通过准入校验 |
 | `reject_reason` | 拒绝原因，未拒绝为 null |
 | `reserved_cash_delta_units` | 冻结现金变动：下单预冻结为正，撤单/拒绝释放为负（§4.2.1） |
+| `origin` | `AGENT` \| `LIQUIDATION`——强平单由风控产生，不来自代理决策 |
+| `trigger_ratio_bp` | `origin=LIQUIDATION` 时的触发担保比例（整数万分数），否则 null |
 
 `submitted_at` 与 `timestamp` 并存是速度优势可归因的前提（A-003）。
-`intent_id` 与 `decision_event_id` 是 KPI-007 追溯链的中间环节（§5）。
+`intent_id` 与 `decision_event_id` 是 KPI-006 追溯链的中间环节（§5）。
+
+**强平单的因果外键指向风控判定而非代理决策**：`origin = LIQUIDATION` 时，
+`decision_event_id` 指向触发它的 `MARGIN_CALL` 事件（§4.2.2），`intent_id` 为 null。
+这使「哪些成交由强平造成」可被机器识别，是测量连锁规模与深度的前提。
 
 ### 4.2 TRADE_SETTLE（class 1）
 
@@ -142,6 +153,10 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | `position_delta_units` | 持仓变动（买入为正） |
 | `fee_delta_units` | 该方手续费（正为付出，负为返佣） |
 | `reserved_cash_delta_units` | 冻结现金的变动（预冻结释放为负） |
+| `margin_used_after_units` | 结算后保证金占用 |
+| `equity_after_units` | 结算后权益（可为负，见穿仓） |
+| `collateral_ratio_after_bp` | 结算后担保比例，整数万分数（指标字典 §4.1） |
+| `negative_equity_units` | 穿仓额，非穿仓时为 0；其累计值即交易所风险账户 |
 | `cash_after_units` / `position_after_units` | 结算后余额，用于逐事件守恒断言 |
 | `cost_after_cash_units` | 结算后持仓累计成本（ADR-005 §5） |
 
@@ -153,6 +168,25 @@ SC-008 的「每一跳唯一存在」在快照上无法成立。
 `reserved_cash_delta_units`（下单预冻结、撤单或拒绝时释放），字段语义与上表一致。
 由此**每一次账户变动都由某个事件承载，且该事件自带因果外键**，无需新增事件类别，
 `priority_class` 冻结清单（§3）不受影响。
+
+#### 4.2.2 MARGIN_CALL（class 1）
+
+保证金判定结果。**与 `TRADE_SETTLE` 同属 class 1**——判定必须在结算之后、行情发布
+之前完成，否则代理会看到一个尚未反映强平后果的簿状态（§3.1 同一理由）。
+
+| 字段 | 说明 |
+|---|---|
+| `agent_id` | 被判定的账户 |
+| `caused_by_event_id` | 导致该判定的 `TRADE_SETTLE`；收盘时点判定则指向该时点的 `SNAPSHOT` |
+| `collateral_ratio_bp` | 判定时的担保比例（整数万分数） |
+| `maintenance_ratio_bp` | 当时生效的维持线 |
+| `verdict` | `OK` \| `PENDING_LIQUIDATION` \| `LIQUIDATING` \| `BREACHED`（穿仓） |
+| `required_quantity_units` | 恢复至 `target_ratio` 所需的最小平仓数量；`OK` 时为 0 |
+| `chain_depth` | 该判定所处的连锁层数，0 表示非连锁触发（指标字典 §4.1） |
+
+**判定事件独立记录、不与成交合并**，理由有二：判定可能得出 `OK`（不产生任何订单），
+而「检查过且安全」本身是研究连锁传导所需的证据；`chain_depth` 只有在判定层面才能
+逐层累计。
 
 ### 4.3 MARKET_DATA_PUBLISH（class 2）
 
@@ -169,7 +203,7 @@ SC-008 的「每一跳唯一存在」在快照上无法成立。
 | `observed_at` | 所观察行情的产生时刻 |
 | `information_set` | 该代理本次可见内容的快照或其摘要哈希 |
 
-`timestamp - observed_at` 即观察延迟。`information_set` 是 KPI-007 追溯链的起点。
+`timestamp - observed_at` 即观察延迟。`information_set` 是 KPI-006 追溯链的起点。
 完整记录成本高时可只存摘要哈希（E-001），但须保证可由配置与种子重放还原。
 
 `market_data_event_id` 使追溯链一路闭合到行情发布本身：仅有 `observed_at` 时刻时，
@@ -191,7 +225,7 @@ SC-008 的「每一跳唯一存在」在快照上无法成立。
 意图时（做市商双边报价即产生 2 笔），`intent_id` 是与后续 `ORDER_ARRIVAL` 一一对应
 的唯一依据——仅靠「同代理、时间相近」无法区分，且这种不可靠无法被检出。
 
-`rule_id` 与 `internal_state` 使「为什么下这一单」可解释，支撑 US-3 与 KPI-007。
+`rule_id` 与 `internal_state` 使「为什么下这一单」可解释，支撑 US-3 与 KPI-006。
 
 ### 4.6 SNAPSHOT（class 5）
 
@@ -205,7 +239,7 @@ SC-008 的「每一跳唯一存在」在快照上无法成立。
 ——账户追溯由 §4.2.1 的分录承担。快照的作用是回放与图表，以及与分录累加值的
 交叉核对（两者不一致即为实现缺陷）。
 
-## 5. 因果链与引用完整性（KPI-007）
+## 5. 因果链与引用完整性（KPI-006）
 
 ### 5.1 追溯路径
 
@@ -238,7 +272,7 @@ trade_id
   一致；分录的 `*_after_units` 等于该代理上一条分录的 `*_after_units` 加本次
   `*_delta_units`（首次以初始值为基），且与同代理最近一次 `ACCOUNT` 快照一致。
 
-该断言不依赖重放，因而不随代码版本失效——这是 KPI-007 从「展示层可读」升级为
+该断言不依赖重放，因而不随代码版本失效——这是 KPI-006 从「展示层可读」升级为
 「可机器验证」的关键。
 
 ## 6. 运行元数据
@@ -267,7 +301,7 @@ trade_id
 `information_set_mode: full`，或产出可独立还原信息集的版本化证据包（ADR-006 §5）。
 
 理由：digest 模式下完整追溯依赖「用同一份代码重跑」，而代码版本会随时间变化——
-KPI-007 的证据能力因此逐年衰减。§5 的引用完整性断言在两种模式下都成立，但信息集
+KPI-006 的证据能力因此逐年衰减。§5 的引用完整性断言在两种模式下都成立，但信息集
 内容本身只有 full 模式才在日志内自包含。性能门槛由 BENCH-001 单独承载，研究运行的
 日志体积是可接受的代价（须在 M2 首次运行前实测确认）。
 

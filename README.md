@@ -61,7 +61,6 @@ docs/product/         PRD 与产品级路线图
 docs/adr/             架构决策记录
 docs/contracts/       跨规格实现合同（事件 Schema、退化状态）
 docs/experiments/     实验协议与结果索引
-docs/reviews/         文档与代码检视报告
 src/market_game_sim/  Python 源码
 tests/                单元、集成和仿真测试
 ```

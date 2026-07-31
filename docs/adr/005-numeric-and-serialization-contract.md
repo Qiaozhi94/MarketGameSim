@@ -186,7 +186,7 @@ fee_cash_units = round_away_from_agent(notional_cash_units × bps / 10000)
   - `cash_unit` 与 `tick_size × min_quantity` 的整除约束限制了配置自由度——不满足的
     参数组合会被配置校验直接拒绝，须在文档中显著说明；
   - 报告与回放层须自行还原十进制表示，回放器需读取运行元数据头部的单位定义。
-- **后续行动**：见下节文档同步清单；配置校验与舍入方向须进入 T003 / T004c 的属性
+- **后续行动**：见下节文档同步清单；配置校验与舍入方向须进入账户与预冻结实现的属性
   测试（不可整除的费用、恰好位于冻结边界的订单、负费率返佣）。
 
 ## 文档同步清单
@@ -200,4 +200,4 @@ fee_cash_units = round_away_from_agent(notional_cash_units × bps / 10000)
   新增 §1.8 最小单位。
 - degenerate-states.md：§0 与 §1.2 的 NaN 表述按 §6 分层。
 - `benchmarks/BENCH-001.yaml`：新增 `cash_unit` 字段。
-- tasks.md：T003、T004c 增加舍入与预冻结的属性测试。
+- 002 实现任务：账户与预冻结须含舍入方向的属性测试。
