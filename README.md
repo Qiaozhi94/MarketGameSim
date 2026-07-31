@@ -34,7 +34,8 @@
 ## 实现契约
 
 - `docs/contracts/event-schema.md`：事件全序键、冻结的优先级类别、各类事件字段。
-- `docs/contracts/degenerate-states.md`：退化状态行为与发散样本判定标准。
+- `docs/contracts/degenerate-states.md`：退化状态、技术无效与经济终点的判定。
+- `docs/contracts/agent-strategy.md`：从信息集到订单意图的确定管线。
 - `benchmarks/`：性能基准配置、三层判定协议与参考机计时口径。
 
 ## 已生效架构决策

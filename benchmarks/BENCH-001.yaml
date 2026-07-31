@@ -36,6 +36,8 @@ market:
   # ——此处 1e-5 = 1000 × 1e-8，故成交名义金额无舍入。
   cash_unit: "1e-8"
   initial_price: "100.00"
+  # 盘口一侧不可用时的替代价差（代理策略合同 §6.1）
+  spread_fallback: "0.10"
   fees:
     maker_bps: "-1.0"              # 负值表示 maker 返佣
     taker_bps: "5.0"
@@ -79,19 +81,34 @@ agents:
       distribution: dirichlet
       # 五因子的浓度参数，顺序与 factors 一致（002 / P-1）
       alpha: ["1.0", "1.0", "0.8", "0.8", "1.5"]
+    # 单笔数量上限；超出部分留待下次决策，不自动拆单（策略合同 §6）
+    max_order_qty: "50.0"
+    # 挂单激进度，逐代理抽取并固定：0=挂同侧最优价必为 maker，1=跨价差必为 taker
+    # maker/taker 分化由此自然产生，不需要单独的代理类型（策略合同 §6.1）
+    aggressiveness:
+      distribution: uniform
+      low: "0.0"
+      high: "1.0"
+    # scale 为固定尺度截断的分母（策略合同 §4.1）：normalized = clip(raw/scale, -1, 1)
+    # 明确不用滚动 z-score——崩盘时标准差爆炸会把信号压到 0，恰在最该反应时失灵
     factors:
       - name: momentum                     # 信息源：价格历史
         lookback_bars: [5, 20, 60]         # 逐代理抽取
+        scale: "0.01"                      # 1% 对数收益视为满信号
       - name: reversion                    # 信息源：价格历史（方向相反）
         half_life_trades:                  # 半衰期以成交笔数计（指标字典 §1.5）
           distribution: lognormal
           center: 200
           dispersion: "0.5"
+        scale: "0.02"
       - name: herding                      # 信息源：成交流
         window_bars: [1, 5]
+        scale: "1.0"                       # 原始值已在 [-1,1]
       - name: book                         # 信息源：订单簿状态
         depth_ticks: 10
+        scale: "1.0"
       - name: noise                        # 信息源：无
+        scale: "1.0"                       # 标准正态截断至 ±1
     # 因子相关矩阵须随研究运行输出；持续 >0.8 说明多样性为假（002 / P-1）。
 
   - role: inventory_market_maker
@@ -104,6 +121,9 @@ agents:
       "1": 10000
     max_inventory: "5000.0"
     quote_size: "10.0"
+    # 做市商不使用信念信号，行为独立定义（策略合同 §8）
+    half_spread: "0.05"                    # 报价半价差，5 tick
+    inventory_skew_k: "1.0"                # 库存偏离满仓时报价整体移动 1 个 half_spread
 
 # 大资金执行者与订单流预知者属 M3 范围，届时加入本配置并重新校准。
 
