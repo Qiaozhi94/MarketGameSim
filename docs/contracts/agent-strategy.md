@@ -121,8 +121,19 @@ M4），以及全局撮合中间态（A-002）。
 - `MARGIN_CALL.caused_by_event_id` 恒指向 `TRADE_SETTLE`（事件 Schema §4.2.2），
   触发链闭合。
 
-指标字典 §3.1 的 `mark` 定义（优先 `mid`）仅用于**报告层**的权益估值，与强平判定
-所用的 `mark` 是两个口径，须在报告中分别标注。
+指标字典 §3.1 定义了**两个不可混用的 mark**：
+
+| 口径 | 取值 | 用途 |
+|---|---|---|
+| `risk_mark` | 恒为 `last`（首笔成交前为 `initial_price`） | 保证金与强平判定 |
+| `valuation_mark` | `mid`，缺失时退化为 `last` | 权益、未实现 PnL、会计桥接 |
+
+估值用 `mid` 的额外理由：若估值也用 `last`，则成交后 `valuation_mark` 必等于成交价，
+会使会计桥接的 `Spread` 与 `Impact` **恒相互抵消**，两个指标同时失去意义
+（指标字典 §5.2.1）。
+
+**代理策略中的 `mark`（§5 目标仓位）取 `valuation_mark`**——代理评估自身权益时用的
+是公允价，与交易所的风险判定口径无关。
 
 ### 3.4 burn-in
 
@@ -181,8 +192,8 @@ target_position = trunc(signal_bp × max_position / 10000)   # 向零取整
   §3.3 的开仓准入使用同一口径——策略层的目标仓位与准入层的检查必须一致，否则代理会
   持续产生注定被拒的意图；
 - `signal = +1` → 满多头，`−1` → 满空头，`0` → 空仓；
-- `equity` 与 `mark` 取本次观察时刻的值；`mark` 未定义时（无成交且单边簿）**跳过本次
-  决策**，不下单。
+- `equity` 与 `mark` 取本次观察时刻的值，`mark` 为 `valuation_mark`（§3.3）；
+  两侧簿皆空且无成交时 `valuation_mark` 未定义，**跳过本次决策**，不下单。
 
 这一步是整条管线中经济含义最强的一处：它使**杠杆档位直接放大信号的仓位后果**，
 从而让「初始杠杆分布是否足以产生连锁」成为可测量的问题（旗舰问题）。
@@ -277,7 +288,7 @@ ask   = mid + half_spread − skew × half_spread
 | 信号量化 | `signal` 量化为 `[−10000, +10000]` 的**整数万分数**后再参与目标仓位计算 |
 | 平局舍入 | 一律 `ROUND_HALF_EVEN`（银行家舍入），**不用** `ROUND_HALF_UP` |
 | 目标仓位 | `round()` 改为向零取整（`ROUND_DOWN`），避免边界上多开仓 |
-| 标准正态 | 固定用 **Box–Muller 变换**（不用 `random.gauss` 的平台实现），冻结为规范算法 |
+| 标准正态 | 固定用 **Marsaglia polar**（§10.3），不用 `random.gauss` 的平台实现 |
 | `ln` / `2^x` | 用 `Decimal.ln()` / `Decimal.exp()`，不用 `math` 模块的浮点版本 |
 
 **跨进程测试**：对恰好位于半 tick、半数量单位、信号阈值 `±10000` 边界的案例，
@@ -290,13 +301,23 @@ ask   = mid + half_spread − skew × half_spread
 **不使用 `numpy.random.SeedSequence`** —— NumPy 不是标准库，与 KR-005「核心领域层
 仅使用 Python 标准库」冲突。改用 `hashlib.blake2b`（标准库，规范固定，跨版本稳定）：
 
+**长度前缀编码**，不用分隔符拼接：
+
 ```text
-key_bytes = f"{master_seed}|{agent_id}|{mechanism}|{decision_index}|{draw_index}".encode("utf-8")
+def encode(field: str) -> bytes:
+    b = field.encode("utf-8")
+    return len(b).to_bytes(2, "big") + b        # 2 字节大端长度 + 内容
+
+key_bytes = encode(str(master_seed)) + encode(str(agent_id)) + encode(mechanism)           + encode(str(decision_index)) + encode(str(draw_index))
 bits      = blake2b(key_bytes, digest_size=8).digest()        # 64 bit
 ```
 
-键的字符串拼接**是规范的一部分**：分隔符为 `|`，各字段以十进制无前导零书写，
-UTF-8 编码。任何改动都会改变全部随机流。
+**分隔符拼接会产生键碰撞**：`agent_id="x|y", mechanism="noise"` 与
+`agent_id="x", mechanism="y|noise"` 在 `|` 拼接下得到同一个键，两个不同的随机流会
+完全重合。已验证长度前缀编码不存在该碰撞。
+
+各整数字段以十进制无前导零书写，UTF-8 编码。编码规则**是规范的一部分**，任何改动
+都会改变全部随机流。
 
 `mechanism` 取值：`belief_weights`、`half_life`、`aggressiveness`、`leverage_tier`、
 `momentum_lookback`、`herding_window`（**建仓期一次性抽取**，`decision_index = 0`），
@@ -317,13 +338,48 @@ u = (Decimal(v) + 1) / (Decimal(2**53) + 1)    # 严格落在 (0, 1)
 |---|---|---|
 | 标准正态 | **Marsaglia polar**（拒绝采样，不用三角函数） | `noise` 因子 |
 | 对数正态 | `exp(μ + σ·z)`，`z` 由上行得到 | 半衰期 τ |
-| Gamma(α,1) | **Marsaglia–Tsang**（α ≥ 1）；α < 1 用 `Gamma(α+1) × u^(1/α)` | Dirichlet 的分量 |
-| Dirichlet | `xᵢ = Gamma(αᵢ,1)`，再按 `Σx` 归一 | 信念权重 |
+| Gamma(α,1) | **Marsaglia–Tsang**，见 §10.3.1 | Dirichlet 的分量 |
+| Dirichlet | `xᵢ = Gamma(αᵢ,1)`，再按 `Σx` 归一；见 §10.3.2 | 信念权重 |
 | 均匀 `[a,b]` | `a + u × (b − a)` | `aggressiveness` |
 | 离散分布 | 按万分数累积区间查找，`u × 10000` 落入哪段 | `leverage_tier` |
 
-**拒绝采样的 draw_index 规则**：Marsaglia polar 每轮消耗 2 个 draw_index，拒绝则
-`draw_index += 2` 继续，**不重置**。这使消耗量随拒绝次数变化但完全确定。
+#### 10.3.1 Gamma(α, 1)：Marsaglia–Tsang
+
+```text
+若 α < 1:  返回 Gamma(α+1, 1) × u^(1/α)     # u 为一个新的开区间均匀数
+否则:
+    d = α − 1/3
+    c = 1 / sqrt(9d)
+    循环:
+        z = 标准正态（Marsaglia polar，消耗 2 个 draw）
+        v = (1 + c×z)^3
+        若 v ≤ 0: 继续下一轮
+        u = 开区间均匀数（消耗 1 个 draw）
+        若 ln(u) < 0.5×z² + d − d×v + d×ln(v):  返回 d×v
+        否则继续
+```
+
+`u^(1/α)` 用 `Decimal` 实现为 `(u.ln() / α).exp()`，精度 28 位（§9）。
+
+#### 10.3.2 Dirichlet 的 draw-index 分配
+
+各分量使用**独立的 mechanism 名**，避免共享计数器：
+
+```text
+xᵢ = Gamma(αᵢ, 1)   使用 mechanism = f"belief_weights_{i}"，i 从 0 开始
+w  = x / Σx
+```
+
+这样任一分量的拒绝次数不会影响其他分量的随机流——若共用一个 mechanism 并顺序推进
+`draw_index`，某个分量多拒绝一次就会让后续所有分量错位。
+
+#### 10.3.3 拒绝采样的 draw_index 规则
+
+- **Marsaglia polar**：每轮消耗 2 个 `draw_index`，拒绝则 `+2` 继续，**不重置**；
+- **Marsaglia–Tsang**：每轮消耗 2（正态）+ 1（均匀）= 3 个，拒绝则 `+3` 继续；
+- 递归调用（`α < 1` 分支）从当前 `draw_index` 继续，不另起计数。
+
+消耗量随拒绝次数变化，但对给定语义键**完全确定**。
 
 `ln` 与 `sqrt` 一律用 `Decimal.ln()` / `Decimal.sqrt()`，精度 28 位（§9），
 **不用 `math` 模块**——后者是平台浮点，跨平台可能差最后一位。
@@ -336,7 +392,42 @@ u = (Decimal(v) + 1) / (Decimal(2**53) + 1)    # 严格落在 (0, 1)
 
 已验证：同一语义键重复调用结果一致；不同 `agent_id` 或 `mechanism` 互不干扰。
 
-## 11. 本合同的已知局限
+## 11. 挂单保证金占用与自成交
+
+### 11.1 占用算法：按最坏情形合并计算
+
+**不逐单累加占用**——那会在同向多单时重复占用、在反向单时低估占用。正确做法是按
+「当前仓位 + 所有活动挂单若全部成交」的两个极端计算：
+
+```text
+buy_all  = position + Σ(所有活动买单数量)
+sell_all = position − Σ(所有活动卖单数量)
+worst_notional = max(|buy_all|, |sell_all|) × valuation_mark
+required_reserved = ceil(worst_notional × initial_bp / 10000)
+```
+
+`reserved_units` **恒等于**该值，每次挂单、撤单、部分成交后**整体重算**，不做增量
+加减——增量维护极易在部分成交与撤单交错时漂移。
+
+同向多单只放大一侧的极端值，反向单会同时抬高两个极端中的一个，两种情形都被自然
+覆盖。
+
+### 11.2 禁止自成交
+
+**同一代理的买单与卖单不得相互成交。** 撮合时若发现对手方 `agent_id` 与自己相同，
+执行 **cancel-resting**（撤销簿上那张较早的挂单，让新单继续撮合下一档）。
+
+选 cancel-resting 而非 cancel-newest 或 cancel-both 的理由：本合同 §6.2 规定每次
+决策全撤重报，簿上的旧单已经是过时意图，撤掉它符合代理的实际意愿；撤新单会使本次
+决策完全失效。
+
+被撤销的挂单写入 `ORDER_ARRIVAL`（`action = CANCEL`，`reject_reason =
+SELF_TRADE_PREVENTION`），使其可被审计——自成交阻止的发生频率本身是一项观测量。
+
+允许自成交则须定义两条分录的应用顺序与费用结果（同一账户既付 taker 费又收 maker
+返佣），复杂度与研究价值不成比例，故排除。
+
+## 12. 本合同的已知局限
 
 以下几点是**刻意的简化**，不是遗漏。它们都会影响结论，因此必须在报告中声明：
 
@@ -346,7 +437,7 @@ u = (Decimal(v) + 1) / (Decimal(2**53) + 1)    # 严格落在 (0, 1)
 | 全撤重报 | 撤单率偏高，簿的瞬时深度波动被放大 | 若撤单率显著影响深度指标 |
 | 目标仓位线性映射信号 | 排除了阈值型、金字塔加仓等真实行为 | M3 替代行为映射 |
 | 不自动拆单 | 大额调仓一次性冲击簿 | 大资金执行者引入时（M4） |
-| 融资利息为 0 | 长时间持仓无成本 | 实验时长显著延长时 |
+| 永续资金费为 0 | 长时间持仓无成本，永续价格不锚定任何外部参照 | 实验时长显著延长时 |
 
 **M3 的稳健性检验必须至少替换其中一项**（PRD §15），以确认旗舰结论不依赖单一行为
 映射——报告已指出，只在单一映射下成立的结论是实现的性质，不是市场的性质。

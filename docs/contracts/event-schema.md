@@ -101,7 +101,7 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | class | 名称 | 含义 |
 |---|---|---|
 | 0 | `ORDER_ARRIVAL` | 订单或撤单到达交易所，触发准入校验与撮合 |
-| 1 | `TRADE_SETTLE` | 成交结算，账户现金/持仓/费用更新 |
+| 1 | `TRADE_SETTLE` | 成交结算，账户钱包/仓位/开仓成本/费用更新 |
 | 1 | `MARGIN_CALL` | 保证金判定与强平触发；同 class 内排在结算之后（§4.2.2） |
 | 2 | `MARKET_DATA_PUBLISH` | 行情发布（成交与盘口变化对外可见） |
 | 3 | `AGENT_OBSERVE` | 代理接收行情，其信息集在此刻确定 |
@@ -165,8 +165,13 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | `price_ticks` / `quantity_units` | 成交价与量（整数，ADR-005 §1） |
 | `notional_cash_units` | 成交名义金额，整数且无舍入（ADR-005 §2） |
 | `maker_fee_cash_units` / `taker_fee_cash_units` | 分别计费（FR-003），整数，舍入方向见 ADR-005 §3 |
-| `mid_before_half_ticks` | 成交前中间价，以 **半 tick** 为单位的整数（`best_bid + best_ask`），任一侧空时为 null |
+| `valuation_mark_before_half_ticks` | 成交**前**的估值标记价（`mid`，以半 tick 为单位的整数 `best_bid + best_ask`）；任一侧空时退化为 `last × 2` |
+| `valuation_mark_after_half_ticks` | 成交**后**的估值标记价，同上口径 |
+| `risk_mark_ticks` | 成交后的风险标记价 = 本笔成交价（`last`），用于保证金判定 |
 | `postings` | **账户分录**，长度恒为 2（maker 与 taker 各一条），见 §4.2.1 |
+
+**两个 mark 都必须记录**：`risk_mark` 决定强平判定，`valuation_mark` 决定权益与
+会计桥接（指标字典 §3.1、§5.2）。缺任一个，PnL 桥接都无法仅凭日志重放。
 
 #### 4.2.1 账户分录 `postings`
 
@@ -185,7 +190,7 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | `wallet_after_units` / `position_after_units` | 结算后余额，用于逐事件守恒断言 |
 | `entry_notional_after_units` | 结算后开仓成本 |
 | `equity_after_units` | 结算后权益 = 钱包 + 未实现盈亏（可为负，见穿仓） |
-| `margin_ratio_after_bp` | 结算后保证金率，整数万分数；**无仓位时为 null**（账户合同 §3.2） |
+| `margin_ratio_after_bp` | 结算后保证金率（按 `risk_mark` 计算），整数万分数；**无仓位时为 null**（账户合同 §3.2） |
 | `risk_pnl_delta_units` | 恒为 0——`TRADE_SETTLE` 不承载核销，核销只发生在 `MARGIN_CALL`（§4.2.3） |
 
 **账户变化必须内嵌于引发它的事件，不能靠「时间上位于成交之后的周期快照」推断。**
@@ -239,9 +244,15 @@ SC-006 的「每一跳唯一存在」在快照上无法成立。
 而「检查过且安全」本身是研究连锁传导所需的证据；`chain_depth` 只有在判定层面才能
 逐层累计。
 
-**扫描范围与顺序**：一笔成交改变风险 mark 后，受影响的是**所有非零仓位账户**，
-不只是成交双方。第一版采用 **O(N) 全账户扫描**（性能成为瓶颈后再引入按强平价排序的
-风险索引）。
+**扫描范围与顺序**：成交后执行**两阶段检查**（账户合同 §4.1），顺序固定：
+
+1. **阶段 1（穿仓捕获）**：对本次 `TRADE_SETTLE.postings` 涉及的账户，若
+   `position == 0 且 wallet < 0` → `verdict = BREACHED`，携带核销分录（§4.2.3）；
+2. **阶段 2（保证金扫描）**：对**所有非零仓位账户**（不只是成交双方）执行
+   **O(N) 全账户扫描**（性能成为瓶颈后再引入按强平价排序的风险索引）。
+
+**只做阶段 2 会漏掉仓位归零的穿仓账户**——它们因 `position == 0` 被排除在扫描外，
+核销分录永远不会产生。两阶段的账户集合天然不相交，无需去重。
 
 同一次成交触发多个 `MARGIN_CALL` 时，按 **`agent_id` 升序**产生事件——这是确定性
 要求，不是效率考虑：顺序影响 `seq` 分配，进而影响 KPI-002 的哈希。

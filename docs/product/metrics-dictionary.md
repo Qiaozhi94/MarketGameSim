@@ -134,7 +134,16 @@ EWMA 平滑系数：`α = 1 - 2^(-1/τ)`，每笔成交按 `anchor ← α·price
 | 最优卖价 `best_ask` | 卖方最低挂单价 | 卖方无挂单时未定义 |
 | 中间价 `mid` | `(best_bid + best_ask) / 2` | 任一侧空时未定义 |
 | 最近成交价 `last` | 最近一笔成交的价格 | 尚无成交时未定义 |
-| 标记价 `mark` | 用于计算未实现 PnL 的价格，取 `mid`；`mid` 未定义时退化为 `last` | 两者皆无时未定义 |
+| **估值标记价** `valuation_mark` | 用于权益、未实现 PnL 与会计桥接（§5.2）。取 `mid`；`mid` 未定义时退化为 `last` | 两者皆无时未定义 |
+| **风险标记价** `risk_mark` | 用于保证金与强平判定（账户合同 §3.2）。**恒取 `last`**；首笔成交前取 `initial_price` | 永不未定义 |
+
+**两个 mark 不可混用。** `risk_mark` 只用 `last`，因为挂单与撤单会移动 `mid`，
+若用于强平判定，一次报价就可能触发强平（代理策略 §3.3）；`valuation_mark` 用 `mid`，
+因为它是更好的公允价估计，且**若估值也用 `last`，会使 §5.2 的 `Spread` 与 `Impact`
+恒相互抵消**（成交后 `last` 必等于成交价），两个指标同时失去意义。
+
+事件日志须记录 `valuation_mark_before` 与 `valuation_mark_after`
+（事件 Schema §4.2），使会计桥接可仅凭日志重放。
 
 未定义值不得以 0 或前值静默替代，并计入「无效报价时间占比」。其表示分层
 （ADR-005 §6）：
@@ -229,7 +238,7 @@ impact(Q) = (成交加权均价 - 成交前中间价) / 成交前中间价
 
 [C2] 价值守恒（联合恒等式）
 Σ (wallet_units − entry_notional_units)(t)
-    + 交易所费用_units(t) − exchange_risk_pnl_units(t)
+    + 交易所费用_units(t) + exchange_risk_pnl_units(t)
     = Σ wallet_units(0)
 ```
 
@@ -239,8 +248,9 @@ impact(Q) = (成交加权均价 - 成交前中间价) / 成交前中间价
 **`Σwallet` 与 `Σentry_notional` 各自都不守恒**——仓位跨价换手时，已实现盈亏从
 `entry_notional` 转移到 `wallet`。守恒的是**两者之差**（账户合同 §2.3 有反例与验算）。
 
-`exchange_risk_pnl_units` **有符号，交易所承担的损失记负数**，故 C2 中取减号。
-核销穿仓时 `Δwallet = +L`、`Δrisk = −L`，两者抵消，C2 守恒。
+`exchange_risk_pnl_units` **有符号，交易所承担的损失记负数，在 C2 中以加号进入**。
+核销穿仓时 `Δwallet = +L`、`Δrisk = −L`，一加一减恰好抵消，C2 守恒。写成减号会得到
+`ΔC2 = +2L`（账户合同 §2.3）。
 
 **两式为整数精确相等（002 / SC-001），不得写成浮点容差断言。** 容差会把 KPI-001 从
 正确性断言降级为一个需要调参的隐藏阈值。整数域的精确成立由 ADR-005 保证：名义金额
@@ -276,13 +286,14 @@ impact(Q) = (成交加权均价 - 成交前中间价) / 成交前中间价
 Δequity = Spread + Impact + Revaluation + Funding − Fees
 ```
 
-其中（`signed_qty` 买入为正、卖出为负；`mark` 为风险标记价即最近成交价）：
+其中 `signed_qty` 买入为正、卖出为负；**`vm` 为估值标记价 `valuation_mark`（§3.1），
+不是风险标记价**：
 
 | 项 | 公式 | 含义 |
 |---|---|---|
-| `Spread` | `signed_qty × (mark_before − trade_price)` | 相对成交前公允价的执行优劣 |
-| `Impact` | `signed_qty × (mark_after − mark_before)` | 本笔成交造成的**即时**价格移动对**新增**仓位的影响 |
-| `Revaluation` | `position_before × (mark_after − mark_before)` | **原有**仓位的重估 |
+| `Spread` | `signed_qty × (vm_before − trade_price)` | 相对成交前公允价的执行优劣 |
+| `Impact` | `signed_qty × (vm_after − vm_before)` | 本笔成交造成的**即时**公允价移动对**新增**仓位的影响 |
+| `Revaluation` | `position_before × (vm_after − vm_before)` | **原有**仓位的重估 |
 | `Funding` | 资金费收付 + 穿仓核销（**有符号**，收入为正） | 第一版资金费为 0 |
 | `Fees` | 手续费（有符号，返佣为负） | ADR-005 §3 |
 
@@ -294,49 +305,62 @@ impact(Q) = (成交加权均价 - 成交前中间价) / 成交前中间价
 由永续的权益定义直接展开（**不是** `cash + position × mark`，永续没有现金交割）：
 
 ```text
-equity  = wallet + position × mark − entry_notional
-Δequity = Δwallet + Δ(position × mark) − Δentry_notional
+equity  = wallet + position × vm − entry_notional
+Δequity = Δwallet + Δ(position × vm) − Δentry_notional
 ```
 
 代入 `Δwallet = realized_pnl − fees + funding`，并按「新增仓位 / 原有仓位」拆分
 `Δ(position × mark)`，即得上表五项。互斥性由此是**证明**出来的：`Spread` 与
-`Impact` 以 `mark_before` 为分界，区间不相交；`Impact` 只作用于新增仓位，
+`Impact` 以 `vm_before` 为分界，区间不相交；`Impact` 只作用于新增仓位，
 `Revaluation` 只作用于原有仓位。
+
+**必须用 `valuation_mark` 而非 `risk_mark`**：若用 `last`，则 `vm_after` 恒等于
+成交价，于是
+
+```text
+Spread + Impact = q×(last_before − price) + q×(price − last_before) ≡ 0
+```
+
+两项永远抵消，虽然恒等式仍成立，但价差与冲击**同时失去研究意义**。
 
 #### 5.2.2 已验算的七种情形
 
 以下均以 `Decimal` 精确验算，残差为 0：
 
-| # | 情形 | Δequity |
-|---|---|---|
-| ① | 同向开仓 `0 → +10` | −0.5000 |
-| ② | 同向加仓 `+10 → +15` | +34.7450 |
-| ③ | 部分平仓 `+15 → +5` | +24.4750 |
-| ④ | 跨价完全平仓 `+5 → 0` | +29.7250 |
-| ⑤ | **反向翻仓** `+5 → −5` | −25.4900 |
-| ⑥ | 空头部分平仓 `−10 → −4` | +25.7150 |
-| ⑦ | 含资金费转移 | +16.3990 |
+| # | 情形 | `vm_before → vm_after` | Δequity |
+|---|---|---|---|
+| ① | 同向开仓 `0 → +10` | 100 → 100.5 | +4.5000 |
+| ② | 同向加仓 `+10 → +15` | 100 → 102.5 | +27.2450 |
+| ③ | 部分平仓 `+15 → +5` | 103 → 104.5 | +26.9750 |
+| ④ | 跨价完全平仓 `+5 → 0` | 104 → 109.5 | +29.7250 |
+| ⑤ | **反向翻仓** `+5 → −5` | 104 → 97.5 | −27.9900 |
+| ⑥ | 空头部分平仓 `−10 → −4` | 98 → 95.5 | +27.7150 |
+| ⑦ | 含资金费转移 | 100 → 101.5 | +11.3990 |
+
+`vm_after` 与成交价不相等——这正是 `valuation_mark` 取 `mid` 的意义所在。
 
 #### 5.2.3 手工验算示例
 
-**示例 A：同向开仓**（`wallet=1000`，`position=0`，`mark_before=100`）
-买入 10 @ 100，成交后 `mark_after=100`，taker 5 bps：
+**示例 A：同向开仓**（`wallet=1000`，`position=0`，`vm_before=100`）
+买入 10 @ 100，成交后 `vm_after=100.5`（成交推动盘口，`mid` 上移），taker 5 bps：
 
 ```text
 fee    = 10 × 100 × 0.0005 = 0.5
 wallet = 1000 − 0.5 = 999.5        # 开仓不扣名义本金，只扣手续费
 entry  = +1000,  position = +10
-equity = 999.5 + 10×100 − 1000 = 999.5      Δequity = −0.5
+equity_before = 1000 + 0×100 − 0     = 1000
+equity_after  = 999.5 + 10×100.5 − 1000 = 1004.5
+Δequity = +4.5
 
-Spread      = +10 × (100 − 100) = 0
-Impact      = +10 × (100 − 100) = 0
-Revaluation =   0 × (100 − 100) = 0
+Spread      = +10 × (100 − 100)   =  0
+Impact      = +10 × (100.5 − 100) = +5
+Revaluation =   0 × (100.5 − 100) =  0
 Fees        = 0.5
-合计 = 0 + 0 + 0 + 0 − 0.5 = −0.5           ✓ 残差 0
+合计 = 0 + 5 + 0 + 0 − 0.5 = +4.5            ✓ 残差 0
 ```
 
-**示例 B：反向翻仓**（`wallet=1000`，`position=+5`，`entry=+510`，`mark_before=104`）
-卖出 10 @ 98（平掉 +5、反向建 −5），成交后 `mark_after=97`：
+**示例 B：反向翻仓**（`wallet=1000`，`position=+5`，`entry=+510`，`vm_before=104`）
+卖出 10 @ 98（平掉 +5、反向建 −5），成交后 `vm_after=97.5`：
 
 ```text
 avg_entry    = 510 / 5 = 102
@@ -344,16 +368,19 @@ realized     = 5 × (98 − 102) = −20          # 平掉的 5 手
 entry_after  = −5 × 98 = −490                # 新建的空头
 fee          = 10 × 98 × 0.0005 = 0.49
 wallet       = 1000 − 20 − 0.49 = 979.51
-equity_after = 979.51 + (−5)×97 − (−490) = 984.51
-equity_before= 1000 + 5×104 − 510 = 1010
-Δequity      = −25.49
+equity_before= 1000 + 5×104 − 510          = 1010
+equity_after = 979.51 + (−5)×97.5 − (−490) = 982.01
+Δequity      = −27.99
 
-Spread      = −10 × (104 − 98)  = −60
-Impact      = −10 × (97 − 104)  = +70
-Revaluation =  +5 × (97 − 104)  = −35
+Spread      = −10 × (104 − 98)    = −60
+Impact      = −10 × (97.5 − 104)  = +65
+Revaluation =  +5 × (97.5 − 104)  = −32.5
 Fees        = 0.49
-合计 = −60 + 70 − 35 + 0 − 0.49 = −25.49     ✓ 残差 0
+合计 = −60 + 65 − 32.5 + 0 − 0.49 = −27.99   ✓ 残差 0
 ```
+
+注意 `Spread + Impact = +5 ≠ 0`——若 `vm` 取 `last`，`vm_after` 必为 98，
+两项会恰好抵消。
 
 **示例 C：穿仓核销**（承账户合同 §8 示例 4）
 钱包 −4635.2、仓位已归零。核销事件中：
@@ -368,7 +395,7 @@ Funding（含核销） = +4635.2        # 代理侧：免除的损失，有符�
 
 #### 5.2.4 已知界限：延迟冲击无法分离
 
-`Impact` 只捕捉**即时**冲击（`mark_before → mark_after`）。成交后数秒内的价格漂移
+`Impact` 只捕捉**即时**冲击（`vm_before → vm_after`）。成交后数秒内的价格漂移
 属于**延迟冲击**，它会落进后续事件的 `Revaluation`，逐事件会计中无法与普通价格变动
 区分。要研究延迟冲击须用 markout 分析（成交后 N 秒的价格相对成交价），那是独立于
 会计桥接的统计工作。报告不得把 `Impact` 称为「市场冲击成本」——它只是即时部分。

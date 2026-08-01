@@ -85,11 +85,13 @@ equity         = wallet_units + unrealized_pnl
 ```text
 [C2] Σ (wallet_units − entry_notional_units)(t)
      + 交易所费用_units(t)
-     − exchange_risk_pnl_units(t)
+     + exchange_risk_pnl_units(t)
      = Σ wallet_units(0)
 ```
 
-（`exchange_risk_pnl_units` 为负值，故取减号；见 §5.2。）
+**风险账户以加号进入**。它是有符号量、交易所损失记负（§5.2），核销时
+`Δwallet = +L` 与 `Δrisk = −L` 在等式内一加一减恰好抵消。上一版写成减号，
+会得到 `ΔC2 = +L − (−L) = +2L`——与「抵消」正好相反。逐项验算见 §8 示例 5。
 
 #### 为什么不是「Σwallet = 常数」与「Σentry = 0」
 
@@ -196,13 +198,31 @@ margin_ratio_bp  = equity × 10000 / notional_units            # 当前保证金
 
 ## 4. 强平
 
-### 4.1 触发
+### 4.1 触发：成交后的两阶段检查
+
+**顺序固定，不得合并**。仅做阶段 2 会漏掉「仓位已归零但钱包为负」的账户——那正是
+穿仓核销的入口，漏掉则 §5 的核销分录永远不会产生。
 
 ```text
-margin_ratio_bp < maint_bp  且  position != 0   →  待强平
+阶段 1（穿仓捕获）：对本次 TRADE_SETTLE.postings 涉及的账户
+    position == 0 且 wallet < 0   →   verdict = BREACHED，进入 §5 核销
+
+阶段 2（保证金扫描）：对所有 position != 0 的账户（O(N) 全账户）
+    margin_ratio_bp < maint_bp    →   verdict = PENDING_LIQUIDATION
 ```
 
 **恰好等于维持线不触发**（闭区间安全侧，与退化状态 §5 一致）。
+
+**去重与顺序**：
+
+- 阶段 1 只检查成交涉及的账户（仓位归零只可能由成交造成），阶段 2 只检查非零仓位
+  账户，**两阶段的账户集合天然不相交**，不存在重复判定；
+- 阶段 1 的事件先于阶段 2 产生；各阶段内部按 `agent_id` 升序（§事件 Schema §4.2.2）；
+- 阶段 1 产生的 `BREACHED` 事件携带核销 `postings`，账户随即转入 `LIQUIDATED`，
+  不再参与后续任何扫描。
+
+**边界案例（必须验收）**：「最后一手全平后钱包恰为 −1 个最小单位」——该账户
+`position == 0`、`wallet == −1`，必须被阶段 1 捕获并核销，`risk` 减少 1。
 
 ### 4.2 强平数量
 
@@ -232,6 +252,11 @@ q ≥ |position| − equity × 10000 / (mark × target_bp)
 ## 5. 穿仓与核销
 
 ### 5.1 两步分录
+
+**触发条件见 §4.1 的两阶段检查**——仓位归零后的负钱包账户不在保证金扫描范围内，
+须由阶段 1 单独捕获。
+
+
 
 穿仓（`equity < 0`）的处理分两步，**不得合并**：
 
