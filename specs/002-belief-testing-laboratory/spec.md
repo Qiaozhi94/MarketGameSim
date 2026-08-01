@@ -4,6 +4,7 @@
 **状态**：Draft  
 **创建日期**：2026-07-31  
 **关联 PRD**：[`../../docs/product/prd.md`](../../docs/product/prd.md) v0.4.0  
+**架构**：[`plan.md`](plan.md)　**里程碑**：[`milestones/`](milestones/)  
 **已生效决策**：[ADR-005](../../docs/adr/005-numeric-and-serialization-contract.md)
 （数值与序列化口径）、
 [ADR-006](../../docs/adr/006-same-timestamp-event-scheduling.md)（事件调度与因果链）；

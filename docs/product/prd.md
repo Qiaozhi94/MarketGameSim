@@ -387,6 +387,7 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 不允许「先把功能做全再说」。
 
 ### M1：最小确定性内核（**无杠杆**）
+→ [`specs/002-.../milestones/M1-minimal-kernel.md`](../../specs/002-belief-testing-laboratory/milestones/M1-minimal-kernel.md)
 
 订单簿、账户、事件调度与日志、确定性哈希、因果链。**账户结构须一次留好保证金字段**，
 但本阶段不开启杠杆。
@@ -399,6 +400,7 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 和确定性钉死。带着杠杆调试账本会让两类缺陷混在一起。
 
 ### M2：杠杆与第一个实验闭环
+→ [`M2-leverage-and-first-experiment.md`](../../specs/002-belief-testing-laboratory/milestones/M2-leverage-and-first-experiment.md)
 
 杠杆、保证金、强平、穿仓、连锁；最小代理策略合同；**无杠杆 vs 有杠杆的配对对照**。
 
@@ -406,6 +408,7 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 经济终点与连续指标两部分报告齐备；KPI-005、KPI-007、KPI-010、KPI-011 达标。
 
 ### M3：模型稳健性
+→ [`M3-robustness.md`](../../specs/002-belief-testing-laboratory/milestones/M3-robustness.md)
 
 替代代理规则、参数空间与模型族扫描、因子消融、共同随机输入、留出验证区。
 
