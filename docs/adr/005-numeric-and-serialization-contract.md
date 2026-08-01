@@ -40,9 +40,9 @@ maker / taker 手续费、返佣与已实现 PnL 没有规定数值表示与舍�
 | 量 | 内部表示 | 单位定义 |
 |---|---|---|
 | 价格 | `price_ticks` | `tick_size` |
-| 数量 | `quantity_units` | `min_quantity` |
-| 现金、名义金额、费用、返佣 | `*_cash_units` | `cash_unit` |
-| 持仓成本 | `cost_cash_units` | `cash_unit` |
+| 数量 / 仓位 | `quantity_units`、`position_units` | `min_quantity` |
+| 钱包、名义金额、费用、返佣 | `wallet_units`、`*_cash_units` | `cash_unit` |
+| 开仓成本 | `entry_notional_units` | `cash_unit` |
 
 `cash_unit` 为新增的必填市场配置项，**初值 `1e-8`**（名义计价货币的最小结算单位）。
 
@@ -112,11 +112,11 @@ fee_cash_units = round_away_from_agent(notional_cash_units × bps / 10000)
 
 ### 5. PnL 不引入新的舍入
 
-- **已实现 PnL** 由整数现金流直接得出（卖出所得 − 对应持仓的整数累计成本），不单独
-  计算均价；
-- **持仓均价不作为状态存储**，只保留整数 `cost_cash_units` 与 `quantity_units`，
-  均价仅在报告层按需计算，避免均价舍入回流进账本；
-- **未实现 PnL** = `quantity_units × mark_price_cash_units − cost_cash_units`，
+- **已实现 PnL** 由 `entry_notional` 与成交价直接得出（账户合同 §2.1），不单独存储
+  持仓均价；
+- **持仓均价不作为状态存储**，只保留整数 `entry_notional_units` 与 `position_units`；
+  均价仅在平仓计算与报告层按需导出，避免均价舍入回流进账本；
+- **未实现 PnL** = `position_units × mark − entry_notional_units`，
   `mark` 未定义时该值为缺失值（见 §6），不得以 0 代替。
 
 ### 6. 序列化：领域层无 NaN，输出层用 null

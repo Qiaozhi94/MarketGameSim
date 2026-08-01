@@ -143,7 +143,7 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | `submitted_at` | 代理提交时刻（与 `timestamp` 之差即通信延迟） |
 | `accepted` | 是否通过准入校验 |
 | `reject_reason` | 拒绝原因，未拒绝为 null |
-| `reserved_cash_delta_units` | 冻结现金变动：下单预冻结为正，撤单/拒绝释放为负（§4.2.1） |
+| `reserved_delta_units` | 保证金占用变动：下单预冻结为正，撤单/拒绝释放为负（§4.2.1） |
 | `origin` | `AGENT` \| `LIQUIDATION`——强平单由风控产生，不来自代理决策 |
 | `trigger_ratio_bp` | `origin=LIQUIDATION` 时的触发保证金率（整数万分数），否则 null |
 
@@ -186,14 +186,14 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | `entry_notional_after_units` | 结算后开仓成本 |
 | `equity_after_units` | 结算后权益 = 钱包 + 未实现盈亏（可为负，见穿仓） |
 | `margin_ratio_after_bp` | 结算后保证金率，整数万分数；**无仓位时为 null**（账户合同 §3.2） |
-| `risk_pnl_delta_units` | 穿仓核销记入交易所风险账户的金额，**有符号，损失为负**；非核销事件为 0 |
+| `risk_pnl_delta_units` | 恒为 0——`TRADE_SETTLE` 不承载核销，核销只发生在 `MARGIN_CALL`（§4.2.3） |
 
 **账户变化必须内嵌于引发它的事件，不能靠「时间上位于成交之后的周期快照」推断。**
 周期快照可能聚合多笔成交，无法从单笔成交唯一确定其账户影响——那不是因果关联，
 SC-006 的「每一跳唯一存在」在快照上无法成立。
 
 同理，非成交引起的账户变化也记录在引发它的事件上：`ORDER_ARRIVAL` 携带
-`reserved_cash_delta_units`（下单预冻结、撤单或拒绝时释放），字段语义与上表一致。
+`reserved_delta_units`（下单预冻结、撤单或拒绝时释放），字段语义与上表一致。
 由此**每一次账户变动都由某个事件承载，且该事件自带因果外键**，无需新增事件类别，
 `priority_class` 冻结清单（§3）不受影响。
 
@@ -205,16 +205,50 @@ SC-006 的「每一跳唯一存在」在快照上无法成立。
 | 字段 | 说明 |
 |---|---|
 | `agent_id` | 被判定的账户 |
-| `caused_by_event_id` | 导致该判定的 `TRADE_SETTLE`；收盘时点判定则指向该时点的 `SNAPSHOT` |
+| `caused_by_event_id` | 导致该判定的 `TRADE_SETTLE`（只有成交能改变风险 mark，代理策略 §3.3） |
 | `margin_ratio_bp` | 判定时的保证金率（整数万分数，账户合同 §3.2） |
 | `maintenance_bp` | 当时生效的维持保证金率 |
 | `verdict` | `OK` \| `PENDING_LIQUIDATION` \| `LIQUIDATING` \| `BREACHED`（穿仓） |
-| `required_quantity_units` | 恢复至 `target_ratio` 所需的最小平仓数量；`OK` 时为 0 |
+| `required_quantity_units` | 恢复至 `target_bp` 所需的最小平仓数量（账户合同 §4.2）；`OK` 时为 0 |
 | `chain_depth` | 该判定所处的连锁层数，0 表示非连锁触发（指标字典 §4.1） |
+| `postings` | **仅 `verdict = BREACHED` 时非空**，长度为 2：代理核销分录 + 交易所风险账户分录（见 §4.2.3） |
+
+#### 4.2.3 穿仓核销分录
+
+`verdict = BREACHED` 的 `MARGIN_CALL` 是**穿仓核销的唯一事件载体**。它携带两条分录，
+使核销可仅凭日志重放，不依赖对「最后一笔强平成交」的推断：
+
+| 分录 | `agent_id` | 字段 |
+|---|---|---|
+| 代理侧 | 该穿仓账户 | `wallet_delta_units = −wallet_before`（把负钱包补到 0）；`wallet_after_units = 0`；`position_after_units = 0`；`entry_notional_after_units = 0`；`risk_pnl_delta_units = 0` |
+| 交易所侧 | `null`（交易所账户） | `risk_pnl_delta_units = wallet_before`（**负值**）；其余 `*_delta` 为 0 |
+
+两条分录的 `wallet_delta` 与 `risk_pnl_delta` 大小相等、符号相反，C2 守恒
+（账户合同 §5）。
+
+**验收要求**：仅凭事件日志，从穿仓前状态重放至
+`wallet = 0`、`position = 0`、`entry_notional = 0`、账户状态 `LIQUIDATED`，
+且全局恒等式在每一步后精确成立。
+
+**为什么不新增 `DEFAULT_WRITE_OFF` 事件类别**：核销与判定是同一逻辑时刻的同一件事，
+拆成两个事件会引入「判定与核销之间的中间态」，而该中间态下 `wallet < 0` 且账户既非
+活跃也非已核销——那是需要额外定义的第三种状态。复用 `MARGIN_CALL` 使
+`priority_class` 冻结清单不变（§3）。
 
 **判定事件独立记录、不与成交合并**，理由有二：判定可能得出 `OK`（不产生任何订单），
 而「检查过且安全」本身是研究连锁传导所需的证据；`chain_depth` 只有在判定层面才能
 逐层累计。
+
+**扫描范围与顺序**：一笔成交改变风险 mark 后，受影响的是**所有非零仓位账户**，
+不只是成交双方。第一版采用 **O(N) 全账户扫描**（性能成为瓶颈后再引入按强平价排序的
+风险索引）。
+
+同一次成交触发多个 `MARGIN_CALL` 时，按 **`agent_id` 升序**产生事件——这是确定性
+要求，不是效率考虑：顺序影响 `seq` 分配，进而影响 KPI-002 的哈希。
+
+`chain_depth` 传播规则：由成交直接触发的判定为该成交的 `chain_depth`；由**强平单
+成交**触发的判定为 `触发它的强平判定的 chain_depth + 1`。普通代理成交触发的判定
+恒为 0。
 
 ### 4.3 MARKET_DATA_PUBLISH（class 2）
 
@@ -286,7 +320,7 @@ trade_id
 
 账户侧由同一 `TRADE_SETTLE` 内的 `postings` 承担（§4.2.1）：两条分录直接给出双方的
 现金、持仓、费用与冻结变动及结算后余额。加上 `ORDER_ARRIVAL` 的
-`reserved_cash_delta_units`，US-3 要求的「成交 → 观察 → 决策 → 订单 → 账户」在日志内
+`reserved_delta_units`，US-3 要求的「成交 → 观察 → 决策 → 订单 → 账户」在日志内
 闭合，且每一环都是事件自带字段，不依赖时间上的邻近关系。
 
 ### 5.2 引用完整性断言（SC-006）

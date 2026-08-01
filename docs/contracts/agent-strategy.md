@@ -239,7 +239,7 @@ taker 费率的不对称（ADR-005 §3）能真实影响不同代理的收益。
 2. **数量对齐**：向下取整至 `min_quantity` 整数倍；取整后为 0 则丢弃；
 3. **初始保证金检查**：按账户合同 §3.3 计算，所需初始保证金超过可用则拒绝。
    减仓单跳过该检查——否则账户会被锁死在无法自救的状态；
-4. **预冻结**：按 ADR-005 §4 冻结名义金额与手续费上界。
+4. **预冻结**：按 ADR-005 §4 冻结**初始保证金**与手续费上界（不是名义金额）。
 
 被拒绝的意图仍写入 `ORDER_ARRIVAL` 事件（`accepted = false` 与 `reject_reason`），
 因为「代理想做什么」与「交易所允许什么」的差异本身是研究数据。
@@ -283,20 +283,58 @@ ask   = mid + half_spread − skew × half_spread
 **跨进程测试**：对恰好位于半 tick、半数量单位、信号阈值 `±10000` 边界的案例，
 须断言两个独立进程得到逐位相同的结果。
 
-## 10. 确定性要求（RNG）
+## 10. 随机数：纯标准库的确定性合同
 
-所有随机抽取必须使用 KR-004 的语义键派生：
+### 10.1 语义键 → 随机比特
+
+**不使用 `numpy.random.SeedSequence`** —— NumPy 不是标准库，与 KR-005「核心领域层
+仅使用 Python 标准库」冲突。改用 `hashlib.blake2b`（标准库，规范固定，跨版本稳定）：
 
 ```text
-(master_seed, agent_id, mechanism, decision_index, draw_index)
+key_bytes = f"{master_seed}|{agent_id}|{mechanism}|{decision_index}|{draw_index}".encode("utf-8")
+bits      = blake2b(key_bytes, digest_size=8).digest()        # 64 bit
 ```
 
-`mechanism` 取值至少包括：`belief_weights`、`half_life`、`aggressiveness`、
-`leverage_tier`、`momentum_lookback`、`herding_window`（以上为**建仓期一次性抽取**），
-以及 `noise_factor`（**每次决策抽取**）。
+键的字符串拼接**是规范的一部分**：分隔符为 `|`，各字段以十进制无前导零书写，
+UTF-8 编码。任何改动都会改变全部随机流。
 
-按语义键而非调用顺序派生，使配对对照中「同一代理在同一决策序号上的噪声」保持一致，
-即使两组的行为已经分叉（002 / KR-004）。这是配对实验效力的前提。
+`mechanism` 取值：`belief_weights`、`half_life`、`aggressiveness`、`leverage_tier`、
+`momentum_lookback`、`herding_window`（**建仓期一次性抽取**，`decision_index = 0`），
+以及 `noise_factor`（**每次决策抽取**，`decision_index` 为该代理的决策序号）。
+
+### 10.2 比特 → 开区间均匀数
+
+```text
+v = int.from_bytes(bits, "big") >> 11          # 取高 53 位
+u = (Decimal(v) + 1) / (Decimal(2**53) + 1)    # 严格落在 (0, 1)
+```
+
+**必须是开区间**：`u = 0` 会使 `ln(u)` 发散，`u = 1` 会使部分变换退化。
+
+### 10.3 均匀数 → 各分布
+
+| 分布 | 算法 | 用途 |
+|---|---|---|
+| 标准正态 | **Marsaglia polar**（拒绝采样，不用三角函数） | `noise` 因子 |
+| 对数正态 | `exp(μ + σ·z)`，`z` 由上行得到 | 半衰期 τ |
+| Gamma(α,1) | **Marsaglia–Tsang**（α ≥ 1）；α < 1 用 `Gamma(α+1) × u^(1/α)` | Dirichlet 的分量 |
+| Dirichlet | `xᵢ = Gamma(αᵢ,1)`，再按 `Σx` 归一 | 信念权重 |
+| 均匀 `[a,b]` | `a + u × (b − a)` | `aggressiveness` |
+| 离散分布 | 按万分数累积区间查找，`u × 10000` 落入哪段 | `leverage_tier` |
+
+**拒绝采样的 draw_index 规则**：Marsaglia polar 每轮消耗 2 个 draw_index，拒绝则
+`draw_index += 2` 继续，**不重置**。这使消耗量随拒绝次数变化但完全确定。
+
+`ln` 与 `sqrt` 一律用 `Decimal.ln()` / `Decimal.sqrt()`，精度 28 位（§9），
+**不用 `math` 模块**——后者是平台浮点，跨平台可能差最后一位。
+
+### 10.4 为什么按语义键而非调用顺序
+
+配对对照中，两组的行为会因处理变量而分叉，调用顺序随之错位。语义键使「同一代理在
+同一决策序号上的 `noise`」在两组中保持一致，与行为是否分叉无关（002 / KR-004）。
+这是配对实验效力的前提——否则「相同种子」只保证可复现，不保证可配对。
+
+已验证：同一语义键重复调用结果一致；不同 `agent_id` 或 `mechanism` 互不干扰。
 
 ## 11. 本合同的已知局限
 
