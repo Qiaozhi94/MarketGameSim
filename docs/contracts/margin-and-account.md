@@ -1,9 +1,9 @@
 # 账户与保证金合同（线性永续合约）
 
-**适用范围**：跨规格实现合同（当前交付规格 001）  
+**适用范围**：跨规格实现合同（当前交付规格 v0.1）  
 **状态**：Stable（变更须记 ADR 并评估既有实验可比性）  
 **创建日期**：2026-08-01  
-**支撑需求**：001 / FR-004—FR-008；PRD / PR-004—PR-007  
+**支撑需求**：v0.1 / FR-004—FR-008；PRD / PR-004—PR-007  
 **关联**：[事件 Schema](event-schema.md)、[退化状态](degenerate-states.md)、
 [代理策略](agent-strategy.md)、[指标字典](../product/metrics-dictionary.md)、
 [ADR-001](../adr/001-numeric-and-serialization-contract.md)

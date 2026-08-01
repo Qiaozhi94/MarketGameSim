@@ -1,9 +1,9 @@
 # 账户引擎验收向量
 
-**适用范围**：跨规格实现合同（当前交付规格 001）  
+**适用范围**：跨规格实现合同（当前交付规格 v0.1）  
 **状态**：Stable（变更须同步[账户与保证金合同](margin-and-account.md)）  
 **创建日期**：2026-08-01  
-**支撑需求**：001 / SC-001；PRD / KPI-001  
+**支撑需求**：v0.1 / SC-001；PRD / KPI-001  
 **关联**：[账户与保证金](margin-and-account.md)、[事件 Schema](event-schema.md)、
 [指标字典](../product/metrics-dictionary.md)
 

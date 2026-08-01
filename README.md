@@ -25,8 +25,11 @@
 - `specs/v0.1-belief-testing-laboratory/`：含杠杆与强制平仓的市场实验环境，用于把
   交易信念改写成可证伪的条件性命题。
   - `spec.md` 需求与验收　`plan.md` 架构与测试策略
-  - `milestones/0.1.1-*` 最小确定性内核（**当前阶段，可开工**）
-  - `milestones/0.1.2-*`、`0.1.3-*` 杠杆实验闭环、模型稳健性（范围已定，任务待拆）
+  - `0.1.1-minimal-kernel/` 最小确定性内核（**当前阶段，可开工**）
+  - `0.1.2-leverage-and-first-experiment/` 杠杆实验闭环（任务已拆，待 0.1.1 退出）
+  - `0.1.3-robustness/` 模型稳健性（任务已拆，待 0.1.2 退出）
+
+每个里程碑目录下各有 `spec.md` 与 `tasks.md`。
 
 ## 产品文档
 
@@ -42,7 +45,8 @@
 - `docs/contracts/agent-strategy.md`：从信息集到订单意图的确定管线。
 - `docs/contracts/margin-and-account.md`：线性永续账户、保证金、强平与穿仓核销。
 - `docs/contracts/acceptance-vectors.md`：账户引擎的十个验收向量（整数期望值表）。
-- `docs/contracts/orderbook-vectors.md`：订单簿的九个验收向量（OB-1—OB-9）。
+- `docs/contracts/orderbook-vectors.md`：订单簿验收向量（OB-1—OB-7、OB-9a 属 0.1.1；
+  OB-8、OB-9b 属 0.1.2）。
 - `benchmarks/`：性能基准配置、三层判定协议与参考机计时口径。
 
 ## 编号命名空间
@@ -52,21 +56,40 @@
 | 前缀 | 含义 | 所属文档 |
 |---|---|---|
 | `PR-` `KPI-` `G-` `Q-` | 产品需求 / 指标 / 目标 / 决策 | `docs/product/prd.md` |
-| `FR-` `KR-` `NFR-` `SC-` `A-` | 功能 / 内核 / 非功能需求、成功指标、假设 | `specs/001-.../spec.md` |
+| `FR-` `KR-` `NFR-` `SC-` `A-` | 功能 / 内核 / 非功能需求、成功指标、假设 | `specs/v0.1-belief-testing-laboratory/spec.md` |
 | `D-1`—`D-7` `P-1`—`P-3` | 设计决策 / 参数取值 | 同上 |
 | `MD-` | 指标参数（Δt、W、k、分桶） | `docs/product/metrics-dictionary.md` |
 | `DS-` `EV-` `TI-` | 退化参数 / 经济终点 / 技术无效 | `docs/contracts/degenerate-states.md` |
 | `E-` | 事件 Schema 参数 | `docs/contracts/event-schema.md` |
-| `T1xx`—`T6xx` | 0.1.1 实现任务 | `specs/001-.../milestones/0.1.1-tasks.md` |
+| `OB-` | 订单簿验收向量 | `docs/contracts/orderbook-vectors.md` |
+| `T1xx`—`T6xx` | 实现任务，**每个里程碑各自成一套** | `specs/v0.1-.../0.1.x-*/tasks.md` |
+
+**任务编号只在单个里程碑内唯一。** 0.1.1 与 0.1.2 都有 `T104`、`T604`，含义完全不同。
+跨里程碑引用任务时必须带前缀：写 `0.1.1 T604`，不写 `T604`。
 
 **文件编号沿革**：方向重置（2026-07-31）移除了旧方向的 `001` 规格与
-ADR-001—004、007—009，其决策要点并入 001 规格的「设计决策与理由」章。现有编号已
+ADR-001—004、007—009，其决策要点并入 v0.1 规格的「设计决策与理由」章。现有编号已
 重排为连续序列；旧编号的完整内容见 `git show 41240a2`。
+
+## 版本标识：四套互不相干的编号
+
+同一个「0.1」在四个地方出现，含义**各不相同**，混用会导致引用失真：
+
+| 编号 | 例子 | 含义 | 谁来推进 |
+|---|---|---|---|
+| **规格 ID** | `v0.1-belief-testing-laboratory` | 一份规格的目录名与稳定标识 | 提出新研究问题时新开 `v0.2-…` |
+| **里程碑 ID** | `0.1.1`、`0.1.2`、`0.1.3` | 规格 v0.1 **内部的实现阶段**，是章节号 | 规格拆分时确定，不随代码变 |
+| **包版本** | `pyproject.toml` 的 `0.1.0` | 发布物的 SemVer | 首次可运行发布时才推进 |
+| **Schema 版本** | `schema_version = 2` | 事件日志格式版本 | 首次正式运行后，任何字段变更都须提升 |
+
+**里程碑 ID 不是 SemVer**，尽管形状相似。`0.1.1` 完成不意味着发布 `0.1.1` 包——
+里程碑全部完成后才形成「完整的 v0.1」，届时包版本如何编号另行决定。
+判据：看到 `0.1.x` 想问「这是版本还是阶段」时，答案恒为**阶段**。
 
 ## 已生效架构决策
 
 ADR 只记录**跨规格生效、且已被多轮检视验证**的工程合同。尚未被实现检验的设计意图
-写在规格的「设计决策与理由」章（001 / D-1—D-7），不占用 ADR 编号。
+写在规格的「设计决策与理由」章（v0.1 / D-1—D-7），不占用 ADR 编号。
 
 - `docs/adr/001-numeric-and-serialization-contract.md`：金额与数量以最小单位整数
   承载，手续费为唯一舍入点，日志缺失值用 `null`。
