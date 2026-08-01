@@ -12,6 +12,7 @@
 [退化状态](../../docs/contracts/degenerate-states.md)、
 [代理策略](../../docs/contracts/agent-strategy.md)、
 [账户与保证金](../../docs/contracts/margin-and-account.md)、
+[验收向量](../../docs/contracts/acceptance-vectors.md)、
 [指标字典](../../docs/product/metrics-dictionary.md)
 
 ## 问题与目标
@@ -366,6 +367,8 @@ ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的
   `Σwallet` 与 `Σentry_notional` **各自都不守恒**，守恒的是两者之差；测试**必须
   包含三代理跨价换手**，否则会误证已被推翻的旧等式（账户合同 §2.3）。
   个体账户另须桥接检验 `Δequity = Δwallet + Δunrealized`。
+  **十个验收向量**（[`acceptance-vectors.md`](../../docs/contracts/acceptance-vectors.md)）
+  须全部通过，其整数期望值是实现的唯一裁判。
 - **SC-002**：固定种子的两次运行产生相同事件摘要哈希。
 - **SC-003**：单个命令可运行不少于 30 个种子的对照实验。
 - **SC-004**：报告覆盖 FR-016 的全部指标，并给出 FR-017 的五项会计桥接，残差为 0。
