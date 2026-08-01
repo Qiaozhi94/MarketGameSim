@@ -22,11 +22,11 @@
 
 ## 当前规格
 
-- `specs/001-belief-testing-laboratory/`：含杠杆与强制平仓的市场实验环境，用于把
+- `specs/v0.1-belief-testing-laboratory/`：含杠杆与强制平仓的市场实验环境，用于把
   交易信念改写成可证伪的条件性命题。
   - `spec.md` 需求与验收　`plan.md` 架构与测试策略
-  - `milestones/M1-*` 最小确定性内核（**当前阶段，可开工**）
-  - `milestones/M2-*`、`M3-*` 杠杆实验闭环、模型稳健性（范围已定，任务待拆）
+  - `milestones/0.1.1-*` 最小确定性内核（**当前阶段，可开工**）
+  - `milestones/0.1.2-*`、`0.1.3-*` 杠杆实验闭环、模型稳健性（范围已定，任务待拆）
 
 ## 产品文档
 
@@ -56,7 +56,7 @@
 | `MD-` | 指标参数（Δt、W、k、分桶） | `docs/product/metrics-dictionary.md` |
 | `DS-` `EV-` `TI-` | 退化参数 / 经济终点 / 技术无效 | `docs/contracts/degenerate-states.md` |
 | `E-` | 事件 Schema 参数 | `docs/contracts/event-schema.md` |
-| `T1xx`—`T6xx` | M1 实现任务 | `specs/001-.../milestones/M1-tasks.md` |
+| `T1xx`—`T6xx` | 0.1.1 实现任务 | `specs/001-.../milestones/0.1.1-tasks.md` |
 
 **文件编号沿革**：方向重置（2026-07-31）移除了旧方向的 `001` 规格与
 ADR-001—004、007—009，其决策要点并入 001 规格的「设计决策与理由」章。现有编号已
@@ -100,4 +100,4 @@ tests/                单元、集成和仿真测试
 ## 开始开发
 
 环境与依赖会在技术选型确认后加入。当前阶段先评审
-`specs/001-belief-testing-laboratory/spec.md` 中的研究边界和验收指标。
+`specs/v0.1-belief-testing-laboratory/spec.md` 中的研究边界和验收指标。

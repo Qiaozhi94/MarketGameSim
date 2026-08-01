@@ -2,7 +2,7 @@
 
 日期：2026-07-30  
 状态：Accepted（2026-08-01 修订为 queue key / log key 双键）
-关联规格：[`../../specs/001-belief-testing-laboratory/spec.md`](../../specs/001-belief-testing-laboratory/spec.md)  
+关联规格：[`../../specs/v0.1-belief-testing-laboratory/spec.md`](../../specs/v0.1-belief-testing-laboratory/spec.md)  
 解决问题：PRD Q-012  
 关联决策：001 规格 D-5（离散事件内核）  
 关联文档：[事件 Schema](../contracts/event-schema.md)
@@ -172,7 +172,7 @@ E-001 的 `information_set_mode: digest` 仅用于性能基准（BENCH-001）。
   - 零延迟配置被禁止，若将来需要「同一时刻的原子多步」行为，须重新评估本 ADR；
   - 每个事件增加 1—3 个标识字段，日志体积上升（估计 5%—10%）；
   - 研究运行强制 `full` 信息集，日志体积显著上升（观察事件是数量最多的一类），须在
-    M2 运行前实测并确认存储可行；
+    0.1.2 运行前实测并确认存储可行；
   - 引用完整性遍历为 O(事件数)，作为验收步骤而非每次运行的默认开销。
 - **后续行动**：见下节文档同步清单；KR-006 的单调性断言与引用完整性检查分别进入
   事件队列实现与因果链验收的范围。

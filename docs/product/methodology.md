@@ -61,7 +61,7 @@ MVP 中的市场价格必须完全由订单簿交互内生形成：
 
 ### 4.1 无外生基本价值
 
-按 [001 规格 D-3/D-4](../../specs/001-belief-testing-laboratory/spec.md)，模型中**不存在
+按 [001 规格 D-3/D-4](../../specs/v0.1-belief-testing-laboratory/spec.md)，模型中**不存在
 外生基本价值过程**，也不存在新闻等基本面信息通道。研究目标是市场行为本身，以及
 价格走势如何反过来影响交易者决策。
 
@@ -78,7 +78,7 @@ MVP 中的市场价格必须完全由订单簿交互内生形成：
 
 基准验证必须通过参数扫描识别可用区间与三类失效区间，并将失效区间作为结果报告而非
 隐藏（见 §9.3）。锚的具体形式与验证判据见
-[001 规格 D-3/D-4](../../specs/001-belief-testing-laboratory/spec.md) §2。
+[001 规格 D-3/D-4](../../specs/v0.1-belief-testing-laboratory/spec.md) §2。
 
 ## 5. 博弈分析与代理仿真的关系
 
@@ -98,7 +98,7 @@ MarketGameSim 不预设所有代理都能求解最优策略或市场最终必然
 ### 6.1 散户：连续信念空间
 
 散户**不划分为固定类别**。每个代理持有一个因子权重向量，一次运行内固定
-（[001 规格 D-3/D-4](../../specs/001-belief-testing-laboratory/spec.md)）：
+（[001 规格 D-3/D-4](../../specs/v0.1-belief-testing-laboratory/spec.md)）：
 
 ```text
 signal = w_动量·动量 + w_回归·回归 + w_从众·从众 + w_盘口·盘口 + w_噪声·噪声
@@ -193,7 +193,7 @@ signal = w_动量·动量 + w_回归·回归 + w_从众·从众 + w_盘口·盘�
 - **内生锚的稳定参数区间**——由参数扫描确定的可用区，及三类失效区（锁定、发散、
   周期振荡）的边界；
 - **杠杆连锁的规模分布**——强平触发次数、连锁深度、强平成交量占比
-  （[001 规格 D-2](../../specs/001-belief-testing-laboratory/spec.md)）。
+  （[001 规格 D-2](../../specs/v0.1-belief-testing-laboratory/spec.md)）。
 
 MVP 不要求所有特征都与真实市场一致，但必须明确标记通过、失败或不适用。
 

@@ -1399,8 +1399,8 @@ Parquet 所需的分析层依赖；二者可分别在属性测试和报告层实
 
 本轮新增：
 
-- `specs/001-belief-testing-laboratory/milestones/M2-tasks.md`：49 个任务；
-- `specs/001-belief-testing-laboratory/milestones/M3-tasks.md`：41 个任务。
+- `specs/v0.1-belief-testing-laboratory/milestones/M2-tasks.md`：49 个任务；
+- `specs/v0.1-belief-testing-laboratory/milestones/M3-tasks.md`：41 个任务。
 
 两份清单均从里程碑退出条件反向拆解，任务包含合同引用、TDD 标记、前置门、研究冻结
 纪律和机器可读证据要求。复审未发现新的 P0/P1：**任务粒度足以进入逐 Phase 实现，

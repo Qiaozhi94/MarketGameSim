@@ -5,14 +5,14 @@
 **创建日期**：2026-07-28　**更新日期**：2026-07-31  
 **产品阶段**：实验性 MVP  
 **关联宪章**：[`../../.specify/memory/constitution.md`](../../.specify/memory/constitution.md)  
-**当前交付规格**：[`../../specs/001-belief-testing-laboratory/spec.md`](../../specs/001-belief-testing-laboratory/spec.md)  
+**当前交付规格**：[`../../specs/v0.1-belief-testing-laboratory/spec.md`](../../specs/v0.1-belief-testing-laboratory/spec.md)  
 **方法论说明**：[`methodology.md`](methodology.md)　**指标字典**：[`metrics-dictionary.md`](metrics-dictionary.md)
 
 **已生效 ADR**：[ADR-001](../adr/001-numeric-and-serialization-contract.md)
 （数值与序列化口径）、
 [ADR-002](../adr/002-same-timestamp-event-scheduling.md)（事件调度与因果链）  
 **其余设计决策**：见
-[001 规格 §设计决策与理由](../../specs/001-belief-testing-laboratory/spec.md)（D-1—D-7）
+[001 规格 §设计决策与理由](../../specs/v0.1-belief-testing-laboratory/spec.md)（D-1—D-7）
 
 ## 0. 关于本版
 
@@ -30,7 +30,7 @@ Superseded 文档——保留一份已作废方向的规格与冻结记录，只
 | 事件 Schema：全序键、优先级清单、因果外键、账户分录 | 001 规格：用户场景、FR、四类离散代理 |
 | 退化状态定义与发散判定 | 旧方向的 ADR：决策要点并入 001 规格 §设计决策 |
 | ADR-001/006（数值口径、事件调度与因果链） | EXP-000：τ × 趋势占比扫描协议 |
-| 指标字典、性能基准、方法论的验证层级与循环论证纪律 | M0—M4 里程碑划分 |
+| 指标字典、性能基准、方法论的验证层级与循环论证纪律 | 旧方向的里程碑划分 |
 
 **编号说明**：本版重新定义 G / PR / KPI / Q 编号。**ADR 精简为 2 份**——只有跨规格
 生效、且已被多轮检视验证的工程合同（数值口径、事件调度）保留为 ADR；其余决策移入
@@ -323,7 +323,7 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 严重度，以及条件于未发生终点的连续指标。只报后者等于只统计幸存者，会系统性低估
 尾部风险。
 
-**数值门槛与统计判定规则尚未冻结**，须在 M2 的预注册协议中确定（§17.2）——包括每项
+**数值门槛与统计判定规则尚未冻结**，须在 0.1.2 的预注册协议中确定（§17.2）——包括每项
 特征的检验统计量、通过区间、置信水平、多重比较处理、最低有效样本量与功效依据。
 在协议冻结前，本节只是特征清单，不构成可执行的验收。
 
@@ -386,42 +386,42 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 路线由**旗舰问题**（§3.1）驱动，而非由能力清单驱动。每个阶段都要求端到端可验收，
 不允许「先把功能做全再说」。
 
-### M1：最小确定性内核（**无杠杆**）
-→ [`specs/001-.../milestones/M1-minimal-kernel.md`](../../specs/001-belief-testing-laboratory/milestones/M1-minimal-kernel.md)
+### 0.1.1：最小确定性内核（**无杠杆**）
+→ [`specs/001-.../0.1.1-minimal-kernel/spec.md`](../../specs/v0.1-belief-testing-laboratory/0.1.1-minimal-kernel/spec.md)
 
 订单簿、账户、事件调度与日志、确定性哈希、因果链。**账户结构须一次留好保证金字段**，
 但本阶段不开启杠杆。
 
 **退出条件**：仓位恒等式 C1 与价值守恒 C2（指标字典 §5）逐事件整数精确成立；
 [验收向量](../contracts/acceptance-vectors.md)的案例 1—5、10 通过——**含三代理跨价
-换手**，只用一对多空会误证已推翻的旧等式；撮合九项用例及 M1 E1—E9 全部通过。
+换手**，只用一对多空会误证已推翻的旧等式；撮合九项用例及 0.1.1 E1—E9 全部通过。
 
 先做无杠杆不等于「后期叠加」——接口一次设计对，实现分两步，能在最简状态下先把守恒
 和确定性钉死。带着杠杆调试账本会让两类缺陷混在一起。
 
-### M2：杠杆与第一个实验闭环
-→ [`M2-leverage-and-first-experiment.md`](../../specs/001-belief-testing-laboratory/milestones/M2-leverage-and-first-experiment.md)
-→ [`M2-tasks.md`](../../specs/001-belief-testing-laboratory/milestones/M2-tasks.md)
+### 0.1.2：杠杆与第一个实验闭环
+→ [`0.1.2-leverage-and-first-experiment.md`](../../specs/v0.1-belief-testing-laboratory/0.1.2-leverage-and-first-experiment/spec.md)
+→ [`0.1.2-tasks.md`](../../specs/v0.1-belief-testing-laboratory/0.1.2-leverage-and-first-experiment/tasks.md)
 
 杠杆、保证金、强平、穿仓、连锁；最小代理策略合同；**无杠杆 vs 有杠杆的配对对照**。
 
 **退出条件**：十个验收案例全部通过；一项**预注册**实验能从配置、运行、原始证据一路追溯到条件性结论；
 经济终点与连续指标两部分报告齐备；KPI-005、KPI-007、KPI-010、KPI-011 达标。
 
-### M3：模型稳健性
-→ [`M3-robustness.md`](../../specs/001-belief-testing-laboratory/milestones/M3-robustness.md)
-→ [`M3-tasks.md`](../../specs/001-belief-testing-laboratory/milestones/M3-tasks.md)
+### 0.1.3：模型稳健性
+→ [`0.1.3-robustness.md`](../../specs/v0.1-belief-testing-laboratory/0.1.3-robustness/spec.md)
+→ [`0.1.3-tasks.md`](../../specs/v0.1-belief-testing-laboratory/0.1.3-robustness/tasks.md)
 
 替代代理规则、参数空间与模型族扫描、因子消融、共同随机输入、留出验证区。
 
 **退出条件**：旗舰结论不依赖单一行为映射或单一狭窄参数点。
 
-### M4：平台扩展（按证据决定）
+### v0.2+：平台扩展（按证据决定）
 
 股票式制度与 T+2 / 熔断 / 收盘、订单流预知者、大资金执行者、能力维度归因、
 经济含义的 PnL 归因、多品种。**每项都须先说明它服务于哪个新的可证伪问题。**
 
-### M5：交互产品
+### v0.3+：交互产品
 
 回放增强、人在环、教学模板。交互运行始终与研究样本隔离（001 / D-7）。
 
@@ -459,7 +459,7 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 | Q-012 | K 线周期以逻辑时间定义，基础周期 60 秒 | 指标字典 §1.9 |
 | Q-013 | 因子库初始构成：动量、回归、从众、盘口、随机五类，按信息源分类 | 001 / D-3、§因子库 |
 | Q-014 | 保证金参数初值：股票式 200/130/150%，加密式 3x/105/110% | 001 / §保证金参数 |
-| Q-015 | 订单流预知者的可见范围（**存在因果自指缺陷，随预知者一并后移至 M4**） | 001 / P-3 |
+| Q-015 | 订单流预知者的可见范围（**存在因果自指缺陷，随预知者一并后移至 v0.2+**） | 001 / P-3 |
 | Q-016 | 人在环确定性 = 种子 + 输入序列；交互运行与研究运行分离 | 001 / D-7 |
 
 ### 17.2 四类未闭合事项（分别管理）
@@ -478,11 +478,11 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 | 账户验收向量 | [`docs/contracts/acceptance-vectors.md`](../contracts/acceptance-vectors.md)：十个案例的整数期望值表 |
 | PnL 会计桥接 | 指标字典 §5.2：五项代数恒等分解，残差恒为 0，含两个手工验算示例 |
 
-**C. 预注册研究设计**：**正式实验前必须确定**，可与 M1 并行准备：
+**C. 预注册研究设计**：**正式实验前必须确定**，可与 0.1.1 并行准备：
 
 | 项 | 说明 |
 |---|---|
-| M2 基准验证协议 | §12 的数值门槛、检验统计量、置信水平、多重比较、样本量与功效 |
+| 0.1.2 基准验证协议 | §12 的数值门槛、检验统计量、置信水平、多重比较、样本量与功效 |
 | 旗舰实验的处理与终点 | 无杠杆 vs 有杠杆的处理定义、主要终点、排除流程 |
 | 校准区 / 验证区 / 实验区的划分 | 防止用同一参数区域既调市场又验信念 |
 
