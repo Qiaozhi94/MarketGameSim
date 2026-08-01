@@ -395,23 +395,33 @@ w  = x / Σx
 
 ## 11. 挂单保证金占用与自成交
 
-### 11.1 占用算法：按最坏情形合并计算
+### 11.1 保证金占用：总占用口径
 
-**不逐单累加占用**——那会在同向多单时重复占用、在反向单时低估占用。正确做法是按
-「当前仓位 + 所有活动挂单若全部成交」的两个极端计算：
+`reserved_units` 的语义是**当前持仓与全部活动挂单在最坏情形下占用的保证金总额**
+（含手续费上界），**不是「挂单额外占用的部分」**。这个口径与账户合同 §3.3 的准入式
+配套，两者必须一起读。
 
 ```text
-buy_all  = position + Σ(所有活动买单数量)
-sell_all = position − Σ(所有活动卖单数量)
-worst_notional = max(|buy_all|, |sell_all|) × valuation_mark
-required_reserved = ceil(worst_notional × initial_bp / 10000)
+worst_long  = position + Σ(所有活动买单数量)      # 全部买单成交
+worst_short = position − Σ(所有活动卖单数量)      # 全部卖单成交
+worst_qty   = max(|worst_long|, |worst_short|)
+
+margin_part = ceil(worst_qty × valuation_mark × initial_bp / 10000)
+fee_part    = ceil(Σ_挂单 (该单名义 × max(taker_bps, 0) / 10000))   # 仅活动挂单
+reserved_units = margin_part + fee_part
 ```
 
-`reserved_units` **恒等于**该值，每次挂单、撤单、部分成交后**整体重算**，不做增量
-加减——增量维护极易在部分成交与撤单交错时漂移。
+**每次挂单、撤单、部分成交后整体重算**，不做增量加减——增量维护在部分成交与撤单
+交错时极易漂移。
 
-同向多单只放大一侧的极端值，反向单会同时抬高两个极端中的一个，两种情形都被自然
-覆盖。
+三条要点：
+
+- **不逐单累加保证金**：同向多单只放大一侧的极端值，反向单抬高另一侧，取
+  `max` 自然覆盖两种情形。逐单累加会在同向多单时重复占用；
+- **手续费上界单独计入**（ADR-005 §3 要求预冻结含费用）。已成交部分的费用已从
+  钱包扣除，故 `fee_part` 只统计**活动挂单**；
+- **持仓部分包含在内**——因此准入式**不得**再写成 `equity − reserved_units`
+  （账户合同 §3.3），那会把持仓保证金扣两次。
 
 ### 11.2 禁止自成交
 

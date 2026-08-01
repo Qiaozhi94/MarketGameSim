@@ -1,7 +1,7 @@
 # M1 任务拆解
 
 **对应里程碑**：[`M1-minimal-kernel.md`](M1-minimal-kernel.md)  
-**状态**：Ready
+**状态**：Ready（P0-I01/I02 已于 2026-08-01 关闭）
 
 ## 约定
 
@@ -34,6 +34,11 @@
       `AGENT_DECIDE→ORDER_ARRIVAL` 与 `MARGIN_CALL→ORDER_ARRIVAL` 可回退 class，
       且必须跨越 ≥ 1 ns。表外回退即缺陷。
 - [ ] **T204** `[事件 Schema §3]` 优先级类别枚举（含 `MARGIN_CALL` 同为 class 1）。
+- [ ] **T204b** `[事件 Schema §1.3]` `[TDD]` **队列事件 vs 事务记录**：只有
+      `ORDER_ARRIVAL`/`AGENT_OBSERVE`/`AGENT_DECIDE`/`SNAPSHOT` 入队；
+      `TRADE_SETTLE`/`MARGIN_CALL`/`MARKET_DATA_PUBLISH`/事务内 `CANCEL` 直接写日志。
+      **验收用例**：两张同代理订单同时间戳到达，第一张成交耗尽保证金 →
+      **第二张必须被拒**（若记录入队则会误放行）。
 - [ ] **T205** `[事件 Schema §6—§9]` `[P]` 事件日志写入器 + 运行元数据头部
       （含 `tick_size`/`min_quantity`/`cash_unit` 单位定义）。
 - [ ] **T206** `[事件 Schema §7]` `[TDD]` 事件摘要哈希：只纳入 E-002 声明的语义
@@ -54,6 +59,10 @@
       `reject_reason=SELF_TRADE_PREVENTION`，taker 继续吃下一档、不消耗数量。
 - [ ] **T306** `[撮合 §5]` 准入与撮合的固定顺序：制度钩子 → 对齐检查 →
       （保证金检查桩，M1 恒通过）→ 撮合 → 剩余处理。
+- [ ] **T306b** `[撮合 §1.2]` `[TDD]` **撮合事务原子性**：`ORDER_ARRIVAL` 弹出时
+      在单个事务内完成撮合、逐笔结算、剩余处理、风险检查；事务内账户变化立即生效。
+      **验收用例**：一张大单跨三档 → 三笔 `TRADE_SETTLE`（`batch_index` 0/1/2、
+      `batch_size` 3）+ **仅一次**批次风险检查。
 - [ ] **T307** `[撮合 §6]`、`[退化 §1]` `[TDD]` 空簿与单边簿：市价单 IOC 撤销、
       `mid` 未定义时 `valuation_mark` 退化为 `last`、首笔成交前退化为
       `initial_price`。
@@ -74,8 +83,14 @@
       含 `*_delta` 与 `*_after`。**每次账户变动都由引发它的事件承载**。
 - [ ] **T406** `[账户 §2.3]` `[TDD]` **C1/C2 逐事件断言**——整数精确相等，
       不得写成容差断言。违反即测试失败并打印失衡账户。
+      逐事件价值断言**必须含 `entry_notional_delta`**（plan §5.2）：
+      `Σ(wallet_delta − entry_notional_delta) + 费用 + 风险 = 0`。
+      漏掉 `entry_notional` 会把合法的跨价换手判为失败。
 - [ ] **T407** `[验收向量]` `[TDD]` **案例 1—5、10 全部通过**（退出条件 E2）。
       案例 2（三代理跨价换手）为必测项，只做案例 1 会误证已推翻的旧等式。
+- [ ] **T407b** `[验收向量 7b]` `[TDD]` `reserved_units` 四组场景。**M1 只需算出
+      并记录该值**（准入判定桩恒通过），M2 才接入拒绝逻辑——但公式与分录须在 M1 就
+      正确，否则 M2 会在错误基础上叠加。
 - [ ] **T408** `[指标字典 §5.2]` `[TDD]` PnL 桥接逐事件残差为 0，
       用 `valuation_mark`（**不是** `risk_mark`）。
 

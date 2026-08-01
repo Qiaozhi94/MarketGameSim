@@ -148,7 +148,17 @@ ACTIVE ──保证金率 < maint_bp──▶ PENDING_LIQUIDATION
 随机生成订单流（含极端价格、边界数量、自成交、跨档）后断言：
 
 1. C1、C2 在**每个事件后**成立；
-2. `Σ postings.wallet_delta + 费用增量 + 风险账户增量 = 0`（逐事件）；
+2. **逐事件价值断言**——必须含 `entry_notional`：
+
+   ```text
+   Σ(postings.wallet_delta − postings.entry_notional_delta)
+     + 交易所费用增量 + 交易所风险账户增量 = 0
+   ```
+
+   **不能写成 `Σ wallet_delta + 费用 + 风险 = 0`**：跨价换手时该式不成立。
+   反例（验收向量案例 2 第二笔，A 在 110 平掉成本 100 的 10 手、C 在 110 建仓）：
+   `Σwallet_delta = +100`、`Σentry_delta = +100`，旧式得 +100 ≠ 0 会把合法成交判为
+   失败；含 `entry_notional` 后为 0；
 3. 事件全序键严格递增，无重复；
 4. 订单簿的价格优先与 `seq` 时间优先不被违反；
 5. 账户状态机不出现非法转移（如 `LIQUIDATED → ACTIVE`）。

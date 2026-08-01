@@ -25,10 +25,27 @@
 
 **定序不得依赖字典/集合遍历顺序、对象标识或哈希值。**
 
-### 1.2 撮合时机
+### 1.2 撮合事务：ORDER_ARRIVAL 是唯一的事务边界
 
-撮合在 `ORDER_ARRIVAL`（class 0）事件内**同步完成**，不跨事件。一次 `ORDER_ARRIVAL`
-可能产生 0 到多个 `TRADE_SETTLE`（class 1，§2.2）。
+`ORDER_ARRIVAL` 是**队列事件**，弹出时执行一个**原子事务**（事件 Schema §1.3）：
+
+```text
+ORDER_ARRIVAL 弹出
+├─ 准入检查（§5）
+├─ 撮合循环：逐档成交，每档【立即更新双方账户】并生成 TRADE_SETTLE 记录
+├─ 剩余处理：挂入簿 或 IOC 撤销
+├─ 两阶段风险检查（一次，§2.3）→ 生成 MARGIN_CALL 记录
+├─ 生成 MARKET_DATA_PUBLISH 记录
+└─ 若有待强平账户：入队新的 ORDER_ARRIVAL（跨 liquidation_latency_ns）
+事务结束
+```
+
+**事务内的账户变化立即生效**。因此同一时间戳内后续弹出的 `ORDER_ARRIVAL` 看到的
+是已更新的账户——这正是事件 Schema §1.3 要解决的问题。
+
+`TRADE_SETTLE`、`MARGIN_CALL`、`MARKET_DATA_PUBLISH` 以及自成交阻止产生的 `CANCEL`
+都是**事务记录**，不入队、不会被再次执行。唯一入队的产物是强平单（它必须跨越
+`liquidation_latency_ns`，且是 class 1→0 的回退跳转，见事件 Schema §1.2）。
 
 ## 2. 成交生成
 
@@ -78,10 +95,19 @@ maker 挂单价成交。将来引入其他订单类型时同理。
 | `trade_id` | 各自唯一 |
 | `taker_order_id` | 相同（同一张 taker 订单） |
 | `maker_order_id` | 各不相同 |
+| `batch_index` / `batch_size` | 本笔在该批中的序号（从 0）与该批总笔数 |
+
+`batch_index` / `batch_size` 使重放器**无需推断**批的边界：`batch_index == batch_size − 1`
+即本批最后一笔，其后紧跟该批的 `MARGIN_CALL`（若有）。仅凭 `caused_by_event_id`
+相同也能分组，但那要求重放器先读完整批才知道边界，无法流式处理。
 
 **`valuation_mark_before/after` 逐笔取值**：第 `k` 笔的 `before` 是第 `k−1` 笔成交
 **之后**的盘口中间价，`after` 是本笔之后的。**不是整批共用一个 before/after**——
 否则跨档成交的 `Impact` 会被错误地全部归给第一笔。
+
+**这些是撮合循环内部的临时簿状态**，不是事务结束后的最终簿状态。批内最后一笔的
+`valuation_mark_after` 才等于事务结束时的盘口中间价。重放器计算 PnL 桥接时逐笔使用
+记录值即可；若要重建「事务后的簿」，应取批末值或随后的 `MARKET_DATA_PUBLISH`。
 
 `risk_mark` 同理逐笔更新为该笔成交价；因此一次跨档成交会**依次**推进 `last`。
 
