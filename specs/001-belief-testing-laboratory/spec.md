@@ -1,13 +1,13 @@
 # Feature Specification: Belief Testing Laboratory
 
-**规格编号**：002-belief-testing-laboratory  
+**规格编号**：001-belief-testing-laboratory  
 **状态**：Draft  
 **创建日期**：2026-07-31  
 **关联 PRD**：[`../../docs/product/prd.md`](../../docs/product/prd.md) v0.4.0  
 **架构**：[`plan.md`](plan.md)　**里程碑**：[`milestones/`](milestones/)  
-**已生效决策**：[ADR-005](../../docs/adr/005-numeric-and-serialization-contract.md)
+**已生效决策**：[ADR-001](../../docs/adr/001-numeric-and-serialization-contract.md)
 （数值与序列化口径）、
-[ADR-006](../../docs/adr/006-same-timestamp-event-scheduling.md)（事件调度与因果链）；
+[ADR-002](../../docs/adr/002-same-timestamp-event-scheduling.md)（事件调度与因果链）；
 其余设计决策见本文 §「设计决策与理由」  
 **实现合同**：[撮合](../../docs/contracts/matching.md)、
 [事件 Schema](../../docs/contracts/event-schema.md)、
@@ -84,7 +84,7 @@
   **不得改写**。第一版只提供 `crypto_perp_free` 一套配置；接口须能在不改撮合核心的
   前提下接入其他制度。
 - **FR-003**：支持 tick size、最小数量与 maker / taker 分离计费（含负 maker 费率）。
-  价格、数量与金额一律以最小单位整数承载，手续费为唯一舍入点（ADR-005）。
+  价格、数量与金额一律以最小单位整数承载，手续费为唯一舍入点（ADR-001）。
 - **FR-004**：账户模型为**线性永续合约**（[账户与保证金合同](../../docs/contracts/margin-and-account.md)）：
   维护钱包余额、合约仓位、开仓成本、保证金占用、已实现/未实现 PnL。
   **无现金/库存交割，无债务字段**。每一次账户变动以分录形式记录在引发它的事件上
@@ -131,7 +131,7 @@
   互斥性可证明；手工验算示例见 §5.2.3。
 - **FR-018**：为退化状态定义确定行为——破产、穿仓、连环强平、强平失败、单边簿、
   长时间无成交、价格触界。领域层不得产出未定义状态；输出层缺失值写 `null`
-  （ADR-005 §6）。
+  （ADR-001 §6）。
 
 ### 呈现
 
@@ -229,7 +229,7 @@ K 线交易者、情绪交易者的差别不在目标函数，而在这个信念
 
 ### D-6：自建最小内核，不采用现成 ABM 框架（KR-005）
 
-ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的账户层；而 ADR-005/006
+ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的账户层；而 ADR-001/006
 的约束——最小单位整数、逐事件整数精确守恒、因果外键、规范序列化到字节唯一——外部
 框架一样都不提供。在别人的抽象上强加这些约束，比自己写更费劲。
 
@@ -273,7 +273,7 @@ ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的
 | `momentum` | 价格历史 | 过去 `N` 根 K 线的累计对数收益 | `N ∈ {5, 20, 60}` 逐代理抽取 |
 | `reversion` | 价格历史 | `(anchor − last) / last`，`anchor` 为内生 EWMA | 半衰期 τ 逐代理抽取（对数正态） |
 | `herding` | 成交流 | `(主动买量 − 主动卖量) / 总成交量`，窗口 `W` 根 K 线 | `W ∈ {1, 5}` |
-| `book` | 订单簿状态 | `(买方 k 档深度 − 卖方 k 档深度) / 两侧之和` | `k = ±10 tick`（D-003） |
+| `book` | 订单簿状态 | `(买方 k 档深度 − 卖方 k 档深度) / 两侧之和` | `k = ±10 tick`（MD-003） |
 | `noise` | 无 | 每次决策独立抽取的标准正态 | — |
 
 `momentum` 与 `reversion` 同属价格历史但**方向相反**，两者对抗是厚尾与波动聚集的
@@ -324,7 +324,7 @@ ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的
 
 ## 时间与随机性内核
 
-见 ADR-006 与 D-5：
+见 ADR-002 与 D-5：
 
 - **KR-001**：离散事件内核，不使用固定步长。
 - **KR-002**：整数逻辑时间戳（纳秒），禁止浮点时间。

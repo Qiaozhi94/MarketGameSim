@@ -13,14 +13,14 @@
 
 ## Phase 1：数值与配置基础
 
-- [ ] **T101** `[ADR-005 §1]` 定义整数值对象：`Price`、`Quantity`、`Cash`、`Bp`、
+- [ ] **T101** `[ADR-001 §1]` 定义整数值对象：`Price`、`Quantity`、`Cash`、`Bp`、
       `Nanos`。全部不可变，禁止浮点构造。
-- [ ] **T102** `[ADR-005 §2]` `[TDD]` 配置解析：YAML 领域量必须为**字符串**，
+- [ ] **T102** `[ADR-001 §2]` `[TDD]` 配置解析：YAML 领域量必须为**字符串**，
       经 `Decimal` 转最小单位整数。**收到 float 即报错**，不接受先转 str 的补救。
-- [ ] **T103** `[ADR-005 §2]` `[TDD]` 配置校验：
+- [ ] **T103** `[ADR-001 §2]` `[TDD]` 配置校验：
       `tick_size × min_quantity` 是 `cash_unit` 的整数倍；
       `latency_ns ≥ 1`（KR-006）；`leverage_tier_distribution` 各档之和 = 10000。
-- [ ] **T104** `[ADR-005 §7]` `[TDD]` 规范序列化：整数字面量、缺失值 `null`、
+- [ ] **T104** `[ADR-001 §7]` `[TDD]` 规范序列化：整数字面量、缺失值 `null`、
       UTF-8/NFC、`ensure_ascii=false`、`separators=(",",":")`、键按码位升序、
       每事件一个 LF。**断言两次序列化逐字节相同**。
 
@@ -68,7 +68,7 @@
       **反向翻仓**三条路径；`avg_entry` 向零取整，余数留在 `entry_notional`。
 - [ ] **T403** `[账户 §2.2]` 未实现盈亏与权益：
       `equity = wallet + position × valuation_mark − entry_notional`。
-- [ ] **T404** `[ADR-005 §3]` `[TDD]` 手续费：**向上取整**，方向恒不利于代理；
+- [ ] **T404** `[ADR-001 §3]` `[TDD]` 手续费：**向上取整**，方向恒不利于代理；
       负 maker 费率（返佣）同样向上取整。费用账户为**有符号**累计量。
 - [ ] **T405** `[事件 Schema §4.2.1]` `[TDD]` 账户分录 `postings`：长度恒为 2，
       含 `*_delta` 与 `*_after`。**每次账户变动都由引发它的事件承载**。
@@ -81,10 +81,10 @@
 
 ## Phase 5：制度钩子（接口就位）
 
-- [ ] **T501** `[002 / D-1]` 钩子接口：`validate_order`、`session_state`、
+- [ ] **T501** `[001 / D-1]` 钩子接口：`validate_order`、`session_state`、
       `settlement_rule`、`margin_rule`、`price_bound`。**调用点必须全部就位**，
       遗漏一个时点会导致整类制度将来无法表达。
-- [ ] **T502** `[002 / D-1]` 加密式配置的空实现：24/7、即时结算、无涨跌停、
+- [ ] **T502** `[001 / D-1]` 加密式配置的空实现：24/7、即时结算、无涨跌停、
       无熔断。**钩子只能拒绝或延迟，不能改写订单**。
 
 ## Phase 6：确定性与验收

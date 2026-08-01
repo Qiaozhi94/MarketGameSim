@@ -1,15 +1,15 @@
 # BENCH-001：性能基准配置（加密式制度）
 #
-# 用途：PRD / KPI-004、002 / NFR-003 的性能门槛载体。
+# 用途：PRD / KPI-004、001 / NFR-003 的性能门槛载体。
 # 这是**性能基准**，不是研究基准——参与者构成只求覆盖代码路径，不追求统计特征。
 # 研究用的基准市场配置由 M2 实验协议定义（待制定）。
 #
-# 第一版只有加密式一套制度（002 / D-1）。股票式配置随收盘、T+2、熔断一并后移。
+# 第一版只有加密式一套制度（001 / D-1）。股票式配置随收盘、T+2、熔断一并后移。
 #
 # 状态：规格产物。字段名构成实现契约，实现时如需调整须同步本文与 event-schema.md。
 # 本配置在首次实现完成后须按实测吞吐量校准一次（见 README.md §4）。
 #
-# 数值书写约定（ADR-005 §2）：所有非整数领域量写成带引号的字符串，由 Decimal 解析。
+# 数值书写约定（ADR-001 §2）：所有非整数领域量写成带引号的字符串，由 Decimal 解析。
 # 裸写 0.01 会被 yaml.safe_load 解析为 float，使「禁止 float 中转」在第一步失效。
 # 整数（计数、纳秒时长、种子、万分数、分位点）无精度问题，照常书写。
 
@@ -32,7 +32,7 @@ market:
   symbol: SYNTH-CRYPTO
   tick_size: "0.01"
   min_quantity: "0.001"
-  # 最小结算单位（ADR-005 §1）。校验断言：tick_size × min_quantity 须为其整数倍
+  # 最小结算单位（ADR-001 §1）。校验断言：tick_size × min_quantity 须为其整数倍
   # ——此处 1e-5 = 1000 × 1e-8，故成交名义金额无舍入。
   cash_unit: "1e-8"
   initial_price: "100.00"
@@ -41,9 +41,9 @@ market:
   fees:
     maker_bps: "-1.0"              # 负值表示 maker 返佣
     taker_bps: "5.0"
-    # maker_bps + taker_bps < 0 时属补贴型实验，配置校验须标注（ADR-005 §3）。
+    # maker_bps + taker_bps < 0 时属补贴型实验，配置校验须标注（ADR-001 §3）。
 
-# --- 制度（002 / D-1）-----------------------------------------------------
+# --- 制度（001 / D-1）-----------------------------------------------------
 # 钩子只能拒绝或延迟，不能改写订单。
 regime_params:
   session: continuous_24_7         # 无收盘，无隔夜跳空
@@ -52,7 +52,7 @@ regime_params:
   circuit_breaker: null            # 无熔断
   price_limit: null                # 无涨跌停
 
-# --- 保证金与强平（002 / P-2）---------------------------------------------
+# --- 保证金与强平（001 / P-2）---------------------------------------------
 # 口径为**保证金率**（保证金/名义价值），非担保比例（权益/保证金占用）——
 # 后者在无仓位时分母为 0（账户与保证金合同 §3.1）。
 margin:
@@ -66,10 +66,10 @@ margin:
   # initial_bp 由各代理的 leverage_tier 推出：ceil(10000 / tier)
   # 向上取整确保不超档：3x 用 3333 会允许 3.0003x，3334 得 2.9994x（账户合同 §3.1.1）
   leverage_tiers: [1, 3, 10]       # 与下方 leverage_tier_distribution 一致
-  # 强平连锁不得限速或打断（002 / D-2、FR-007）。
+  # 强平连锁不得限速或打断（001 / D-2、FR-007）。
 
 # --- 参与者 ---------------------------------------------------------------
-# 共 190 个代理。散户不划分固定类别，信念权重从分布抽取（002 / D-3、P-1）。
+# 共 190 个代理。散户不划分固定类别，信念权重从分布抽取（001 / D-3、P-1）。
 agents:
   - role: retail
     count: 180
@@ -87,7 +87,7 @@ agents:
       "10": 1000                           # 10% 最高 10x——少数脆弱账户是连锁的触发条件
     belief:
       distribution: dirichlet
-      # 五因子的浓度参数，顺序与 factors 一致（002 / P-1）
+      # 五因子的浓度参数，顺序与 factors 一致（001 / P-1）
       alpha: ["1.0", "1.0", "0.8", "0.8", "1.5"]
     # 单笔数量上限；超出部分留待下次决策，不自动拆单（策略合同 §6）
     max_order_qty: "50.0"
@@ -117,7 +117,7 @@ agents:
         scale: "1.0"
       - name: noise                        # 信息源：无
         scale: "1.0"                       # 标准正态截断至 ±1
-    # 因子相关矩阵须随研究运行输出；持续 >0.8 说明多样性为假（002 / P-1）。
+    # 因子相关矩阵须随研究运行输出；持续 >0.8 说明多样性为假（001 / P-1）。
 
   - role: inventory_market_maker
     count: 10
@@ -138,7 +138,7 @@ agents:
 # --- 记录 -----------------------------------------------------------------
 # 性能基准下关闭高开销记录，避免 I/O 掩盖内核性能。
 logging:
-  run_mode: benchmark                         # benchmark | research | interactive（002 / D-7）
+  run_mode: benchmark                         # benchmark | research | interactive（001 / D-7）
   # benchmark 模式：digest 信息集 + 不落日志，仅用于计时，不产出研究结论
   account_snapshot_interval_ns: 10000000000   # 10 秒
   book_snapshot_interval_ns: 10000000000
@@ -148,15 +148,15 @@ logging:
 # --- 指标采样 -------------------------------------------------------------
 metrics:
   bar_ns: 60000000000                         # K 线基础周期 60 秒（指标字典 §1.9）
-  sampling_interval_ns: 1000000000            # Δt = 1 秒（D-001）
-  volatility_window_samples: 30               # W（D-002）
-  depth_ticks: 10                             # k（D-003）
-  impact_bucket_percentiles: [20, 40, 60, 80, 95]   # D-004
+  sampling_interval_ns: 1000000000            # Δt = 1 秒（MD-001）
+  volatility_window_samples: 30               # W（MD-002）
+  depth_ticks: 10                             # k（MD-003）
+  impact_bucket_percentiles: [20, 40, 60, 80, 95]   # MD-004
 
 # --- 性能门槛 -------------------------------------------------------------
 # 判定见 README.md。thresholds 在首次实现后校准。
 thresholds:
-  # 墙钟阈值是性能测量值，不参与领域运算，故不适用 ADR-005 的整数/Decimal 约定。
+  # 墙钟阈值是性能测量值，不参与领域运算，故不适用 ADR-001 的整数/Decimal 约定。
   normalized_wall_seconds_max: 10.0
   # 硬件无关的算法回归断言：给定配置与种子，该计数完全确定。
   book_operations_golden: null                # 首次实现后写入

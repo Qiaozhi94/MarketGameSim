@@ -1,10 +1,10 @@
-# ADR-006：同时间戳事件调度与因果链的强制表达
+# ADR-002：同时间戳事件调度与因果链的强制表达
 
 日期：2026-07-30  
 状态：Accepted  
-关联规格：[`../../specs/002-belief-testing-laboratory/spec.md`](../../specs/002-belief-testing-laboratory/spec.md)  
+关联规格：[`../../specs/001-belief-testing-laboratory/spec.md`](../../specs/001-belief-testing-laboratory/spec.md)  
 解决问题：PRD Q-012  
-关联决策：002 规格 D-5（离散事件内核）  
+关联决策：001 规格 D-5（离散事件内核）  
 关联文档：[事件 Schema](../contracts/event-schema.md)
 
 ## 背景
@@ -170,4 +170,4 @@ E-001 的 `information_set_mode: digest` 仅用于性能基准（BENCH-001）。
   （因果链引用完整性）。
 - event-schema.md：§1 增加事件产生规则；§4 各事件表增加外键字段；新增 §5 因果链与
   引用完整性；§8 的 E-001 补充研究运行的 full 要求；E-002 排除清单补充外键字段。
-- 002 实现任务：事件队列加单调性断言，日志写入外键与账户分录，验收加引用完整性检查。
+- 001 实现任务：事件队列加单调性断言，日志写入外键与账户分录，验收加引用完整性检查。

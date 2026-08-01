@@ -1,9 +1,9 @@
 # 撮合合同：订单簿与成交生成
 
-**适用范围**：跨规格实现合同（当前交付规格 002）  
+**适用范围**：跨规格实现合同（当前交付规格 001）  
 **状态**：Stable（变更须记 ADR 并提升 `schema_version`）  
 **创建日期**：2026-08-01  
-**支撑需求**：002 / FR-001—FR-003；PRD / PR-001  
+**支撑需求**：001 / FR-001—FR-003；PRD / PR-001  
 **关联**：[事件 Schema](event-schema.md)、[账户与保证金](margin-and-account.md)、
 [代理策略](agent-strategy.md)、[退化状态](degenerate-states.md)
 
@@ -127,7 +127,7 @@ maker 挂单价成交。将来引入其他订单类型时同理。
 
 ```text
 ORDER_ARRIVAL 事件内，顺序固定：
-  1. 制度钩子校验（002 / D-1）——拒绝则记 accepted=false，结束
+  1. 制度钩子校验（001 / D-1）——拒绝则记 accepted=false，结束
   2. tick / min_quantity 对齐检查（代理策略 §7）——不对齐则拒绝
   3. 初始保证金检查（账户合同 §3.3）——不足则拒绝
   4. 撮合（§2），逐档生成 TRADE_SETTLE
@@ -154,7 +154,7 @@ ORDER_ARRIVAL 事件内，顺序固定：
 `price_ticks` / `quantity_units` / `maker_order_id`、以及 `TRADE_SETTLE` 的 `seq`
 分配顺序。
 
-**不得依赖**：浮点价格比较（价格是整数 tick，ADR-005）、集合遍历顺序、对象哈希。
+**不得依赖**：浮点价格比较（价格是整数 tick，ADR-001）、集合遍历顺序、对象哈希。
 
 ## 8. 验收要点
 

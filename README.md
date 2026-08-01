@@ -22,7 +22,7 @@
 
 ## 当前规格
 
-- `specs/002-belief-testing-laboratory/`：含杠杆与强制平仓的市场实验环境，用于把
+- `specs/001-belief-testing-laboratory/`：含杠杆与强制平仓的市场实验环境，用于把
   交易信念改写成可证伪的条件性命题。
   - `spec.md` 需求与验收　`plan.md` 架构与测试策略
   - `milestones/M1-*` 最小确定性内核（**当前阶段，可开工**）
@@ -44,14 +44,32 @@
 - `docs/contracts/acceptance-vectors.md`：账户引擎的十个验收向量（整数期望值表）。
 - `benchmarks/`：性能基准配置、三层判定协议与参考机计时口径。
 
+## 编号命名空间
+
+每个前缀只属于一份文档，跨文档引用时前缀已足以定位来源：
+
+| 前缀 | 含义 | 所属文档 |
+|---|---|---|
+| `PR-` `KPI-` `G-` `Q-` | 产品需求 / 指标 / 目标 / 决策 | `docs/product/prd.md` |
+| `FR-` `KR-` `NFR-` `SC-` `A-` | 功能 / 内核 / 非功能需求、成功指标、假设 | `specs/001-.../spec.md` |
+| `D-1`—`D-7` `P-1`—`P-3` | 设计决策 / 参数取值 | 同上 |
+| `MD-` | 指标参数（Δt、W、k、分桶） | `docs/product/metrics-dictionary.md` |
+| `DS-` `EV-` `TI-` | 退化参数 / 经济终点 / 技术无效 | `docs/contracts/degenerate-states.md` |
+| `E-` | 事件 Schema 参数 | `docs/contracts/event-schema.md` |
+| `T1xx`—`T6xx` | M1 实现任务 | `specs/001-.../milestones/M1-tasks.md` |
+
+**文件编号沿革**：方向重置（2026-07-31）移除了旧方向的 `001` 规格与
+ADR-001—004、007—009，其决策要点并入 001 规格的「设计决策与理由」章。现有编号已
+重排为连续序列；旧编号的完整内容见 `git show 41240a2`。
+
 ## 已生效架构决策
 
 ADR 只记录**跨规格生效、且已被多轮检视验证**的工程合同。尚未被实现检验的设计意图
-写在规格的「设计决策与理由」章（002 / D-1—D-7），不占用 ADR 编号。
+写在规格的「设计决策与理由」章（001 / D-1—D-7），不占用 ADR 编号。
 
-- `docs/adr/005-numeric-and-serialization-contract.md`：金额与数量以最小单位整数
+- `docs/adr/001-numeric-and-serialization-contract.md`：金额与数量以最小单位整数
   承载，手续费为唯一舍入点，日志缺失值用 `null`。
-- `docs/adr/006-same-timestamp-event-scheduling.md`：新事件全序键严格递增
+- `docs/adr/002-same-timestamp-event-scheduling.md`：新事件全序键严格递增
   （禁止零延迟），因果外键与账户分录写入事件 Schema。
 
 ## 建议工作流
@@ -82,4 +100,4 @@ tests/                单元、集成和仿真测试
 ## 开始开发
 
 环境与依赖会在技术选型确认后加入。当前阶段先评审
-`specs/002-belief-testing-laboratory/spec.md` 中的研究边界和验收指标。
+`specs/001-belief-testing-laboratory/spec.md` 中的研究边界和验收指标。

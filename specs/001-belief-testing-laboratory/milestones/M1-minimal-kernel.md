@@ -24,7 +24,7 @@
 **代理的替代**：M1 用**脚本化订单流**（固定的订单序列，来自验收向量与撮合用例）
 驱动内核，不实现任何代理。这使内核可以在没有 L2 的情况下独立验收。
 
-## 2. 范围（对应 002 的 FR）
+## 2. 范围（对应 001 的 FR）
 
 | FR | 本阶段范围 | 备注 |
 |---|---|---|
@@ -52,7 +52,7 @@
 | E4 | 同配置同种子两次运行的**事件摘要哈希相同** | SC-002 |
 | E5 | 事件全序键严格递增，KR-006 单调性断言在违反时抛异常并终止 | 事件 Schema §1.1 |
 | E6 | 仅凭事件日志可重建全部账户终态；因果链引用完整性检查通过 | SC-006 |
-| E7 | 规范序列化产出逐字节确定的 JSONL（键序、无多余空白、`ensure_ascii=false`） | ADR-005 §7 |
+| E7 | 规范序列化产出逐字节确定的 JSONL（键序、无多余空白、`ensure_ascii=false`） | ADR-001 §7 |
 | E8 | 核心领域层无 NumPy 等第三方导入 | KR-005；用导入检查测试固化 |
 | E9 | 订单簿与账本分支覆盖率 ≥ 90% | NFR-002 |
 
@@ -69,8 +69,8 @@ M1 的每一行代码都应能指到下列某一节。**合同是唯一裁判**�
 | 事件类型、字段、因果外键、序列化 | [`event-schema.md`](../../../docs/contracts/event-schema.md) |
 | 账户字段、记账、`entry_notional` 更新 | [`margin-and-account.md`](../../../docs/contracts/margin-and-account.md) §1—§2 |
 | 期望值 | [`acceptance-vectors.md`](../../../docs/contracts/acceptance-vectors.md) |
-| 数值、舍入、序列化 | [ADR-005](../../../docs/adr/005-numeric-and-serialization-contract.md) |
-| 事件调度、KR-006 | [ADR-006](../../../docs/adr/006-same-timestamp-event-scheduling.md) |
+| 数值、舍入、序列化 | [ADR-001](../../../docs/adr/001-numeric-and-serialization-contract.md) |
+| 事件调度、KR-006 | [ADR-002](../../../docs/adr/002-same-timestamp-event-scheduling.md) |
 | 退化状态（空簿、单边簿、无成交） | [`degenerate-states.md`](../../../docs/contracts/degenerate-states.md) §1—§2 |
 
 ## 5. 验收方式

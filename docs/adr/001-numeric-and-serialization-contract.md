@@ -1,8 +1,8 @@
-# ADR-005：数值表示、舍入与序列化口径
+# ADR-001：数值表示、舍入与序列化口径
 
 日期：2026-07-30  
 状态：Accepted  
-关联规格：[`../../specs/002-belief-testing-laboratory/spec.md`](../../specs/002-belief-testing-laboratory/spec.md)  
+关联规格：[`../../specs/001-belief-testing-laboratory/spec.md`](../../specs/001-belief-testing-laboratory/spec.md)  
 解决问题：PRD Q-011  
 关联文档：[指标字典](../product/metrics-dictionary.md)、
 [事件 Schema](../contracts/event-schema.md)、
@@ -207,4 +207,4 @@ fee_cash_units = round_away_from_agent(notional_cash_units × bps / 10000)
   新增 §1.8 最小单位。
 - degenerate-states.md：§0 与 §1.2 的 NaN 表述按 §6 分层。
 - `benchmarks/*.yaml`：新增 `cash_unit` 字段，非整数领域量改为带引号字符串。
-- 002 实现任务：账户与预冻结须含舍入方向的属性测试。
+- 001 实现任务：账户与预冻结须含舍入方向的属性测试。
