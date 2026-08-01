@@ -53,17 +53,42 @@
       内核终止整个运行，**不回滚、不续跑**；该事务缓冲整体丢弃（含 `r0`），日志尾部
       写 `terminated: ABORTED`。
       **故障注入用例**：在 OB-4 第一笔成交后注入异常，断言
-      ① 运行终止；② 日志中**不含该事务的任何记录**；③ 尾部有 `ABORTED` 标记；
-      ④ `verify`（T603）拒绝该日志并报 TI-4；⑤ 该日志不参与摘要哈希比较。
+      ① 运行终止；② 日志中**不含该事务的任何记录**；③ 尾部为
+      `terminated=ABORTED` 且 `abort_code` 为稳定枚举；
+      ④ `verify`（T603）拒绝该日志并报 **TI-4**；⑤ 该日志不参与摘要哈希比较；
+      ⑥ `last_committed_transaction_seq` 等于日志中最大的 `transaction_seq`
+      （失败事务的序号**不出现**）。
       **不得实现 undo log 或写时复制**——本合同只要求可见性原子性，不要求失败原子性。
-- [ ] **T204e** `[事件 Schema §6]` `[TDD]` 日志尾部终止记录：正常结束写
-      `terminated: COMPLETED`。**缺少尾部记录等同 `ABORTED`**——进程被杀或磁盘写满
-      时必须能与正常运行区分，因此完成状态不得写在头部。
+- [ ] **T204e** `[事件 Schema §6]` `[TDD]` **三种判别记录**
+      `RUN_HEADER | EVENT | RUN_TRAILER`（顶层 `record_kind`），尾部字段按 §6.2 冻结：
+      `terminated`、`abort_code`（`COMPLETED` 时恒 null）、`abort_detail`（不参与判定）、
+      `last_committed_transaction_seq`、`record_count`。
+      **须有逐字节的尾部向量**——两种 `terminated` 各一条。
+- [ ] **T204e2** `[事件 Schema §1.5]` `[退化 TI-4/TI-5]` `[TDD]` **终止判别互斥**：
+      `ABORTED` → TI-4；**缺少 `RUN_TRAILER` 或 `record_count` 不符** → TI-5。
+      两条测试各一：一条注入异常，一条把正常日志**截去尾行**。
+      两者都整份拒绝，但**诊断码必须不同**——TI-4 指向内核缺陷（有 `abort_code`），
+      TI-5 指向环境问题（进程被杀/磁盘满）。只判其一都有洞。
 - [ ] **T204f** `[事件 Schema E-002 同步强制]` **字段注册表**
-      `src/market_game_sim/schema/registry.py`：每个字段声明所属事件类型、是否必备、
-      `HASH_INCLUDE | HASH_EXCLUDE`、嵌套叶路径。**纯标准库**（KR-005）。
+      `src/market_game_sim/schema/registry.py`。**纯标准库**（KR-005）。
+      每个字段声明六项：所属记录类型、**值类型**、**枚举值域**（如有）、
+      **可空性**、是否必备（含条件必备）、`HASH_INCLUDE | HASH_EXCLUDE`。
+      只声明字段名与哈希分类**不够**——`WRITE_OFF_POSTING.wallet_after_units` 在
+      `EXCHANGE_RISK` 侧为 `null`、在 `ACCOUNT` 侧为 `0`，缺少可空性与条件规则时
+      无法生成正确的序列化模型。
+      覆盖三种判别记录（`RUN_HEADER`/`EVENT`/`RUN_TRAILER`）与两种分录联合变体
+      （`TRADE_POSTING`/`WRITE_OFF_POSTING`）。
       序列化模型（T205）、E-002 哈希投影（T206）与覆盖检查（T206b）**三者全部由它
       生成**——手工维护三份清单必然漂移，而漂移的方向恰好是「新字段静默逃出哈希」。
+- [ ] **T204g** `[事件 Schema §4.2.1/§4.2.3]` `[TDD]` **分录判别联合**：
+      `TRADE_POSTING`（15 叶字段，`role ∈ {MAKER,TAKER}`）与
+      `WRITE_OFF_POSTING`（7 叶字段，`role ∈ {ACCOUNT,EXCHANGE_RISK}`）是**两个独立
+      结构**，不是同一结构的可选字段。
+      **断言 `EXCHANGE_RISK` 侧的 `wallet_after_units` / `position_after_units` /
+      `entry_notional_after_units` 为 `null` 而非 `0`**——写 `0` 会让重放器把交易所
+      风险账户当作持仓归零的普通账户纳入 C1 求和。
+      `verdict != BREACHED` 时 `postings` 为空数组 `[]`，且空数组与非空数组的哈希
+      输入必须不同。
 - [ ] **T205** `[事件 Schema §6—§9]` `[P]` 事件日志写入器 + 运行元数据头部
       （含 `tick_size`/`min_quantity`/`cash_unit` 单位定义），字段集合取自 T204f。
 - [ ] **T206** `[事件 Schema §7、E-002]` `[TDD]` 事件摘要哈希：按 E-002 的**按事件
@@ -164,7 +189,8 @@
       事件日志，**不导入 `kernel/` 或 `ledger/`**——复用内核代码就无法证明日志自包含。
       重建账户终态、校验因果链引用完整性、校验 C1/C2、校验每个 `transaction_seq` 以
       `record_index=0` 起始且无空洞。
-      **日志尾部缺少 `COMPLETED` 或标记为 `ABORTED` 时整份拒绝并报 TI-4**，
+      **终止判别**：`ABORTED` → 拒绝并报 **TI-4**；缺少 `RUN_TRAILER` 或
+      `record_count` 不符 → 拒绝并报 **TI-5**。两者都整份拒绝，
       不得「尽力校验前半段」——半截运行的部分校验通过没有证据价值。
 - [ ] **T604** `[KR-005]` `[TDD]` 导入检查：核心领域层无 NumPy 等第三方导入
       （退出条件 E8）。

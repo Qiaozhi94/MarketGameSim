@@ -200,13 +200,24 @@ KR-006 单调性违反、C1/C2 失衡、状态机非法转移、回退跳转白�
 
 1. **整个运行立即终止**。不回滚、不重试、不跳过该事务、不继续处理队列；
 2. **该事务的缓冲区整体丢弃**，日志中不出现它的任何记录（含 `r0`）；
-3. 日志尾部写入终止记录 `{"terminated": "ABORTED", "reason": ..., "last_transaction_seq": ...}`；
+3. 尽力写出 `RUN_TRAILER`（`terminated = ABORTED` + 稳定 `abort_code`，§6.2）；
 4. 该运行判 **TI-4**（退化状态 §技术无效），**不得**进入摘要哈希比较、重放、
    统计分析或任何实验结论；
 5. **禁止从中断点恢复或续跑。** 修复缺陷后必须以同一配置与种子完整重跑。
 
-**验证器的对应义务**：`verify` 读到缺少正常结束标记的日志必须**拒绝**并报 TI-4，
-不得「尽力而为地校验前半段」。半截运行的部分校验通过没有任何证据价值。
+**TI-4 与 TI-5 互斥，按尾部记录判别**：
+
+| 情形 | 尾部 | 判据 |
+|---|---|---|
+| 正常结束 | `terminated = COMPLETED` | 有效运行 |
+| 内核 fail-stop | `terminated = ABORTED` | **TI-4**——内核**知道**自己出了问题并留下了 `abort_code` |
+| 尾部缺失或被截断 | 无 `RUN_TRAILER`，或 `record_count` 与实际行数不符 | **TI-5**——内核**没来得及知道**（进程被杀、磁盘写满、断电） |
+
+两者都**整份拒绝**，但诊断码不同：TI-4 指向内核缺陷，可由 `abort_code` 直接定位；
+TI-5 指向环境问题，须查系统日志而非代码。混为一谈会让排查方向从一开始就错。
+
+**验证器的对应义务**：`verify` 遇到上述任一情形都必须**拒绝整份日志**，不得
+「尽力而为地校验前半段」。半截运行的部分校验通过没有任何证据价值。
 
 #### 为什么不做回滚
 
@@ -325,13 +336,16 @@ class 0/3/4/5 决定**队列事件**在同一时间戳的弹出顺序。class 1�
 **两个 mark 都必须记录**：`risk_mark` 决定强平判定，`valuation_mark` 决定权益与
 会计桥接（指标字典 §3.1、§5.2）。缺任一个，PnL 桥接都无法仅凭日志重放。
 
-#### 4.2.1 账户分录 `postings`
+#### 4.2.1 成交分录 `postings`（`TRADE_POSTING`）
 
-每条分录记录该成交对**一个代理**账户的完整影响，全部为最小单位整数：
+每条分录记录该成交对**一个代理**账户的完整影响，全部为最小单位整数。
+`MARGIN_CALL` 携带的是另一种分录（`WRITE_OFF_POSTING`，§4.2.3），两者由
+`posting_type` 判别，字段集合不同——**不要把本表当作通用分录表**。
 
 | 字段 | 说明 |
 |---|---|
-| `agent_id` | 该分录所属代理 |
+| `posting_type` | 恒为 `"TRADE_POSTING"`（判别标签） |
+| `agent_id` | 该分录所属代理，**恒非 null** |
 | `role` | `MAKER` \| `TAKER` |
 | `wallet_delta_units` | 钱包变动（已实现盈亏 − 手续费；**开仓不扣名义金额**） |
 | `position_delta_units` | 仓位变动（买入为正，卖出为负） |
@@ -369,7 +383,7 @@ SC-006 的「每一跳唯一存在」在快照上无法成立。
 | `verdict` | `OK` \| `PENDING_LIQUIDATION` \| `LIQUIDATING` \| `BREACHED`（穿仓） |
 | `required_quantity_units` | 恢复至 `target_bp` 所需的最小平仓数量（账户合同 §4.2）；`OK` 时为 0 |
 | `chain_depth` | 该判定所处的连锁层数，0 表示非连锁触发（指标字典 §4.1） |
-| `postings` | **仅 `verdict = BREACHED` 时非空**，长度为 2：代理核销分录 + 交易所风险账户分录（见 §4.2.3） |
+| `postings` | `WRITE_OFF_POSTING[]`：**仅 `verdict = BREACHED` 时**长度为 2（`[ACCOUNT, EXCHANGE_RISK]`），否则为空数组 `[]`。字段表见 §4.2.3 |
 
 **为什么因果父是 `ORDER_ARRIVAL` 而不是某笔 `TRADE_SETTLE`**：跨档成交产生多笔
 `TRADE_SETTLE`，而风险扫描在**整批之后只做一次**（§4.2.2 扫描范围）。此时「导致该
@@ -386,18 +400,44 @@ SC-006 的「每一跳唯一存在」在快照上无法成立。
 字段声明为可空是为将来的非成交触发场景（如按时间的资金费结算）预留，
 **在 v0.1 中出现 null 即为实现缺陷**。
 
-#### 4.2.3 穿仓核销分录
+#### 4.2.3 穿仓核销分录（`WRITE_OFF_POSTING`）
 
 `verdict = BREACHED` 的 `MARGIN_CALL` 是**穿仓核销的唯一事件载体**。它携带两条分录，
-使核销可仅凭日志重放，不依赖对「最后一笔强平成交」的推断：
+使核销可仅凭日志重放，不依赖对「最后一笔强平成交」的推断。
 
-| 分录 | `agent_id` | 字段 |
+**核销分录是独立的记录类型，不是成交分录（§4.2.1 的 `TRADE_POSTING`）的特例。**
+两者构成一个**判别联合**，由 `posting_type` 区分：
+
+| 载体 | `posting_type` | `role` 值域 | 长度 |
+|---|---|---|---|
+| `TRADE_SETTLE.postings` | `TRADE_POSTING` | `MAKER` \| `TAKER` | 恒为 2，顺序 `[MAKER, TAKER]` |
+| `MARGIN_CALL.postings` | `WRITE_OFF_POSTING` | `ACCOUNT` \| `EXCHANGE_RISK` | `BREACHED` 时为 2，顺序 `[ACCOUNT, EXCHANGE_RISK]`；否则为空数组 `[]` |
+
+**为什么不复用同一张宽表**：核销分录的两侧都不是 maker/taker，`role` 没有合法取值；
+交易所风险账户没有钱包、仓位与保证金率，用 `0` 填充会与 §4.2.1「无仓位时
+`margin_ratio_after_bp` 为 null」直接冲突，而 `role`、`agent_id` 这类非数值字段
+根本无法用 `0` 填充。「其余写 0」不是一份可实现的合同——字段注册表（E-002 同步强制）
+无法据此确定类型与空值规则。
+
+`WRITE_OFF_POSTING` 的**完整字段表**（共 7 项，无其他字段）：
+
+| 字段 | `role = ACCOUNT` | `role = EXCHANGE_RISK` |
 |---|---|---|
-| 代理侧 | 该穿仓账户 | `wallet_delta_units = −wallet_before`（把负钱包补到 0）；`wallet_after_units = 0`；`position_after_units = 0`；`entry_notional_after_units = 0`；`risk_pnl_delta_units = 0` |
-| 交易所侧 | `null`（交易所账户） | `risk_pnl_delta_units = wallet_before`（**负值**）；其余 `*_delta` 为 0 |
+| `posting_type` | `"WRITE_OFF_POSTING"` | `"WRITE_OFF_POSTING"` |
+| `role` | `"ACCOUNT"` | `"EXCHANGE_RISK"` |
+| `agent_id` | 该穿仓账户 | **`null`**（交易所账户无 `agent_id`） |
+| `wallet_delta_units` | `−wallet_before`（**正值**，把负钱包补到 0） | `0` |
+| `wallet_after_units` | `0` | **`null`**（交易所风险账户不持有钱包） |
+| `position_after_units` | `0` | **`null`** |
+| `entry_notional_after_units` | `0` | **`null`** |
+| `risk_pnl_delta_units` | `0` | `wallet_before`（**负值**） |
 
-两条分录的 `wallet_delta` 与 `risk_pnl_delta` 大小相等、符号相反，C2 守恒
-（账户合同 §5）。
+`null` 与 `0` 的区别在这里是实质性的：`0` 表示「该量存在且为零」，`null` 表示
+「该量对本载体不存在」。交易所风险账户没有仓位这一概念，写 `0` 会让重放器把它当作
+一个持仓归零的普通账户纳入 C1 求和。
+
+两条分录的 `wallet_delta_units` 与 `risk_pnl_delta_units` 大小相等、符号相反，
+C2 守恒（账户合同 §5）。
 
 **验收要求**：仅凭事件日志，从穿仓前状态重放至
 `wallet = 0`、`position = 0`、`entry_notional = 0`、账户状态 `LIQUIDATED`，
@@ -564,22 +604,65 @@ trade_id
   是该事务内 `record_index` **最大**的一笔成交；判定使用的价格与该笔的
   `risk_mark_ticks` 相等；
 - **事务完整性**（§1.5）：每个 `transaction_seq` 必须以 `record_index=0` 起始且
-  中间无空洞；日志必须以正常结束标记收尾，出现 `terminated: ABORTED` 或缺少结束标记
-  时**整份日志判 TI-4 并拒绝**，不做部分校验。
+  中间无空洞；`RUN_TRAILER.last_committed_transaction_seq` 必须等于日志中出现过的
+  最大 `transaction_seq`；
+- **终止判别**（§1.5）：`terminated = ABORTED` → 判 **TI-4** 并整份拒绝；
+  缺少 `RUN_TRAILER` 或 `record_count` 与实际行数不符 → 判 **TI-5** 并整份拒绝。
+  两种情形都不做部分校验。
 
 该断言不依赖重放，因而不随代码版本失效——这是 KPI-006 从「展示层可读」升级为
 「可机器验证」的关键。
 
 ## 6. 运行元数据
 
-每次运行的日志头部必须记录（PR-012）：`run_id`、代码版本、配置哈希、
-`master_seed`、开始时间、`schema_version`，以及数值单位定义
-`tick_size`、`min_quantity`、`cash_unit`（ADR-001 §7）。
+日志文件由**三种判别记录**构成，由顶层字段 `record_kind` 区分：
 
-**完成状态写在日志尾部，不在头部**——头部在运行开始时写出，那时还不知道结局。
-尾部记录为 `{"terminated": "COMPLETED" | "ABORTED", "reason": ..., "last_transaction_seq": ...}`。
-**缺少尾部记录 = 运行未正常结束**（进程被杀、磁盘写满、内核崩溃），等同 `ABORTED`
-处理（§1.5）。把完成状态放头部会使这类情形无法与正常运行区分。
+```text
+RUN_HEADER          恰好一条，文件第一行
+EVENT*              零条或多条，§4 的事件记录
+RUN_TRAILER         至多一条，文件最后一行
+```
+
+`record_kind` 是所有记录的必备字段，取值 `RUN_HEADER | EVENT | RUN_TRAILER`。
+三者都受 §9 规范序列化约束，都进入 T204f 的字段注册表；**只有 `EVENT` 记录参与
+§7 的摘要哈希**——头尾携带 `run_id`、墙钟时间等按 E-002 恒排除的内容。
+
+### 6.1 RUN_HEADER
+
+`run_id`、代码版本、配置哈希、`master_seed`、开始时间（墙钟）、`schema_version`，
+以及数值单位定义 `tick_size`、`min_quantity`、`cash_unit`（ADR-001 §7、PR-012）。
+
+### 6.2 RUN_TRAILER
+
+**完成状态写在尾部，不在头部**——头部在运行开始时写出，那时还不知道结局；更关键的
+是进程被杀或磁盘写满时头部**已经写好**，日志看起来完全正常。
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `record_kind` | 枚举 | 恒为 `"RUN_TRAILER"` |
+| `terminated` | 枚举 | `COMPLETED` \| `ABORTED` |
+| `abort_code` | 枚举 \| null | `terminated = COMPLETED` 时**恒为 `null`**；`ABORTED` 时取下表**稳定错误码** |
+| `abort_detail` | 字符串 \| null | 诊断文本，**不参与任何判定、不入哈希、不得被程序解析**；`COMPLETED` 时为 `null` |
+| `last_committed_transaction_seq` | 整数 \| null | 最后一个**已提交**事务的序号。失败事务的序号已被丢弃，**不出现在此**；无任何已提交事务时为 `null` |
+| `record_count` | 整数 | 已写出记录总数，**含头尾两条**。用于检出「尾部之前被截断」 |
+
+**稳定错误码**（枚举，新增须提升 `schema_version`）：
+
+| `abort_code` | 触发条件 |
+|---|---|
+| `QUEUE_KEY_MONOTONICITY` | KR-006 违反（§1.1） |
+| `CLASS_REGRESSION_NOT_WHITELISTED` | 回退跳转不在 §1.2 白名单内 |
+| `CONSERVATION_BREACH` | C1 / C2 在某事件后不成立 |
+| `ILLEGAL_STATE_TRANSITION` | 账户状态机非法转移 |
+| `CONFIG_INVARIANT` | 配置校验在运行期被违反 |
+| `INTERNAL` | 上述之外的内核异常 |
+
+错误码与诊断文本分离是刻意的：`abort_detail` 含异常消息与栈，**内容随 Python 版本
+与平台变化**，若参与判定会使排除规则不可复现。判定一律只看 `abort_code`。
+
+**`last_committed_transaction_seq` 指已提交事务**：fail-stop 丢弃失败事务的全部记录
+（§1.5），因此该序号必然等于日志中出现过的最大 `transaction_seq`。若两者不等，
+说明写出逻辑有缺陷，验证器须报错。
 
 ## 7. 事件摘要哈希（KPI-002）
 
@@ -634,27 +717,34 @@ class 的**最终定序裁决**——两张订单谁先到是外部可观察的�
 
 #### postings 叶字段（封闭）
 
-`postings` 是嵌套数组，「全部字段」不是封闭表述——**必须逐叶列出，且两种载体的形状
-不同**。
+`postings` 是嵌套数组，「全部字段」不是封闭表述——**必须逐叶列出**。两种载体是
+**判别联合的两个变体**（§4.2.3），字段集合不同，不可互相套用。
 
-**表 A：`TRADE_SETTLE.postings`**（长度恒为 2）
+**表 A：`TRADE_SETTLE.postings[]` = `TRADE_POSTING`**（长度恒为 2）
 
 数组顺序**固定为 `[MAKER, TAKER]`**，不按 `agent_id` 排。自成交已被阻止（撮合 §4），
 不存在两条分录同属一个代理的情形。
 
-叶字段：`agent_id`、`role`、`wallet_delta_units`、`position_delta_units`、
-`entry_notional_delta_units`、`realized_pnl_delta_units`、`fee_delta_units`、
-`reserved_delta_units`、`wallet_after_units`、`position_after_units`、
-`entry_notional_after_units`、`equity_after_units`、`margin_ratio_after_bp`、
-`risk_pnl_delta_units`。**全部纳入。**
+叶字段（15 项）：`posting_type`、`agent_id`、`role`、`wallet_delta_units`、
+`position_delta_units`、`entry_notional_delta_units`、`realized_pnl_delta_units`、
+`fee_delta_units`、`reserved_delta_units`、`wallet_after_units`、
+`position_after_units`、`entry_notional_after_units`、`equity_after_units`、
+`margin_ratio_after_bp`、`risk_pnl_delta_units`。**全部纳入。**
 
-**表 B：`MARGIN_CALL.postings`**（`verdict = BREACHED` 时长度为 2，否则为空数组）
+**表 B：`MARGIN_CALL.postings[]` = `WRITE_OFF_POSTING`**（`BREACHED` 时长度为 2，
+否则为空数组 `[]`）
 
-数组顺序**固定为 `[代理侧, 交易所侧]`**。交易所侧的 `agent_id` 为 `null`，无法参与
-按 `agent_id` 的排序，因此顺序必须由角色而非标识决定。
+数组顺序**固定为 `[ACCOUNT, EXCHANGE_RISK]`**。交易所侧的 `agent_id` 为 `null`，
+无法参与按 `agent_id` 的排序，因此顺序必须由角色而非标识决定。
 
-叶字段与表 A 相同（§4.2.3 只用其中一个子集，未用到的字段写 0 而非省略——
-§9 规定不得省略字段）。**全部纳入。**
+叶字段（7 项）：`posting_type`、`role`、`agent_id`、`wallet_delta_units`、
+`wallet_after_units`、`position_after_units`、`entry_notional_after_units`、
+`risk_pnl_delta_units`。**全部纳入。** 各字段在两种 `role` 下的取值与可空性见
+§4.2.3——`EXCHANGE_RISK` 侧的 `wallet_after_units` 等为 `null` 而非 `0`。
+
+**表 B 不是表 A 的子集**：它少了 `position_delta_units`、`fee_delta_units`、
+`equity_after_units`、`margin_ratio_after_bp` 等成交特有字段，多了不同的 `role` 值域。
+注册表必须把它们声明为两个独立的结构，而不是同一结构的可选字段。
 
 空数组与非空数组必须产生不同的哈希输入，不得把空 `postings` 视为字段缺失。
 

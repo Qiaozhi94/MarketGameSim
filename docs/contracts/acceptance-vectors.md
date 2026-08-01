@@ -238,12 +238,31 @@ A `wallet = 5000`、`tier = 10`；B `wallet = 500000`；C、D 各 `wallet = 1000
 阶段 2 扫描外。必须由**阶段 1**（`position == 0 且 wallet < 0`）捕获，否则核销分录
 永远不会产生。
 
-步骤 ④ 的 `MARGIN_CALL.postings`（事件 Schema §4.2.3）：
+步骤 ④ 的 `MARGIN_CALL.postings`——类型为 **`WRITE_OFF_POSTING`**（事件 Schema
+§4.2.3），**不是成交分录 `TRADE_POSTING`**，两者字段集合不同：
 
 ```text
-代理侧：  wallet_delta = +5000,  wallet_after = 0,  risk_pnl_delta = 0
-交易所侧：risk_pnl_delta = −5000（负值），其余 delta = 0
+postings[0]  posting_type=WRITE_OFF_POSTING  role=ACCOUNT
+             agent_id=<该穿仓账户>
+             wallet_delta_units        = +5000
+             wallet_after_units        = 0
+             position_after_units      = 0
+             entry_notional_after_units= 0
+             risk_pnl_delta_units      = 0
+
+postings[1]  posting_type=WRITE_OFF_POSTING  role=EXCHANGE_RISK
+             agent_id                  = null
+             wallet_delta_units        = 0
+             wallet_after_units        = null      ← 不是 0
+             position_after_units      = null      ← 不是 0
+             entry_notional_after_units= null      ← 不是 0
+             risk_pnl_delta_units      = −5000（负值）
 ```
+
+**交易所侧的三个 `*_after` 必须是 `null` 而非 `0`**：`0` 表示「该量存在且为零」，
+会让重放器把风险账户当成一个持仓归零的普通账户纳入 C1 求和；`null` 表示「该量对本
+载体不存在」。数组顺序固定为 `[ACCOUNT, EXCHANGE_RISK]`——交易所侧 `agent_id` 为
+null，无法按标识排序。
 
 **重放要求**：仅凭事件日志，从步骤 ③ 的状态重放至
 `wallet=0, position=0, entry_notional=0, state=LIQUIDATED`，且 C2 每步成立。
