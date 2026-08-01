@@ -68,6 +68,7 @@
 | 领域 | 合同 |
 |---|---|
 | 撮合、定序、成交价、跨档、自成交 | [`matching.md`](../../../docs/contracts/matching.md) |
+| 订单簿期望值 | [`orderbook-vectors.md`](../../../docs/contracts/orderbook-vectors.md) |
 | 事件类型、字段、因果外键、序列化 | [`event-schema.md`](../../../docs/contracts/event-schema.md) |
 | 账户字段、记账、`entry_notional` 更新 | [`margin-and-account.md`](../../../docs/contracts/margin-and-account.md) §1—§2 |
 | 期望值 | [`acceptance-vectors.md`](../../../docs/contracts/acceptance-vectors.md) |

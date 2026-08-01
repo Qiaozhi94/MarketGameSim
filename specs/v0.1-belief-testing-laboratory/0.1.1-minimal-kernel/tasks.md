@@ -64,8 +64,9 @@
       （保证金检查桩，0.1.1 恒通过）→ 撮合 → 剩余处理。
 - [ ] **T306b** `[撮合 §1.2]` `[TDD]` **撮合事务原子性**：`ORDER_ARRIVAL` 弹出时
       在单个事务内完成撮合、逐笔结算、剩余处理、风险检查；事务内账户变化立即生效。
-      **验收用例**：一张大单跨三档 → 三笔 `TRADE_SETTLE`（`batch_index` 0/1/2、
-      `batch_size` 3）+ **仅一次**批次风险检查。
+      **验收用例**：一张大单跨三档 → 三笔 `TRADE_SETTLE`（`fill_index` 0/1/2、
+      `fill_count` 3）+ **仅一次**整批风险检查。期望值见
+      [订单簿向量](../../../docs/contracts/orderbook-vectors.md) OB-4。
 - [ ] **T307** `[撮合 §6]`、`[退化 §1]` `[TDD]` 空簿与单边簿：市价单 IOC 撤销、
       `mid` 未定义时 `valuation_mark` 退化为 `last`、首笔成交前退化为
       `initial_price`。

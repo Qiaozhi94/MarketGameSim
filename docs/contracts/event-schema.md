@@ -212,7 +212,7 @@ class 0/3/4/5 决定**队列事件**在同一时间戳的弹出顺序。class 1�
 | `valuation_mark_before_half_ticks` | 成交**前**的估值标记价（`mid`，以半 tick 为单位的整数 `best_bid + best_ask`）；任一侧空时退化为 `last × 2` |
 | `valuation_mark_after_half_ticks` | 成交**后**的估值标记价，同上口径 |
 | `risk_mark_ticks` | 成交后的风险标记价 = 本笔成交价（`last`），用于保证金判定 |
-| `batch_index` / `batch_size` | 本笔在该次撮合批中的序号（从 0）与总笔数（撮合合同 §2.2） |
+| `fill_index` / `fill_count` | 本笔在该次撮合中的序号（从 0）与该次撮合的总成交笔数（撮合合同 §2.2） |
 | `postings` | **账户分录**，长度恒为 2（maker 与 taker 各一条），见 §4.2.1 |
 
 **两个 mark 都必须记录**：`risk_mark` 决定强平判定，`valuation_mark` 决定权益与

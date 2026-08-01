@@ -96,11 +96,15 @@ maker 挂单价成交。将来引入其他订单类型时同理。
 | `trade_id` | 各自唯一 |
 | `taker_order_id` | 相同（同一张 taker 订单） |
 | `maker_order_id` | 各不相同 |
-| `batch_index` / `batch_size` | 本笔在该批中的序号（从 0）与该批总笔数 |
+| `fill_index` / `fill_count` | 本笔在该次撮合中的序号（从 0）与总成交笔数 |
 
-`batch_index` / `batch_size` 使重放器**无需推断**批的边界：`batch_index == batch_size − 1`
-即本批最后一笔，其后紧跟该批的 `MARGIN_CALL`（若有）。仅凭 `caused_by_event_id`
-相同也能分组，但那要求重放器先读完整批才知道边界，无法流式处理。
+`fill_index` / `fill_count` 使重放器**无需推断**撮合的边界：`fill_index == fill_count − 1`
+即最后一笔成交，其后紧跟该次撮合的 `MARGIN_CALL`（若有）。仅凭 `caused_by_event_id`
+相同也能分组，但那要求重放器先读完整个事务才知道边界，无法流式处理。
+
+**与 `record_index` 的区别**：`record_index` 是**事务内所有记录**的序号（含
+`MARGIN_CALL`、`MARKET_DATA_PUBLISH`、自成交 `CANCEL`）；`fill_index` 只数
+`TRADE_SETTLE`。两者不可互相推导，故都要记。
 
 **`valuation_mark_before/after` 逐笔取值**：第 `k` 笔的 `before` 是第 `k−1` 笔成交
 **之后**的盘口中间价，`after` 是本笔之后的。**不是整批共用一个 before/after**——
@@ -185,8 +189,8 @@ ORDER_ARRIVAL 事件内，顺序固定：
 
 ## 8. 验收要点
 
-以下须作为 0.1.1 的订单簿测试用例（与[验收向量](acceptance-vectors.md)的账户用例
-互补）：
+**完整的整数期望值表见[订单簿验收向量](orderbook-vectors.md)**（OB-1—OB-9），
+含事件序列、`record_index`、逐笔 `valuation_mark` 与事务后的簿状态。下列为场景索引：
 
 1. **价格优先**：买 101 与买 100 同时在簿，卖单到达先成交 101；
 2. **时间优先**：同价两笔买单，先到（`transaction_seq` 小）者先成交；

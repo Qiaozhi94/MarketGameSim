@@ -42,6 +42,7 @@
 - `docs/contracts/agent-strategy.md`：从信息集到订单意图的确定管线。
 - `docs/contracts/margin-and-account.md`：线性永续账户、保证金、强平与穿仓核销。
 - `docs/contracts/acceptance-vectors.md`：账户引擎的十个验收向量（整数期望值表）。
+- `docs/contracts/orderbook-vectors.md`：订单簿的九个验收向量（OB-1—OB-9）。
 - `benchmarks/`：性能基准配置、三层判定协议与参考机计时口径。
 
 ## 编号命名空间
