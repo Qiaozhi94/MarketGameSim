@@ -68,9 +68,16 @@
 ### 2.2 未实现盈亏与权益
 
 ```text
-unrealized_pnl = position_units × mark − entry_notional_units
-equity         = wallet_units + unrealized_pnl
+unrealized_pnl(mark) = position_units × mark − entry_notional_units
+equity(mark)         = wallet_units + unrealized_pnl(mark)
+risk_equity          = equity(risk_mark)
+valuation_equity     = equity(valuation_mark)
 ```
+
+`risk_mark` 恒为最近成交价（首笔成交前为 `initial_price`），只服务于保证金、准入、
+强平、穿仓和资金费；`valuation_mark` 取盘口 `mid`（缺失时退化为最近成交价），只服务于
+报告权益、未实现 PnL 与 PnL 桥接。下文风险公式出现的权益均指 `risk_equity`；报告不得
+用它替代 `valuation_equity`。
 
 ### 2.3 守恒性质
 
@@ -165,9 +172,9 @@ equity         = wallet_units + unrealized_pnl
 ### 3.2 保证金占用与保证金率
 
 ```text
-notional_units   = |position_units| × mark                    # 恒非负
+notional_units   = |position_units| × risk_mark               # 恒非负
 margin_used      = notional_units × maint_bp / 10000          # 维持保证金
-margin_ratio_bp  = equity × 10000 / notional_units            # 当前保证金率
+margin_ratio_bp  = risk_equity × 10000 / notional_units       # 当前保证金率
 ```
 
 **边界行为**：
@@ -185,7 +192,7 @@ margin_ratio_bp  = equity × 10000 / notional_units            # 当前保证金
 把本单加入活动挂单集合后，按代理策略 §11.1 重算：
     reserved_after = margin_part + fee_part     # 已含当前持仓与全部挂单
 
-拒绝条件： reserved_after > equity
+拒绝条件： reserved_after > risk_equity
 ```
 
 **准入式直接比较总占用与权益，不写成 `equity − reserved_units`。**
@@ -238,12 +245,12 @@ margin_ratio_bp  = equity × 10000 / notional_units            # 当前保证金
 平掉最小数量，使保证金率恢复到 `target_bp`。设平掉 `q`（`0 < q ≤ |position|`）：
 
 ```text
-平仓后名义 = (|position| − q) × mark
-平仓后权益 ≈ equity − q × mark × taker_bps / 10000        # 仅扣手续费
+平仓后名义 = (|position| − q) × risk_mark
+平仓后权益 ≈ risk_equity − q × risk_mark × taker_bps / 10000  # 仅扣手续费
 要求：平仓后权益 × 10000 ≥ 平仓后名义 × target_bp
 
 解得（忽略手续费的一阶近似，实现须用整数二分求最小可行 q）：
-q ≥ |position| − equity × 10000 / (mark × target_bp)
+q ≥ |position| − risk_equity × 10000 / (risk_mark × target_bp)
 ```
 
 **实现规则**：以 `min_quantity` 为步长，用整数二分求满足条件的**最小** `q`，
@@ -303,7 +310,7 @@ q ≥ |position| − equity × 10000 / (mark × target_bp)
 
 **第一版 `funding_rate_bp = 0`，机制预留但不启用。**
 
-启用后的语义：每 `funding_interval_ns` 按 `position × mark × funding_rate_bp / 10000`
+启用后的语义：每 `funding_interval_ns` 按 `position × risk_mark × funding_rate_bp / 10000`
 在多空之间转移，多头付空头（费率为正时）。因为 `Σ position ≡ 0`（C1），该转移
 **自动零和**，不影响 C2。
 
@@ -325,7 +332,7 @@ q ≥ |position| − equity × 10000 / (mark × target_bp)
 
 ### 示例 1：多头开仓
 
-`wallet = 10000`，`position = 0`，`mark = 100`，`leverage_tier = 3`（`initial_bp = 3334`）。
+`wallet = 10000`，`position = 0`，`risk_mark = 100`，`leverage_tier = 3`（`initial_bp = 3334`）。
 买入 50 单位 @ 100，taker 费率 5 bps。
 
 ```text
@@ -349,7 +356,7 @@ initial_bp = ceil(10000 / 3) = 3334
 
 ### 示例 2：价格下跌触发强平
 
-承示例 1，`mark` 跌至 82。
+承示例 1，`risk_mark` 随成交跌至 82。
 
 ```text
 unrealized   = 50 × 82 − 5000 = −900
@@ -364,9 +371,9 @@ margin_ratio = 9097.5 × 10000 / 4100 = 22189 bp    仍远高于 500，不触发
 先反解触发点，`equity × 10000 = notional × maint_bp`：
 
 ```text
-(1000 + 500×mark − 50000) × 10000 = 500×mark × 500
-5,000,000×mark − 490,000,000 = 250,000×mark
-mark = 490,000,000 / 4,750,000 ≈ 103.16
+(1000 + 500×risk_mark − 50000) × 10000 = 500×risk_mark × 500
+5,000,000×risk_mark − 490,000,000 = 250,000×risk_mark
+risk_mark = 490,000,000 / 4,750,000 ≈ 103.16
 ```
 
 **触发点高于开仓价 100** —— 也就是说，这个仓位**在建仓那一刻就已经低于维持线**，
@@ -380,13 +387,13 @@ mark = 490,000,000 / 4,750,000 ≈ 103.16
 （名义 50,000 = 10 × 钱包，恰在 `leverage_tier = 10` 上限）：
 
 ```text
-触发点：(5000 + 500×mark − 50000) × 10000 = 500×mark × 500
-       5,000,000×mark − 450,000,000 = 250,000×mark
-       mark = 450,000,000 / 4,750,000 ≈ 94.74
+触发点：(5000 + 500×risk_mark − 50000) × 10000 = 500×risk_mark × 500
+       5,000,000×risk_mark − 450,000,000 = 250,000×risk_mark
+       risk_mark = 450,000,000 / 4,750,000 ≈ 94.74
 
-mark = 95 : unrealized = −2500, equity = 2500, notional = 47500
+risk_mark = 95 : unrealized = −2500, risk_equity = 2500, notional = 47500
             margin_ratio = 526 bp > 500          → 不触发
-mark = 94 : unrealized = −3000, equity = 2000, notional = 47000
+risk_mark = 94 : unrealized = −3000, risk_equity = 2000, notional = 47000
             margin_ratio = 425 bp < 500          → 触发
 ```
 
@@ -395,20 +402,21 @@ mark = 94 : unrealized = −3000, equity = 2000, notional = 47000
 
 ### 示例 3：强平数量
 
-承示例 2 的合法仓位，`mark = 94`，`equity = 2000`，`position = 500`，
+承示例 2 的合法仓位，`risk_mark = 94`，`risk_equity = 2000`，`position = 500`，
 `target_bp = 1000`：
 
 ```text
-q ≥ 500 − 2000 × 10000 / (94 × 1000) = 500 − 212.77 = 287.23
-→ 向上取整至 min_quantity 步长：q = 288
+闭式下界 q ≥ 500 − 2000 × 10000 / (94 × 1000) = 287.235...
+→ 含手续费的整数二分最小可行值：q = 288.678
 
-平仓后：position = 212，notional = 212 × 94 = 19928
-        equity  = 2000 − 288×94×5/10000 = 2000 − 13.54 = 1986.46
-        margin_ratio = 1986.46 × 10000 / 19928 = 997 bp ≈ target 1000 ✓
+平仓后：position = 211.322，notional = 211.322 × 94 = 19864.268
+        risk_equity = 2000 − 288.678×94×5/10000 = 1986.432134
+        margin_ratio = floor(1986.432134 × 10000 / 19864.268) = 1000 bp ✓
+前一步 q = 288.677 时 margin_ratio = 999 bp ✗
 ```
 
-差额 3 bp 来自手续费——这是 §4.2 说「用整数二分求最小可行 q」而非套用闭式解的原因：
-闭式解忽略手续费，实现须验证平仓后确实 `≥ target_bp`，否则再加一个步长。
+闭式解忽略手续费——这是 §4.2 要求「用整数二分求最小可行 q」的原因。实现必须同时
+验证 `q` 可行且 `q−1 step` 不可行。
 
 ### 示例 4：穿仓与核销
 
@@ -458,7 +466,7 @@ C1/C2 恒等式、个体 PnL 桥接。只有人工与测试程序得到**完全�
 | 6 | 3x 杠杆边界上下各一个最小单位 | `initial_bp = 3334` 的保守舍入（§3.1.1） |
 | 7 | 部分强平后重新计算最小数量 | §4.3 重算；一致 5 bps，成交价推动 risk_mark |
 | 7b | `reserved_units` 四组场景 | 总占用口径；无挂单、同向多单、双向、部分成交后 |
-| 8 | 强平无对手方、流动性恢复、再次尝试 | 重试由 mark 变化驱动（退化状态 §3.5） |
+| 8 | 强平无对手方、流动性恢复、再次尝试 | 重试由 `risk_mark` 变化驱动（退化状态 §3.5） |
 | 9 | 穿仓确认、核销、事件日志独立重放 | `MARGIN_CALL.postings`（事件 Schema §4.2.3） |
 | 10 | 三账户资金费转移 | 净额整数精确为 0（因 C1） |
 
@@ -475,7 +483,7 @@ C1/C2 恒等式、个体 PnL 桥接。只有人工与测试程序得到**完全�
   3333，30.000 手会被放行，实际杠杆 3.0003x 超出档位；
 - **案例 7**（部分强平）：全程一致 5 bps。首次算得 288.678；成交 200 手且成交价
   推动 `risk_mark` 94→92 后，重算得 **193.271**，而原余量仅 88.678。**差异来自价格
-  变化**，不是部分成交本身——若 mark 不变，重算结果会等于原余量；
+  变化**，不是部分成交本身——若 `risk_mark` 不变，重算结果会等于原余量；
 - **案例 9**（穿仓）：全平后 `position == 0` 使 `margin_ratio = null`，账户被排除在
   阶段 2 扫描外——必须由 §4.1 阶段 1 捕获。
 

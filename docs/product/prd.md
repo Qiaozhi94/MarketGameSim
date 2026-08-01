@@ -387,28 +387,30 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 不允许「先把功能做全再说」。
 
 ### M1：最小确定性内核（**无杠杆**）
-→ [`specs/002-.../milestones/M1-minimal-kernel.md`](../../specs/001-belief-testing-laboratory/milestones/M1-minimal-kernel.md)
+→ [`specs/001-.../milestones/M1-minimal-kernel.md`](../../specs/001-belief-testing-laboratory/milestones/M1-minimal-kernel.md)
 
 订单簿、账户、事件调度与日志、确定性哈希、因果链。**账户结构须一次留好保证金字段**，
 但本阶段不开启杠杆。
 
 **退出条件**：仓位恒等式 C1 与价值守恒 C2（指标字典 §5）逐事件整数精确成立；
-[验收向量](../contracts/acceptance-vectors.md)的十个案例全部通过——**含三代理跨价
-换手**，只用一对多空会误证已推翻的旧等式；KPI-001—KPI-004、KPI-006 达标。
+[验收向量](../contracts/acceptance-vectors.md)的案例 1—5、10 通过——**含三代理跨价
+换手**，只用一对多空会误证已推翻的旧等式；撮合九项用例及 M1 E1—E9 全部通过。
 
 先做无杠杆不等于「后期叠加」——接口一次设计对，实现分两步，能在最简状态下先把守恒
 和确定性钉死。带着杠杆调试账本会让两类缺陷混在一起。
 
 ### M2：杠杆与第一个实验闭环
 → [`M2-leverage-and-first-experiment.md`](../../specs/001-belief-testing-laboratory/milestones/M2-leverage-and-first-experiment.md)
+→ [`M2-tasks.md`](../../specs/001-belief-testing-laboratory/milestones/M2-tasks.md)
 
 杠杆、保证金、强平、穿仓、连锁；最小代理策略合同；**无杠杆 vs 有杠杆的配对对照**。
 
-**退出条件**：一项**预注册**实验能从配置、运行、原始证据一路追溯到条件性结论；
+**退出条件**：十个验收案例全部通过；一项**预注册**实验能从配置、运行、原始证据一路追溯到条件性结论；
 经济终点与连续指标两部分报告齐备；KPI-005、KPI-007、KPI-010、KPI-011 达标。
 
 ### M3：模型稳健性
 → [`M3-robustness.md`](../../specs/001-belief-testing-laboratory/milestones/M3-robustness.md)
+→ [`M3-tasks.md`](../../specs/001-belief-testing-laboratory/milestones/M3-tasks.md)
 
 替代代理规则、参数空间与模型族扫描、因子消融、共同随机输入、留出验证区。
 

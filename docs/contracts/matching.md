@@ -20,14 +20,14 @@
 ### 1.1 价格时间优先
 
 - **价格优先**：买方按 `price_ticks` **降序**、卖方按**升序**排队；
-- **时间优先**：同价位内按订单到达事件的 **`seq` 升序**（KR-003）——不是
+- **时间优先**：同价位内按订单到达事务的 **`transaction_seq` 升序**（KR-003）——不是
   `timestamp`，同一纳秒到达的两笔订单必须有确定先后。
 
 **定序不得依赖字典/集合遍历顺序、对象标识或哈希值。**
 
 ### 1.2 撮合事务：ORDER_ARRIVAL 是唯一的事务边界
 
-`ORDER_ARRIVAL` 是**队列事件**，弹出时执行一个**原子事务**（事件 Schema §1.3）：
+`ORDER_ARRIVAL` 是**队列事件**，弹出时执行一个**原子事务**（事件 Schema §1.4）：
 
 ```text
 ORDER_ARRIVAL 弹出
@@ -41,7 +41,7 @@ ORDER_ARRIVAL 弹出
 ```
 
 **事务内的账户变化立即生效**。因此同一时间戳内后续弹出的 `ORDER_ARRIVAL` 看到的
-是已更新的账户——这正是事件 Schema §1.3 要解决的问题。
+是已更新的账户——这正是事件 Schema §1.4 要解决的问题。
 
 `TRADE_SETTLE`、`MARGIN_CALL`、`MARKET_DATA_PUBLISH` 以及自成交阻止产生的 `CANCEL`
 都是**事务记录**，不入队、不会被再次执行。唯一入队的产物是强平单（它必须跨越
@@ -78,7 +78,7 @@ maker 挂单价成交。将来引入其他订单类型时同理。
 拆分规则：
 
 ```text
-按对手方队列顺序（价格优先 → seq 优先）逐档撮合：
+按对手方队列顺序（价格优先 → 到达事务 `transaction_seq` 优先）逐档撮合：
   对每一档：
     fill_qty = min(taker 剩余数量, 该 maker 订单剩余数量)
     生成一个 TRADE_SETTLE，price_ticks = 该 maker 的挂单价
@@ -91,7 +91,8 @@ maker 挂单价成交。将来引入其他订单类型时同理。
 | 项 | 规则 |
 |---|---|
 | `caused_by_event_id` | 全部指向**同一个** `ORDER_ARRIVAL` |
-| `seq` | 按撮合顺序**严格递增**（同 timestamp、同 class 1） |
+| `record_index` | 在父 `ORDER_ARRIVAL` 事务内按撮合顺序**严格递增** |
+| `transaction_seq` | 全批共享父 `ORDER_ARRIVAL` 的事务序号 |
 | `trade_id` | 各自唯一 |
 | `taker_order_id` | 相同（同一张 taker 订单） |
 | `maker_order_id` | 各不相同 |
@@ -128,7 +129,7 @@ maker 挂单价成交。将来引入其他订单类型时同理。
 | **市价单** | 按 §2 撮合 | **立即撤销**（IOC，退化状态 §1.1） |
 | **强平单** | 按 §2 撮合 | 立即撤销（IOC）；账户保持 `PENDING_LIQUIDATION`，由后续成交触发重评 |
 
-限价单挂入簿时，其 `seq` 为该 `ORDER_ARRIVAL` 事件的 `seq`——**不是**挂入时刻重新
+限价单挂入簿时，其时间优先键为该 `ORDER_ARRIVAL` 的 `transaction_seq`——**不是**挂入时刻重新
 分配的序号。这保证时间优先与到达顺序一致。
 
 **限价单的价格必须已对齐 tick**（代理策略 §7），未对齐者在准入阶段即被拒绝，
@@ -176,8 +177,8 @@ ORDER_ARRIVAL 事件内，顺序固定：
 
 ## 7. 确定性要求
 
-给定相同的订单到达序列（含 `seq`），撮合结果必须逐笔一致：成交笔数、每笔的
-`price_ticks` / `quantity_units` / `maker_order_id`、以及 `TRADE_SETTLE` 的 `seq`
+给定相同的订单到达序列（含 `transaction_seq`），撮合结果必须逐笔一致：成交笔数、每笔的
+`price_ticks` / `quantity_units` / `maker_order_id`、以及 `TRADE_SETTLE` 的 `record_index`
 分配顺序。
 
 **不得依赖**：浮点价格比较（价格是整数 tick，ADR-001）、集合遍历顺序、对象哈希。
@@ -188,11 +189,14 @@ ORDER_ARRIVAL 事件内，顺序固定：
 互补）：
 
 1. **价格优先**：买 101 与买 100 同时在簿，卖单到达先成交 101；
-2. **时间优先**：同价两笔买单，先到（`seq` 小）者先成交；
+2. **时间优先**：同价两笔买单，先到（`transaction_seq` 小）者先成交；
 3. **price improvement**：买单限价 101 吃到卖价 100，成交价为 **100**；
 4. **跨三档**：一张买单吃掉卖 100 / 101 / 102 三档，产生 **3 个** `TRADE_SETTLE`，
-   `caused_by_event_id` 相同、`seq` 递增、`valuation_mark` 逐笔推进；
-5. **限价剩余挂单**：吃完可成交部分后，剩余数量以原 `seq` 挂入簿；
+   `caused_by_event_id` 相同、`record_index` 递增、`valuation_mark` 逐笔推进；
+5. **限价剩余挂单**：吃完可成交部分后，剩余数量以原 `transaction_seq` 挂入簿；
 6. **市价剩余撤销**：同上场景改为市价单，剩余全额撤销；
 7. **自成交**：taker 遇到自己的挂单 → 该挂单被撤、taker 继续吃下一档；
 8. **整批后判定**：跨档成交期间不触发强平，整批结算后才执行两阶段检查。
+9. **同时间戳双订单黄金日志**：A 成交后耗尽保证金，B 随后到达并被拒；日志顺序为
+   `A(record 0) → A 的事务记录(record 1..n) → B(record 0)`，所有 `log_key` 严格递增，
+   在线状态与仅凭日志重放状态一致。

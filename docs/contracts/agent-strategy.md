@@ -320,7 +320,7 @@ bits      = blake2b(key_bytes, digest_size=8).digest()        # 64 bit
 各整数字段以十进制无前导零书写，UTF-8 编码。编码规则**是规范的一部分**，任何改动
 都会改变全部随机流。
 
-`mechanism` 取值：`belief_weights`、`half_life`、`aggressiveness`、`leverage_tier`、
+`mechanism` 取值：`belief_weights_{i}`（`i=0..4`）、`half_life`、`aggressiveness`、`leverage_tier`、
 `momentum_lookback`、`herding_window`（**建仓期一次性抽取**，`decision_index = 0`），
 以及 `noise_factor`（**每次决策抽取**，`decision_index` 为该代理的决策序号）。
 
@@ -344,19 +344,32 @@ u = (Decimal(v) + 1) / (Decimal(2**53) + 1)    # 严格落在 (0, 1)
 | 均匀 `[a,b]` | `a + u × (b − a)` | `aggressiveness` |
 | 离散分布 | 按万分数累积区间查找，`u × 10000` 落入哪段 | `leverage_tier` |
 
-#### 10.3.1 Gamma(α, 1)：Marsaglia–Tsang
+#### 10.3.1 标准正态与 Gamma(α, 1)
 
 ```text
-若 α < 1:  返回 Gamma(α+1, 1) × u^(1/α)     # u 为一个新的开区间均匀数
-否则:
+standard_normal(mechanism, decision_index, i):
+    循环:
+        u1 = uniform(mechanism, decision_index, i); i += 1
+        u2 = uniform(mechanism, decision_index, i); i += 1
+        x = 2×u1 − 1; y = 2×u2 − 1; s = x² + y²
+        若 s == 0 或 s >= 1: 继续
+        z = x × sqrt(−2×ln(s)/s)
+        返回 (z, i)                    # 第二个正态值丢弃，不缓存
+
+gamma(α, mechanism, decision_index, i):
+  若 α < 1:
+    (g, i) = gamma(α+1, mechanism, decision_index, i)
+    u = uniform(mechanism, decision_index, i); i += 1
+    返回 (g × exp(ln(u)/α), i)
+  否则:
     d = α − 1/3
     c = 1 / sqrt(9d)
     循环:
-        z = 标准正态（Marsaglia polar，消耗 2 个 draw）
+        (z, i) = standard_normal(mechanism, decision_index, i)
         v = (1 + c×z)^3
         若 v ≤ 0: 继续下一轮
-        u = 开区间均匀数（消耗 1 个 draw）
-        若 ln(u) < 0.5×z² + d − d×v + d×ln(v):  返回 d×v
+        u = uniform(mechanism, decision_index, i); i += 1
+        若 ln(u) < 0.5×z² + d − d×v + d×ln(v): 返回 (d×v, i)
         否则继续
 ```
 
@@ -367,7 +380,7 @@ u = (Decimal(v) + 1) / (Decimal(2**53) + 1)    # 严格落在 (0, 1)
 各分量使用**独立的 mechanism 名**，避免共享计数器：
 
 ```text
-xᵢ = Gamma(αᵢ, 1)   使用 mechanism = f"belief_weights_{i}"，i 从 0 开始
+xᵢ = gamma(αᵢ, mechanism=f"belief_weights_{i}", decision_index, i=0).value
 w  = x / Σx
 ```
 
@@ -376,14 +389,35 @@ w  = x / Σx
 
 #### 10.3.3 拒绝采样的 draw_index 规则
 
-- **Marsaglia polar**：每轮消耗 2 个 `draw_index`，拒绝则 `+2` 继续，**不重置**；
-- **Marsaglia–Tsang**：每轮消耗 2（正态）+ 1（均匀）= 3 个，拒绝则 `+3` 继续；
-- 递归调用（`α < 1` 分支）从当前 `draw_index` 继续，不另起计数。
+- 所有子采样器都返回 `(value, next_draw_index)`；调用者只从返回值继续，禁止自行假定
+  固定消耗量；
+- Marsaglia polar 每次尝试消耗 2 个索引；拒绝时继续消耗，接受后第二个正态值明确丢弃；
+- Marsaglia–Tsang 的正态可能消耗 `2,4,6,...` 个索引；仅当 `v > 0` 时才再消耗 1 个
+  均匀数。`v <= 0` 不得跳号；
+- `α < 1` 先完整调用 `gamma(α+1,...)`，再从其 `next_draw_index` 消耗幂变换所需的
+  均匀数。每个 Dirichlet 分量都从自己的 mechanism 的 `draw_index=0` 开始。
 
 消耗量随拒绝次数变化，但对给定语义键**完全确定**。
 
 `ln` 与 `sqrt` 一律用 `Decimal.ln()` / `Decimal.sqrt()`，精度 28 位（§9），
 **不用 `math` 模块**——后者是平台浮点，跨平台可能差最后一位。
+
+#### 10.3.4 黄金向量
+
+固定 `master_seed=42`、`agent_id="agent-000"`、`decision_index=0`，BENCH-001 的
+`alpha=[1.0,1.0,0.8,0.8,1.5]`，各分量 mechanism 为 `belief_weights_0..4`：
+
+| i | Gamma 值（Decimal 精度 28） | `next_draw_index` | 归一化权重 |
+|---|---:|---:|---:|
+| 0 | 0.7163373287284354304997695227 | 3 | 0.1263946241600740412702771089 |
+| 1 | 1.424146781259066164278790208 | 6 | 0.2512845414401946144867249532 |
+| 2 | 1.292134601745766979727866277 | 4 | 0.2279915631952186024773230701 |
+| 3 | 0.1033472675292592210307509987 | 4 | 0.01823517847453035830910800003 |
+| 4 | 2.131500762212340039245088753 | 3 | 0.3760940927299823834565668676 |
+
+另固定 `mechanism="noise_factor"`、`decision_index=7`、`draw_index=0`，标准正态结果为
+`-1.540799147897011947260246800`，`next_draw_index=2`。实现必须逐位匹配这些值；既校验
+随机比特编码，也校验拒绝路径与索引回传。
 
 ### 10.4 为什么按语义键而非调用顺序
 
@@ -405,11 +439,20 @@ w  = x / Σx
 worst_long  = position + Σ(所有活动买单数量)      # 全部买单成交
 worst_short = position − Σ(所有活动卖单数量)      # 全部卖单成交
 worst_qty   = max(|worst_long|, |worst_short|)
+reservation_mark = max(risk_mark,
+                       所有活动及候选限价单的 price_ticks,
+                       候选单预撮合得到的全部 maker 成交价)
 
-margin_part = ceil(worst_qty × valuation_mark × initial_bp / 10000)
-fee_part    = ceil(Σ_挂单 (该单名义 × max(taker_bps, 0) / 10000))   # 仅活动挂单
+margin_part = ceil(worst_qty × reservation_mark × initial_bp / 10000)
+fee_rate    = max(taker_bps, maker_bps, 0)
+fee_part    = Σ_活动及候选单 ceil(该单剩余量 × reservation_mark × fee_rate / 10000)
 reserved_units = margin_part + fee_part
 ```
+
+准入检查须先在不可变订单簿快照上做**预撮合**，得到候选单的实际 maker 价与残余限价，
+再计算上述上界；预撮合与正式撮合使用同一确定性算法。市价单无残余限价，若无对手方则
+其新增数量与费用均为 0。`reservation_mark` 是保证金风险价，绝不能用报告用的
+`valuation_mark`；取上述最大值会保守覆盖买卖两侧及市场化成交价格。
 
 **每次挂单、撤单、部分成交后整体重算**，不做增量加减——增量维护在部分成交与撤单
 交错时极易漂移。
@@ -418,7 +461,7 @@ reserved_units = margin_part + fee_part
 
 - **不逐单累加保证金**：同向多单只放大一侧的极端值，反向单抬高另一侧，取
   `max` 自然覆盖两种情形。逐单累加会在同向多单时重复占用；
-- **手续费上界单独计入**（ADR-005 §3 要求预冻结含费用）。已成交部分的费用已从
+- **手续费上界单独计入**（ADR-001 §4 要求预冻结含费用）。已成交部分的费用已从
   钱包扣除，故 `fee_part` 只统计**活动挂单**；
 - **持仓部分包含在内**——因此准入式**不得**再写成 `equity − reserved_units`
   （账户合同 §3.3），那会把持仓保证金扣两次。

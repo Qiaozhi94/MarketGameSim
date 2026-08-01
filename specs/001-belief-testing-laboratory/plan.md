@@ -82,16 +82,18 @@ Bp         = int   # 万分数（保证金率、费率）
 Nanos      = int   # 逻辑时间
 ```
 
-**不引入 `Decimal` 到领域层**——`Decimal` 只出现在配置解析（ADR-001 §2）与因子
-计算（代理策略 §9）两处，且结果在进入领域层前已量化为整数。
+**不引入 `Decimal` 到领域状态与撮合/账本运算**——`Decimal` 只出现在配置解析
+（ADR-001 §2）、因子计算与确定性分布变换（代理策略 §9—§10），且结果在进入领域
+状态前已量化为整数。
 
 ### 3.2 核心实体
 
 | 实体 | 关键字段 | 不变量 |
 |---|---|---|
-| `Order` | `order_id`、`agent_id`、`side`、`price_ticks`、`qty_units`、`seq`、`origin` | 价格已对齐 tick；数量 > 0 |
+| `Order` | `order_id`、`agent_id`、`side`、`price_ticks`、`qty_units`、`transaction_seq`、`origin` | 价格已对齐 tick；数量 > 0 |
 | `Account` | `wallet_units`、`position_units`、`entry_notional_units`、`reserved_units`、`state` | 见 §3.3 |
-| `Event` | `(timestamp, priority_class, seq)`、`event_id`、因果外键 | 全序键唯一且严格递增（KR-006） |
+| `QueueEvent` | `(timestamp, priority_class, enqueue_seq)`、`event_id` | 入队键唯一，且满足 KR-006 |
+| `LogRecord` | `(timestamp, transaction_seq, record_index)`、`event_id`、因果外键 | 日志键唯一且严格递增 |
 | `Trade` | `trade_id`、`price_ticks`、`qty_units`、两条 `posting` | `postings` 长度恒为 2 |
 
 ### 3.3 全局不变量（逐事件断言）
@@ -124,11 +126,11 @@ ACTIVE ──保证金率 < maint_bp──▶ PENDING_LIQUIDATION
 | 原则 | 是否满足 | 证据/处理 |
 |---|---|---|
 | 1 可追溯规格优先 | 通过 | 代码与测试名称引用 FR/KR/SC 编号；六份实现合同为唯一裁判 |
-| 2 撮合正确性不可妥协 | 待实现验证 | C1/C2 逐事件整数断言；十个验收向量；撮合合同 §8 的八条订单簿用例 |
+| 2 撮合正确性不可妥协 | 待实现验证 | C1/C2 逐事件整数断言；十个验收向量；撮合合同 §8 的九条订单簿用例 |
 | 3 实验必须可复现 | 待实现验证 | 语义键 RNG（代理策略 §10）、整数时间、规范序列化、事件摘要哈希 |
-| 4 区分角色、能力与行为 | 通过 | 能力维度为显式配置（002 §7.2）；信念权重与能力分离（D-3） |
+| 4 区分角色、能力与行为 | 通过 | 能力维度为显式配置（001 §7.2）；信念权重与能力分离（D-3） |
 | 5 先验证市场，再解释策略 | 通过 | M1→M2→M3 顺序不可颠倒；第一层门槛「够用即止」（方法论 §10.1） |
-| 6 安全与合规边界 | 通过 | 002 非目标、PRD §6 硬边界：不预测、不生成信号、不外推 |
+| 6 安全与合规边界 | 通过 | 001 非目标、PRD §6 硬边界：不预测、不生成信号、不外推 |
 | 7 小步、确定性、可观察 | 通过 | 里程碑各有可验收退出条件；每次账户变动都有事件分录 |
 
 ## 5. 测试策略
@@ -138,8 +140,8 @@ ACTIVE ──保证金率 < maint_bp──▶ PENDING_LIQUIDATION
 | 层级 | 对象 | 判据来源 |
 |---|---|---|
 | **向量测试** | 账户引擎 | [验收向量](../../docs/contracts/acceptance-vectors.md) 十个案例的整数期望值 |
-| **单元测试** | 订单簿、事件队列、配置解析 | 撮合合同 §8 八条；KR-006 单调性 |
-| **属性测试** | 守恒、定序、舍入 | 随机订单流下 C1/C2 恒成立；`seq` 严格递增 |
+| **单元测试** | 订单簿、事件队列、配置解析 | 撮合合同 §8 九条；KR-006 单调性 |
+| **属性测试** | 守恒、定序、舍入 | 随机订单流下 C1/C2 恒成立；`enqueue_seq`、`transaction_seq`、`record_index` 各自满足合同 |
 | **确定性测试** | 全链路 | 同种子两次运行的事件摘要哈希相等（SC-002） |
 | **重放测试** | 事件日志 | 仅凭日志重建账户终态；因果链引用完整性（SC-006） |
 
@@ -159,8 +161,8 @@ ACTIVE ──保证金率 < maint_bp──▶ PENDING_LIQUIDATION
    反例（验收向量案例 2 第二笔，A 在 110 平掉成本 100 的 10 手、C 在 110 建仓）：
    `Σwallet_delta = +100`、`Σentry_delta = +100`，旧式得 +100 ≠ 0 会把合法成交判为
    失败；含 `entry_notional` 后为 0；
-3. 事件全序键严格递增，无重复；
-4. 订单簿的价格优先与 `seq` 时间优先不被违反；
+3. 队列事件按 `queue_key` 弹出，日志记录按 `log_key` 严格递增且无重复；
+4. 订单簿的价格优先与到达事务 `transaction_seq` 时间优先不被违反；
 5. 账户状态机不出现非法转移（如 `LIQUIDATED → ACTIVE`）。
 
 ### 5.3 测试与合同的关系
@@ -182,9 +184,9 @@ ACTIVE ──保证金率 < maint_bp──▶ PENDING_LIQUIDATION
 
 | 阶段 | 范围 | 退出条件 | 文档 |
 |---|---|---|---|
-| **M1** | 最小确定性内核（**无杠杆**） | C1/C2 逐事件精确成立；验收向量与订单簿用例全通过；确定性哈希稳定 | [M1 spec](milestones/M1-minimal-kernel.md) |
-| **M2** | 杠杆、强平、第一个实验闭环 | 一项预注册实验可从配置追溯到条件性结论 | [M2 spec](milestones/M2-leverage-and-first-experiment.md) |
-| **M3** | 模型稳健性 | 旗舰结论不依赖单一行为映射或单一参数点 | [M3 spec](milestones/M3-robustness.md) |
+| **M1** | 最小确定性内核（**无杠杆**） | C1/C2 逐事件精确成立；验收案例 1—5、10 与撮合九项用例通过；确定性哈希稳定 | [M1 spec](milestones/M1-minimal-kernel.md) / [tasks](milestones/M1-tasks.md) |
+| **M2** | 杠杆、强平、第一个实验闭环 | 十个验收案例全部通过；一项预注册实验可从配置追溯到条件性结论 | [M2 spec](milestones/M2-leverage-and-first-experiment.md) / [tasks](milestones/M2-tasks.md) |
+| **M3** | 模型稳健性 | 旗舰结论不依赖单一行为映射或单一参数点 | [M3 spec](milestones/M3-robustness.md) / [tasks](milestones/M3-tasks.md) |
 | **M4/M5** | 平台扩展、交互产品 | **按证据决定是否立项** | PRD §15，暂不写规格 |
 
 M4/M5 不预先写规格：PRD 要求「每项都须先说明它服务于哪个新的可证伪问题」，而该

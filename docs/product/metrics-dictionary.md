@@ -17,10 +17,10 @@
 
 ### 1.1 事件（Event）
 
-**日志中的一条全序记录。** 分两类（事件 Schema §1.3）：**队列事件**从队列弹出并
+**日志中的一条全序记录。** 分两类（事件 Schema §1.4）：**队列事件**从队列弹出并
 执行一个原子事务；**事务记录**在事务内生成、直接写入日志，不再被执行。
-每个事件持有唯一的全序键
-`(timestamp, priority_class, seq)`（KR-003）。事件类型清单与优先级见
+队列调度使用 `(timestamp, priority_class, enqueue_seq)`，日志、摘要与重放使用
+`(timestamp, transaction_seq, record_index)`（KR-003）。事件类型清单与优先级见
 [`../contracts/event-schema.md`](../contracts/event-schema.md)。
 
 **事件是内核工作量的计量单位**，KPI-004 / NFR-003 的性能门槛以「已处理事件数」

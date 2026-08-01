@@ -9,42 +9,47 @@
 [ADR-002](../adr/002-same-timestamp-event-scheduling.md)、
 [指标字典](../product/metrics-dictionary.md)
 
-## 1. 全序键
+## 1. 队列顺序与日志顺序
 
-每个事件持有唯一键：
+队列调度和事务日志解决的是两个不同问题，使用两把键：
 
 ```text
-(timestamp, priority_class, seq)
+queue_key = (timestamp, priority_class, enqueue_seq)       # 只决定队列事件何时弹出
+log_key   = (timestamp, transaction_seq, record_index)     # 决定日志、哈希与重放顺序
 ```
 
-- `timestamp`：整数纳秒逻辑时间（KR-002）。禁止浮点。
-- `priority_class`：本文 §3 冻结的整数类别。同一时间戳下决定处理顺序。
-- `seq`：全局单调递增计数器，事件入队时分配。同类别同时间戳的最终裁决。
+- `timestamp`：整数纳秒逻辑时间（KR-002），禁止浮点；
+- `priority_class`：§3 冻结的队列调度类别；
+- `enqueue_seq`：事件入队时分配的全局单调计数器，是 queue key 的最终裁决；
+- `transaction_seq`：队列事件弹出时分配的全局单调事务序号；
+- `record_index`：事务内记录序号，从 0 开始；父队列事件恒为 0，其事务记录从 1 递增。
 
-**任何定序不得依赖字典/集合遍历顺序、对象标识或哈希值。** 订单簿的「时间优先」以
-订单到达事件的 `seq` 判定，而非 `timestamp`——同一纳秒到达的两笔订单必须有确定
-先后。
+**日志、摘要哈希、因果键比较和重放只使用 `log_key`。** `priority_class` 不参与日志
+排序；否则第一张订单事务内产生的 class 1/2 记录会排到同时间戳下一张 class 0 订单
+之后，与在线执行顺序相反。
 
-### 1.1 事件产生规则（KR-006）
+订单簿的时间优先使用订单到达事务的 `transaction_seq`。同一时间戳、同为 class 0 的
+订单按 `enqueue_seq` 弹出，因此其 `transaction_seq` 顺序与真实到达裁决一致。
 
-处理事件 `e` 期间产生的任何新事件 `e'` 必须满足：
+### 1.1 队列事件产生规则（KR-006）
+
+事务处理期间新入队的队列事件 `e'` 必须满足：
 
 ```text
-key(e') > key(e)
+queue_key(e') > queue_key(current_queue_event)
 ```
 
 违反时内核立即抛出异常并终止运行，**不得静默重排**（ADR-002 §1）。
 
-推论：**同一 `timestamp` 内 `priority_class` 不得减小**。允许保持不变——同 class 的
-后继事件靠 `seq` 严格递增即满足不变量（例如 `TRADE_SETTLE` 产生 `MARGIN_CALL`，
-两者同为 class 1，见 §4.2.2）。要回到**更小**的 class，`timestamp` 必须先前进——因此
-`AGENT_DECIDE`（class 4）产生的 `ORDER_ARRIVAL`（class 0）永远落在更晚的时间戳上。
+推论：新入队事件若回到更小的 class，`timestamp` 必须前进。因此 `AGENT_DECIDE`
+产生的普通订单和 `MARGIN_CALL` 产生的强平订单都必须带非零延迟。事务记录不入队，
+不适用 queue-key 回退规则；它们通过递增的 `record_index` 保证 log key 严格递增。
 
 为此**禁止零通信延迟**：所有代理的 `latency_ns ≥ 1`（FR-013）。零值配置在校验阶段
 拒绝，不静默替换为 1。纳秒粒度下 1 ns 已足以表达「几乎无延迟」，且零延迟无现实
 对应。
 
-### 1.2 回退 class 的跳转清单（穷举）
+### 1.2 回退 class 的队列跳转清单（穷举）
 
 **每一个回退 class 的跳转都必须跨越至少 1 ns，且必须列在下表中。** 表外出现回退即为
 实现缺陷或 schema 遗漏，不得临时加 1 ns 绕过。
@@ -52,7 +57,7 @@ key(e') > key(e)
 | 跳转 | class | 跨越时间由谁承担 | 下限 |
 |---|---|---|---|
 | `AGENT_DECIDE` → `ORDER_ARRIVAL` | 4 → 0 | 代理通信延迟 `latency_ns` | ≥ 1 |
-| `MARGIN_CALL` → `ORDER_ARRIVAL`（强平单） | 1 → 0 | 风控下单延迟 `liquidation_latency_ns` | ≥ 1 |
+| `MARGIN_CALL` 事务记录 → `ORDER_ARRIVAL`（强平单） | 当前订单事务 → 0 | 风控下单延迟 `liquidation_latency_ns` | ≥ 1 |
 
 第二行是 2026-08-01 检视补入的：强平单同样是 `ORDER_ARRIVAL`(class 0)，由
 `MARGIN_CALL`(class 1) 产生，因此**也是回退**。此前文档称「`AGENT_DECIDE` →
@@ -63,25 +68,22 @@ key(e') > key(e)
 语义不同：`grace_ns` 是给账户补保证金的宽限窗口，`liquidation_latency_ns` 是宽限
 结束后风控自身的下单耗时。
 
-**非回退的跳转不需要任何时间间隔**，键本就严格递增：`TRADE_SETTLE`(1) →
-`MARGIN_CALL`(1)（同 class，靠 `seq`）、`TRADE_SETTLE`(1) →
-`MARKET_DATA_PUBLISH`(2)、`MARKET_DATA_PUBLISH`(2) → `AGENT_OBSERVE`(3)、
-`AGENT_OBSERVE`(3) → `AGENT_DECIDE`(4) **均允许同时间戳，间隔可为 0**。观察与决策
-分为两个 class 是为了让信息集独立记录（§3.1），不意味着两者必须在时间上分开。
+`TRADE_SETTLE` → `MARGIN_CALL` / `MARKET_DATA_PUBLISH` 都是同一父事务内的记录链，
+靠 `record_index` 推进，不受 queue-key 规则约束。`AGENT_OBSERVE` → `AGENT_DECIDE`
+是 class 3 → 4 的队列跳转，允许同时间戳、间隔为 0。观察与决策分为两个 class 是为了
+让信息集独立记录（§3.1），不意味着两者必须在时间上分开。
 
 ### 1.3 第一版不含的生命周期事件
 
 加密式制度为 24/7 连续交易，**没有开盘、收盘、隔夜与熔断**，因此第一版不需要
 `SESSION_OPEN` / `SESSION_CLOSE` / `HALT` / `RESUME` / `SETTLEMENT_DUE` 事件。
 
-股票式制度引入时，这些事件必须**先补入本文的 class 清单并逐一验证键单调性**，尤其是
-「收盘时点触发保证金判定」这一跳（`SNAPSHOT`(5) → `MARGIN_CALL`(1) 为回退，须列入
-§1.2 表并指定跨越时间的承担者）。在此之前不得实现任何依赖时段状态的逻辑。
+股票式制度引入时，这些**队列事件**必须先补入本文的 class 清单并逐一验证 queue key。
+若收盘事件自身执行风险扫描，`MARGIN_CALL` 仍只是该收盘事务内的记录；若另设待执行的
+风险检查，则必须新增显式队列事件类型，不能把 `MARGIN_CALL` 记录重新塞回队列。在此
+之前不得实现任何依赖时段状态的逻辑。
 
-若无此规则，`AGENT_DECIDE` 在同一时间戳插入 class 0 事件会破坏事件队列的单调性，
-「数值越小越先处理」在实现层无法成立，KPI-002 的哈希输入顺序随之不确定。
-
-### 1.3 队列事件与事务记录（事件生命周期）
+### 1.4 队列事件与事务记录（事件生命周期）
 
 **并非所有事件都从队列弹出。** 事件分两类，这是消除「撮合何时改变账户」歧义的
 唯一方式：
@@ -91,9 +93,9 @@ key(e') > key(e)
 | **队列事件** | `ORDER_ARRIVAL`(0)、`AGENT_OBSERVE`(3)、`AGENT_DECIDE`(4)、`SNAPSHOT`(5) | 入队；弹出时**执行一个原子事务**，事务内可改变状态 |
 | **事务记录** | `TRADE_SETTLE`(1)、`MARGIN_CALL`(1)、`MARKET_DATA_PUBLISH`(2)、事务内的 `CANCEL` | **不入队**；在某个队列事件的事务内生成，直接写入日志 |
 
-事务记录**仍然**：分配 `seq`（同一全局计数器）、持有完整全序键、进入事件摘要哈希、
-按全序写入日志。它们与队列事件的唯一区别是**不会被再次弹出执行**——它们记录的是
-已经发生的状态变化，而非待执行的指令。
+队列事件弹出时先写 `record_index=0` 的父记录；事务内记录共享该父事件的
+`transaction_seq`，按实际发生顺序分配 `record_index=1,2,...` 并立即写入日志。它们
+不会被再次弹出执行，记录的是已经发生的状态变化，而非待执行的指令。
 
 #### 为什么必须这样分
 
@@ -117,19 +119,21 @@ TRADE_SETTLE A（class 1）→ 此时才更新账户
 
 #### 对日志自包含性的影响：无
 
-事务记录携带完整的 `postings`（`*_delta` 与 `*_after`，§4.2.1），重放器按全序逐条
+事务记录携带完整的 `postings`（`*_delta` 与 `*_after`，§4.2.1），重放器按 log key 逐条
 应用即可重建账户终态，**不需要知道它们是否曾经入队**。SC-006 的要求不受影响。
 
 ## 2. 冻结约束
 
-**`priority_class` 的取值与语义一经冻结不得静默变更。**
+**queue key、log key 与 `priority_class` 的取值和语义一经冻结不得静默变更。**
 
 变更将使历史实验的事件摘要哈希（KPI-002）不可比。如需变更，按宪章治理条款记录
 ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 
 事件日志顶层必须携带 `schema_version` 字段。
 
-**当前 `schema_version = 1`。** 2026-07-31 的方向重置新增了 `MARGIN_CALL`（§4.2.2）
+**当前 `schema_version = 2`。** 版本 2 将原单一 `(timestamp, priority_class, seq)`
+替换为 queue/log 双键，并把 class 1—2 明确为事务记录。2026-07-31 的方向重置新增了
+`MARGIN_CALL`（§4.2.2）
 与杠杆相关字段，但**未提升版本号**——此前没有任何实验运行过，不存在可比性问题。
 首次正式运行之后，任何字段或 class 变更都必须提升版本号。
 
@@ -147,14 +151,11 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | 4 | `AGENT_DECIDE` | 代理决策，产生新的订单意图 |
 | 5 | `SNAPSHOT` | 周期性账户与订单簿快照，纯记录，不改变状态 |
 
-### 3.1 排序理由
+### 3.1 调度与事务记录顺序
 
-**交易所侧（0—2）先于代理侧（3—4）。** class 0 是队列事件、1—2 是它产生的事务记录
-（§1.3）；`AGENT_OBSERVE`(3) 弹出时读取的必然是撮合已完成的一致簿状态，不会看到
-中间态。若顺序颠倒，代理可能基于半更新的簿做决策，使 A-002 在实现层被悄然破坏。
-
-`priority_class` 对事务记录仍然有效——它决定同一时间戳内**日志记录的排列顺序**，
-从而决定事件摘要哈希的输入顺序。
+class 0/3/4/5 决定**队列事件**在同一时间戳的弹出顺序。class 1—2 对事务记录仅保留
+阶段标签语义，不参与跨事务日志排序；事务记录由父事务的 `record_index` 排序。
+`AGENT_OBSERVE` 弹出时读取的必然是此前全部已提交事务后的状态，不会看到撮合中间态。
 
 **观察（3）与决策（4）分离为两个类别**，而非合并。理由是 KPI-006 要求任一成交可
 追溯至「当时的信息集」——分离后信息集在 `AGENT_OBSERVE` 事件中被独立记录，与决策
@@ -165,8 +166,9 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 
 ## 4. 事件类型与必备字段
 
-所有事件共有：`schema_version`、`event_id`、`timestamp`、`priority_class`、`seq`、
-`event_type`、`run_id`。
+所有日志记录共有：`schema_version`、`event_id`、`timestamp`、`transaction_seq`、
+`record_index`、`priority_class`、`event_type`、`run_id`。队列事件另有 `enqueue_seq`；
+事务记录通过父事件或因果外键定位其事务，不单独入队。
 
 ### 4.1 ORDER_ARRIVAL（class 0）
 
@@ -302,7 +304,7 @@ SC-006 的「每一跳唯一存在」在快照上无法成立。
 核销分录永远不会产生。两阶段的账户集合天然不相交，无需去重。
 
 同一次成交触发多个 `MARGIN_CALL` 时，按 **`agent_id` 升序**产生事件——这是确定性
-要求，不是效率考虑：顺序影响 `seq` 分配，进而影响 KPI-002 的哈希。
+要求，不是效率考虑：顺序影响 `transaction_seq` / `record_index` 分配，进而影响 KPI-002 的哈希。
 
 `chain_depth` 传播规则：由成交直接触发的判定为该成交的 `chain_depth`；由**强平单
 成交**触发的判定为 `触发它的强平判定的 chain_depth + 1`。普通代理成交触发的判定
@@ -386,7 +388,7 @@ trade_id
 对每次运行的事件日志：
 
 - **遍历全部** `TRADE_SETTLE`（非抽样），沿 §5.1 逐跳解析；
-- 每一跳的目标事件必须在日志中**唯一存在**，且其全序键**严格小于**引用方；
+- 每一跳的目标事件必须在日志中**唯一存在**，且其 `log_key` **严格小于**引用方；
 - 断链、悬空引用或多重匹配即判定该运行不合格；
 - **账户侧**：每笔成交的 `postings` 恰为 2 条且 `agent_id` 与 `maker/taker_agent_id`
   一致；分录的 `*_after_units` 等于该代理上一条分录的 `*_after_units` 加本次
@@ -403,7 +405,7 @@ trade_id
 
 ## 7. 事件摘要哈希（KPI-002）
 
-对事件序列按全序逐个计算滚动哈希，输入为各事件的**语义字段**（排除
+对事件序列按 `log_key` 逐个计算滚动哈希，输入为各事件的**语义字段**（排除
 `event_id` 等实现细节标识）。参与哈希的字段集合须显式声明并随 schema 版本管理。
 
 哈希在 §9 的规范序列化之上计算，因而与语言、平台的浮点实现无关（ADR-001 §7）。
@@ -427,7 +429,8 @@ KPI-006 的证据能力因此逐年衰减。§5 的引用完整性断言在两�
 
 ### E-002：参与摘要哈希的字段
 
-**纳入**：`timestamp`、`priority_class`、`seq`、`event_type`，以及各事件类型的
+**纳入**：`timestamp`、`transaction_seq`、`record_index`、`priority_class`、
+`event_type`，以及各事件类型的
 外部可观察语义字段——`agent_id`、`order_id`、`side`、`order_type`、`price_ticks`、
 `quantity_units`、`accepted`、`reject_reason`、成交双方标识、成交价量、
 `notional_cash_units`、`maker_fee_cash_units`、`taker_fee_cash_units`，以及撤单的

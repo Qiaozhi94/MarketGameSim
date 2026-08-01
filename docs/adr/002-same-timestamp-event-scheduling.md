@@ -1,7 +1,7 @@
 # ADR-002：同时间戳事件调度与因果链的强制表达
 
 日期：2026-07-30  
-状态：Accepted  
+状态：Accepted（2026-08-01 修订为 queue key / log key 双键）
 关联规格：[`../../specs/001-belief-testing-laboratory/spec.md`](../../specs/001-belief-testing-laboratory/spec.md)  
 解决问题：PRD Q-012  
 关联决策：001 规格 D-5（离散事件内核）  
@@ -11,7 +11,7 @@
 
 ### 1. 全序键的单调性未被保证
 
-KR-003 定义事件全序键为 `(timestamp, priority_class, seq)`，event-schema §3 规定
+修订前的 KR-003 曾定义事件全序键为 `(timestamp, priority_class, seq)`，event-schema §3 规定
 「数值越小越先处理」。但事件是在处理其他事件的过程中产生的：
 
 - `AGENT_DECIDE`（class 4）产生订单意图，形成 `ORDER_ARRIVAL`（class 0）；
@@ -46,21 +46,34 @@ KPI-006 在展示层看似可用，却没有可机器验证的完整性。
 
 ## 决策
 
-### 1. 新事件的全序键必须严格大于当前事件（KR-006）
+### 1. 队列调度键与事务日志键分离（KR-003 / KR-006）
 
-内核不变量：**处理事件 `e` 期间产生的任何新事件 `e'`，其全序键必须满足
-`key(e') > key(e)`。** 违反时立即抛出异常并终止运行，不得静默重排或降级处理。
+2026-08-01 的撮合合同明确了一张订单是一个原子事务。原三元键不能同时表示“队列中谁
+先弹出”和“一个事务内的记录必须紧跟父事件”，因此冻结为：
 
-推论：同一时间戳内只允许沿 `priority_class` **递增**方向推进（0→1→2→3→4→5）。要回到
-更小的 class，`timestamp` 必须先前进。
+```text
+queue_key = (timestamp, priority_class, enqueue_seq)
+log_key   = (timestamp, transaction_seq, record_index)
+```
+
+`queue_key` 只用于队列事件；`transaction_seq` 在队列事件弹出时分配，父记录的
+`record_index=0`，事务记录依实际发生顺序递增。日志、哈希、因果比较与重放只使用
+`log_key`。
+
+内核不变量：事务期间新入队的队列事件 `e'` 必须满足
+`queue_key(e') > queue_key(current)`；事务内新记录必须满足 `record_index` 严格递增。
+违反任一条件立即终止，不得静默重排。
+
+推论：队列事件回到更小 class 时，`timestamp` 必须前进。事务记录不入队，其 class
+只是阶段标签，不参与跨事务日志排序。
 
 ### 2. 禁止零通信延迟
 
 配置校验断言：**所有代理的 `latency_ns ≥ 1`**。零值配置直接拒绝，不静默替换为 1。
 
-约束只施加于**通信延迟**这一处，因为 `AGENT_DECIDE`（class 4）→ `ORDER_ARRIVAL`
-（class 0）是唯一会**回退 class** 的跳转，必须靠 `timestamp` 前进来满足 §1。其余
-跳转（0→1→2→3→4→5）都沿 class 递增方向，键本就严格递增，**不需要任何时间间隔**：
+约束施加于产生回退 class 队列事件的路径：代理订单使用通信延迟，强平订单使用
+`liquidation_latency_ns`。`TRADE_SETTLE`、`MARGIN_CALL` 与 `MARKET_DATA_PUBLISH` 是
+父订单事务内的记录，不是队列跳转，不需要额外时间间隔。
 
 - `TRADE_SETTLE`(1) → `MARKET_DATA_PUBLISH`(2)：可同时间戳；
 - `MARKET_DATA_PUBLISH`(2) → `AGENT_OBSERVE`(3)：可同时间戳（观察延迟允许为 0）；
@@ -103,7 +116,7 @@ trade_id → caused_by_event_id → taker/maker order_id
 对每次运行的事件日志：
 
 - **遍历全部** `TRADE_SETTLE`（非抽样），沿上表逐跳解析；
-- 每一跳的目标事件必须在日志中**唯一存在**，且其全序键**严格小于**引用方；
+- 每一跳的目标事件必须在日志中**唯一存在**，且其 `log_key` **严格小于**引用方；
 - 断链、悬空引用或多重匹配即判定运行不合格。
 
 该断言完全在日志内完成，不依赖重放，是 KPI-006 从「展示层可读」升级为「可验证」的
@@ -135,8 +148,8 @@ E-001 的 `information_set_mode: digest` 仅用于性能基准（BENCH-001）。
 
 | 方案 | 说明 | 评估 |
 |---|---|---|
-| 禁止零延迟 + 键严格递增 | 全序键保持三元组，最小延迟 1 ns | **采纳**。改动最小，不触及 KR-003 与 KPI-002 的哈希输入 |
-| 同时间戳 microstep / phase 轮次 | 全序键扩为四元组 `(timestamp, microstep, class, seq)` | 排除。改变 KR-003 与哈希字段集合，且引入「同一纳秒内多轮」的语义负担，回放器与报告层都要理解该概念 |
+| queue key + log key | 队列调度与事务提交分别排序 | **采纳**。在线执行、日志与重放顺序一致 |
+| 同时间戳 microstep / phase 轮次 | 单一键扩为四元组 | 排除。事务边界仍不如双键明确 |
 | 允许回到更小 class | 重写「同时间戳优先级」语义 | 排除。等于承认全序键不决定处理顺序，KPI-002 的确定性无从建立 |
 
 零延迟本身也不具建模价值：现实中不存在零延迟通道，而 1 ns 与 0 在任何指标上不可
@@ -152,7 +165,7 @@ E-001 的 `information_set_mode: digest` 仅用于性能基准（BENCH-001）。
 
 ## 后果
 
-- **正面**：事件队列单调性成为可断言的内核不变量；KPI-002 的哈希在实现层有确定的
+- **正面**：事件队列和事务日志各自有可断言的单调键；KPI-002 的哈希在实现层有确定的
   输入顺序；KPI-006 可在日志内被机器验证，不依赖重放；撤单与多意图决策的归因不再
   有歧义。
 - **负面**：
