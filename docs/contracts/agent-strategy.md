@@ -219,7 +219,8 @@ delta = target_position − current_position
 ```
 
 - `aggressiveness = 0` → 挂在同侧最优价，**必为 maker**；
-- `aggressiveness = 1` → 挂到对侧最优价，**立即成交，必为 taker**；
+- `aggressiveness = 1` → 挂到对侧最优价，**立即成交，必为 taker**（成交价即对侧
+  最优价，见[撮合合同](matching.md) §2.1）；
 - 中间值 → 挂在价差内部，改善盘口。
 
 **maker / taker 的分化由此自然产生**，不需要单独的「代理类型」。这也使 maker 返佣与
@@ -416,6 +417,7 @@ required_reserved = ceil(worst_notional × initial_bp / 10000)
 
 **同一代理的买单与卖单不得相互成交。** 撮合时若发现对手方 `agent_id` 与自己相同，
 执行 **cancel-resting**（撤销簿上那张较早的挂单，让新单继续撮合下一档）。
+撮合层的完整规则见[撮合合同](matching.md) §4。
 
 选 cancel-resting 而非 cancel-newest 或 cancel-both 的理由：本合同 §6.2 规定每次
 决策全撤重报，簿上的旧单已经是过时意图，撤掉它符合代理的实际意愿；撤新单会使本次

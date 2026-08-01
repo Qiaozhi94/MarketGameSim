@@ -8,7 +8,8 @@
 （数值与序列化口径）、
 [ADR-006](../../docs/adr/006-same-timestamp-event-scheduling.md)（事件调度与因果链）；
 其余设计决策见本文 §「设计决策与理由」  
-**实现合同**：[事件 Schema](../../docs/contracts/event-schema.md)、
+**实现合同**：[撮合](../../docs/contracts/matching.md)、
+[事件 Schema](../../docs/contracts/event-schema.md)、
 [退化状态](../../docs/contracts/degenerate-states.md)、
 [代理策略](../../docs/contracts/agent-strategy.md)、
 [账户与保证金](../../docs/contracts/margin-and-account.md)、
@@ -76,7 +77,8 @@
 ### 市场与撮合
 
 - **FR-001**：实现价格时间优先的单品种限价订单簿，支持限价单、市价单、撤单与部分
-  成交。
+  成交。撮合规则见[撮合合同](../../docs/contracts/matching.md)：成交价取 maker 挂单
+  价，跨档逐笔拆分为多个 `TRADE_SETTLE`，限价单剩余挂入簿、市价单剩余按 IOC 撤销。
 - **FR-002**：市场制度通过约束钩子注入（D-1），钩子只能拒绝或延迟订单，
   **不得改写**。第一版只提供 `crypto_perp_free` 一套配置；接口须能在不改撮合核心的
   前提下接入其他制度。

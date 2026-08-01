@@ -33,6 +33,7 @@
 
 ## 实现契约
 
+- `docs/contracts/matching.md`：订单簿定序、成交价规则、跨档拆分与自成交阻止。
 - `docs/contracts/event-schema.md`：事件全序键、冻结的优先级类别、各类事件字段。
 - `docs/contracts/degenerate-states.md`：退化状态、技术无效与经济终点的判定。
 - `docs/contracts/agent-strategy.md`：从信息集到订单意图的确定管线。
