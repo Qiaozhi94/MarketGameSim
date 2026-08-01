@@ -206,8 +206,8 @@ margin_ratio_bp  = risk_equity × 10000 / notional_units       # 当前保证金
   会被锁死在无法自救的状态；
 - `reserved_units` 按最坏情形整体重算（假设全部挂单成交），撤单或成交后重算即
   自然释放；`reserved_delta_units` = 重算前后之差，写入事件分录；
-- 该检查取代了 ADR-001 §4 的「冻结全额名义金额」——那是现货语义，永续下只冻结
-  保证金。**ADR-001 §4 须同步修订**。
+- 该检查取代了 ADR-001 §4 原先的「冻结全额名义金额」——那是现货语义，永续下只冻结
+  保证金。**ADR-001 §4 已同步修订完毕**，其正文现直接指向本节。
 
 ## 4. 强平
 
@@ -233,7 +233,12 @@ margin_ratio_bp  = risk_equity × 10000 / notional_units       # 当前保证金
 
 - 阶段 1 只检查成交涉及的账户（仓位归零只可能由成交造成），阶段 2 只检查非零仓位
   账户，**两阶段的账户集合天然不相交**，不存在重复判定；
-- 阶段 1 的事件先于阶段 2 产生；各阶段内部按 `agent_id` 升序（§事件 Schema §4.2.2）；
+- 阶段 1 的事件先于阶段 2 产生；各阶段内部按 `agent_id` 升序（事件 Schema §4.2.2）。
+  该顺序只影响 `record_index` 分配，`transaction_seq` 在同一父事务内恒定；
+- 两阶段产生的全部 `MARGIN_CALL` 的 `caused_by_event_id` 都指向**本事务的父
+  `ORDER_ARRIVAL`**，`risk_mark_event_id` 都指向**本批最后一笔 `TRADE_SETTLE`**
+  （事件 Schema §4.2.2）——批末扫描覆盖全部非零仓位账户，多数账户并未参与本次成交，
+  不存在「自己的那笔成交」；
 - 阶段 1 产生的 `BREACHED` 事件携带核销 `postings`，账户随即转入 `LIQUIDATED`，
   不再参与后续任何扫描。
 

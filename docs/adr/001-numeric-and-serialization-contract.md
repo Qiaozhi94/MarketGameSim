@@ -207,4 +207,4 @@ fee_cash_units = round_away_from_agent(notional_cash_units × bps / 10000)
   新增 §1.8 最小单位。
 - degenerate-states.md：§0 与 §1.2 的 NaN 表述按 §6 分层。
 - `benchmarks/*.yaml`：新增 `cash_unit` 字段，非整数领域量改为带引号字符串。
-- 001 实现任务：账户与预冻结须含舍入方向的属性测试。
+- v0.1 实现任务：账户与预冻结须含舍入方向的属性测试。

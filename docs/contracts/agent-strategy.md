@@ -118,8 +118,9 @@ v0.2+），以及全局撮合中间态（A-002）。
 
 - **只有 `TRADE_SETTLE` 能改变 `mark`**，从而只有成交能触发保证金扫描；
 - 报价与撤单**不得**仅凭移动中间价触发强平；
-- `MARGIN_CALL.caused_by_event_id` 恒指向 `TRADE_SETTLE`（事件 Schema §4.2.2），
-  触发链闭合。
+- `MARGIN_CALL.risk_mark_event_id` 恒指向一笔 `TRADE_SETTLE`（事件 Schema §4.2.2），
+  触发链闭合。**不是 `caused_by_event_id`**——后者指向本事务的父 `ORDER_ARRIVAL`，
+  因为批末扫描覆盖全部非零仓位账户，多数被判定的账户并未参与本次成交。
 
 指标字典 §3.1 定义了**两个不可混用的 mark**：
 

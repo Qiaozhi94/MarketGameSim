@@ -96,7 +96,7 @@ queue_key(e') > queue_key(current_queue_event)
 事务记录的 class 只是阶段标签，**不参与任何排序**（§3.1）——`ORDER_CANCELLED` 的
 class 0 与父 `ORDER_ARRIVAL` 相同，不意味着它会排到成交之前。
 
-**事务记录的写入时点：事务提交时一次性写出，不是逐条即时写。**
+**记录的写入时点：事务提交时一次性写出，不是逐条即时写。父记录 `r0` 也不例外。**
 
 撮合循环逐档进行，第一笔成交发生时还不知道本次撮合总共会有几笔（取决于簿深度、
 是否遇到自成交、taker 剩余量）。而 `TRADE_SETTLE.fill_count` 要求第一笔就携带总数
@@ -104,8 +104,16 @@ class 0 与父 `ORDER_ARRIVAL` 相同，不意味着它会排到成交之前。
 并按 `record_index` 顺序一次性写出**。
 
 缓冲不影响任何其他语义：账户在撮合循环中**逐笔立即更新**（本节「为什么必须这样分」
-要解决的问题依旧成立），只是**日志写出**延后到事务末尾。事务异常终止时缓冲整体
-丢弃，不产生半截日志。
+要解决的问题依旧成立），只是**日志写出**延后到事务末尾。
+
+由此得到一条日志不变式，验证器可以无条件依赖：
+
+> **日志中的每个事务要么完整存在，要么完全不存在。** 不存在只写了 `r0`、
+> 或成交写了一半的事务。
+
+`r0` 一并缓冲正是为了这条不变式。若 `r0` 在事务开始时就写出，异常终止时日志里会留下
+一个没有任何后续记录的孤儿父记录，重放器无法区分它是「被拒的订单」还是「崩在半路的
+事务」——两者的 `record_index` 序列完全相同。
 
 **缓冲不是 dry-run。** 撮合只执行一遍：每一档撮合完成即更新账户、扣费、处理自成交
 撤单，同时把对应记录**追加进事务缓冲区**（此时 `fill_count` 字段留空）。撮合循环
@@ -124,9 +132,9 @@ class 0 与父 `ORDER_ARRIVAL` 相同，不意味着它会排到成交之前。
 若实现选择即时写出，则必须改用可流式表达的 `is_last_fill` 而非 `fill_count`——
 本文选择前者，因为 `fill_count` 让重放器能预先分配容量、并在读到第一笔时即校验完整性。
 
-队列事件弹出时先写 `record_index=0` 的父记录；事务内记录共享该父事件的
-`transaction_seq`，按实际发生顺序分配 `record_index=1,2,...`。它们
-不会被再次弹出执行，记录的是已经发生的状态变化，而非待执行的指令。
+队列事件弹出时先**分配**（不是写出）`record_index=0` 的父记录；事务内记录共享该父
+事件的 `transaction_seq`，按实际发生顺序分配 `record_index=1,2,...`。它们不会被再次
+弹出执行，记录的是已经发生的状态变化，而非待执行的指令。
 
 #### 事务内记录顺序（冻结）
 
@@ -170,10 +178,52 @@ TRADE_SETTLE A（class 1）→ 此时才更新账户
 降级为事务记录。这既保证了同时间戳的后续订单看到最新账户，又不让记录承担它无法承担
 的执行语义。
 
-#### 对日志自包含性的影响：无
+#### 「原子事务」指哪一种原子性
+
+数据库语境下「原子事务」通常同时含两层意思，本合同**只要求第一层**：
+
+| 层 | 含义 | 本合同 |
+|---|---|---|
+| **可见性原子性** | 任何其他事务都观察不到本事务的中间态 | **要求**。单线程顺序执行天然成立——事务执行期间没有任何其他事务在跑 |
+| **失败原子性** | 事务失败时全部状态变更回滚 | **不要求**。见 §1.5 |
+
+此前文档只写「原子事务」，读者会默认包含第二层。**不包含。** 撮合循环中的账户与簿
+变更是**原地生效、不可回滚**的。
+
+### 1.5 失败语义：fail-stop，不回滚
+
+**内核在事务执行中抛出的任何异常都是实现缺陷或配置错误，不存在可恢复的异常类。**
+KR-006 单调性违反、C1/C2 失衡、状态机非法转移、回退跳转白名单外的跳转——每一条都
+意味着代码是错的，而不是市场出现了某种需要处理的情况。
+
+因此语义固定为 **fail-stop**：
+
+1. **整个运行立即终止**。不回滚、不重试、不跳过该事务、不继续处理队列；
+2. **该事务的缓冲区整体丢弃**，日志中不出现它的任何记录（含 `r0`）；
+3. 日志尾部写入终止记录 `{"terminated": "ABORTED", "reason": ..., "last_transaction_seq": ...}`；
+4. 该运行判 **TI-4**（退化状态 §技术无效），**不得**进入摘要哈希比较、重放、
+   统计分析或任何实验结论；
+5. **禁止从中断点恢复或续跑。** 修复缺陷后必须以同一配置与种子完整重跑。
+
+**验证器的对应义务**：`verify` 读到缺少正常结束标记的日志必须**拒绝**并报 TI-4，
+不得「尽力而为地校验前半段」。半截运行的部分校验通过没有任何证据价值。
+
+#### 为什么不做回滚
+
+回滚需要为账户、订单簿、`reserved` 与待入队事件维护 undo log 或每事务写时复制。
+代价是**每个事件都要付的分配开销**，而 KPI-004 的 10 秒门槛正是按事件吞吐量定的。
+
+买到的是什么？是「内核已经证明自己有 bug，但运行继续，并产出结果」。这比中止更糟：
+带缺陷的运行会生成看似正常的日志与统计，而缺陷发生在哪个事务已被回滚抹掉。
+
+**研究工具的正确失败方式是大声地停下，不是安静地续跑。**
+
+### 1.6 对日志自包含性的影响：无
 
 事务记录携带完整的 `postings`（`*_delta` 与 `*_after`，§4.2.1），重放器按 log key 逐条
 应用即可重建账户终态，**不需要知道它们是否曾经入队**。SC-006 的要求不受影响。
+
+缓冲写出同样不影响自包含性——它改变的只是记录**何时**落盘，不改变记录内容。
 
 ## 2. 冻结约束
 
@@ -312,13 +362,29 @@ SC-006 的「每一跳唯一存在」在快照上无法成立。
 | 字段 | 说明 |
 |---|---|
 | `agent_id` | 被判定的账户 |
-| `caused_by_event_id` | 导致该判定的 `TRADE_SETTLE`（只有成交能改变风险 mark，代理策略 §3.3） |
+| `caused_by_event_id` | **本事务的父 `ORDER_ARRIVAL`**（因果外键） |
+| `risk_mark_event_id` | 确立本次判定所用 `risk_mark` 的那笔成交 = **本批最后一笔 `TRADE_SETTLE`**（因果外键） |
 | `margin_ratio_bp` | 判定时的保证金率（整数万分数，账户合同 §3.2） |
 | `maintenance_bp` | 当时生效的维持保证金率 |
 | `verdict` | `OK` \| `PENDING_LIQUIDATION` \| `LIQUIDATING` \| `BREACHED`（穿仓） |
 | `required_quantity_units` | 恢复至 `target_bp` 所需的最小平仓数量（账户合同 §4.2）；`OK` 时为 0 |
 | `chain_depth` | 该判定所处的连锁层数，0 表示非连锁触发（指标字典 §4.1） |
 | `postings` | **仅 `verdict = BREACHED` 时非空**，长度为 2：代理核销分录 + 交易所风险账户分录（见 §4.2.3） |
+
+**为什么因果父是 `ORDER_ARRIVAL` 而不是某笔 `TRADE_SETTLE`**：跨档成交产生多笔
+`TRADE_SETTLE`，而风险扫描在**整批之后只做一次**（§4.2.2 扫描范围）。此时「导致该
+判定的成交」没有唯一答案，且扫描覆盖**全部非零仓位账户**——绝大多数被判定的账户
+根本没参与本次成交，对它们而言不存在任何「自己的那笔成交」。指向 `ORDER_ARRIVAL`
+则恒唯一：**是这一张订单的到达触发了这一轮扫描**。
+
+`risk_mark_event_id` 单独承载「判定用的价格从哪来」：批末扫描使用的 `risk_mark` 是
+本批**最后一笔** `TRADE_SETTLE` 的成交价，因此该外键恒指向那一笔。两个外键分工明确：
+一个回答「谁触发了扫描」，一个回答「按哪个价格判的」。
+
+**v0.1 中 `risk_mark_event_id` 恒非 null**——只有成交能改变 `risk_mark`
+（代理策略 §3.3），因此不含成交的事务不触发扫描，也就不产生 `MARGIN_CALL`。
+字段声明为可空是为将来的非成交触发场景（如按时间的资金费结算）预留，
+**在 v0.1 中出现 null 即为实现缺陷**。
 
 #### 4.2.3 穿仓核销分录
 
@@ -360,8 +426,9 @@ SC-006 的「每一跳唯一存在」在快照上无法成立。
 **只做阶段 2 会漏掉仓位归零的穿仓账户**——它们因 `position == 0` 被排除在扫描外，
 核销分录永远不会产生。两阶段的账户集合天然不相交，无需去重。
 
-同一次成交触发多个 `MARGIN_CALL` 时，按 **`agent_id` 升序**产生事件——这是确定性
-要求，不是效率考虑：顺序影响 `transaction_seq` / `record_index` 分配，进而影响 KPI-002 的哈希。
+同一轮扫描产生多个 `MARGIN_CALL` 时，按 **`agent_id` 升序**产生事件——这是确定性
+要求，不是效率考虑：顺序影响 **`record_index` 分配**，进而影响 KPI-002 的哈希。
+（`transaction_seq` 在同一父事务内恒定不变，不受此影响。）
 
 `chain_depth` 传播规则：由成交直接触发的判定为该成交的 `chain_depth`；由**强平单
 成交**触发的判定为 `触发它的强平判定的 chain_depth + 1`。普通代理成交触发的判定
@@ -491,7 +558,14 @@ trade_id
 - 断链、悬空引用或多重匹配即判定该运行不合格；
 - **账户侧**：每笔成交的 `postings` 恰为 2 条且 `agent_id` 与 `maker/taker_agent_id`
   一致；分录的 `*_after_units` 等于该代理上一条分录的 `*_after_units` 加本次
-  `*_delta_units`（首次以初始值为基），且与同代理最近一次 `ACCOUNT` 快照一致。
+  `*_delta_units`（首次以初始值为基），且与同代理最近一次 `ACCOUNT` 快照一致；
+- **`MARGIN_CALL` 侧**（0.1.2 起）：`caused_by_event_id` 指向的 `ORDER_ARRIVAL`
+  与本判定同属一个 `transaction_seq`；`risk_mark_event_id` 指向的 `TRADE_SETTLE`
+  是该事务内 `record_index` **最大**的一笔成交；判定使用的价格与该笔的
+  `risk_mark_ticks` 相等；
+- **事务完整性**（§1.5）：每个 `transaction_seq` 必须以 `record_index=0` 起始且
+  中间无空洞；日志必须以正常结束标记收尾，出现 `terminated: ABORTED` 或缺少结束标记
+  时**整份日志判 TI-4 并拒绝**，不做部分校验。
 
 该断言不依赖重放，因而不随代码版本失效——这是 KPI-006 从「展示层可读」升级为
 「可机器验证」的关键。
@@ -499,13 +573,21 @@ trade_id
 ## 6. 运行元数据
 
 每次运行的日志头部必须记录（PR-012）：`run_id`、代码版本、配置哈希、
-`master_seed`、开始时间、完成状态、`schema_version`，以及数值单位定义
+`master_seed`、开始时间、`schema_version`，以及数值单位定义
 `tick_size`、`min_quantity`、`cash_unit`（ADR-001 §7）。
+
+**完成状态写在日志尾部，不在头部**——头部在运行开始时写出，那时还不知道结局。
+尾部记录为 `{"terminated": "COMPLETED" | "ABORTED", "reason": ..., "last_transaction_seq": ...}`。
+**缺少尾部记录 = 运行未正常结束**（进程被杀、磁盘写满、内核崩溃），等同 `ABORTED`
+处理（§1.5）。把完成状态放头部会使这类情形无法与正常运行区分。
 
 ## 7. 事件摘要哈希（KPI-002）
 
-对事件序列按 `log_key` 逐个计算滚动哈希，输入为各事件的**语义字段**（排除
-`event_id` 等实现细节标识）。参与哈希的字段集合须显式声明并随 schema 版本管理。
+对事件序列按 `log_key` 逐个计算滚动哈希，输入为各事件的**语义字段**——
+字段集合由 **E-002 的封闭清单**逐条声明，并随 schema 版本管理。
+
+**只对正常结束的运行计算哈希。** `terminated: ABORTED` 或缺少尾部记录的日志不参与
+KPI-002 比较（§1.5）——半截运行之间哈希相同不构成确定性证据。
 
 哈希在 §9 的规范序列化之上计算，因而与语言、平台的浮点实现无关（ADR-001 §7）。
 
@@ -532,21 +614,51 @@ KPI-006 的证据能力因此逐年衰减。§5 的引用完整性断言在两�
 不使用「以及各类型的语义字段」这类开放表述——开放表述会让新增字段默默落在清单外，
 而 KPI-002 恰恰无法检出「本该被覆盖却没被覆盖」的字段。
 
-**全部记录共有**：`timestamp`、`transaction_seq`、`record_index`、`priority_class`、
-`event_type`。
+**全部记录共有**：`schema_version`、`timestamp`、`transaction_seq`、`record_index`、
+`priority_class`、`event_type`。**队列事件另有 `enqueue_seq`，同样纳入。**
+
+`schema_version` 纳入是刻意的：schema 变更本就使历史哈希不可比（§2），让哈希自己
+反映这一点，比依赖人工核对元数据头部可靠。`enqueue_seq` 纳入是因为它是同时间戳同
+class 的**最终定序裁决**——两张订单谁先到是外部可观察的市场事实，不是实现细节。
 
 | 事件类型 | 纳入哈希的字段 |
 |---|---|
 | `ORDER_ARRIVAL` | `agent_id`、`order_id`、`action`、`target_order_id`、`side`、`order_type`、`price_ticks`、`quantity_units`、`accepted`、`reject_reason`、`reserved_delta_units`、`origin`、`trigger_ratio_bp` |
 | `ORDER_CANCELLED` | `order_id`、`agent_id`、`cancelled_qty_units`、`price_ticks`、`side`、`reason`、`reserved_delta_units` |
-| `TRADE_SETTLE` | `maker_order_id`、`taker_order_id`、`maker_agent_id`、`taker_agent_id`、`price_ticks`、`quantity_units`、`notional_cash_units`、`maker_fee_cash_units`、`taker_fee_cash_units`、`valuation_mark_before_half_ticks`、`valuation_mark_after_half_ticks`、`risk_mark_ticks`、`fill_index`、`fill_count`、**全部 `postings` 字段**（`trade_id` 除外） |
-| `MARGIN_CALL` | `agent_id`、`margin_ratio_bp`、`maintenance_bp`、`verdict`、`required_quantity_units`、`chain_depth`、**全部 `postings` 字段** |
-| `MARKET_DATA_PUBLISH` | `best_bid`、`best_ask`、各侧 k 档深度、`last` |
+| `TRADE_SETTLE` | `maker_order_id`、`taker_order_id`、`maker_agent_id`、`taker_agent_id`、`price_ticks`、`quantity_units`、`notional_cash_units`、`maker_fee_cash_units`、`taker_fee_cash_units`、`valuation_mark_before_half_ticks`、`valuation_mark_after_half_ticks`、`risk_mark_ticks`、`fill_index`、`fill_count`、`postings[]`（叶字段见下表 A） |
+| `MARGIN_CALL` | `agent_id`、`margin_ratio_bp`、`maintenance_bp`、`verdict`、`required_quantity_units`、`chain_depth`、`postings[]`（叶字段见下表 B） |
+| `MARKET_DATA_PUBLISH` | `best_bid`、`best_ask`、`bid_depth_k`、`ask_depth_k`、`last` |
 | `AGENT_OBSERVE` | `agent_id`、`observed_at` |
-| `AGENT_DECIDE` | `agent_id`、`rule_id`、`intents` 中每个元素的 `action`/`side`/`order_type`/`price_ticks`/`quantity_units`（**不含 `intent_id`**） |
+| `AGENT_DECIDE` | `agent_id`、`rule_id`、`intents[]` 的 `action`/`side`/`order_type`/`price_ticks`/`quantity_units`（**不含 `intent_id`**） |
 | `SNAPSHOT` | `snapshot_type`、`payload` |
 
-`postings` 全字段入哈希是 P1-K03 的核心修正：此前只有成交价量入哈希，若分组、
+#### postings 叶字段（封闭）
+
+`postings` 是嵌套数组，「全部字段」不是封闭表述——**必须逐叶列出，且两种载体的形状
+不同**。
+
+**表 A：`TRADE_SETTLE.postings`**（长度恒为 2）
+
+数组顺序**固定为 `[MAKER, TAKER]`**，不按 `agent_id` 排。自成交已被阻止（撮合 §4），
+不存在两条分录同属一个代理的情形。
+
+叶字段：`agent_id`、`role`、`wallet_delta_units`、`position_delta_units`、
+`entry_notional_delta_units`、`realized_pnl_delta_units`、`fee_delta_units`、
+`reserved_delta_units`、`wallet_after_units`、`position_after_units`、
+`entry_notional_after_units`、`equity_after_units`、`margin_ratio_after_bp`、
+`risk_pnl_delta_units`。**全部纳入。**
+
+**表 B：`MARGIN_CALL.postings`**（`verdict = BREACHED` 时长度为 2，否则为空数组）
+
+数组顺序**固定为 `[代理侧, 交易所侧]`**。交易所侧的 `agent_id` 为 `null`，无法参与
+按 `agent_id` 的排序，因此顺序必须由角色而非标识决定。
+
+叶字段与表 A 相同（§4.2.3 只用其中一个子集，未用到的字段写 0 而非省略——
+§9 规定不得省略字段）。**全部纳入。**
+
+空数组与非空数组必须产生不同的哈希输入，不得把空 `postings` 视为字段缺失。
+
+`postings` 全字段入哈希是关键修正：此前只有成交价量入哈希，若分组、
 `entry_notional` 归属或 mark 口径写错而成交价量恰好相同，KPI-002 仍会报「确定性
 通过」——账本错误因此对确定性断言完全不可见。同理，`fill_index`/`fill_count` 与
 两个 mark 都是验收裁判（订单簿向量 §3），必须入哈希。
@@ -554,8 +666,8 @@ KPI-006 的证据能力因此逐年衰减。§5 的引用完整性断言在两�
 **排除**：`event_id`、`run_id`、`trade_id`、墙钟时间、`information_set`、
 `internal_state`、`submitted_at`，以及全部指向事件的因果外键——
 `observation_event_id`、`decision_event_id`、`intent_id`、`caused_by_event_id`、
-`market_data_event_id`（ADR-002 §6）。它们与 `event_id` 同属实现标识，其生成方式属
-实现细节；引用完整性由 §5.2 的独立断言保证，不需要哈希参与。
+`market_data_event_id`、`risk_mark_event_id`（ADR-002 §6）。它们与 `event_id` 同属
+实现标识，其生成方式属实现细节；引用完整性由 §5.2 的独立断言保证，不需要哈希参与。
 
 排除 `internal_state` 与 `information_set` 是关键选择：哈希应捕捉**市场结果的
 确定性**，而非代理实现的内部细节。若纳入，一次不改变任何行为的内部状态表示重构
@@ -563,9 +675,26 @@ KPI-006 的证据能力因此逐年衰减。§5 的引用完整性断言在两�
 只剩 `agent_id` 与 `observed_at` 入哈希——它观察到了什么由行情发布记录承载，
 无需重复。
 
-**同步强制**：新增任一事件类型的必备字段（§4）时，必须同步更新本表。实现须提供
-一条测试：遍历 §4 声明的必备字段集合，凡不在本表「纳入」或「排除」两个清单中的
-字段即测试失败。**默认落入哪一侧都是错的**——遗漏必须显式暴露。
+#### 同步强制：单一字段注册表
+
+本表、序列化模型与覆盖检查是**三份清单描述同一件事**，手工维护必然漂移。因此实现
+必须建立**唯一的机器可读字段注册表**，三者全部由它生成：
+
+```text
+src/market_game_sim/schema/registry.py     ← 唯一真源（纯标准库，KR-005）
+  ├→ 序列化模型：每个事件类型的必备字段与顺序
+  ├→ E-002 投影：哈希输入的字段选择
+  └→ T206b 覆盖检查：纳入 ∪ 排除 是否恰好覆盖必备字段集合
+```
+
+注册表为每个字段声明四项：所属事件类型、是否必备、`HASH_INCLUDE | HASH_EXCLUDE`、
+嵌套路径（`postings[].wallet_delta_units` 这类叶字段写全路径）。
+
+**覆盖检查的判据**：对每个事件类型，`必备字段集合 == 纳入集合 ∪ 排除集合` 且两集合
+不相交。任一字段既不在纳入也不在排除侧即测试失败。**默认落入哪一侧都是错的**——
+新增字段时遗漏分类必须显式暴露，而不是安静地逃出 KPI-002 或安静地使哈希频繁误报。
+
+本节文字与注册表冲突时，**以本节为准**，并按 §2 判断是否需要提升 `schema_version`。
 
 ### E-003：深度档位
 
