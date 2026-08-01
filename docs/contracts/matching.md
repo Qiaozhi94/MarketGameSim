@@ -1,9 +1,9 @@
 # 撮合合同：订单簿与成交生成
 
-**适用范围**：跨规格实现合同（当前交付规格 001）  
+**适用范围**：跨规格实现合同（当前交付规格 v0.1）  
 **状态**：Stable（变更须记 ADR 并提升 `schema_version`）  
-**创建日期**：2026-08-01  
-**支撑需求**：001 / FR-001—FR-003；PRD / PR-001  
+**创建日期**：2026-08-01　**更新日期**：2026-08-01  
+**支撑需求**：v0.1 / FR-001—FR-003；PRD / PR-001  
 **关联**：[事件 Schema](event-schema.md)、[账户与保证金](margin-and-account.md)、
 [代理策略](agent-strategy.md)、[退化状态](degenerate-states.md)
 
@@ -31,11 +31,14 @@
 
 ```text
 ORDER_ARRIVAL 弹出
-├─ 准入检查（§5）
-├─ 撮合循环：逐档成交，每档【立即更新双方账户】并生成 TRADE_SETTLE 记录
-├─ 剩余处理：挂入簿 或 IOC 撤销
-├─ 两阶段风险检查（一次，§2.3）→ 生成 MARGIN_CALL 记录
-├─ 生成 MARKET_DATA_PUBLISH 记录
+├─ 准入检查（§5）——拒绝则事务只有 record 0，结束
+├─ 撮合循环：逐档成交，每档【立即更新双方账户】
+│                      并向事务缓冲区【追加】 TRADE_SETTLE / ORDER_CANCELLED
+├─ 剩余处理：挂入簿（不写记录）或 IOC 撤销（写 ORDER_CANCELLED）
+├─ 回填全部 TRADE_SETTLE.fill_count（§2.2）
+├─ 两阶段风险检查（一次，§2.3）→ 追加 MARGIN_CALL × m（m ≥ 0）
+├─ 若盘口发生变化：追加 MARKET_DATA_PUBLISH（恒为事务最后一条记录）
+├─ 按 record_index 顺序一次性写出缓冲区
 └─ 若有待强平账户：入队新的 ORDER_ARRIVAL（跨 liquidation_latency_ns）
 事务结束
 ```
@@ -43,9 +46,14 @@ ORDER_ARRIVAL 弹出
 **事务内的账户变化立即生效**。因此同一时间戳内后续弹出的 `ORDER_ARRIVAL` 看到的
 是已更新的账户——这正是事件 Schema §1.4 要解决的问题。
 
-`TRADE_SETTLE`、`MARGIN_CALL`、`MARKET_DATA_PUBLISH` 以及自成交阻止产生的 `CANCEL`
-都是**事务记录**，不入队、不会被再次执行。唯一入队的产物是强平单（它必须跨越
+**账户立即生效与日志末尾写出并不矛盾**：延后的只是**日志写出**，不是状态变更。
+缓冲区在事务异常终止时整体丢弃，因此日志中不会出现半截事务。
+
+`TRADE_SETTLE`、`ORDER_CANCELLED`、`MARGIN_CALL`、`MARKET_DATA_PUBLISH` 都是**事务
+记录**，不入队、不会被再次执行。唯一入队的产物是强平单（它必须跨越
 `liquidation_latency_ns`，且是 class 1→0 的回退跳转，见事件 Schema §1.2）。
+
+事务内记录的完整顺序合同见事件 Schema §1.4「事务内记录顺序（冻结）」。
 
 ## 2. 成交生成
 
@@ -102,9 +110,15 @@ maker 挂单价成交。将来引入其他订单类型时同理。
 即最后一笔成交，其后紧跟该次撮合的 `MARGIN_CALL`（若有）。仅凭 `caused_by_event_id`
 相同也能分组，但那要求重放器先读完整个事务才知道边界，无法流式处理。
 
+**`fill_count` 何时可知**：撮合循环进行中并不知道总笔数——它取决于簿深度、是否
+遇到自成交、taker 剩余量。因此 `fill_count` 在撮合循环**结束后回填**，记录随整个
+事务一次性写出（事件 Schema §1.4）。`fill_index` 无需回填，它就是缓冲区内的成交
+计数。**已写出的日志记录一律不得修改**——规范序列化（ADR-001 §7）不支持回写。
+
 **与 `record_index` 的区别**：`record_index` 是**事务内所有记录**的序号（含
-`MARGIN_CALL`、`MARKET_DATA_PUBLISH`、自成交 `CANCEL`）；`fill_index` 只数
-`TRADE_SETTLE`。两者不可互相推导，故都要记。
+`ORDER_CANCELLED`、`MARGIN_CALL`、`MARKET_DATA_PUBLISH`）；`fill_index` 只数
+`TRADE_SETTLE`。两者不可互相推导，故都要记。自成交撤单会使两者错位——这正是它们
+必须分开的原因（订单簿向量 OB-7）。
 
 **`valuation_mark_before/after` 逐笔取值**：第 `k` 笔的 `before` 是第 `k−1` 笔成交
 **之后**的盘口中间价，`after` 是本笔之后的。**不是整批共用一个 before/after**——
@@ -144,11 +158,15 @@ maker 挂单价成交。将来引入其他订单类型时同理。
 撮合时若对手方 `maker_agent_id == taker_agent_id`，执行 **cancel-resting**：
 
 ```text
-1. 撤销簿上那张 maker 订单（写入 ORDER_ARRIVAL，action=CANCEL，
-   reject_reason=SELF_TRADE_PREVENTION）
+1. 撤销簿上那张 maker 订单，写入 ORDER_CANCELLED 事务记录
+   （reason=SELF_TRADE_PREVENTION，事件 Schema §4.7）
 2. taker 继续撮合下一档，不消耗数量
 3. 若下一档仍是自己，重复
 ```
+
+**不是** `ORDER_ARRIVAL(action=CANCEL)`——那是代理主动提交的撤单**指令**，是队列
+事件；这里发生的是撮合过程中的撤单**结果**，是事务记录。两者的字段与生命周期都
+不同（事件 Schema §4.7）。
 
 被撤销的挂单**释放其占用的保证金**（代理策略 §11.1 整体重算）。
 
@@ -158,13 +176,17 @@ maker 挂单价成交。将来引入其他订单类型时同理。
 
 ```text
 ORDER_ARRIVAL 事件内，顺序固定：
-  1. 制度钩子校验（001 / D-1）——拒绝则记 accepted=false，结束
+  1. 制度钩子校验（v0.1 / D-1）——拒绝则记 accepted=false，结束
   2. tick / min_quantity 对齐检查（代理策略 §7）——不对齐则拒绝
   3. 初始保证金检查（账户合同 §3.3）——不足则拒绝
   4. 撮合（§2），逐档生成 TRADE_SETTLE
   5. 剩余部分按 §3 处理（挂单或撤销）
   6. 整批结算后执行两阶段风险检查（§2.3）
+  7. 盘口变化则生成 MARKET_DATA_PUBLISH，写出缓冲区
 ```
+
+**0.1.1 的第 3 步是恒通过的桩**（无杠杆里程碑不做保证金判定），但**调用点必须就位**，
+且 `reserved_units` 须按公式算出并写入分录——0.1.2 只接上拒绝逻辑，不改公式。
 
 **保证金检查在撮合之前**，按订单**全部成交**的最坏情形计算（账户合同 §3.3）。
 部分成交不会使已通过的检查失效——实际占用只会更少。
@@ -189,18 +211,24 @@ ORDER_ARRIVAL 事件内，顺序固定：
 
 ## 8. 验收要点
 
-**完整的整数期望值表见[订单簿验收向量](orderbook-vectors.md)**（OB-1—OB-9），
-含事件序列、`record_index`、逐笔 `valuation_mark` 与事务后的簿状态。下列为场景索引：
+**完整的整数期望值表见[订单簿验收向量](orderbook-vectors.md)**，含事件序列、
+`record_index`、逐笔 `valuation_mark` 与事务后的簿状态。下列为场景索引，
+括号内为验收里程碑：
 
-1. **价格优先**：买 101 与买 100 同时在簿，卖单到达先成交 101；
-2. **时间优先**：同价两笔买单，先到（`transaction_seq` 小）者先成交；
-3. **price improvement**：买单限价 101 吃到卖价 100，成交价为 **100**；
-4. **跨三档**：一张买单吃掉卖 100 / 101 / 102 三档，产生 **3 个** `TRADE_SETTLE`，
-   `caused_by_event_id` 相同、`record_index` 递增、`valuation_mark` 逐笔推进；
-5. **限价剩余挂单**：吃完可成交部分后，剩余数量以原 `transaction_seq` 挂入簿；
-6. **市价剩余撤销**：同上场景改为市价单，剩余全额撤销；
-7. **自成交**：taker 遇到自己的挂单 → 该挂单被撤、taker 继续吃下一档；
-8. **整批后判定**：跨档成交期间不触发强平，整批结算后才执行两阶段检查。
-9. **同时间戳双订单黄金日志**：A 成交后耗尽保证金，B 随后到达并被拒；日志顺序为
-   `A(record 0) → A 的事务记录(record 1..n) → B(record 0)`，所有 `log_key` 严格递增，
-   在线状态与仅凭日志重放状态一致。
+1. **价格优先**（0.1.1）：买 101 与买 100 同时在簿，卖单到达先成交 101；
+2. **时间优先**（0.1.1）：同价两笔买单，先到（`transaction_seq` 小）者先成交；
+3. **price improvement**（0.1.1）：买单限价 101 吃到卖价 100，成交价为 **100**；
+4. **跨三档**（0.1.1）：一张买单吃掉卖 100 / 101 / 102 三档，产生 **3 个**
+   `TRADE_SETTLE`，`caused_by_event_id` 相同、`record_index` 递增、
+   `valuation_mark` 逐笔推进、`fill_count=3` 出现在第一笔；
+5. **限价剩余挂单**（0.1.1）：吃完可成交部分后，剩余数量以原 `transaction_seq`
+   挂入簿，**不产生记录**；
+6. **市价剩余撤销**（0.1.1）：同上场景改为市价单，剩余撤销并写 `ORDER_CANCELLED`；
+7. **自成交**（0.1.1）：taker 遇到自己的挂单 → 该挂单被撤、taker 继续吃下一档；
+8. **整批后判定**（**0.1.2**）：跨档成交期间不触发强平，整批结算后执行一轮两阶段
+   检查，该轮可产生 m ≥ 0 条 `MARGIN_CALL`；
+9. **同时间戳双订单**：
+   - **9a（0.1.1）**：B 的撮合看到 A 的事务已提交后的簿；
+   - **9b（0.1.2）**：A 成交后耗尽保证金，B 到达并被拒。
+
+**第 8、9b 条依赖杠杆账户，0.1.1 不验收**——0.1.1 的保证金检查是恒通过的桩（§5）。
