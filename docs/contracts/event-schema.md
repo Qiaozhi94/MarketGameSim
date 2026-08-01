@@ -114,7 +114,7 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 已完成的一致簿状态，不会看到撮合中间态。若顺序颠倒，代理可能基于半更新的簿做决策，
 使 A-002（代理只能使用信息集内数据）在实现层被悄然破坏。
 
-**观察（3）与决策（4）分离为两个类别**，而非合并。理由是 KPI-007 要求任一成交可
+**观察（3）与决策（4）分离为两个类别**，而非合并。理由是 KPI-006 要求任一成交可
 追溯至「当时的信息集」——分离后信息集在 `AGENT_OBSERVE` 事件中被独立记录，与决策
 逻辑解耦，追溯链无需从决策结果反推输入。
 
@@ -145,7 +145,7 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 | `reject_reason` | 拒绝原因，未拒绝为 null |
 | `reserved_cash_delta_units` | 冻结现金变动：下单预冻结为正，撤单/拒绝释放为负（§4.2.1） |
 | `origin` | `AGENT` \| `LIQUIDATION`——强平单由风控产生，不来自代理决策 |
-| `trigger_ratio_bp` | `origin=LIQUIDATION` 时的触发担保比例（整数万分数），否则 null |
+| `trigger_ratio_bp` | `origin=LIQUIDATION` 时的触发保证金率（整数万分数），否则 null |
 
 `submitted_at` 与 `timestamp` 并存是速度优势可归因的前提（A-003）。
 `intent_id` 与 `decision_event_id` 是 KPI-006 追溯链的中间环节（§5）。
@@ -176,20 +176,21 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 |---|---|
 | `agent_id` | 该分录所属代理 |
 | `role` | `MAKER` \| `TAKER` |
-| `cash_delta_units` | 现金变动（含手续费；返佣为正） |
-| `position_delta_units` | 持仓变动（买入为正） |
+| `wallet_delta_units` | 钱包变动（已实现盈亏 − 手续费；**开仓不扣名义金额**） |
+| `position_delta_units` | 仓位变动（买入为正，卖出为负） |
+| `entry_notional_delta_units` | 开仓成本变动（账户合同 §2.1） |
+| `realized_pnl_delta_units` | 本次成交实现的盈亏（仅反向平仓时非 0） |
 | `fee_delta_units` | 该方手续费（正为付出，负为返佣） |
-| `reserved_cash_delta_units` | 冻结现金的变动（预冻结释放为负） |
-| `margin_used_after_units` | 结算后保证金占用 |
-| `equity_after_units` | 结算后权益（可为负，见穿仓） |
-| `collateral_ratio_after_bp` | 结算后担保比例，整数万分数（指标字典 §4.1） |
-| `negative_equity_units` | 穿仓额，非穿仓时为 0；其累计值即交易所风险账户 |
-| `cash_after_units` / `position_after_units` | 结算后余额，用于逐事件守恒断言 |
-| `cost_after_cash_units` | 结算后持仓累计成本（ADR-005 §5） |
+| `reserved_delta_units` | 保证金占用变动（挂单占用释放为负） |
+| `wallet_after_units` / `position_after_units` | 结算后余额，用于逐事件守恒断言 |
+| `entry_notional_after_units` | 结算后开仓成本 |
+| `equity_after_units` | 结算后权益 = 钱包 + 未实现盈亏（可为负，见穿仓） |
+| `margin_ratio_after_bp` | 结算后保证金率，整数万分数；**无仓位时为 null**（账户合同 §3.2） |
+| `risk_pnl_delta_units` | 穿仓核销记入交易所风险账户的金额，**有符号，损失为负**；非核销事件为 0 |
 
 **账户变化必须内嵌于引发它的事件，不能靠「时间上位于成交之后的周期快照」推断。**
 周期快照可能聚合多笔成交，无法从单笔成交唯一确定其账户影响——那不是因果关联，
-SC-008 的「每一跳唯一存在」在快照上无法成立。
+SC-006 的「每一跳唯一存在」在快照上无法成立。
 
 同理，非成交引起的账户变化也记录在引发它的事件上：`ORDER_ARRIVAL` 携带
 `reserved_cash_delta_units`（下单预冻结、撤单或拒绝时释放），字段语义与上表一致。
@@ -205,8 +206,8 @@ SC-008 的「每一跳唯一存在」在快照上无法成立。
 |---|---|
 | `agent_id` | 被判定的账户 |
 | `caused_by_event_id` | 导致该判定的 `TRADE_SETTLE`；收盘时点判定则指向该时点的 `SNAPSHOT` |
-| `collateral_ratio_bp` | 判定时的担保比例（整数万分数） |
-| `maintenance_ratio_bp` | 当时生效的维持线 |
+| `margin_ratio_bp` | 判定时的保证金率（整数万分数，账户合同 §3.2） |
+| `maintenance_bp` | 当时生效的维持保证金率 |
 | `verdict` | `OK` \| `PENDING_LIQUIDATION` \| `LIQUIDATING` \| `BREACHED`（穿仓） |
 | `required_quantity_units` | 恢复至 `target_ratio` 所需的最小平仓数量；`OK` 时为 0 |
 | `chain_depth` | 该判定所处的连锁层数，0 表示非连锁触发（指标字典 §4.1） |
@@ -288,7 +289,7 @@ trade_id
 `reserved_cash_delta_units`，US-3 要求的「成交 → 观察 → 决策 → 订单 → 账户」在日志内
 闭合，且每一环都是事件自带字段，不依赖时间上的邻近关系。
 
-### 5.2 引用完整性断言（SC-008）
+### 5.2 引用完整性断言（SC-006）
 
 对每次运行的事件日志：
 

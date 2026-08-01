@@ -53,14 +53,18 @@ regime_params:
   price_limit: null                # 无涨跌停
 
 # --- 保证金与强平（002 / P-2）---------------------------------------------
-# 担保比例一律整数万分数，避免浮点比较决定强平与否（指标字典 §4.1）。
+# 口径为**保证金率**（保证金/名义价值），非担保比例（权益/保证金占用）——
+# 后者在无仓位时分母为 0（账户与保证金合同 §3.1）。
 margin:
-  maintenance_ratio_bp: 10500      # 105%
-  target_ratio_bp: 11000           # 110%，高于维持线以免立即二次触发
+  maint_bp: 500                    # 维持保证金率 5%
+  target_bp: 1000                  # 强平后恢复至 10%，高于维持线以免立即二次触发
   grace_ns: 0                      # 第一版无代理会补保证金，宽限等价于纯延迟
   liquidation_latency_ns: 1000000  # 1 毫秒：风控判定到强平单入簿（事件 Schema §1.2）
                                    # 不得为 0——class 1→0 是回退跳转，须跨越时间
-  leverage_tiers: [1, 3, 10]     # 与下方 leverage_distribution 的档位一致
+  funding_rate_bp: 0               # 第一版不启用资金费率（账户合同 §6）
+  funding_interval_ns: 28800000000000        # 8 小时；费率为 0 时不产生任何转移
+  # initial_bp 由各代理的 leverage_tier 推出：10000 / tier
+  leverage_tiers: [1, 3, 10]       # 与下方 leverage_tier_distribution 一致
   # 强平连锁不得限速或打断（002 / D-2、FR-007）。
 
 # --- 参与者 ---------------------------------------------------------------
@@ -68,15 +72,18 @@ margin:
 agents:
   - role: retail
     count: 180
-    initial_cash: "100000.0"
-    initial_position: "100.0"
+    initial_wallet: "100000.0"
+    initial_position: "0"                  # 永续下净持仓恒为 0，初始仓位必须为 0
+                                           # （账户合同 §7）；实际杠杆由代理内生建仓产生
     observe_interval_ns: 1000000000        # 1 秒
     latency_ns: 50000000                   # 50 毫秒（不得为 0，KR-006）
-    # 初始杠杆分布，整数万分数；配置校验断言各档之和 == 10000
-    leverage_distribution:
-      "1": 6000                            # 60% 无杠杆
-      "3": 3000                            # 30% 3x
-      "10": 1000                           # 10% 满杠杆——少数脆弱账户是连锁的触发条件
+    # 杠杆【上限】分布，整数万分数；配置校验断言各档之和 == 10000。
+    # 注意：这不是「初始杠杆分布」——初始杠杆恒为 0，此处决定的是各代理能开到多大
+    # （旗舰问题的正确表述是「杠杆上限分布及其内生建仓后果」）。
+    leverage_tier_distribution:
+      "1": 6000                            # 60% 只能 1x
+      "3": 3000                            # 30% 最高 3x
+      "10": 1000                           # 10% 最高 10x——少数脆弱账户是连锁的触发条件
     belief:
       distribution: dirichlet
       # 五因子的浓度参数，顺序与 factors 一致（002 / P-1）
@@ -113,11 +120,11 @@ agents:
 
   - role: inventory_market_maker
     count: 10
-    initial_cash: "1000000.0"
-    initial_position: "1000.0"
+    initial_wallet: "1000000.0"
+    initial_position: "0"
     observe_interval_ns: 100000000         # 0.1 秒，做市商观察更频繁
     latency_ns: 5000000                    # 5 毫秒，速度优势显式表达
-    leverage_distribution:
+    leverage_tier_distribution:
       "1": 10000
     max_inventory: "5000.0"
     quote_size: "10.0"
