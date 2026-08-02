@@ -88,7 +88,14 @@
           "exits": [
             "E6"
           ],
-          "scope": "因果链机器验证"
+          "scope": "因果链机器验证（无代理，脚本化订单流）"
+        },
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E7"
+          ],
+          "scope": "完整观察—信念—决策链 + 强平风控决定链机器验证"
         }
       ],
       "note": "用户场景"
@@ -286,7 +293,15 @@
           "milestone": "0.1.1",
           "exits": [
             "E6"
-          ]
+          ],
+          "scope": "无代理，脚本化订单流"
+        },
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E7"
+          ],
+          "scope": "AGENT_OBSERVE/AGENT_DECIDE 与强平链落地"
         }
       ],
       "note": "事件日志与因果链"

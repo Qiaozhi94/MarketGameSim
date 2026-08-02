@@ -858,38 +858,56 @@ C1（`Σ position ≡ 0`）的求和。
 
 ### 5.1 追溯路径
 
-因果外键（ADR-002 §3）使下列路径完全在日志内可解析，无需重放：
+因果外键（ADR-002 §3）使下列路径完全在日志内可解析，无需重放。**成交的 maker/taker
+两侧分别按各自触发订单的 `origin` 走不同分支**——代理来源订单验证「观察→信念→决策」
+链，强平来源订单验证「风控决定」链，二者不可混用、也不得把强平单伪装成代理决策：
+
+**`origin = AGENT`**：
 
 ```text
 trade_id
   → caused_by_event_id        （ORDER_ARRIVAL：哪笔订单触发了撮合）
   → maker_order_id / taker_order_id
   → intent_id                 （哪个意图产生了该订单）
-  → decision_event_id         （哪次决策产生了该意图）
-  → observation_event_id      （该决策基于哪次观察）
+  → decision_event_id         （哪次决策产生了该意图，AGENT_DECIDE）
+  → observation_event_id      （该决策基于哪次观察，AGENT_OBSERVE）
   → information_set           （当时的信息集）
   → market_data_event_id      （该观察来自哪一次行情发布）
 ```
 
+**`origin = LIQUIDATION`**（`intent_id` 恒为 null，§4.1）：
+
+```text
+trade_id
+  → caused_by_event_id        （ORDER_ARRIVAL：哪笔强平单触发了撮合）
+  → maker_order_id / taker_order_id
+  → decision_event_id         （该强平单的 MARGIN_CALL，§4.2.2）
+  → caused_by_event_id        （该 MARGIN_CALL 的父 ORDER_ARRIVAL）
+  → risk_mark_event_id        （确立 risk_mark 的那笔 TRADE_SETTLE）
+  → liquidation_generation / chain_id / chain_depth  （强平代次与连锁归属，§4.2.2）
+```
+
 账户侧由同一 `TRADE_SETTLE` 内的 `postings` 承担（§4.2.1）：两条分录直接给出双方的
 现金、持仓、费用与冻结变动及结算后余额。加上 `ORDER_ARRIVAL` 的
-`reserved_delta_units`，US-3 要求的「成交 → 观察 → 决策 → 订单 → 账户」在日志内
+`reserved_delta_units`，US-3 要求的「成交 → 观察/风控决定 → 订单 → 账户」在日志内
 闭合，且每一环都是事件自带字段，不依赖时间上的邻近关系。
 
 ### 5.2 引用完整性断言（SC-006）
 
 对每次运行的事件日志：
 
-- **遍历全部** `TRADE_SETTLE`（非抽样），沿 §5.1 逐跳解析；
+- **遍历全部** `TRADE_SETTLE`（非抽样）；maker/taker 两侧各自的触发订单按其
+  `origin` 选择 §5.1 对应分支逐跳解析——`AGENT` 走观察/信念/决策分支，
+  `LIQUIDATION` 走风控决定分支；
 - 每一跳的目标事件必须在日志中**唯一存在**，且其 `log_key` **严格小于**引用方；
 - 断链、悬空引用或多重匹配即判定该运行不合格；
 - **账户侧**：每笔成交的 `postings` 恰为 2 条且 `agent_id` 与 `maker/taker_agent_id`
   一致；分录的 `*_after_units` 等于该代理上一条分录的 `*_after_units` 加本次
   `*_delta_units`（首次以初始值为基），且与同代理最近一次 `ACCOUNT` 快照一致；
-- **`MARGIN_CALL` 侧**（0.1.2 起）：`caused_by_event_id` 指向的 `ORDER_ARRIVAL`
-  与本判定同属一个 `transaction_seq`；`risk_mark_event_id` 指向的 `TRADE_SETTLE`
-  是该事务内 `record_index` **最大**的一笔成交；判定使用的价格与该笔的
-  `risk_mark_ticks` 相等；
+- **`MARGIN_CALL` 侧**（0.1.2 起，`LIQUIDATION` 分支的延伸校验）：
+  `caused_by_event_id` 指向的 `ORDER_ARRIVAL` 与本判定同属一个 `transaction_seq`；
+  `risk_mark_event_id` 指向的 `TRADE_SETTLE` 是该事务内 `record_index` **最大**的
+  一笔成交；判定使用的价格与该笔的 `risk_mark_ticks` 相等；
 - **事务完整性**（§1.5）：每个 `transaction_seq` 必须以 `record_index=0` 起始且
   中间无空洞；`RUN_TRAILER.last_committed_transaction_seq` 必须等于日志中出现过的
   最大 `transaction_seq`；
