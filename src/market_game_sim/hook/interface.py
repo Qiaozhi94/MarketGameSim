@@ -45,9 +45,7 @@ class RegimeHook(Protocol):
         """
         ...
 
-    def settlement_rule(
-        self, event: dict[str, Any], config: Any
-    ) -> dict[str, Any]:
+    def settlement_rule(self, event: dict[str, Any], config: Any) -> dict[str, Any]:
         """Settlement rule for a matched fill.
 
         Returns a dict with at least ``{"method": "INSTANT" | "DELAYED" | ...}``.
@@ -70,9 +68,7 @@ class RegimeHook(Protocol):
         """
         ...
 
-    def price_bound(
-        self, price_ticks: int, config: Any
-    ) -> tuple[int | None, int | None]:
+    def price_bound(self, price_ticks: int, config: Any) -> tuple[int | None, int | None]:
         """Price limits (撮合 §5 step 6 — risk check context).
 
         Returns ``(lower, upper)`` in ticks.  ``None`` means no bound.

@@ -10,16 +10,20 @@ Expected values per OB-4 in orderbook-vectors.md.
 
 from __future__ import annotations
 
-from market_game_sim.book.orderbook import Book
 from market_game_sim.book.simulator import BookLevel, run_simulation
 
 
 def _buy(order_id: str, agent_id: str, price: int, qty: int, t: int = 100) -> dict:
     return {
-        "event_type": "ORDER_ARRIVAL", "timestamp": t,
-        "agent_id": agent_id, "order_id": order_id,
-        "action": "SUBMIT", "side": "BUY", "order_type": "LIMIT",
-        "price_ticks": price, "quantity_units": qty,
+        "event_type": "ORDER_ARRIVAL",
+        "timestamp": t,
+        "agent_id": agent_id,
+        "order_id": order_id,
+        "action": "SUBMIT",
+        "side": "BUY",
+        "order_type": "LIMIT",
+        "price_ticks": price,
+        "quantity_units": qty,
     }
 
 

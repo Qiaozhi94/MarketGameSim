@@ -19,8 +19,6 @@ relative transaction_seq (1,2,...) but tests use absolute values.
 
 from __future__ import annotations
 
-import pytest
-
 from market_game_sim.book.simulator import BookLevel, run_simulation
 
 T = 100
@@ -28,9 +26,13 @@ T = 100
 
 def _buy(oid: str, aid: str, price: int, qty: int, order_type: str = "LIMIT") -> dict:
     return {
-        "event_type": "ORDER_ARRIVAL", "timestamp": T,
-        "agent_id": aid, "order_id": oid,
-        "action": "SUBMIT", "side": "BUY", "order_type": order_type,
+        "event_type": "ORDER_ARRIVAL",
+        "timestamp": T,
+        "agent_id": aid,
+        "order_id": oid,
+        "action": "SUBMIT",
+        "side": "BUY",
+        "order_type": order_type,
         "price_ticks": price if order_type == "LIMIT" else None,
         "quantity_units": qty,
     }
@@ -38,9 +40,13 @@ def _buy(oid: str, aid: str, price: int, qty: int, order_type: str = "LIMIT") ->
 
 def _sell(oid: str, aid: str, price: int, qty: int, order_type: str = "LIMIT") -> dict:
     return {
-        "event_type": "ORDER_ARRIVAL", "timestamp": T,
-        "agent_id": aid, "order_id": oid,
-        "action": "SUBMIT", "side": "SELL", "order_type": order_type,
+        "event_type": "ORDER_ARRIVAL",
+        "timestamp": T,
+        "agent_id": aid,
+        "order_id": oid,
+        "action": "SUBMIT",
+        "side": "SELL",
+        "order_type": order_type,
         "price_ticks": price if order_type == "LIMIT" else None,
         "quantity_units": qty,
     }
@@ -72,27 +78,51 @@ class TestOB1PricePriority:
 
     def test_runs_without_error(self):
         records, book = run_simulation(
-            events=[_buy("o1", "A", 10000, 5000), _buy("o2", "B", 10100, 5000), _sell("c1", "C", 10000, 3000)],
+            events=[
+                _buy("o1", "A", 10000, 5000),
+                _buy("o2", "B", 10100, 5000),
+                _sell("c1", "C", 10000, 3000),
+            ],
         )
         assert records is not None
 
     def test_tx1_sequence(self):
-        records, _ = run_simulation(events=[_buy("o1", "A", 10000, 5000), _buy("o2", "B", 10100, 5000), _sell("c1", "C", 10000, 3000)])
+        records, _ = run_simulation(
+            events=[
+                _buy("o1", "A", 10000, 5000),
+                _buy("o2", "B", 10100, 5000),
+                _sell("c1", "C", 10000, 3000),
+            ]
+        )
         biz = _biz_records(records)
         tx1 = [r for r in biz if r["transaction_seq"] == 3]
         _assert_event_sequence(tx1, [(0, "ORDER_ARRIVAL"), (1, "MARKET_DATA_PUBLISH")])
 
     def test_tx2_sequence(self):
-        records, _ = run_simulation(events=[_buy("o1", "A", 10000, 5000), _buy("o2", "B", 10100, 5000), _sell("c1", "C", 10000, 3000)])
+        records, _ = run_simulation(
+            events=[
+                _buy("o1", "A", 10000, 5000),
+                _buy("o2", "B", 10100, 5000),
+                _sell("c1", "C", 10000, 3000),
+            ]
+        )
         biz = _biz_records(records)
         tx2 = [r for r in biz if r["transaction_seq"] == 4]
         _assert_event_sequence(tx2, [(0, "ORDER_ARRIVAL"), (1, "MARKET_DATA_PUBLISH")])
 
     def test_tx3_sequence_and_trade(self):
-        records, _ = run_simulation(events=[_buy("o1", "A", 10000, 5000), _buy("o2", "B", 10100, 5000), _sell("c1", "C", 10000, 3000)])
+        records, _ = run_simulation(
+            events=[
+                _buy("o1", "A", 10000, 5000),
+                _buy("o2", "B", 10100, 5000),
+                _sell("c1", "C", 10000, 3000),
+            ]
+        )
         biz = _biz_records(records)
         tx3 = [r for r in biz if r["transaction_seq"] == 5]
-        _assert_event_sequence(tx3, [(0, "ORDER_ARRIVAL"), (1, "TRADE_SETTLE"), (2, "MARKET_DATA_PUBLISH")])
+        _assert_event_sequence(
+            tx3, [(0, "ORDER_ARRIVAL"), (1, "TRADE_SETTLE"), (2, "MARKET_DATA_PUBLISH")]
+        )
         trade = tx3[1]
         assert trade["price_ticks"] == 10100
         assert trade["quantity_units"] == 3000
@@ -104,12 +134,24 @@ class TestOB1PricePriority:
         assert trade["risk_mark_ticks"] == 10100
 
     def test_post_tx_book(self):
-        _, book = run_simulation(events=[_buy("o1", "A", 10000, 5000), _buy("o2", "B", 10100, 5000), _sell("c1", "C", 10000, 3000)])
+        _, book = run_simulation(
+            events=[
+                _buy("o1", "A", 10000, 5000),
+                _buy("o2", "B", 10100, 5000),
+                _sell("c1", "C", 10000, 3000),
+            ]
+        )
         assert book.bid_levels() == [(10100, 2000), (10000, 5000)]
         assert book.ask_levels() == []
 
     def test_log_keys_increasing(self):
-        records, _ = run_simulation(events=[_buy("o1", "A", 10000, 5000), _buy("o2", "B", 10100, 5000), _sell("c1", "C", 10000, 3000)])
+        records, _ = run_simulation(
+            events=[
+                _buy("o1", "A", 10000, 5000),
+                _buy("o2", "B", 10100, 5000),
+                _sell("c1", "C", 10000, 3000),
+            ]
+        )
         _assert_log_keys_increasing(records)
 
 
@@ -122,7 +164,13 @@ class TestOB2TimePriority:
     """A BUY 10000×5000 (o1), B BUY 10000×5000 (o2), C SELL 10000×3000 -> fills o1."""
 
     def test_trade_hits_o1_not_o2(self):
-        records, _ = run_simulation(events=[_buy("o1", "A", 10000, 5000), _buy("o2", "B", 10000, 5000), _sell("c1", "C", 10000, 3000)])
+        records, _ = run_simulation(
+            events=[
+                _buy("o1", "A", 10000, 5000),
+                _buy("o2", "B", 10000, 5000),
+                _sell("c1", "C", 10000, 3000),
+            ]
+        )
         biz = _biz_records(records)
         tx3 = [r for r in biz if r["transaction_seq"] == 5]
         trade = [r for r in tx3 if r["event_type"] == "TRADE_SETTLE"][0]
@@ -131,7 +179,13 @@ class TestOB2TimePriority:
         assert trade["quantity_units"] == 3000
 
     def test_vm_before_after(self):
-        records, _ = run_simulation(events=[_buy("o1", "A", 10000, 5000), _buy("o2", "B", 10000, 5000), _sell("c1", "C", 10000, 3000)])
+        records, _ = run_simulation(
+            events=[
+                _buy("o1", "A", 10000, 5000),
+                _buy("o2", "B", 10000, 5000),
+                _sell("c1", "C", 10000, 3000),
+            ]
+        )
         biz = _biz_records(records)
         trade = [r for r in biz if r["event_type"] == "TRADE_SETTLE"][0]
         assert trade["valuation_mark_before_half_ticks"] == 20000
@@ -139,7 +193,13 @@ class TestOB2TimePriority:
         assert trade["risk_mark_ticks"] == 10000
 
     def test_tx2_publishes_on_depth_change(self):
-        records, _ = run_simulation(events=[_buy("o1", "A", 10000, 5000), _buy("o2", "B", 10000, 5000), _sell("c1", "C", 10000, 3000)])
+        records, _ = run_simulation(
+            events=[
+                _buy("o1", "A", 10000, 5000),
+                _buy("o2", "B", 10000, 5000),
+                _sell("c1", "C", 10000, 3000),
+            ]
+        )
         biz = _biz_records(records)
         tx2 = [r for r in biz if r["transaction_seq"] == 4]
         mdp = [r for r in tx2 if r["event_type"] == "MARKET_DATA_PUBLISH"]
@@ -148,12 +208,24 @@ class TestOB2TimePriority:
         assert mdp[0]["best_ask"] is None
 
     def test_post_tx_book(self):
-        _, book = run_simulation(events=[_buy("o1", "A", 10000, 5000), _buy("o2", "B", 10000, 5000), _sell("c1", "C", 10000, 3000)])
+        _, book = run_simulation(
+            events=[
+                _buy("o1", "A", 10000, 5000),
+                _buy("o2", "B", 10000, 5000),
+                _sell("c1", "C", 10000, 3000),
+            ]
+        )
         assert book.bid_levels() == [(10000, 7000)]
         assert book.ask_levels() == []
 
     def test_log_keys_increasing(self):
-        records, _ = run_simulation(events=[_buy("o1", "A", 10000, 5000), _buy("o2", "B", 10000, 5000), _sell("c1", "C", 10000, 3000)])
+        records, _ = run_simulation(
+            events=[
+                _buy("o1", "A", 10000, 5000),
+                _buy("o2", "B", 10000, 5000),
+                _sell("c1", "C", 10000, 3000),
+            ]
+        )
         _assert_log_keys_increasing(records)
 
 
@@ -166,14 +238,18 @@ class TestOB3PriceImprovement:
     """A SELL 10000×5000, B BUY 10100×3000 -> fills at 10000 (maker price)."""
 
     def test_trade_fills_at_maker_price(self):
-        records, _ = run_simulation(events=[_sell("s1", "A", 10000, 5000), _buy("b1", "B", 10100, 3000)])
+        records, _ = run_simulation(
+            events=[_sell("s1", "A", 10000, 5000), _buy("b1", "B", 10100, 3000)]
+        )
         biz = _biz_records(records)
         trade = [r for r in biz if r["event_type"] == "TRADE_SETTLE"][0]
         assert trade["price_ticks"] == 10000
         assert trade["quantity_units"] == 3000
 
     def test_vm_values(self):
-        records, _ = run_simulation(events=[_sell("s1", "A", 10000, 5000), _buy("b1", "B", 10100, 3000)])
+        records, _ = run_simulation(
+            events=[_sell("s1", "A", 10000, 5000), _buy("b1", "B", 10100, 3000)]
+        )
         biz = _biz_records(records)
         trade = [r for r in biz if r["event_type"] == "TRADE_SETTLE"][0]
         assert trade["valuation_mark_before_half_ticks"] == 20000
@@ -181,25 +257,35 @@ class TestOB3PriceImprovement:
         assert trade["risk_mark_ticks"] == 10000
 
     def test_fill_index_count(self):
-        records, _ = run_simulation(events=[_sell("s1", "A", 10000, 5000), _buy("b1", "B", 10100, 3000)])
+        records, _ = run_simulation(
+            events=[_sell("s1", "A", 10000, 5000), _buy("b1", "B", 10100, 3000)]
+        )
         biz = _biz_records(records)
         trade = [r for r in biz if r["event_type"] == "TRADE_SETTLE"][0]
         assert trade["fill_index"] == 0
         assert trade["fill_count"] == 1
 
     def test_tx2_sequence(self):
-        records, _ = run_simulation(events=[_sell("s1", "A", 10000, 5000), _buy("b1", "B", 10100, 3000)])
+        records, _ = run_simulation(
+            events=[_sell("s1", "A", 10000, 5000), _buy("b1", "B", 10100, 3000)]
+        )
         biz = _biz_records(records)
         tx2 = [r for r in biz if r["transaction_seq"] == 4]
-        _assert_event_sequence(tx2, [(0, "ORDER_ARRIVAL"), (1, "TRADE_SETTLE"), (2, "MARKET_DATA_PUBLISH")])
+        _assert_event_sequence(
+            tx2, [(0, "ORDER_ARRIVAL"), (1, "TRADE_SETTLE"), (2, "MARKET_DATA_PUBLISH")]
+        )
 
     def test_post_tx_book(self):
-        _, book = run_simulation(events=[_sell("s1", "A", 10000, 5000), _buy("b1", "B", 10100, 3000)])
+        _, book = run_simulation(
+            events=[_sell("s1", "A", 10000, 5000), _buy("b1", "B", 10100, 3000)]
+        )
         assert book.bid_levels() == []
         assert book.ask_levels() == [(10000, 2000)]
 
     def test_log_keys_increasing(self):
-        records, _ = run_simulation(events=[_sell("s1", "A", 10000, 5000), _buy("b1", "B", 10100, 3000)])
+        records, _ = run_simulation(
+            events=[_sell("s1", "A", 10000, 5000), _buy("b1", "B", 10100, 3000)]
+        )
         _assert_log_keys_increasing(records)
 
 
@@ -219,30 +305,40 @@ class TestOB4CrossThreeLevels:
     ]
 
     def test_three_trades_correct_prices(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)]
+        )
         biz = _biz_records(records)
         trades = [r for r in biz if r["event_type"] == "TRADE_SETTLE"]
         assert len(trades) == 3
         assert [t["price_ticks"] for t in trades] == [10000, 10100, 10200]
 
     def test_quantities(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)]
+        )
         trades = [r for r in _biz_records(records) if r["event_type"] == "TRADE_SETTLE"]
         assert [t["quantity_units"] for t in trades] == [2000, 2000, 1000]
 
     def test_maker_order_ids(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)]
+        )
         trades = [r for r in _biz_records(records) if r["event_type"] == "TRADE_SETTLE"]
         assert [t["maker_order_id"] for t in trades] == ["a1", "a2", "a3"]
 
     def test_fill_index_and_count(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)]
+        )
         trades = [r for r in _biz_records(records) if r["event_type"] == "TRADE_SETTLE"]
         assert [t["fill_index"] for t in trades] == [0, 1, 2]
         assert all(t["fill_count"] == 3 for t in trades)
 
     def test_vm_advances_per_fill(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)]
+        )
         trades = [r for r in _biz_records(records) if r["event_type"] == "TRADE_SETTLE"]
         assert trades[0]["valuation_mark_before_half_ticks"] == 19900
         assert trades[0]["valuation_mark_after_half_ticks"] == 20000
@@ -252,38 +348,55 @@ class TestOB4CrossThreeLevels:
         assert trades[2]["valuation_mark_after_half_ticks"] == 20100
 
     def test_risk_mark_per_fill(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)]
+        )
         trades = [r for r in _biz_records(records) if r["event_type"] == "TRADE_SETTLE"]
         assert [t["risk_mark_ticks"] for t in trades] == [10000, 10100, 10200]
 
     def test_caused_by_same(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)]
+        )
         trades = [r for r in _biz_records(records) if r["event_type"] == "TRADE_SETTLE"]
         ids = {t["caused_by_event_id"] for t in trades}
         assert len(ids) == 1
 
     def test_record_index_increasing(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)]
+        )
         biz = _biz_records(records)
-        _assert_event_sequence(biz, [
-            (0, "ORDER_ARRIVAL"),
-            (1, "TRADE_SETTLE"), (2, "TRADE_SETTLE"), (3, "TRADE_SETTLE"),
-            (4, "MARKET_DATA_PUBLISH"),
-        ])
+        _assert_event_sequence(
+            biz,
+            [
+                (0, "ORDER_ARRIVAL"),
+                (1, "TRADE_SETTLE"),
+                (2, "TRADE_SETTLE"),
+                (3, "TRADE_SETTLE"),
+                (4, "MARKET_DATA_PUBLISH"),
+            ],
+        )
 
     def test_mdp_fields(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)]
+        )
         mdp = [r for r in _biz_records(records) if r["event_type"] == "MARKET_DATA_PUBLISH"][0]
         assert mdp["best_bid"] == 9900
         assert mdp["best_ask"] == 10200
 
     def test_post_tx_book(self):
-        _, book = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)])
+        _, book = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)]
+        )
         assert book.bid_levels() == [(9900, 10000)]
         assert book.ask_levels() == [(10200, 1000)]
 
     def test_log_keys_increasing(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10200, 5000)]
+        )
         _assert_log_keys_increasing(records)
 
 
@@ -298,13 +411,22 @@ class TestOB5LimitRemainder:
     LEVELS = [BookLevel("SELL", "s1", "M", 10000, 2000)]
 
     def test_event_sequence(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10000, 5000)])
-        _assert_event_sequence(_biz_records(records), [
-            (0, "ORDER_ARRIVAL"), (1, "TRADE_SETTLE"), (2, "MARKET_DATA_PUBLISH"),
-        ])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10000, 5000)]
+        )
+        _assert_event_sequence(
+            _biz_records(records),
+            [
+                (0, "ORDER_ARRIVAL"),
+                (1, "TRADE_SETTLE"),
+                (2, "MARKET_DATA_PUBLISH"),
+            ],
+        )
 
     def test_trade_fields(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10000, 5000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10000, 5000)]
+        )
         trade = [r for r in _biz_records(records) if r["event_type"] == "TRADE_SETTLE"][0]
         assert trade["price_ticks"] == 10000
         assert trade["quantity_units"] == 2000
@@ -315,23 +437,31 @@ class TestOB5LimitRemainder:
         assert trade["risk_mark_ticks"] == 10000
 
     def test_no_cancel_record(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10000, 5000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10000, 5000)]
+        )
         cancels = [r for r in _biz_records(records) if r["event_type"] == "ORDER_CANCELLED"]
         assert len(cancels) == 0
 
     def test_post_tx_book(self):
-        _, book = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10000, 5000)])
+        _, book = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10000, 5000)]
+        )
         assert book.bid_levels() == [(10000, 3000)]
         assert book.ask_levels() == []
 
     def test_resting_order_preserves_txn_seq(self):
-        _, book = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10000, 5000)])
+        _, book = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10000, 5000)]
+        )
         maker = book.peek_best_maker("BUY")
         assert maker is not None
         assert maker.transaction_seq == 3
 
     def test_log_keys_increasing(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10000, 5000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 10000, 5000)]
+        )
         _assert_log_keys_increasing(records)
 
 
@@ -346,14 +476,23 @@ class TestOB6MarketIOC:
     LEVELS = [BookLevel("SELL", "s1", "M", 10000, 2000)]
 
     def test_event_sequence(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 0, 5000, order_type="MARKET")])
-        _assert_event_sequence(_biz_records(records), [
-            (0, "ORDER_ARRIVAL"), (1, "TRADE_SETTLE"),
-            (2, "ORDER_CANCELLED"), (3, "MARKET_DATA_PUBLISH"),
-        ])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 0, 5000, order_type="MARKET")]
+        )
+        _assert_event_sequence(
+            _biz_records(records),
+            [
+                (0, "ORDER_ARRIVAL"),
+                (1, "TRADE_SETTLE"),
+                (2, "ORDER_CANCELLED"),
+                (3, "MARKET_DATA_PUBLISH"),
+            ],
+        )
 
     def test_trade_fields(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 0, 5000, order_type="MARKET")])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 0, 5000, order_type="MARKET")]
+        )
         trade = [r for r in _biz_records(records) if r["event_type"] == "TRADE_SETTLE"][0]
         assert trade["price_ticks"] == 10000
         assert trade["quantity_units"] == 2000
@@ -364,7 +503,9 @@ class TestOB6MarketIOC:
         assert trade["risk_mark_ticks"] == 10000
 
     def test_cancel_fields(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 0, 5000, order_type="MARKET")])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 0, 5000, order_type="MARKET")]
+        )
         cancel = [r for r in _biz_records(records) if r["event_type"] == "ORDER_CANCELLED"][0]
         assert cancel["cancelled_qty_units"] == 3000
         assert cancel["price_ticks"] is None
@@ -373,18 +514,24 @@ class TestOB6MarketIOC:
         assert cancel["reason"] == "IOC_REMAINDER"
 
     def test_post_tx_book_empty(self):
-        _, book = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 0, 5000, order_type="MARKET")])
+        _, book = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 0, 5000, order_type="MARKET")]
+        )
         assert book.bid_levels() == []
         assert book.ask_levels() == []
 
     def test_mdp_fields(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 0, 5000, order_type="MARKET")])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 0, 5000, order_type="MARKET")]
+        )
         mdp = [r for r in _biz_records(records) if r["event_type"] == "MARKET_DATA_PUBLISH"][0]
         assert mdp["best_bid"] is None
         assert mdp["best_ask"] is None
 
     def test_log_keys_increasing(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 0, 5000, order_type="MARKET")])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "T", 0, 5000, order_type="MARKET")]
+        )
         _assert_log_keys_increasing(records)
 
 
@@ -402,14 +549,23 @@ class TestOB7SelfTrade:
     ]
 
     def test_event_sequence(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "A", 10100, 3000)])
-        _assert_event_sequence(_biz_records(records), [
-            (0, "ORDER_ARRIVAL"), (1, "ORDER_CANCELLED"),
-            (2, "TRADE_SETTLE"), (3, "MARKET_DATA_PUBLISH"),
-        ])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "A", 10100, 3000)]
+        )
+        _assert_event_sequence(
+            _biz_records(records),
+            [
+                (0, "ORDER_ARRIVAL"),
+                (1, "ORDER_CANCELLED"),
+                (2, "TRADE_SETTLE"),
+                (3, "MARKET_DATA_PUBLISH"),
+            ],
+        )
 
     def test_cancel_fields(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "A", 10100, 3000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "A", 10100, 3000)]
+        )
         cancel = [r for r in _biz_records(records) if r["event_type"] == "ORDER_CANCELLED"][0]
         assert cancel["order_id"] == "s1"
         assert cancel["agent_id"] == "A"
@@ -420,7 +576,9 @@ class TestOB7SelfTrade:
         assert cancel["reason"] == "SELF_TRADE_PREVENTION"
 
     def test_trade_fields(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "A", 10100, 3000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "A", 10100, 3000)]
+        )
         trade = [r for r in _biz_records(records) if r["event_type"] == "TRADE_SETTLE"][0]
         assert trade["price_ticks"] == 10100
         assert trade["quantity_units"] == 2000
@@ -432,7 +590,9 @@ class TestOB7SelfTrade:
         assert trade["risk_mark_ticks"] == 10100
 
     def test_record_index_fill_index_misalignment(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "A", 10100, 3000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "A", 10100, 3000)]
+        )
         biz = _biz_records(records)
         cancel = [r for r in biz if r["event_type"] == "ORDER_CANCELLED"][0]
         trade = [r for r in biz if r["event_type"] == "TRADE_SETTLE"][0]
@@ -441,18 +601,24 @@ class TestOB7SelfTrade:
         assert trade["fill_index"] == 0
 
     def test_post_tx_book(self):
-        _, book = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "A", 10100, 3000)])
+        _, book = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "A", 10100, 3000)]
+        )
         assert book.bid_levels() == [(10100, 1000)]
         assert book.ask_levels() == []
 
     def test_mdp_fields(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "A", 10100, 3000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "A", 10100, 3000)]
+        )
         mdp = [r for r in _biz_records(records) if r["event_type"] == "MARKET_DATA_PUBLISH"][0]
         assert mdp["best_bid"] == 10100
         assert mdp["best_ask"] is None
 
     def test_log_keys_increasing(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("t1", "A", 10100, 3000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS, events=[_buy("t1", "A", 10100, 3000)]
+        )
         _assert_log_keys_increasing(records)
 
 
@@ -471,19 +637,28 @@ class TestOB9aSameTimestampDualOrders:
     ]
 
     def test_a_fills_at_10000(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS,
+            events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)],
+        )
         trades = [r for r in _biz_records(records) if r["event_type"] == "TRADE_SETTLE"]
         assert trades[0]["price_ticks"] == 10000
         assert trades[0]["maker_order_id"] == "s1"
 
     def test_b_fills_at_10100_not_10000(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS,
+            events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)],
+        )
         trades = [r for r in _biz_records(records) if r["event_type"] == "TRADE_SETTLE"]
         assert trades[1]["price_ticks"] == 10100
         assert trades[1]["maker_order_id"] == "s2"
 
     def test_vm_continuity(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS,
+            events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)],
+        )
         trades = [r for r in _biz_records(records) if r["event_type"] == "TRADE_SETTLE"]
         assert trades[0]["valuation_mark_before_half_ticks"] == 20000
         assert trades[0]["valuation_mark_after_half_ticks"] == 20000
@@ -491,49 +666,81 @@ class TestOB9aSameTimestampDualOrders:
         assert trades[1]["valuation_mark_after_half_ticks"] == 20200
 
     def test_risk_marks(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS,
+            events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)],
+        )
         trades = [r for r in _biz_records(records) if r["event_type"] == "TRADE_SETTLE"]
         assert trades[0]["risk_mark_ticks"] == 10000
         assert trades[1]["risk_mark_ticks"] == 10100
 
     def test_fill_index_count(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS,
+            events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)],
+        )
         trades = [r for r in _biz_records(records) if r["event_type"] == "TRADE_SETTLE"]
         for t in trades:
             assert t["fill_index"] == 0
             assert t["fill_count"] == 1
 
     def test_tx1_sequence(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS,
+            events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)],
+        )
         tx1 = [r for r in _biz_records(records) if r["transaction_seq"] == 3]
-        _assert_event_sequence(tx1, [(0, "ORDER_ARRIVAL"), (1, "TRADE_SETTLE"), (2, "MARKET_DATA_PUBLISH")])
+        _assert_event_sequence(
+            tx1, [(0, "ORDER_ARRIVAL"), (1, "TRADE_SETTLE"), (2, "MARKET_DATA_PUBLISH")]
+        )
 
     def test_tx2_sequence(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS,
+            events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)],
+        )
         tx2 = [r for r in _biz_records(records) if r["transaction_seq"] == 4]
-        _assert_event_sequence(tx2, [(0, "ORDER_ARRIVAL"), (1, "TRADE_SETTLE"), (2, "MARKET_DATA_PUBLISH")])
+        _assert_event_sequence(
+            tx2, [(0, "ORDER_ARRIVAL"), (1, "TRADE_SETTLE"), (2, "MARKET_DATA_PUBLISH")]
+        )
 
     def test_mdp_after_a(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS,
+            events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)],
+        )
         biz = _biz_records(records)
-        mdp1 = [r for r in biz if r["transaction_seq"] == 3 and r["event_type"] == "MARKET_DATA_PUBLISH"][0]
+        mdp1 = [
+            r for r in biz if r["transaction_seq"] == 3 and r["event_type"] == "MARKET_DATA_PUBLISH"
+        ][0]
         assert mdp1["best_bid"] is None
         assert mdp1["best_ask"] == 10100
 
     def test_mdp_after_b(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS,
+            events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)],
+        )
         biz = _biz_records(records)
-        mdp2 = [r for r in biz if r["transaction_seq"] == 4 and r["event_type"] == "MARKET_DATA_PUBLISH"][0]
+        mdp2 = [
+            r for r in biz if r["transaction_seq"] == 4 and r["event_type"] == "MARKET_DATA_PUBLISH"
+        ][0]
         assert mdp2["best_bid"] is None
         assert mdp2["best_ask"] is None
 
     def test_post_tx_book_empty(self):
-        _, book = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)])
+        _, book = run_simulation(
+            initial_book_levels=self.LEVELS,
+            events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)],
+        )
         assert book.bid_levels() == []
         assert book.ask_levels() == []
 
     def test_six_log_keys_strictly_increasing(self):
-        records, _ = run_simulation(initial_book_levels=self.LEVELS, events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)])
+        records, _ = run_simulation(
+            initial_book_levels=self.LEVELS,
+            events=[_buy("a1", "A", 10100, 2000), _buy("b1", "B", 10100, 2000)],
+        )
         biz = _biz_records(records)
         assert len(biz) == 6
         _assert_log_keys_increasing(biz)

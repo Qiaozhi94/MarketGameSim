@@ -14,8 +14,8 @@ All integers, all ceiled toward the exchange-safe side (§3.1.1).
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 from market_game_sim.config.types import div_ceil
 
@@ -44,9 +44,7 @@ def compute_reserved_after(
 
     margin_part = div_ceil(worst_abs * risk_mark_ticks * mult * initial_bp, 10000)
 
-    total_order_notional = sum(
-        o.quantity_units * o.price_ticks * mult for o in active_orders
-    )
+    total_order_notional = sum(o.quantity_units * o.price_ticks * mult for o in active_orders)
     fee_part = div_ceil(total_order_notional * fee_bps, 10000) if fee_bps > 0 else 0
 
     return margin_part + fee_part

@@ -141,9 +141,7 @@ class EventKernel:
         if self._bootstrap_done:
             raise KernelAbort(abort_code="INTERNAL", detail="bootstrap already done")
         if self._enqueue_seq != 0:
-            raise KernelAbort(
-                abort_code="INTERNAL", detail="bootstrap called after enqueue"
-            )
+            raise KernelAbort(abort_code="INTERNAL", detail="bootstrap called after enqueue")
         account_event = {
             "event_type": "SNAPSHOT",
             "timestamp": 0,
@@ -164,9 +162,7 @@ class EventKernel:
 
     def _push_raw(self, event: dict) -> None:
         """Push without barrier / monotonicity check (bootstrap only)."""
-        key = make_queue_key(
-            event["timestamp"], event["event_type"], event["_enqueue_seq"]
-        )
+        key = make_queue_key(event["timestamp"], event["event_type"], event["_enqueue_seq"])
         heapq.heappush(self._queue, (key, self._tiebreaker, event))
         self._tiebreaker += 1
         self._enqueue_seq += 1
@@ -224,9 +220,7 @@ class EventKernel:
         """Run until the queue is empty, ``max_transactions`` is reached,
         or a fail-stop abort occurs (§1.5)."""
         if not self._bootstrap_done:
-            raise KernelAbort(
-                abort_code="INTERNAL", detail="run called before bootstrap"
-            )
+            raise KernelAbort(abort_code="INTERNAL", detail="run called before bootstrap")
         try:
             while self._queue and self._processed_transactions < max_transactions:
                 _, _, event = heapq.heappop(self._queue)
@@ -275,9 +269,7 @@ class EventKernel:
             buffer.append(r0)
 
             # Backfill fill_index / fill_count on TRADE_SETTLE records.
-            trade_settles = [
-                r for r in records if r.get("event_type") == "TRADE_SETTLE"
-            ]
+            trade_settles = [r for r in records if r.get("event_type") == "TRADE_SETTLE"]
             fill_count = len(trade_settles)
             for ti, r in enumerate(trade_settles):
                 r.setdefault("fill_index", ti)
@@ -350,8 +342,7 @@ class EventKernel:
             if r["event_type"] == "MARKET_DATA_PUBLISH":
                 raise KernelAbort(
                     abort_code="INTERNAL",
-                    detail="MARKET_DATA_PUBLISH must be the last record in a "
-                    "transaction (§1.4)",
+                    detail="MARKET_DATA_PUBLISH must be the last record in a transaction (§1.4)",
                 )
         # (2) accepted=false -> only r0.
         if r0["event_type"] == "ORDER_ARRIVAL" and not r0.get("accepted", True):
@@ -384,9 +375,7 @@ class EventKernel:
         for the header and 1 for the trailer itself).
         """
         if self._terminated is None:
-            raise KernelAbort(
-                abort_code="INTERNAL", detail="build_trailer before run completes"
-            )
+            raise KernelAbort(abort_code="INTERNAL", detail="build_trailer before run completes")
         return {
             "record_kind": "RUN_TRAILER",
             "terminated": self._terminated,

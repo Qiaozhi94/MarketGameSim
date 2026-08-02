@@ -22,19 +22,29 @@ def _rest_buy(book: Book, order_id: str, agent_id: str, price: int, qty: int) ->
 
 def _buy(order_id: str, agent_id: str, price: int, qty: int, t: int = 100) -> dict:
     return {
-        "event_type": "ORDER_ARRIVAL", "timestamp": t,
-        "agent_id": agent_id, "order_id": order_id,
-        "action": "SUBMIT", "side": "BUY", "order_type": "LIMIT",
-        "price_ticks": price, "quantity_units": qty,
+        "event_type": "ORDER_ARRIVAL",
+        "timestamp": t,
+        "agent_id": agent_id,
+        "order_id": order_id,
+        "action": "SUBMIT",
+        "side": "BUY",
+        "order_type": "LIMIT",
+        "price_ticks": price,
+        "quantity_units": qty,
     }
 
 
 def _sell(order_id: str, agent_id: str, price: int, qty: int, t: int = 100) -> dict:
     return {
-        "event_type": "ORDER_ARRIVAL", "timestamp": t,
-        "agent_id": agent_id, "order_id": order_id,
-        "action": "SUBMIT", "side": "SELL", "order_type": "LIMIT",
-        "price_ticks": price, "quantity_units": qty,
+        "event_type": "ORDER_ARRIVAL",
+        "timestamp": t,
+        "agent_id": agent_id,
+        "order_id": order_id,
+        "action": "SUBMIT",
+        "side": "SELL",
+        "order_type": "LIMIT",
+        "price_ticks": price,
+        "quantity_units": qty,
     }
 
 

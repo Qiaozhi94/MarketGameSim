@@ -36,9 +36,7 @@ class CryptoPerpRegime:
     def session_state(self, timestamp_ns: int, config: Any) -> str:
         return "OPEN"
 
-    def settlement_rule(
-        self, event: dict[str, Any], config: Any
-    ) -> dict[str, Any]:
+    def settlement_rule(self, event: dict[str, Any], config: Any) -> dict[str, Any]:
         return {"method": "INSTANT"}
 
     def margin_rule(
@@ -51,7 +49,5 @@ class CryptoPerpRegime:
     ) -> tuple[bool, str | None]:
         return True, None
 
-    def price_bound(
-        self, price_ticks: int, config: Any
-    ) -> tuple[int | None, int | None]:
+    def price_bound(self, price_ticks: int, config: Any) -> tuple[int | None, int | None]:
         return None, None

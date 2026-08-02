@@ -49,9 +49,7 @@ def _project_structure(
             disc_field = fmeta.discriminated_by
             variant = event.get(disc_field)
             if variant and variant in fmeta.variants:
-                result[fname] = _project_structure(
-                    obj, fmeta.variants[variant], registry
-                )
+                result[fname] = _project_structure(obj, fmeta.variants[variant], registry)
             else:
                 result[fname] = {}
         elif fmeta.value_type == "object" and fmeta.element_structure:
@@ -78,9 +76,7 @@ def event_hash_input(event: dict, registry: SchemaRegistry) -> dict[str, Any]:
 def event_digest(event: dict, registry: SchemaRegistry) -> bytes:
     """``blake2b`` digest of an event's E-002 hash projection (32 bytes)."""
     projection = event_hash_input(event, registry)
-    return hashlib.blake2b(
-        canonical_serialize(projection), digest_size=DIGEST_SIZE
-    ).digest()
+    return hashlib.blake2b(canonical_serialize(projection), digest_size=DIGEST_SIZE).digest()
 
 
 def event_digest_hex(event: dict, registry: SchemaRegistry) -> str:

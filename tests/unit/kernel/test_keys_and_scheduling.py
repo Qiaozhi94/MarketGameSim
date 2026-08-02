@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError
+
 import pytest
 
 from market_game_sim.kernel.abort import ABORT_CODES, KernelAbort
@@ -18,7 +20,6 @@ from market_game_sim.kernel.scheduling import (
     check_class_regression,
     check_queue_monotonicity,
 )
-
 
 # --------------------------------------------------------------------------- #
 # T204: Priority class enum (§3)
@@ -70,7 +71,7 @@ class TestQueueKey:
 
     def test_frozen(self):
         k = QueueKey(100, 0, 1)
-        with pytest.raises(Exception):
+        with pytest.raises(FrozenInstanceError):
             k.timestamp = 200  # type: ignore[misc]
 
 
@@ -86,7 +87,7 @@ class TestLogKey:
 
     def test_frozen(self):
         k = LogKey(100, 1, 0)
-        with pytest.raises(Exception):
+        with pytest.raises(FrozenInstanceError):
             k.transaction_seq = 2  # type: ignore[misc]
 
 

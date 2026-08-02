@@ -23,7 +23,6 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Literal
 
-
 Side = Literal["BUY", "SELL"]
 
 
@@ -116,16 +115,12 @@ class Book:
     def bid_levels(self) -> list[tuple[int, int]]:
         """[(price, total_qty), ...] sorted descending."""
         return [
-            (p, sum(o.quantity_units for o in self._bids[p]))
-            for p in reversed(self._bid_prices)
+            (p, sum(o.quantity_units for o in self._bids[p])) for p in reversed(self._bid_prices)
         ]
 
     def ask_levels(self) -> list[tuple[int, int]]:
         """[(price, total_qty), ...] sorted ascending."""
-        return [
-            (p, sum(o.quantity_units for o in self._asks[p]))
-            for p in self._ask_prices
-        ]
+        return [(p, sum(o.quantity_units for o in self._asks[p])) for p in self._ask_prices]
 
     def bid_depth_k(self) -> int:
         return len(self._bid_prices)
@@ -148,9 +143,7 @@ class Book:
     # Internal helpers
     # ------------------------------------------------------------------ #
 
-    def _side_refs(
-        self, side: Side
-    ) -> tuple[dict[int, deque[RestingOrder]], list[int]]:
+    def _side_refs(self, side: Side) -> tuple[dict[int, deque[RestingOrder]], list[int]]:
         if side == "BUY":
             return self._bids, self._bid_prices
         return self._asks, self._ask_prices

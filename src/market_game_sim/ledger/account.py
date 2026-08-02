@@ -17,13 +17,13 @@ Units reminder (BENCH-001):
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from market_game_sim.config.types import div_ceil, div_round_toward_zero, round_fee
 
 
-class AccountState(str, Enum):
+class AccountState(StrEnum):
     """Account state machine (账户合同 §1, plan §3.4).
 
     For 0.1.1 all accounts start and remain ``ACTIVE`` -- ``PENDING_LIQUIDATION``
@@ -160,9 +160,7 @@ def _mult_half(mult: int) -> int:
     return mult // 2
 
 
-def unrealized_pnl_at_risk_mark(
-    account: Account, risk_mark_ticks: int, mult: int
-) -> int:
+def unrealized_pnl_at_risk_mark(account: Account, risk_mark_ticks: int, mult: int) -> int:
     """``position × risk_mark − entry_notional`` in cash_units (账户合同 §2.2).
 
     ``risk_mark`` is in ticks (the last trade price). Both ``position ×
@@ -187,22 +185,16 @@ def unrealized_pnl_at_valuation_mark(
 
 def risk_equity(account: Account, risk_mark_ticks: int, mult: int) -> int:
     """``wallet + unrealized_pnl(risk_mark)`` -- for margin/admission/liquidation."""
-    return (
-        account.wallet_units
-        + unrealized_pnl_at_risk_mark(account, risk_mark_ticks, mult)
-    )
+    return account.wallet_units + unrealized_pnl_at_risk_mark(account, risk_mark_ticks, mult)
 
 
-def valuation_equity(
-    account: Account, valuation_mark_half_ticks: int, mult: int
-) -> int:
+def valuation_equity(account: Account, valuation_mark_half_ticks: int, mult: int) -> int:
     """``wallet + unrealized_pnl(valuation_mark)`` -- for reporting/PnL bridge.
 
     Must NOT be substituted for :func:`risk_equity` (账户合同 §2.2).
     """
-    return (
-        account.wallet_units
-        + unrealized_pnl_at_valuation_mark(account, valuation_mark_half_ticks, mult)
+    return account.wallet_units + unrealized_pnl_at_valuation_mark(
+        account, valuation_mark_half_ticks, mult
     )
 
 
@@ -211,9 +203,7 @@ def valuation_equity(
 # --------------------------------------------------------------------------- #
 
 
-def margin_ratio_bp(
-    account: Account, risk_mark_ticks: int, mult: int
-) -> int | None:
+def margin_ratio_bp(account: Account, risk_mark_ticks: int, mult: int) -> int | None:
     """Current margin ratio in integer bp (账户合同 §3.2).
 
     ``margin_ratio_bp = floor(risk_equity × 10000 / notional)`` where
@@ -249,9 +239,7 @@ def snapshot_entry(account: Account, risk_mark_ticks: int | None, mult: int) -> 
         "realized_pnl_units": account.realized_pnl_units,
         "state": account.state.value,
         "margin_ratio_bp": (
-            margin_ratio_bp(account, risk_mark_ticks, mult)
-            if risk_mark_ticks is not None
-            else None
+            margin_ratio_bp(account, risk_mark_ticks, mult) if risk_mark_ticks is not None else None
         ),
         "liquidation_generation": account.liquidation_generation,
         "chain_id": account.chain_id,

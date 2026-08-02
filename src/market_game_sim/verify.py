@@ -35,7 +35,7 @@ def verify_log(path: str | pathlib.Path) -> dict[str, Any]:
         try:
             r = json.loads(line)
         except json.JSONDecodeError as exc:
-            return {"success": False, "error": "TI-5", "detail": f"line {i+1}: {exc}"}
+            return {"success": False, "error": "TI-5", "detail": f"line {i + 1}: {exc}"}
         records.append(r)
         if r.get("record_kind") == "RUN_HEADER":
             rc_header = r.get("record_count")
@@ -45,13 +45,19 @@ def verify_log(path: str | pathlib.Path) -> dict[str, Any]:
     if records[-1].get("record_kind") != "RUN_TRAILER":
         return {"success": False, "error": "TI-5", "detail": "last is not RUN_TRAILER"}
     if rc_header is not None and rc_header != len(lines):
-        return {"success": False, "error": "TI-5",
-                "detail": f"record_count {rc_header} != {len(lines)}"}
+        return {
+            "success": False,
+            "error": "TI-5",
+            "detail": f"record_count {rc_header} != {len(lines)}",
+        }
 
     trailer = records[-1]
     if trailer.get("terminated") == "ABORTED":
-        return {"success": False, "error": "TI-4",
-                "detail": f"abort_code={trailer.get('abort_code')}"}
+        return {
+            "success": False,
+            "error": "TI-4",
+            "detail": f"abort_code={trailer.get('abort_code')}",
+        }
 
     events = [r for r in records if r.get("record_kind") == "EVENT"]
     acc_state, book_state, causal_err = _rebuild(events)
@@ -71,11 +77,9 @@ def verify_log(path: str | pathlib.Path) -> dict[str, Any]:
         by_txn[e["transaction_seq"]].append(e["record_index"])
     for txn_seq, idxs in sorted(by_txn.items()):
         if idxs[0] != 0:
-            return {"success": False, "error": "TI-5",
-                    "detail": f"txn {txn_seq}: first != 0"}
+            return {"success": False, "error": "TI-5", "detail": f"txn {txn_seq}: first != 0"}
         if any(idxs[i] + 1 != idxs[i + 1] for i in range(len(idxs) - 1)):
-            return {"success": False, "error": "TI-5",
-                    "detail": f"txn {txn_seq}: gap/disorder"}
+            return {"success": False, "error": "TI-5", "detail": f"txn {txn_seq}: gap/disorder"}
 
     return {
         "success": True,
@@ -130,8 +134,11 @@ def _rebuild(
                 if not aid:
                     continue
                 if aid not in accounts:
-                    accounts[aid] = {"wallet_units": 0, "position_units": 0,
-                                     "entry_notional_units": 0}
+                    accounts[aid] = {
+                        "wallet_units": 0,
+                        "position_units": 0,
+                        "entry_notional_units": 0,
+                    }
                 a = accounts[aid]
                 a["wallet_units"] += p.get("wallet_delta_units", 0)
                 a["position_units"] += p.get("position_delta_units", 0)
@@ -149,7 +156,8 @@ def _rebuild(
                     "side": e.get("side", ""),
                     "price": e.get("price_ticks"),
                     "qty": e.get("quantity_units", 0),
-                    "filled": 0, "cancelled": 0,
+                    "filled": 0,
+                    "cancelled": 0,
                 }
 
         elif et == "ORDER_CANCELLED":
@@ -162,13 +170,15 @@ def _rebuild(
         return accounts, {}, causal_err
 
     book: dict[str, dict[int, int]] = {"bids": defaultdict(int), "asks": defaultdict(int)}
-    for oid, o in book_orders.items():
+    for o in book_orders.values():
         rem = o["qty"] - o["filled"] - o["cancelled"]
         if rem > 0 and o["price"] is not None:
             section = "bids" if o["side"] == "BUY" else "asks"
             book[section][o["price"]] += rem
-    book_plain = {"bids": dict(sorted(book["bids"].items(), reverse=True)),
-                  "asks": dict(sorted(book["asks"].items()))}
+    book_plain = {
+        "bids": dict(sorted(book["bids"].items(), reverse=True)),
+        "asks": dict(sorted(book["asks"].items())),
+    }
 
     return accounts, book_plain, None
 
@@ -179,8 +189,7 @@ def _check_c2(accounts: dict[str, dict], events: list[dict]) -> str | None:
     for e in events:
         if e.get("event_type") == "SNAPSHOT" and e.get("snapshot_type") == "ACCOUNT":
             wallet_sum_0 = sum(
-                entry.get("wallet_units", 0)
-                for entry in e.get("payload", {}).get("accounts", [])
+                entry.get("wallet_units", 0) for entry in e.get("payload", {}).get("accounts", [])
             )
         elif e.get("event_type") == "TRADE_SETTLE":
             fees += e.get("taker_fee_cash_units", 0) + e.get("maker_fee_cash_units", 0)
@@ -194,6 +203,7 @@ def _check_c2(accounts: dict[str, dict], events: list[dict]) -> str | None:
 
 def digest_events(records: list[dict]) -> str:
     import hashlib
+
     h = hashlib.blake2b(digest_size=32)
     for r in records:
         if r.get("record_kind") != "EVENT":

@@ -322,16 +322,18 @@ class TestHashCoverage:
             "postings": [],
         }
         non_empty_event = dict(empty_event)
-        non_empty_event["postings"] = [{
-            "posting_type": "WRITE_OFF_POSTING",
-            "role": "ACCOUNT",
-            "agent_id": "A",
-            "wallet_delta_units": 100,
-            "wallet_after_units": 0,
-            "position_after_units": 0,
-            "entry_notional_after_units": 0,
-            "risk_pnl_delta_units": 0,
-        }]
+        non_empty_event["postings"] = [
+            {
+                "posting_type": "WRITE_OFF_POSTING",
+                "role": "ACCOUNT",
+                "agent_id": "A",
+                "wallet_delta_units": 100,
+                "wallet_after_units": 0,
+                "position_after_units": 0,
+                "entry_notional_after_units": 0,
+                "risk_pnl_delta_units": 0,
+            }
+        ]
         proj_empty = event_hash_input(empty_event, registry)
         proj_non_empty = event_hash_input(non_empty_event, registry)
         assert proj_empty["postings"] != proj_non_empty["postings"]

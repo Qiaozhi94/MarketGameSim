@@ -8,8 +8,6 @@ C2 must include entry_notional -- 案例 2 (cross-price handoff) is the core cas
 
 from __future__ import annotations
 
-import pytest
-
 from market_game_sim.ledger.account import Account, apply_fill
 from market_game_sim.ledger.conservation import check_c1, check_c1_c2, check_c2
 
@@ -82,9 +80,11 @@ class TestT406C2Case2:
     """
 
     def test_c2_holds_after_handoff(self):
-        accts = {"A": Account("A", cash(1000)),
-                 "B": Account("B", cash(1000)),
-                 "C": Account("C", cash(1000))}
+        accts = {
+            "A": Account("A", cash(1000)),
+            "B": Account("B", cash(1000)),
+            "C": Account("C", cash(1000)),
+        }
         init_sum = cash(3000)
         apply_fill(accts["A"], "BUY", ticks(100), units(10), MULT, 0)
         apply_fill(accts["B"], "SELL", ticks(100), units(10), MULT, 0)
@@ -95,9 +95,11 @@ class TestT406C2Case2:
 
     def test_old_wallet_constant_equation_fails(self):
         # Σwallet = 3100 != 3000 (the旧等式 is wrong, 案例 2 is its counterexample).
-        accts = {"A": Account("A", cash(1000)),
-                 "B": Account("B", cash(1000)),
-                 "C": Account("C", cash(1000))}
+        accts = {
+            "A": Account("A", cash(1000)),
+            "B": Account("B", cash(1000)),
+            "C": Account("C", cash(1000)),
+        }
         apply_fill(accts["A"], "BUY", ticks(100), units(10), MULT, 0)
         apply_fill(accts["B"], "SELL", ticks(100), units(10), MULT, 0)
         apply_fill(accts["A"], "SELL", ticks(110), units(10), MULT, 0)
@@ -110,9 +112,11 @@ class TestT406C2Case2:
 
     def test_old_entry_zero_equation_fails(self):
         # Σentry = +100 != 0 after handoff.
-        accts = {"A": Account("A", cash(1000)),
-                 "B": Account("B", cash(1000)),
-                 "C": Account("C", cash(1000))}
+        accts = {
+            "A": Account("A", cash(1000)),
+            "B": Account("B", cash(1000)),
+            "C": Account("C", cash(1000)),
+        }
         apply_fill(accts["A"], "BUY", ticks(100), units(10), MULT, 0)
         apply_fill(accts["B"], "SELL", ticks(100), units(10), MULT, 0)
         apply_fill(accts["A"], "SELL", ticks(110), units(10), MULT, 0)
@@ -126,8 +130,8 @@ class TestT406C2WithFees:
 
     def test_c2_holds_with_signed_fee_account(self):
         accts, init_sum = _two_accounts()
-        apply_fill(accts["A"], "BUY", ticks(100), units(10), MULT, 5)      # taker
-        apply_fill(accts["B"], "SELL", ticks(100), units(10), MULT, -1)    # maker
+        apply_fill(accts["A"], "BUY", ticks(100), units(10), MULT, 5)  # taker
+        apply_fill(accts["B"], "SELL", ticks(100), units(10), MULT, -1)  # maker
         # exchange_fee = taker_fee + maker_fee = 0.5 + (-0.1) = 0.4
         exchange_fee = cash(0.5) + (-cash(0.1))
         ok, _ = check_c2(accts, exchange_fee, 0, init_sum)
@@ -151,7 +155,6 @@ class TestT406C2RiskAccount:
     def test_risk_account_signed(self):
         # Simulate: A breached, wallet -50 -> 0 (+50), risk += -50.
         accts = {"A": Account("A", cash(0))}
-        init_sum = cash(1000)  # hypothetical
         # Manually set A wallet negative then write off:
         accts["A"].wallet_units = -cash(50)
         # Before write-off C2 (with risk=0): lhs = -50 - 0 + 0 = -50 != 1000.

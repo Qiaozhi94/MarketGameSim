@@ -23,7 +23,9 @@ def _bootstrap(kernel: EventKernel) -> None:
     kernel.bootstrap(build_account_payload([]), build_book_payload(last_ticks=None))
 
 
-def _buy_order(order_id: str, agent_id: str, price: int, qty: int, t: int = 100, order_type: str = "LIMIT") -> dict:
+def _buy_order(
+    order_id: str, agent_id: str, price: int, qty: int, t: int = 100, order_type: str = "LIMIT"
+) -> dict:
     return {
         "event_type": "ORDER_ARRIVAL",
         "timestamp": t,
@@ -37,7 +39,9 @@ def _buy_order(order_id: str, agent_id: str, price: int, qty: int, t: int = 100,
     }
 
 
-def _sell_order(order_id: str, agent_id: str, price: int, qty: int, t: int = 100, order_type: str = "LIMIT") -> dict:
+def _sell_order(
+    order_id: str, agent_id: str, price: int, qty: int, t: int = 100, order_type: str = "LIMIT"
+) -> dict:
     return {
         "event_type": "ORDER_ARRIVAL",
         "timestamp": t,
@@ -51,11 +55,15 @@ def _sell_order(order_id: str, agent_id: str, price: int, qty: int, t: int = 100
     }
 
 
-def _rest_sell(book: Book, order_id: str, agent_id: str, price: int, qty: int, txn_seq: int = 0) -> None:
+def _rest_sell(
+    book: Book, order_id: str, agent_id: str, price: int, qty: int, txn_seq: int = 0
+) -> None:
     book.insert(RestingOrder(order_id, agent_id, "SELL", "LIMIT", price, qty, txn_seq))
 
 
-def _rest_buy(book: Book, order_id: str, agent_id: str, price: int, qty: int, txn_seq: int = 0) -> None:
+def _rest_buy(
+    book: Book, order_id: str, agent_id: str, price: int, qty: int, txn_seq: int = 0
+) -> None:
     book.insert(RestingOrder(order_id, agent_id, "BUY", "LIMIT", price, qty, txn_seq))
 
 
@@ -407,6 +415,7 @@ class TestReservedUnits:
 class TestCancel:
     def test_find_and_remove_works(self):
         from market_game_sim.book.matching import _find_and_remove
+
         book = _make_book()
         _rest_sell(book, "s1", "M", 10000, 2000)
         assert book.best_ask() == 10000
@@ -417,6 +426,7 @@ class TestCancel:
 
     def test_cancel_nonexistent_order_returns_empty(self):
         from market_game_sim.book.matching import _find_and_remove
+
         book = _make_book()
         result = _find_and_remove(book, "no_such")
         assert result is None

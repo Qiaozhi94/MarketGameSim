@@ -7,12 +7,12 @@
 
 from __future__ import annotations
 
-import pytest
-
 from market_game_sim.book.orderbook import Book, RestingOrder
 
 
-def _resting(order_id: str, agent_id: str, side: str, price: int, qty: int, txn_seq: int = 0) -> RestingOrder:
+def _resting(
+    order_id: str, agent_id: str, side: str, price: int, qty: int, txn_seq: int = 0
+) -> RestingOrder:
     return RestingOrder(
         order_id=order_id,
         agent_id=agent_id,

@@ -95,9 +95,16 @@ class TestFullPathCoverage:
         mentioned = _backtick_tokens(doc_text)
         # Event types and top-level record kinds must be mentioned by name.
         user_facing = set(registry.record_kinds) | {
-            "ORDER_ARRIVAL", "ORDER_CANCELLED", "TRADE_SETTLE", "MARGIN_CALL",
-            "MARKET_DATA_PUBLISH", "AGENT_OBSERVE", "AGENT_DECIDE", "SNAPSHOT",
-            "TRADE_POSTING", "WRITE_OFF_POSTING",
+            "ORDER_ARRIVAL",
+            "ORDER_CANCELLED",
+            "TRADE_SETTLE",
+            "MARGIN_CALL",
+            "MARKET_DATA_PUBLISH",
+            "AGENT_OBSERVE",
+            "AGENT_DECIDE",
+            "SNAPSHOT",
+            "TRADE_POSTING",
+            "WRITE_OFF_POSTING",
         }
         for sname in user_facing:
             assert sname in mentioned or sname in doc_text, (
@@ -111,11 +118,19 @@ class TestFullPathCoverage:
 
 
 class TestMetadataCompleteness:
-    @pytest.mark.parametrize("sname", [
-        "RUN_HEADER", "RUN_TRAILER", "EVENT_COMMON",
-        "ORDER_ARRIVAL", "TRADE_SETTLE", "MARGIN_CALL",
-        "TRADE_POSTING", "WRITE_OFF_POSTING",
-    ])
+    @pytest.mark.parametrize(
+        "sname",
+        [
+            "RUN_HEADER",
+            "RUN_TRAILER",
+            "EVENT_COMMON",
+            "ORDER_ARRIVAL",
+            "TRADE_SETTLE",
+            "MARGIN_CALL",
+            "TRADE_POSTING",
+            "WRITE_OFF_POSTING",
+        ],
+    )
     def test_fields_have_all_six_metadata(self, registry, sname):
         for fname in registry.field_names(sname):
             f = registry.get_field(sname, fname)
@@ -126,15 +141,17 @@ class TestMetadataCompleteness:
                 f"{sname}.{fname} missing hash_class"
             )
 
-    @pytest.mark.parametrize("sname", [
-        "RUN_HEADER", "RUN_TRAILER",
-    ])
+    @pytest.mark.parametrize(
+        "sname",
+        [
+            "RUN_HEADER",
+            "RUN_TRAILER",
+        ],
+    )
     def test_header_trailer_all_hash_exclude(self, registry, sname):
         for fname in registry.field_names(sname):
             f = registry.get_field(sname, fname)
-            assert f.hash_class == "HASH_EXCLUDE", (
-                f"{sname}.{fname} should be HASH_EXCLUDE (§6)"
-            )
+            assert f.hash_class == "HASH_EXCLUDE", f"{sname}.{fname} should be HASH_EXCLUDE (§6)"
 
 
 # --------------------------------------------------------------------------- #
@@ -183,8 +200,7 @@ class TestE002HashIncludeParity:
             assert registry.has_structure(etype), f"E-002 lists unknown event type {etype}"
             fields = registry.get_fields(etype)
             own_include = {
-                fname for fname, f in fields.items()
-                if f.hash_class == HASH_INCLUDE and f.is_leaf
+                fname for fname, f in fields.items() if f.hash_class == HASH_INCLUDE and f.is_leaf
             }
             missing = own_include - listed
             assert not missing, f"E-002 {etype}: missing HASH_INCLUDE fields {sorted(missing)}"

@@ -22,13 +22,11 @@ from collections import deque
 from typing import Any
 
 from market_game_sim.book.orderbook import Book, RestingOrder
-from market_game_sim.config.types import div_ceil
 from market_game_sim.hook.crypto_perp import CryptoPerpRegime
 from market_game_sim.hook.interface import RegimeHook
 from market_game_sim.kernel.runner import EventKernel
 from market_game_sim.ledger.account import (
     Account,
-    AccountState,
     apply_fill,
     margin_ratio_bp,
     risk_equity,
@@ -72,8 +70,11 @@ def match_order(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
     if acct is not None:
         reserved_after = event.get("reserved_delta_units", 0)
         ok, reject = regime.margin_rule(
-            acct, event.get("quantity_units", 0),
-            event.get("price_ticks", 0), world.get("config"), reserved_after,
+            acct,
+            event.get("quantity_units", 0),
+            event.get("price_ticks", 0),
+            world.get("config"),
+            reserved_after,
         )
         if not ok:
             event["accepted"] = False
@@ -175,7 +176,9 @@ def match_order(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
             acct = world["accounts"].get(rest.agent_id)
             if acct:
                 acct.reserved_units = _reserved_for(
-                    world, acct, rest.agent_id,
+                    world,
+                    acct,
+                    rest.agent_id,
                     book.last_ticks or world.get("initial_price_ticks", 10000),
                 )
         else:
@@ -287,9 +290,7 @@ def _reduce_active_order(world: dict, order: RestingOrder, fill_qty: int, consum
 # --------------------------------------------------------------------------- #
 
 
-def _reserved_for(
-    world: dict, account: Account, agent_id: str, risk_mark_ticks: int
-) -> int:
+def _reserved_for(world: dict, account: Account, agent_id: str, risk_mark_ticks: int) -> int:
     cfg = world["_cfg"]
     return compute_reserved_after(
         position_units=account.position_units,
@@ -404,9 +405,7 @@ def _crosses(taker_side: str, limit_price: int | None, maker_price: int) -> bool
 # --------------------------------------------------------------------------- #
 
 
-def _handle_cancel(
-    event: dict, book: Book, world: dict, kernel: EventKernel
-) -> list[dict]:
+def _handle_cancel(event: dict, book: Book, world: dict, kernel: EventKernel) -> list[dict]:
     caused_by = f"e{kernel.current_transaction_seq}_0"
     target_id = event.get("target_order_id")
     if target_id is None:
@@ -442,8 +441,7 @@ def _find_and_remove(book: Book, order_id: str) -> RestingOrder | None:
             dq = book_dict[price]
             for o in dq:
                 if o.order_id == order_id:
-                    new_dq = deque((x for x in dq if x.order_id != order_id),
-                                   maxlen=dq.maxlen)
+                    new_dq = deque((x for x in dq if x.order_id != order_id), maxlen=dq.maxlen)
                     if new_dq:
                         book_dict[price] = new_dq
                     else:
@@ -459,9 +457,7 @@ def _find_and_remove(book: Book, order_id: str) -> RestingOrder | None:
 # --------------------------------------------------------------------------- #
 
 
-def _populate_r0_defaults(
-    event: dict, book: Book, initial_price: int, world: dict
-) -> None:
+def _populate_r0_defaults(event: dict, book: Book, initial_price: int, world: dict) -> None:
     regime: RegimeHook = world.get("regime", CryptoPerpRegime())
     account = world["accounts"].get(event.get("agent_id"))
     accepted, reason = regime.validate_order(event, account, book, world.get("config"))
@@ -502,15 +498,18 @@ def _populate_r0_defaults(
         price_ticks=event.get("price_ticks") or risk_mark,
         quantity_units=event.get("quantity_units", 0),
     )
-    _add_active_order(world, RestingOrder(
-        order_id=event.get("order_id", "_r0_tmp"),
-        agent_id=agent_id,
-        side=new_order.side,
-        order_type="LIMIT",
-        price_ticks=new_order.price_ticks,
-        quantity_units=new_order.quantity_units,
-        transaction_seq=0,
-    ))
+    _add_active_order(
+        world,
+        RestingOrder(
+            order_id=event.get("order_id", "_r0_tmp"),
+            agent_id=agent_id,
+            side=new_order.side,
+            order_type="LIMIT",
+            price_ticks=new_order.price_ticks,
+            quantity_units=new_order.quantity_units,
+            transaction_seq=0,
+        ),
+    )
     new_reserved = _reserved_for(world, account, agent_id, risk_mark)
     _remove_active_order(world, event.get("order_id", "_r0_tmp"), agent_id)
 
@@ -557,7 +556,9 @@ def _build_trade_settle(
 
 
 def _build_order_cancelled(
-    order: RestingOrder, reason: str, caused_by: str,
+    order: RestingOrder,
+    reason: str,
+    caused_by: str,
     reserved_delta: int = 0,
 ) -> dict[str, Any]:
     return {

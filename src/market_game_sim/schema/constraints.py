@@ -105,9 +105,7 @@ def _validate_array_length(
 
     actual = len(value) if value is not None else 0
     if actual != expected:
-        errors.append(
-            f"{structure}.{field_path}: array length {actual} != expected {expected}"
-        )
+        errors.append(f"{structure}.{field_path}: array length {actual} != expected {expected}")
 
 
 def _validate_nested(

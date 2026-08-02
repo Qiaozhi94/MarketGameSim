@@ -132,19 +132,22 @@ class TestCancelFixture:
 
 class TestAgentFixture:
     def test_valid_agent(self, registry):
-        r = _order_arrival(origin="AGENT", intent_id="i1", trigger_ratio_bp=None,
-                           liquidation_generation=None)
+        r = _order_arrival(
+            origin="AGENT", intent_id="i1", trigger_ratio_bp=None, liquidation_generation=None
+        )
         assert validate_record(r, registry) == []
 
     def test_invalid_agent_intent_id_null(self, registry):
-        r = _order_arrival(origin="AGENT", intent_id=None, trigger_ratio_bp=None,
-                           liquidation_generation=None)
+        r = _order_arrival(
+            origin="AGENT", intent_id=None, trigger_ratio_bp=None, liquidation_generation=None
+        )
         errors = validate_record(r, registry)
         assert any("intent_id" in e and "non-null" in e for e in errors)
 
     def test_invalid_agent_trigger_ratio_bp_non_null(self, registry):
-        r = _order_arrival(origin="AGENT", intent_id="i1", trigger_ratio_bp=5000,
-                           liquidation_generation=None)
+        r = _order_arrival(
+            origin="AGENT", intent_id="i1", trigger_ratio_bp=5000, liquidation_generation=None
+        )
         errors = validate_record(r, registry)
         assert any("trigger_ratio_bp" in e and "null" in e for e in errors)
 
@@ -208,7 +211,8 @@ class TestPendingLiquidationFixture:
 
     def test_invalid_pending_postings_non_empty(self, registry):
         r = _margin_call(
-            verdict="PENDING_LIQUIDATION", chain_id="chain1",
+            verdict="PENDING_LIQUIDATION",
+            chain_id="chain1",
             postings=[_write_off_posting("ACCOUNT"), _write_off_posting("EXCHANGE_RISK")],
         )
         errors = validate_record(r, registry)
@@ -260,15 +264,17 @@ class TestWriteOffPostingRoleConstraints:
     def test_invalid_exchange_risk_agent_id_non_null(self, registry):
         p = _write_off_posting("EXCHANGE_RISK")
         p["agent_id"] = "should_be_null"
-        r = _margin_call(verdict="BREACHED", chain_id="chain1",
-                         postings=[_write_off_posting("ACCOUNT"), p])
+        r = _margin_call(
+            verdict="BREACHED", chain_id="chain1", postings=[_write_off_posting("ACCOUNT"), p]
+        )
         errors = validate_record(r, registry)
         assert any("agent_id" in e and "null" in e for e in errors)
 
     def test_invalid_exchange_risk_wallet_after_non_null(self, registry):
         p = _write_off_posting("EXCHANGE_RISK")
         p["wallet_after_units"] = 0
-        r = _margin_call(verdict="BREACHED", chain_id="chain1",
-                         postings=[_write_off_posting("ACCOUNT"), p])
+        r = _margin_call(
+            verdict="BREACHED", chain_id="chain1", postings=[_write_off_posting("ACCOUNT"), p]
+        )
         errors = validate_record(r, registry)
         assert any("wallet_after_units" in e and "null" in e for e in errors)

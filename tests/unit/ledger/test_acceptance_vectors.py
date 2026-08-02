@@ -13,8 +13,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import pytest
-
 from market_game_sim.book.matching import match_order
 from market_game_sim.book.orderbook import Book
 from market_game_sim.eventlog.bootstrap import (
@@ -43,10 +41,15 @@ def units(h: float | int) -> int:
 
 def _limit(oid: str, aid: str, side: str, price: int, qty: int, t: int) -> dict:
     return {
-        "event_type": "ORDER_ARRIVAL", "timestamp": t,
-        "agent_id": aid, "order_id": oid,
-        "action": "SUBMIT", "side": side, "order_type": "LIMIT",
-        "price_ticks": price, "quantity_units": qty,
+        "event_type": "ORDER_ARRIVAL",
+        "timestamp": t,
+        "agent_id": aid,
+        "order_id": oid,
+        "action": "SUBMIT",
+        "side": side,
+        "order_type": "LIMIT",
+        "price_ticks": price,
+        "quantity_units": qty,
     }
 
 
@@ -64,9 +67,13 @@ def _run(
     )
     book = Book(initial_price_ticks=initial_price)
     world: dict[str, Any] = {
-        "book": book, "accounts": accounts,
-        "exchange_fee_units": 0, "exchange_risk_pnl_units": 0,
-        "mult": MULT, "maker_bps": maker_bps, "taker_bps": taker_bps,
+        "book": book,
+        "accounts": accounts,
+        "exchange_fee_units": 0,
+        "exchange_risk_pnl_units": 0,
+        "mult": MULT,
+        "maker_bps": maker_bps,
+        "taker_bps": taker_bps,
         "initial_price_ticks": initial_price,
     }
     for e in events:
@@ -120,21 +127,27 @@ def _replay_check(records: list[dict]) -> list[dict]:
             revaluation = pos_before * (va - vb) * MULT_HALF
             fees = p["fee_delta_units"]
             eq_before = before["wallet"] + pos_before * vb * MULT_HALF - before["entry"]
-            eq_after = (state[aid]["wallet"]
-                        + state[aid]["position"] * va * MULT_HALF
-                        - state[aid]["entry"])
+            eq_after = (
+                state[aid]["wallet"] + state[aid]["position"] * va * MULT_HALF - state[aid]["entry"]
+            )
             delta_eq = eq_after - eq_before
             decomp = spread + impact + revaluation + 0 - fees
             residual = delta_eq - decomp
-            trade_res["postings"].append({
-                "agent": aid, "residual": residual,
-                "spread": spread, "impact": impact,
-                "revaluation": revaluation, "fees": fees,
-            })
+            trade_res["postings"].append(
+                {
+                    "agent": aid,
+                    "residual": residual,
+                    "spread": spread,
+                    "impact": impact,
+                    "revaluation": revaluation,
+                    "fees": fees,
+                }
+            )
         c1 = sum(s["position"] for s in state.values())
         c2_resid = (
             sum(s["wallet"] - s["entry"] - initial[a] for a, s in state.items())
-            + exchange_fee + exchange_risk
+            + exchange_fee
+            + exchange_risk
         )
         trade_res["c1"] = c1
         trade_res["c2_resid"] = c2_resid
@@ -197,7 +210,6 @@ class TestCase1SamePriceOpen:
 
     def test_c1_c2_bridge_per_event(self):
         records, accts = self._scenario()
-        init_sum = cash(2000)
         replay = _replay_check(records)
         _assert_conservation(replay)
 
@@ -215,14 +227,16 @@ class TestCase1SamePriceOpen:
 
 class TestCase2CrossPriceHandoff:
     def _scenario(self):
-        accts = {"A": Account("A", cash(1000)),
-                 "B": Account("B", cash(1000)),
-                 "C": Account("C", cash(1000))}
+        accts = {
+            "A": Account("A", cash(1000)),
+            "B": Account("B", cash(1000)),
+            "C": Account("C", cash(1000)),
+        }
         events = [
             _limit("b1", "B", "SELL", ticks(100), units(10), t=100),  # B rests sell @100
-            _limit("a1", "A", "BUY", ticks(100), units(10), t=200),   # A buys @100 from B
+            _limit("a1", "A", "BUY", ticks(100), units(10), t=200),  # A buys @100 from B
             _limit("a2", "A", "SELL", ticks(110), units(10), t=300),  # A rests sell @110
-            _limit("c1", "C", "BUY", ticks(110), units(10), t=400),   # C buys @110 from A
+            _limit("c1", "C", "BUY", ticks(110), units(10), t=400),  # C buys @110 from A
         ]
         records, accts = _run(events, accts, maker_bps=0, taker_bps=0)
         return records, accts
@@ -237,14 +251,14 @@ class TestCase2CrossPriceHandoff:
         maker_p, taker_p = trade2["postings"][0], trade2["postings"][1]
         # A is maker (SELL @110): closes +10 long, realizes +100.
         assert maker_p["agent_id"] == "A"
-        assert maker_p["wallet_delta_units"] == cash(100)       # +1e10
-        assert maker_p["position_delta_units"] == -units(10)    # -10000
-        assert maker_p["entry_notional_delta_units"] == -1e11   # -100000000000
+        assert maker_p["wallet_delta_units"] == cash(100)  # +1e10
+        assert maker_p["position_delta_units"] == -units(10)  # -10000
+        assert maker_p["entry_notional_delta_units"] == -1e11  # -100000000000
         assert maker_p["realized_pnl_delta_units"] == cash(100)
         # C is taker (BUY @110): opens +10 long.
         assert taker_p["agent_id"] == "C"
         assert taker_p["wallet_delta_units"] == 0
-        assert taker_p["position_delta_units"] == units(10)     # +10000
+        assert taker_p["position_delta_units"] == units(10)  # +10000
         assert taker_p["entry_notional_delta_units"] == 1.1e11  # +110000000000
 
     def test_final_state_handoff(self):
@@ -264,7 +278,6 @@ class TestCase2CrossPriceHandoff:
 
     def test_c1_c2_bridge_per_event(self):
         records, accts = self._scenario()
-        init_sum = cash(3000)
         replay = _replay_check(records)
         _assert_conservation(replay)
 
@@ -302,7 +315,7 @@ class TestCase3PartialClose:
             _limit("b1", "B", "SELL", ticks(100), units(10), t=100),
             _limit("a1", "A", "BUY", ticks(100), units(10), t=200),
             _limit("a2", "A", "SELL", ticks(105), units(4), t=300),  # A rests sell @105
-            _limit("b2", "B", "BUY", ticks(105), units(4), t=400),   # B buys @105 from A
+            _limit("b2", "B", "BUY", ticks(105), units(4), t=400),  # B buys @105 from A
         ]
         records, accts = _run(events, accts, maker_bps=0, taker_bps=0)
         return records, accts
@@ -313,9 +326,9 @@ class TestCase3PartialClose:
         maker_p, taker_p = trade["postings"][0], trade["postings"][1]
         # A maker SELL @105: closes 4 of 10 long, realizes +20.
         assert maker_p["agent_id"] == "A"
-        assert maker_p["wallet_delta_units"] == cash(20)        # +2e9
-        assert maker_p["position_delta_units"] == -units(4)     # -4000
-        assert maker_p["entry_notional_delta_units"] == -4e10   # -40000000000
+        assert maker_p["wallet_delta_units"] == cash(20)  # +2e9
+        assert maker_p["position_delta_units"] == -units(4)  # -4000
+        assert maker_p["entry_notional_delta_units"] == -4e10  # -40000000000
         assert maker_p["realized_pnl_delta_units"] == cash(20)
         # B taker BUY @105: closes 4 of 10 short, realizes -20.
         assert taker_p["agent_id"] == "B"
@@ -348,10 +361,10 @@ class TestCase4Flip:
     def _scenario(self):
         accts = {"A": Account("A", cash(1000)), "B": Account("B", cash(1000))}
         events = [
-            _limit("b1", "B", "SELL", ticks(100), units(5), t=100),   # B rests sell @100
-            _limit("a1", "A", "BUY", ticks(100), units(5), t=200),    # A buys 5 @100
-            _limit("b2", "B", "BUY", ticks(98), units(10), t=300),    # B rests buy @98
-            _limit("a2", "A", "SELL", ticks(98), units(10), t=400),   # A sells 10 @98 to B
+            _limit("b1", "B", "SELL", ticks(100), units(5), t=100),  # B rests sell @100
+            _limit("a1", "A", "BUY", ticks(100), units(5), t=200),  # A buys 5 @100
+            _limit("b2", "B", "BUY", ticks(98), units(10), t=300),  # B rests buy @98
+            _limit("a2", "A", "SELL", ticks(98), units(10), t=400),  # A sells 10 @98 to B
         ]
         records, accts = _run(events, accts, maker_bps=0, taker_bps=0)
         return records, accts
@@ -364,8 +377,8 @@ class TestCase4Flip:
         # A is taker here (B's buy was resting). So maker=B, taker=A.
         assert maker_p["agent_id"] == "B"
         assert taker_p["agent_id"] == "A"
-        assert taker_p["wallet_delta_units"] == -cash(10)       # -1e9
-        assert taker_p["position_delta_units"] == -units(10)    # -10000
+        assert taker_p["wallet_delta_units"] == -cash(10)  # -1e9
+        assert taker_p["position_delta_units"] == -units(10)  # -10000
         assert taker_p["entry_notional_delta_units"] == -9.9e10  # -99000000000
         assert taker_p["realized_pnl_delta_units"] == -cash(10)
         # B completely negated (zero fee, exact counterpart).
@@ -408,8 +421,8 @@ class TestCase5Fees:
     def test_fee_integers(self):
         records, _ = self._scenario()
         t = _trades(records)[0]
-        assert t["maker_fee_cash_units"] == -10000000   # -0.1
-        assert t["taker_fee_cash_units"] == 50000000    # 0.5
+        assert t["maker_fee_cash_units"] == -10000000  # -0.1
+        assert t["taker_fee_cash_units"] == 50000000  # 0.5
         assert t["maker_fee_cash_units"] + t["taker_fee_cash_units"] == 40000000
 
     def test_taker_wallet_reduced_by_fee(self):
@@ -444,13 +457,15 @@ class TestCase5Fees:
 
 class TestCase10Funding:
     def _scenario(self):
-        accts = {"A": Account("A", cash(10000)),
-                 "B": Account("B", cash(10000)),
-                 "C": Account("C", cash(10000))}
+        accts = {
+            "A": Account("A", cash(10000)),
+            "B": Account("B", cash(10000)),
+            "C": Account("C", cash(10000)),
+        }
         events = [
             _limit("b1", "B", "SELL", ticks(100), units(50), t=100),  # B rests sell 50
-            _limit("a1", "A", "BUY", ticks(100), units(30), t=200),   # A buys 30
-            _limit("c1", "C", "BUY", ticks(100), units(20), t=300),   # C buys 20
+            _limit("a1", "A", "BUY", ticks(100), units(30), t=200),  # A buys 30
+            _limit("c1", "C", "BUY", ticks(100), units(20), t=300),  # C buys 20
         ]
         records, accts = _run(events, accts, maker_bps=0, taker_bps=0)
         return records, accts
@@ -510,9 +525,11 @@ class TestT408PnlBridge:
                 assert p["fees"] != 0  # fees are present and non-zero
 
     def test_bridge_zero_residual_cross_price(self):
-        accts = {"A": Account("A", cash(1000)),
-                 "B": Account("B", cash(1000)),
-                 "C": Account("C", cash(1000))}
+        accts = {
+            "A": Account("A", cash(1000)),
+            "B": Account("B", cash(1000)),
+            "C": Account("C", cash(1000)),
+        }
         events = [
             _limit("b1", "B", "SELL", ticks(100), units(10), t=100),
             _limit("a1", "A", "BUY", ticks(100), units(10), t=200),
@@ -542,20 +559,22 @@ class TestT408PnlBridge:
     def test_bridge_uses_valuation_mark_not_risk_mark(self):
         # Partial fill so both bid and ask remain → mid != price, impact=0, spread≠0.
         # If vm were risk_mark (last), spread+impact == 0 (both computed from price).
-        accts = {"A": Account("A", cash(1000)), "N": Account("N", cash(1000)),
-                 "M": Account("M", cash(1000))}
+        accts = {
+            "A": Account("A", cash(1000)),
+            "N": Account("N", cash(1000)),
+            "M": Account("M", cash(1000)),
+        }
         events = [
-            _limit("n1", "N", "BUY", ticks(99), units(10), t=100),    # N rests buy @99
+            _limit("n1", "N", "BUY", ticks(99), units(10), t=100),  # N rests buy @99
             _limit("m1", "M", "SELL", ticks(100), units(10), t=200),  # M rests sell @100
-            _limit("a1", "A", "BUY", ticks(100), units(3), t=300),    # A buys 3@100, M still has 7
+            _limit("a1", "A", "BUY", ticks(100), units(3), t=300),  # A buys 3@100, M still has 7
         ]
         records, _ = _run(events, accts)
         trade = _trades(records)[0]
         vb = trade["valuation_mark_before_half_ticks"]
         va = trade["valuation_mark_after_half_ticks"]
-        price = trade["price_ticks"]
-        assert vb == 9900 + 10000   # bid(99)+ask(100) = 19900
-        assert va == 9900 + 10000   # both sides still present after partial fill
+        assert vb == 9900 + 10000  # bid(99)+ask(100) = 19900
+        assert va == 9900 + 10000  # both sides still present after partial fill
         replay = _replay_check(records)
         taker_posting = replay[0]["postings"][1]  # A is taker
         assert taker_posting["spread"] + taker_posting["impact"] != 0

@@ -20,9 +20,7 @@ def compute_mult(tick_size, min_quantity, cash_unit) -> int:
     """
     quotient = tick_size * min_quantity / cash_unit
     if quotient != quotient.to_integral_value():
-        raise ValueError(
-            f"MULT = tick_size*min_quantity/cash_unit = {quotient} is not integral"
-        )
+        raise ValueError(f"MULT = tick_size*min_quantity/cash_unit = {quotient} is not integral")
     return int(quotient)
 
 

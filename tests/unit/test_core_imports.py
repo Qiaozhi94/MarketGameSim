@@ -9,17 +9,49 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 SRC = ROOT / "src" / "market_game_sim"
 
 FORBIDDEN = {
-    "numpy", "pandas", "scipy", "matplotlib", "sklearn",
-    "torch", "tensorflow", "jax", "tqdm", "rich",
-    "sortedcontainers", "networkx", "sympy",
+    "numpy",
+    "pandas",
+    "scipy",
+    "matplotlib",
+    "sklearn",
+    "torch",
+    "tensorflow",
+    "jax",
+    "tqdm",
+    "rich",
+    "sortedcontainers",
+    "networkx",
+    "sympy",
 }
 
-ALLOWED_EXTERNAL = {"yaml", "__future__", "dataclasses", "typing",
-                    "collections", "enum", "hashlib", "json",
-                    "pathlib", "decimal", "importlib", "heapq",
-                    "bisect", "math", "sys", "re", "copy",
-                    "random", "os", "subprocess", "io", "tempfile",
-                    "itertools", "functools", "operator", "abc"}
+ALLOWED_EXTERNAL = {
+    "yaml",
+    "__future__",
+    "dataclasses",
+    "typing",
+    "collections",
+    "enum",
+    "hashlib",
+    "json",
+    "pathlib",
+    "decimal",
+    "importlib",
+    "heapq",
+    "bisect",
+    "math",
+    "sys",
+    "re",
+    "copy",
+    "random",
+    "os",
+    "subprocess",
+    "io",
+    "tempfile",
+    "itertools",
+    "functools",
+    "operator",
+    "abc",
+}
 
 
 def _get_imports(file: pathlib.Path) -> list[str]:
@@ -29,9 +61,8 @@ def _get_imports(file: pathlib.Path) -> list[str]:
         if isinstance(node, ast.Import):
             for alias in node.names:
                 imports.append(alias.name.split(".")[0])
-        elif isinstance(node, ast.ImportFrom):
-            if node.module:
-                imports.append(node.module.split(".")[0])
+        elif isinstance(node, ast.ImportFrom) and node.module:
+            imports.append(node.module.split(".")[0])
     return imports
 
 

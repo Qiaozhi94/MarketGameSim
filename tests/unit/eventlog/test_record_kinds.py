@@ -85,8 +85,12 @@ class TestRunTrailerFields:
     def test_trailer_fields(self):
         reg = get_registry()
         expected = {
-            "record_kind", "terminated", "abort_code", "abort_detail",
-            "last_committed_transaction_seq", "record_count",
+            "record_kind",
+            "terminated",
+            "abort_code",
+            "abort_detail",
+            "last_committed_transaction_seq",
+            "record_count",
         }
         assert set(reg.field_names("RUN_TRAILER")) == expected
 

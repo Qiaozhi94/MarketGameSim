@@ -249,7 +249,7 @@ class TestOB9aQueueVsTransactionRecords:
         keys = [(r["timestamp"], r["transaction_seq"], r["record_index"]) for r in records]
         for i in range(1, len(keys)):
             assert keys[i] > keys[i - 1], (
-                f"key {i} not strictly increasing: {keys[i]} <= {keys[i-1]}"
+                f"key {i} not strictly increasing: {keys[i]} <= {keys[i - 1]}"
             )
 
     def test_enqueue_rejects_transaction_record_types(self):

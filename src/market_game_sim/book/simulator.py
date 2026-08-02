@@ -70,9 +70,7 @@ def run_simulation(
         taker_bps = 5
 
     if acct_map:
-        account_payload = build_account_payload_from_accounts(
-            acct_map, mult=mult
-        )
+        account_payload = build_account_payload_from_accounts(acct_map, mult=mult)
     else:
         account_payload = build_account_payload([])
     book_payload = build_book_payload(last_ticks=None)

@@ -14,7 +14,8 @@ from trade postings alone.
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from market_game_sim.ledger.account import Account, snapshot_entry
 
@@ -105,10 +106,7 @@ def build_account_entries_from_accounts(
     account in the mapping -- callers must ensure never-traded accounts
     are present (C1/C2 need the full set).
     """
-    return [
-        snapshot_entry(acc, risk_mark_ticks, mult)
-        for _, acc in sorted(accounts.items())
-    ]
+    return [snapshot_entry(acc, risk_mark_ticks, mult) for _, acc in sorted(accounts.items())]
 
 
 def build_account_payload_from_accounts(

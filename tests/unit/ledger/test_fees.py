@@ -54,7 +54,7 @@ class TestT404NotionalAndFees:
 
     def test_positive_fee_ceil_unfavourable(self):
         # notional that doesn't divide evenly: 1e11 + 1, taker 5 bps.
-        # ceil((1e11+1)*5/10000) = ceil(5e7 + 5e-5) -> 50000001? 
+        # ceil((1e11+1)*5/10000) = ceil(5e7 + 5e-5) -> 50000001?
         # (100000000001 * 5) = 500000000005; /10000 = 50000000.0005; ceil = 50000001.
         _, _, taker = compute_notional_and_fees(10001, 10000, 0, 5, MULT)
         # notional = 10001*10000*1000 = 100010000000; *5/10000 = 50005000.0 exact
@@ -72,6 +72,7 @@ class TestT404NotionalAndFees:
         # ceil = -10000000 (toward +inf = toward zero for negatives -> agent gets less).
         n = 100000000001
         from market_game_sim.config.types import round_fee
+
         assert round_fee(n, -1) == -10000000  # ceil(-10000000.0001) = -10000000
 
     def test_zero_bps_zero_fee(self):

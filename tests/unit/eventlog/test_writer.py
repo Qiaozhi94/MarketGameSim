@@ -39,9 +39,7 @@ def _make_header(run_id: str = "r") -> dict:
 
 def _bootstrap(kernel: EventKernel) -> None:
     kernel.bootstrap(
-        build_account_payload(
-            [build_account_snapshot_entry("A", 1000, 0, 0, 0, 0, "ACTIVE", 0)]
-        ),
+        build_account_payload([build_account_snapshot_entry("A", 1000, 0, 0, 0, 0, "ACTIVE", 0)]),
         build_book_payload(),
     )
 
@@ -65,8 +63,14 @@ class TestRunHeader:
     def test_header_rejects_float_units(self):
         with pytest.raises(TypeError):
             build_run_header(
-                run_id="r", code_version="v", config_hash="h", master_seed=1,
-                started_at_wall="t", tick_size=0.01, min_quantity="0.001", cash_unit="0.01",
+                run_id="r",
+                code_version="v",
+                config_hash="h",
+                master_seed=1,
+                started_at_wall="t",
+                tick_size=0.01,
+                min_quantity="0.001",
+                cash_unit="0.01",
             )
 
 

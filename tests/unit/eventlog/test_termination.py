@@ -110,33 +110,38 @@ class TestTerminationClassification:
     def test_record_count_mismatch_is_ti5(self):
         header = json.dumps({"record_kind": "RUN_HEADER"})
         event = json.dumps({"record_kind": "EVENT"})
-        trailer = json.dumps({
-            "record_kind": "RUN_TRAILER",
-            "terminated": "COMPLETED",
-            "abort_code": None,
-            "abort_detail": None,
-            "last_committed_transaction_seq": 1,
-            "record_count": 99,
-        })
+        trailer = json.dumps(
+            {
+                "record_kind": "RUN_TRAILER",
+                "terminated": "COMPLETED",
+                "abort_code": None,
+                "abort_detail": None,
+                "last_committed_transaction_seq": 1,
+                "record_count": 99,
+            }
+        )
         log = header + "\n" + event + "\n" + trailer + "\n"
         assert classify_log(log) == "TI-5"
 
     def test_record_count_correct_is_valid(self):
         header = json.dumps({"record_kind": "RUN_HEADER"})
         event = json.dumps({"record_kind": "EVENT"})
-        trailer = json.dumps({
-            "record_kind": "RUN_TRAILER",
-            "terminated": "COMPLETED",
-            "abort_code": None,
-            "abort_detail": None,
-            "last_committed_transaction_seq": 1,
-            "record_count": 3,
-        })
+        trailer = json.dumps(
+            {
+                "record_kind": "RUN_TRAILER",
+                "terminated": "COMPLETED",
+                "abort_code": None,
+                "abort_detail": None,
+                "last_committed_transaction_seq": 1,
+                "record_count": 3,
+            }
+        )
         log = header + "\n" + event + "\n" + trailer + "\n"
         assert classify_log(log) == "VALID"
 
     def test_classify_log_bytes(self):
         from market_game_sim.eventlog.termination import classify_log_bytes
+
         log = _make_completed_log()
         assert classify_log_bytes(log) == "VALID"
         assert classify_log_bytes(b"\xff\xfe invalid utf8") == "TI-5"

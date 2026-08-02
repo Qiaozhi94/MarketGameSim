@@ -34,17 +34,19 @@ class TestBootstrapBarrier:
         not allowed to sort before the class 5 snapshots."""
         kernel = EventKernel(run_id="b2")
         with pytest.raises(KernelAbort) as exc:
-            kernel.enqueue({
-                "event_type": "ORDER_ARRIVAL",
-                "timestamp": 0,
-                "agent_id": "A",
-                "order_id": "o1",
-                "action": "SUBMIT",
-                "side": "BUY",
-                "order_type": "LIMIT",
-                "price_ticks": 10000,
-                "quantity_units": 1000,
-            })
+            kernel.enqueue(
+                {
+                    "event_type": "ORDER_ARRIVAL",
+                    "timestamp": 0,
+                    "agent_id": "A",
+                    "order_id": "o1",
+                    "action": "SUBMIT",
+                    "side": "BUY",
+                    "order_type": "LIMIT",
+                    "price_ticks": 10000,
+                    "quantity_units": 1000,
+                }
+            )
         assert exc.value.abort_code == "INTERNAL"
 
     def test_double_bootstrap_raises(self):
@@ -112,14 +114,16 @@ class TestBootstrapTransactionSequencing:
             ),
             build_book_payload(),
         )
-        kernel.enqueue({
-            "event_type": "AGENT_OBSERVE",
-            "timestamp": 100,
-            "agent_id": "A",
-            "observed_at": 100,
-            "market_data_event_id": "e0",
-            "information_set": {},
-        })
+        kernel.enqueue(
+            {
+                "event_type": "AGENT_OBSERVE",
+                "timestamp": 100,
+                "agent_id": "A",
+                "observed_at": 100,
+                "market_data_event_id": "e0",
+                "information_set": {},
+            }
+        )
         kernel.run(lambda e, w, k: [], {}, max_transactions=10)
 
         records = kernel.committed_records

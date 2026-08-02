@@ -17,8 +17,6 @@ reserved_delta (from scenario 1 baseline 100000000000):
 
 from __future__ import annotations
 
-import pytest
-
 from market_game_sim.ledger.reserved import ActiveOrder, compute_reserved_after, fee_bps_cap
 
 MULT = 1000
@@ -51,16 +49,24 @@ class TestT407bScenario1:
 
     def test_reserved_after(self):
         r = compute_reserved_after(
-            position_units=units(100), active_orders=[],
-            risk_mark_ticks=P100, initial_bp=INITIAL_BP, fee_bps=FEE_BPS, mult=MULT,
+            position_units=units(100),
+            active_orders=[],
+            risk_mark_ticks=P100,
+            initial_bp=INITIAL_BP,
+            fee_bps=FEE_BPS,
+            mult=MULT,
         )
         assert r == 100000000000
         assert r == cash(1000)
 
     def test_reserved_delta_zero(self):
         r = compute_reserved_after(
-            position_units=units(100), active_orders=[],
-            risk_mark_ticks=P100, initial_bp=INITIAL_BP, fee_bps=FEE_BPS, mult=MULT,
+            position_units=units(100),
+            active_orders=[],
+            risk_mark_ticks=P100,
+            initial_bp=INITIAL_BP,
+            fee_bps=FEE_BPS,
+            mult=MULT,
         )
         assert r - cash(1000) == 0
 
@@ -75,7 +81,10 @@ class TestT407bScenario2:
                 ActiveOrder("BUY", P100, units(20)),
                 ActiveOrder("BUY", P100, units(30)),
             ],
-            risk_mark_ticks=P100, initial_bp=INITIAL_BP, fee_bps=FEE_BPS, mult=MULT,
+            risk_mark_ticks=P100,
+            initial_bp=INITIAL_BP,
+            fee_bps=FEE_BPS,
+            mult=MULT,
         )
         assert r == 150250000000
         assert r == cash(1502.5)
@@ -87,7 +96,10 @@ class TestT407bScenario2:
                 ActiveOrder("BUY", P100, units(20)),
                 ActiveOrder("BUY", P100, units(30)),
             ],
-            risk_mark_ticks=P100, initial_bp=INITIAL_BP, fee_bps=FEE_BPS, mult=MULT,
+            risk_mark_ticks=P100,
+            initial_bp=INITIAL_BP,
+            fee_bps=FEE_BPS,
+            mult=MULT,
         )
         assert r - cash(1000) == cash(502.5)
         assert r - 100000000000 == 50250000000
@@ -101,7 +113,10 @@ class TestT407bScenario2:
                 ActiveOrder("BUY", P100, units(20)),
                 ActiveOrder("BUY", P100, units(30)),
             ],
-            risk_mark_ticks=P100, initial_bp=INITIAL_BP, fee_bps=FEE_BPS, mult=MULT,
+            risk_mark_ticks=P100,
+            initial_bp=INITIAL_BP,
+            fee_bps=FEE_BPS,
+            mult=MULT,
         )
         assert r != cash(1500)  # not 1500 (would miss fee_part 2.5)
         assert r == cash(1502.5)
@@ -117,7 +132,10 @@ class TestT407bScenario3:
                 ActiveOrder("BUY", P100, units(20)),
                 ActiveOrder("SELL", P100, units(50)),
             ],
-            risk_mark_ticks=P100, initial_bp=INITIAL_BP, fee_bps=FEE_BPS, mult=MULT,
+            risk_mark_ticks=P100,
+            initial_bp=INITIAL_BP,
+            fee_bps=FEE_BPS,
+            mult=MULT,
         )
         assert r == 120350000000
         assert r == cash(1203.5)
@@ -129,7 +147,10 @@ class TestT407bScenario3:
                 ActiveOrder("BUY", P100, units(20)),
                 ActiveOrder("SELL", P100, units(50)),
             ],
-            risk_mark_ticks=P100, initial_bp=INITIAL_BP, fee_bps=FEE_BPS, mult=MULT,
+            risk_mark_ticks=P100,
+            initial_bp=INITIAL_BP,
+            fee_bps=FEE_BPS,
+            mult=MULT,
         )
         assert r - 100000000000 == 20350000000
 
@@ -142,7 +163,10 @@ class TestT407bScenario3:
                 ActiveOrder("BUY", P100, units(20)),
                 ActiveOrder("SELL", P100, units(50)),
             ],
-            risk_mark_ticks=P100, initial_bp=INITIAL_BP, fee_bps=FEE_BPS, mult=MULT,
+            risk_mark_ticks=P100,
+            initial_bp=INITIAL_BP,
+            fee_bps=FEE_BPS,
+            mult=MULT,
         )
         assert r == cash(1200) + cash(3.5)
 
@@ -156,7 +180,10 @@ class TestT407bScenario4:
             active_orders=[
                 ActiveOrder("SELL", P100, units(50)),
             ],
-            risk_mark_ticks=P100, initial_bp=INITIAL_BP, fee_bps=FEE_BPS, mult=MULT,
+            risk_mark_ticks=P100,
+            initial_bp=INITIAL_BP,
+            fee_bps=FEE_BPS,
+            mult=MULT,
         )
         assert r == 120250000000
         assert r == cash(1202.5)
@@ -168,14 +195,20 @@ class TestT407bScenario4:
                 ActiveOrder("BUY", P100, units(20)),
                 ActiveOrder("SELL", P100, units(50)),
             ],
-            risk_mark_ticks=P100, initial_bp=INITIAL_BP, fee_bps=FEE_BPS, mult=MULT,
+            risk_mark_ticks=P100,
+            initial_bp=INITIAL_BP,
+            fee_bps=FEE_BPS,
+            mult=MULT,
         )
         r4 = compute_reserved_after(
             position_units=units(120),
             active_orders=[
                 ActiveOrder("SELL", P100, units(50)),
             ],
-            risk_mark_ticks=P100, initial_bp=INITIAL_BP, fee_bps=FEE_BPS, mult=MULT,
+            risk_mark_ticks=P100,
+            initial_bp=INITIAL_BP,
+            fee_bps=FEE_BPS,
+            mult=MULT,
         )
         assert r4 - r3 == -100000000  # -1.0 human
 
@@ -185,14 +218,22 @@ class TestT407bNoOrders:
 
     def test_empty(self):
         r = compute_reserved_after(
-            position_units=0, active_orders=[],
-            risk_mark_ticks=P100, initial_bp=INITIAL_BP, fee_bps=FEE_BPS, mult=MULT,
+            position_units=0,
+            active_orders=[],
+            risk_mark_ticks=P100,
+            initial_bp=INITIAL_BP,
+            fee_bps=FEE_BPS,
+            mult=MULT,
         )
         assert r == 0
 
     def test_only_short_position(self):
         r = compute_reserved_after(
-            position_units=-units(100), active_orders=[],
-            risk_mark_ticks=P100, initial_bp=INITIAL_BP, fee_bps=FEE_BPS, mult=MULT,
+            position_units=-units(100),
+            active_orders=[],
+            risk_mark_ticks=P100,
+            initial_bp=INITIAL_BP,
+            fee_bps=FEE_BPS,
+            mult=MULT,
         )
         assert r == cash(1000)

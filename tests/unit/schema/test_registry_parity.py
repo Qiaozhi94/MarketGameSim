@@ -233,12 +233,14 @@ class TestMutationBreaksProjection:
     @pytest.fixture
     def mutated_registry_factory(self, tmp_path):
         """Factory that creates a SchemaRegistry from a mutated JSON."""
+
         def _create(structure: str, field: str, new_hash: str) -> SchemaRegistry:
             raw = json.loads(JSON_PATH.read_text(encoding="utf-8"))
             raw["structures"][structure]["fields"][field]["hash"] = new_hash
             tmp_file = tmp_path / f"mutated_{structure}_{field}.json"
             tmp_file.write_text(json.dumps(raw), encoding="utf-8")
             return SchemaRegistry(tmp_file)
+
         return _create
 
     def test_mutate_price_ticks_to_exclude_changes_projection(self, mutated_registry_factory):
