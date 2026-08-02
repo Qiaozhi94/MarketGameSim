@@ -10,6 +10,10 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# 供应链加固：本工作流只读仓库，不需要写权限。
+permissions:
+  contents: read
+
 jobs:
   # 真源自校验放在最前，且【不安装任何依赖】——它只用标准库。
   # 两份机器真源自相矛盾时，后面的 lint 与测试都没有意义，因此这一步失败即中止。
@@ -53,9 +57,12 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
-      # PYTHONHASHSEED=0 是第二道防线：事件摘要哈希必须用 hashlib，
-      # 但若实现误用内置 hash()，随机加盐会让 KPI-002 间歇失败且极难定位。
-      # 固定它使这类缺陷在本地与 CI 表现一致，便于排查（参考机口径 §3）。
+      # PYTHONHASHSEED=0 只是【让普通测试可复现】，**不是**检测误用内置 hash() 的手段。
+      # 恰恰相反：固定 seed 会让一个误用 hash() 的实现在每次 CI 中稳定通过，
+      # 把跨进程随机盐这个缺陷藏起来（第 36 章 P1-U03）。
+      #
+      # 真正的确定性门必须【跨两个不同 seed 的独立进程】比较同一运行的事件摘要，
+      # 两者不等即失败。它需要哈希实现存在才能建立，由 0.1.1 T602 / 退出条件 E4 负责。
       #
       # 暂不加 --cov：领域层还没有代码，覆盖率插件只会刷 CoverageWarning。
       # 覆盖率门槛（订单簿与账本分支 >= 90%）由 0.1.1 T606 / 退出条件 E9 负责，

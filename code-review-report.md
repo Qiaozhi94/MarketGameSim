@@ -20,7 +20,7 @@
 
 ### Correctness
 
-#### 🟠 Schema validator 未覆盖其承诺的真源一致性 — `tools/validate_contract_sources.py`:43
+#### 【已关闭 · 检视报告 §37.1】🟠 Schema validator 未覆盖其承诺的真源一致性 — `tools/validate_contract_sources.py`:43
 
 **Severity**: High
 
@@ -55,7 +55,7 @@ validate_markdown_field_tables_and_e002(d)
 
 ---
 
-#### 🟠 Trace validator 没有验证展示表或 scope 完整性 — `tools/validate_contract_sources.py`:94
+#### 【已关闭 · 检视报告 §37.1】🟠 Trace validator 没有验证展示表或 scope 完整性 — `tools/validate_contract_sources.py`:94
 
 **Severity**: High
 
@@ -91,7 +91,7 @@ validate_rendered_matrix_matches_trace(d, spec_text)
 
 ---
 
-#### 🟠 Artifact 的最小 Schema 仍未实际冻结 — `specs/v0.1-belief-testing-laboratory/0.1.4-replay-and-report/spec.md`:114
+#### 【保持开放 · 检视报告 §37.4】🟠 Artifact 的最小 Schema 仍未实际冻结 — `specs/v0.1-belief-testing-laboratory/0.1.4-replay-and-report/spec.md`:114
 
 **Severity**: High
 
@@ -120,7 +120,7 @@ Schema 放入单独 JSON 真源，并由 0.1.2/0.1.3 producer 与 0.1.4 consumer
 
 ### Testing
 
-#### 🟡 测试全部是 happy path，不能证明 guard 会失败 — `tests/unit/test_contract_sources.py`:40
+#### 【已关闭 · 检视报告 §37.3】🟡 测试全部是 happy path，不能证明 guard 会失败 — `tests/unit/test_contract_sources.py`:40
 
 **Severity**: Medium
 
@@ -150,7 +150,7 @@ def test_schema_mutations_are_rejected(tmp_path, validator, mutation, expected):
 
 ---
 
-#### 🟡 固定 `PYTHONHASHSEED=0` 会掩盖内置 `hash()` 的跨进程不确定性 — `.github/workflows/ci.yml`:56
+#### 【已关闭 · 检视报告 §37.5】🟡 固定 `PYTHONHASHSEED=0` 会掩盖内置 `hash()` 的跨进程不确定性 — `.github/workflows/ci.yml`:56
 
 **Severity**: Medium
 

@@ -676,7 +676,7 @@ MARGIN_CALL(chain_id, chain_depth)
 `payload.accounts` 是数组，**包含全部账户（含从未交易过的）**，按 `agent_id`
 **字典序升序**排列——顺序影响序列化字节与哈希，不得依赖字典遍历顺序。
 
-每个元素的叶字段（**11 项，封闭**）：
+每个元素（`ACCOUNT_SNAPSHOT_ENTRY`）的叶字段（共 **11** 项，封闭）：
 
 | 字段 | 类型 | 可空 | 说明 |
 |---|---|---|---|
@@ -692,7 +692,7 @@ MARGIN_CALL(chain_id, chain_depth)
 | `chain_id` | 字符串 | **是** | 仅 `PENDING_LIQUIDATION` 时非 null |
 | `chain_depth` | 整数 | **是** | 同 `chain_id` |
 
-`payload.exchange` 是对象，叶字段（**2 项**）：`fee_cash_units`（累计手续费，有符号）、
+`payload.exchange` 是 `EXCHANGE_SNAPSHOT` 对象，叶字段（共 **2** 项，封闭）：`fee_cash_units`（累计手续费，有符号）、
 `risk_pnl_units`（穿仓风险账户，有符号，损失为负）。
 
 **交易所账户不放进 `accounts` 数组**——它没有 `agent_id`、没有仓位，混进去会污染
@@ -835,6 +835,7 @@ C1（`Σ position ≡ 0`）的求和。
 | `cancelled_qty_units` | 被撤销的剩余数量（整数） |
 | `price_ticks` | 被撤销订单的挂单价；市价单剩余撤销时为 null |
 | `side` | 被撤销订单的方向 |
+| `order_type` | 被撤销订单的类型（`LIMIT` \| `MARKET`）。**使本记录自描述**——否则无法在不回查原单的情况下判断 `price_ticks` 是否应为 null |
 | `reason` | `AGENT_REQUEST` \| `IOC_REMAINDER` \| `SELF_TRADE_PREVENTION` \| `LIQUIDATED_ACCOUNT` |
 | `caused_by_event_id` | 触发本次撤销的队列事件（因果外键） |
 | `reserved_delta_units` | 释放的保证金占用，恒 ≤ 0（代理策略 §11.1 整体重算之差） |
@@ -1026,7 +1027,7 @@ class 的**最终定序裁决**——两张订单谁先到是外部可观察的�
 | 事件类型 | 纳入哈希的字段 |
 |---|---|
 | `ORDER_ARRIVAL` | `agent_id`、`order_id`、`action`、`target_order_id`、`side`、`order_type`、`price_ticks`、`quantity_units`、`accepted`、`reject_reason`、`reserved_delta_units`、`origin`、`trigger_ratio_bp`、`liquidation_generation` |
-| `ORDER_CANCELLED` | `order_id`、`agent_id`、`cancelled_qty_units`、`price_ticks`、`side`、`reason`、`reserved_delta_units` |
+| `ORDER_CANCELLED` | `order_id`、`agent_id`、`cancelled_qty_units`、`price_ticks`、`side`、`order_type`、`reason`、`reserved_delta_units` |
 | `TRADE_SETTLE` | `maker_order_id`、`taker_order_id`、`maker_agent_id`、`taker_agent_id`、`price_ticks`、`quantity_units`、`notional_cash_units`、`maker_fee_cash_units`、`taker_fee_cash_units`、`valuation_mark_before_half_ticks`、`valuation_mark_after_half_ticks`、`risk_mark_ticks`、`fill_index`、`fill_count`、`postings[]`（叶字段见下表 A） |
 | `MARGIN_CALL` | `agent_id`、`margin_ratio_bp`、`maintenance_bp`、`verdict`、`required_quantity_units`、`chain_depth`、`chain_id`、`liquidation_generation_after`、`postings[]`（叶字段见下表 B） |
 | `MARKET_DATA_PUBLISH` | `best_bid`、`best_ask`、`bid_depth_k`、`ask_depth_k`、`last` |
@@ -1044,7 +1045,7 @@ class 的**最终定序裁决**——两张订单谁先到是外部可观察的�
 数组顺序**固定为 `[MAKER, TAKER]`**，不按 `agent_id` 排。自成交已被阻止（撮合 §4），
 不存在两条分录同属一个代理的情形。
 
-叶字段（15 项）：`posting_type`、`agent_id`、`role`、`wallet_delta_units`、
+`TRADE_POSTING` 叶字段（共 **15** 项，封闭）：`posting_type`、`agent_id`、`role`、`wallet_delta_units`、
 `position_delta_units`、`entry_notional_delta_units`、`realized_pnl_delta_units`、
 `fee_delta_units`、`reserved_delta_units`、`wallet_after_units`、
 `position_after_units`、`entry_notional_after_units`、`equity_after_units`、
@@ -1056,7 +1057,7 @@ class 的**最终定序裁决**——两张订单谁先到是外部可观察的�
 数组顺序**固定为 `[ACCOUNT, EXCHANGE_RISK]`**。交易所侧的 `agent_id` 为 `null`，
 无法参与按 `agent_id` 的排序，因此顺序必须由角色而非标识决定。
 
-叶字段（**8** 项）：`posting_type`、`role`、`agent_id`、`wallet_delta_units`、
+`WRITE_OFF_POSTING` 叶字段（共 **8** 项，封闭）：`posting_type`、`role`、`agent_id`、`wallet_delta_units`、
 `wallet_after_units`、`position_after_units`、`entry_notional_after_units`、
 `risk_pnl_delta_units`。**全部纳入。** 各字段在两种 `role` 下的取值与可空性见
 §4.2.3——`EXCHANGE_RISK` 侧的 `wallet_after_units` 等为 `null` 而非 `0`。
@@ -1102,7 +1103,7 @@ src/market_game_sim/schema/event_fields.json   ← 规范真源（合同产物�
         └─ 被 T204f3 与本文档双向比对（见下）
 ```
 
-**该文件已存在**（19 个结构、147 条字段声明），不是待办任务。它是**合同产物**：
+**该文件已存在**（19 个结构、148 条字段声明），不是待办任务。它是**合同产物**：
 修改它等同修改本合同，须走同一评审流程；`registry.py` 只负责加载，**不得内嵌
 第二份声明**。
 

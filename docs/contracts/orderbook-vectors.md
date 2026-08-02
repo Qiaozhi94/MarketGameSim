@@ -171,7 +171,7 @@ T 买 **限价 102 × 5**：
 |---|---|---|
 | 0 | `ORDER_ARRIVAL` | `price_ticks=null` `quantity_units=5000` **MARKET** |
 | 1 | `TRADE_SETTLE` | `price_ticks=10000` `quantity_units=2000` `fill_index=0` `fill_count=1` `vm_before=20000` `vm_after=20000` `risk_mark=10000` |
-| 2 | `ORDER_CANCELLED` | `order_id=`本单 `cancelled_qty_units=3000` `price_ticks=null` `side=BUY` `reason=IOC_REMAINDER` |
+| 2 | `ORDER_CANCELLED` | `order_id=`本单 `cancelled_qty_units=3000` `price_ticks=null` `side=BUY` `order_type=MARKET` `reason=IOC_REMAINDER` |
 | 3 | `MARKET_DATA_PUBLISH` | `best_bid=null` `best_ask=null` |
 
 事务后簿：两侧皆空。
@@ -190,7 +190,7 @@ T 买 **限价 102 × 5**：
 | r | 记录 | 整数字段 |
 |---|---|---|
 | 0 | `ORDER_ARRIVAL` | A BUY `price_ticks=10100` `quantity_units=3000` |
-| 1 | `ORDER_CANCELLED` | `order_id=s1` `agent_id=A` `cancelled_qty_units=2000` `price_ticks=10000` `side=SELL` `reason=SELF_TRADE_PREVENTION` |
+| 1 | `ORDER_CANCELLED` | `order_id=s1` `agent_id=A` `cancelled_qty_units=2000` `price_ticks=10000` `side=SELL` `order_type=LIMIT` `reason=SELF_TRADE_PREVENTION` |
 | 2 | `TRADE_SETTLE` | `price_ticks=10100` `quantity_units=2000` maker=**s2** `fill_index=0` `fill_count=1` `vm_before=20000` `vm_after=20200` `risk_mark=10100` |
 | 3 | `MARKET_DATA_PUBLISH` | `best_bid=10100` `best_ask=null` |
 
