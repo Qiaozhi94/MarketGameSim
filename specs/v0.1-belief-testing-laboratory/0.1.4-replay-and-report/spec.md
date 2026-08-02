@@ -78,19 +78,36 @@ E4 的「同源」不等于「一切都来自 `metrics/`」——**效应量、�
 
 报告的输入是一份 **artifact manifest**，列出被消费的冻结产物及其哈希：
 
-| 产物 | 来源 | 内容 |
+| `artifact_id` | 精确 producer | 内容 |
 |---|---|---|
-| `metrics/*` | 0.1.2 T501—T503 | 市场与代理指标时间序列、PnL 桥接 |
-| `analysis/*` | 0.1.2 T604 | 效应量、置信区间、多重比较校正结果 |
-| `conclusion/*` | 0.1.2 T605、0.1.3 T6xx | 条件性结论、失效边界、否定条件 |
+| `market_metrics` | 0.1.2 T501 | 市场层指标时间序列 |
+| `agent_metrics` | 0.1.2 T501 | 代理层指标时间序列 |
+| `liquidation_metrics` | 0.1.2 T502 | 强平触发数、链规模、穿仓额 |
+| `pnl_bridge` | 0.1.2 T503 | 五项 PnL 桥接 |
+| `sample_classification` | 0.1.2 T504 | 技术无效 / 经济终点分类 |
+| `effect_sizes` | 0.1.2 T604 | 效应量、置信区间、多重比较校正 |
+| `conditional_conclusion` | 0.1.2 T605 | 条件性结论、失效边界、否定条件 |
+| `robustness_summary` | 0.1.3 T601 | 稳健性结论（0.1.3 产出） |
 
 **规则是「不重算」，不是「只读 metrics」**：报告层不得自己跑统计检验或重新聚合，
 但可以且必须消费上述三类产物。若把数值来源限定在 `metrics/`，E4 会在漏掉 PR-019
 核心内容（条件性结论与置信区间）的情况下自称通过。
 
-manifest 须冻结：`manifest_version`、每个 artifact 的**相对路径、producer task、
-blake2b 哈希**、以及**缺件行为**（任一必备 artifact 缺失或哈希不符 → 报告生成失败，
-不得降级为「部分报告」）。
+manifest 是**封闭清单**，逐 artifact 冻结下列七项，不使用 `metrics/*` 这类 glob：
+
+| 项 | 说明 |
+|---|---|
+| `artifact_id` | 稳定标识，如 `market_metrics`、`pnl_bridge`、`effect_sizes` |
+| `path` | 相对路径，**精确到文件**，不是目录通配 |
+| `producer` | **精确 task**，如 `0.1.2 T501`、`0.1.2 T604`、`0.1.3 T603`——不写 `T6xx` |
+| `schema_version` | 该 artifact 自身的格式版本 |
+| `format` | `parquet` \| `json` |
+| `required` | 布尔；必备件缺失即失败 |
+| `digest` | `blake2b-256` 十六进制小写，长度 64 |
+
+**缺件行为**：任一 `required` 件缺失、哈希不符、`schema_version` 不匹配，或出现
+manifest 未声明的额外件 → **报告生成失败**，不得降级为「部分报告」。
+最后一条（额外件）同样要挡：静默多消费一个未声明产物，等于报告有一个不受控的输入。
 
 ### 4.2 逐帧一致性的 oracle 从哪来
 
@@ -100,7 +117,11 @@ E1 断言「回放重建的每一帧 == 原运行的每一帧」，**右边那�
 因此 oracle 由**测试专用的独立 observer** 提供：
 
 - 测试运行时挂载一个 observer，在**每个事务提交后**直接从内核对象读取状态快照；
-- 投影字段与回放器输出**一一对应**（价格、盘口聚合、各账户的 9+2 个字段）；
+- **帧编号与回放器完全对齐**：bootstrap 的两个事务（`transaction_seq` 1 与 2）
+  合并为**第 0 帧**，observer 在 bootstrap 完成后才产出该帧；此后第 k 帧对应
+  `transaction_seq = k + 2`。**两边的帧数与帧键必须相等**，不是各数各的；
+- 投影字段与回放器输出**一一对应**：价格、盘口聚合、各账户的 **11 个字段**
+  （事件 Schema §4.6.1）+ 交易所的 **2 个字段**；
 - **该 observer 只作为期望值输入，绝不喂给回放器**——回放器的输入永远只有日志文件；
 - observer 属测试代码，不进入 `kernel/`，也不影响生产路径的确定性。
 

@@ -1,0 +1,534 @@
+{
+  "$comment": "需求追踪矩阵的规范真源。v0.1 spec 的展示表由本文件生成或与之比对；T607 只解析本文件，不解析 Markdown。每个 requirement 必须是 owned / deferred / removed 之一。",
+  "matrix_version": 1,
+  "statuses": [
+    "owned",
+    "deferred",
+    "removed"
+  ],
+  "milestones": {
+    "0.1.1": "specs/v0.1-belief-testing-laboratory/0.1.1-minimal-kernel",
+    "0.1.2": "specs/v0.1-belief-testing-laboratory/0.1.2-leverage-and-first-experiment",
+    "0.1.3": "specs/v0.1-belief-testing-laboratory/0.1.3-robustness",
+    "0.1.4": "specs/v0.1-belief-testing-laboratory/0.1.4-replay-and-report"
+  },
+  "requirements": {
+    "FR-001": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E3"
+          ]
+        }
+      ],
+      "note": "撮合与订单簿"
+    },
+    "FR-002": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E3"
+          ]
+        }
+      ],
+      "note": "制度钩子接口；股票式实现后移 v0.2"
+    },
+    "FR-003": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "note": "计费与对齐"
+    },
+    "FR-004": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E1",
+            "E2"
+          ]
+        },
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E1"
+          ]
+        }
+      ],
+      "note": "账户结构 / 保证金逻辑"
+    },
+    "FR-005": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "note": "全仓保证金与双向持仓"
+    },
+    "FR-006": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "note": "强平触发；grace_ns 恒 0"
+    },
+    "FR-007": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E2"
+          ]
+        }
+      ],
+      "note": "连锁不限速"
+    },
+    "FR-008": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E2"
+          ]
+        }
+      ],
+      "note": "强平单标识"
+    },
+    "FR-009": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E3"
+          ]
+        }
+      ],
+      "note": "信念权重"
+    },
+    "FR-010": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E3"
+          ]
+        }
+      ],
+      "note": "因子库"
+    },
+    "FR-011": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E3"
+          ]
+        }
+      ],
+      "note": "内生 EWMA 锚"
+    },
+    "FR-012": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E3"
+          ]
+        }
+      ],
+      "note": "库存型做市商"
+    },
+    "FR-013": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E3"
+          ]
+        }
+      ],
+      "note": "能力显式配置"
+    },
+    "FR-014": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E3"
+          ]
+        }
+      ],
+      "note": "批量运行"
+    },
+    "FR-015": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E6"
+          ]
+        }
+      ],
+      "note": "事件日志与因果链"
+    },
+    "FR-016": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E1"
+          ]
+        },
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E4"
+          ]
+        }
+      ],
+      "note": "指标"
+    },
+    "FR-017": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E1"
+          ]
+        },
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E4"
+          ]
+        }
+      ],
+      "note": "PnL 桥接"
+    },
+    "FR-018": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E3"
+          ]
+        },
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E1"
+          ]
+        }
+      ],
+      "note": "退化状态"
+    },
+    "FR-019": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.4",
+          "exits": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "note": "单文件 HTML 回放器"
+    },
+    "FR-020": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.4",
+          "exits": [
+            "E3"
+          ]
+        }
+      ],
+      "note": "K 线视图"
+    },
+    "KR-001": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E5"
+          ]
+        }
+      ],
+      "note": "离散事件内核"
+    },
+    "KR-002": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E5"
+          ]
+        }
+      ],
+      "note": "整数纳秒时间"
+    },
+    "KR-003": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E5"
+          ]
+        }
+      ],
+      "note": "定序"
+    },
+    "KR-004": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E4"
+          ]
+        },
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E3"
+          ]
+        }
+      ],
+      "note": "分流 RNG"
+    },
+    "KR-005": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E8"
+          ]
+        }
+      ],
+      "note": "核心层无第三方依赖"
+    },
+    "KR-006": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E5"
+          ]
+        }
+      ],
+      "note": "队列单调性"
+    },
+    "NFR-001": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E4"
+          ]
+        }
+      ],
+      "note": "逐事件一致"
+    },
+    "NFR-002": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E9"
+          ]
+        }
+      ],
+      "note": "覆盖率"
+    },
+    "NFR-003": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E5"
+          ]
+        }
+      ],
+      "note": "性能"
+    },
+    "NFR-004": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E8"
+          ]
+        },
+        {
+          "milestone": "0.1.4",
+          "exits": [
+            "E5"
+          ]
+        }
+      ],
+      "note": "分层解耦"
+    },
+    "SC-001": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E1",
+            "E2",
+            "E3"
+          ]
+        }
+      ],
+      "note": "撮合与守恒"
+    },
+    "SC-002": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E4"
+          ]
+        }
+      ],
+      "note": "确定性哈希"
+    },
+    "SC-003": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E3"
+          ]
+        }
+      ],
+      "note": "批量对照"
+    },
+    "SC-004": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E5"
+          ]
+        }
+      ],
+      "note": "性能门槛"
+    },
+    "SC-005": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E4"
+          ]
+        }
+      ],
+      "note": "退化状态可判定"
+    },
+    "SC-006": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E6"
+          ]
+        },
+        {
+          "milestone": "0.1.4",
+          "exits": [
+            "E1"
+          ]
+        }
+      ],
+      "note": "日志自包含"
+    },
+    "SC-007": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E6"
+          ]
+        }
+      ],
+      "note": "条件性结论"
+    },
+    "SC-008": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.4",
+          "exits": [
+            "E1"
+          ]
+        }
+      ],
+      "note": "逐帧回放一致"
+    },
+    "P-3": {
+      "status": "deferred",
+      "defer_to": "v0.2",
+      "owners": [],
+      "note": "订单流预知者，含因果自指缺陷"
+    },
+    "US-6": {
+      "status": "deferred",
+      "defer_to": "v0.2",
+      "owners": [],
+      "note": "股票式制度对照"
+    }
+  }
+}

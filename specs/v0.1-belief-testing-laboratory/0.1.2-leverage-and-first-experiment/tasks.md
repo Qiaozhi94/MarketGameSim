@@ -11,7 +11,8 @@
 - 0.1.2 不修改 0.1.1 的事件、撮合和账本语义。若发现合同缺陷，按 0.1.1 的“遇到合同缺陷时”
   流程先修文档和黄金向量；
 - **任务编号只在本文件内唯一**。引用其他里程碑的任务时必须带里程碑前缀
-  （写 `0.1.1 T604`，不写 `T604`）——各里程碑都有 `T1xx`—`T6xx`，裸编号会指向错误任务。
+  （写 `0.1.1 T604`，不写 `T604`）——各里程碑的编号为 `T0xx`—`T7xx` 且**互相重复**，
+  裸编号会指向错误任务。
 
 ---
 
@@ -39,9 +40,14 @@
       `postings`、事件顺序与终态；OB-8 须含安全 / 首次跌破 / 已 pending 且数量不变 /
       已 pending 且**数量重算** / 恢复 / 穿仓**六种账户**，验证 `m` = 可行动风险决定数
       而非扫描数。
-      **另须两条向量**：① 部分强平成交后 `required_quantity_units` 重算（发生在强平单
-      自己的事务内，`PENDING → PENDING` 仍必须写记录）；② **延迟窗口内恢复**——
-      强平单到达时账户已回到 `ACTIVE`，须 `reject_reason=LIQUIDATION_STALE`。
+      **另须四条向量**：① 部分强平成交后 `required_quantity_units` 重算（发生在强平单
+      自己的事务内，`PENDING → PENDING` 仍必须写记录，且**换代 + 调度替代单**）；
+      ② **延迟窗口内恢复**——强平单到达时账户已回到 `ACTIVE`，须
+      `reject_reason=LIQUIDATION_STALE`；
+      ③ **连续两次 q 变化、三张单乱序到达**——只有最新代次通过；
+      ④ **三账户同批、三种 chain 归属**（续单继承 / 新拖入 +1 / 他链保留自身）。
+      每条向量须逐事件给出 `liquidation_generation_after`、`chain_id`、`chain_depth`、
+      旧单拒绝记录与替代单数量。
       **本任务的产出须经评审后冻结，T104/T201 只消费、不修改。**
       理由：由实现者在写代码的同时写黄金值，等于看到结果后反向选择「正确答案」，
       向量就失去了独立预言的作用——而它本来是设计阶段唯一能约束实现的东西。
@@ -91,17 +97,26 @@
       不是状态是否变化。
       **配置校验拒绝非零 `grace_ns`**（v0.1 spec §保证金参数），不静默忽略。
 - [ ] **T202b** `[事件 Schema §4.2.2「恢复后的失效」]` `[TDD]` **强平代次**
-      `liquidation_generation`：进入 pending 与恢复时各 +1；强平 `ORDER_ARRIVAL` 到达
-      时重验「仍为 pending 且代次最新」，不满足即
+      `liquidation_generation`（账户字段，初始 0）：**每个产生新强平动作的决定都 +1**
+      ——① 进入 pending；② **`PENDING → PENDING` 且 `required_quantity_units` 变化**
+      （调度**替代**单）；③ 恢复（不调度新单）。
+      **第 ② 条不可漏**：不换代会让新旧两张单都通过验证，账户被过量强平。
+      强平 `ORDER_ARRIVAL` 到达时重验「仍为 pending 且代次最新」，不满足即
       `accepted=false, reject_reason=LIQUIDATION_STALE`（事务只有 `r0`）。
-      **验收用例**：跌破 → 调度强平单 → **在 `liquidation_latency_ns` 窗口内**由他人
-      成交推动价格使该账户恢复 → 强平单到达 → **必须被拒**。
-      没有这条，一个已经健康的账户会被窗口内的陈旧强平单卖掉。
+      `MARGIN_CALL` 须写 `liquidation_generation_after`。
+      **两条验收用例**：① 跌破 → 调度 → 窗口内他人成交使该账户恢复 → 强平单到达
+      **必须被拒**；② **pending 期间连续两次 q 变化、三张单乱序到达** → 只有最新代次
+      那张通过，另两张均 `LIQUIDATION_STALE`（代次只增不减，故与到达顺序无关）。
 - [ ] **T203** `[账户 §4.2]` `[TDD]` 以整数二分求最小强平量；把 taker 手续费纳入
       平仓后 `risk_equity`，并同时证明 `q` 可行、`q−1 step` 不可行。不得用闭式近似值
       直接下单。
-- [ ] **T204** `[FR-006—FR-008]` `[TDD]` 生成 `origin=LIQUIDATION` 的市价 IOC 单，
-      保留 `trigger_event_id`、`chain_depth` 与因果链；不得给予队列优先权，不得转为 GTC。
+- [ ] **T204** `[FR-006—FR-008]` `[事件 Schema §4.2.2]` `[TDD]` 生成
+      `origin=LIQUIDATION` 的市价 IOC 单：因果外键为
+      **`decision_event_id → 触发它的 MARGIN_CALL`**，并携带 `liquidation_generation`
+      与 `trigger_ratio_bp`。
+      **不存在 `ORDER_ARRIVAL.trigger_event_id`，也不存在 `TRADE_SETTLE.chain_depth`**
+      ——`chain_id`/`chain_depth` 只在 `MARGIN_CALL` 上，经 `decision_event_id` 回溯。
+      不得给予队列优先权，不得转为 GTC。
 - [ ] **T205** `[账户 §4.3]` `[退化 §3.5]` `[TDD]` 部分强平成交后基于最新钱包、
       仓位、entry、手续费和 `risk_mark` 重新计算；无对手方时保持 PENDING，不自旋，只有
       后续成交改变风险价后才重评。
@@ -154,8 +169,12 @@
       **「钱包」直接取 `wallet_units`，不得加 `reserved_units`**——后者是占用标记，
       相加会使总资金凭空膨胀并与 C2 对不上。
       汇总跳过 null 并报告有效样本量；null 比例 > 30% 的量标注为不可采信。
-- [ ] **T502** `[指标字典 §4.1]` `[P]` 输出强平触发数、强平成交量占比、
-      `chain_depth` 分布、每条链规模与穿仓金额；普通成交与强平成交不得混计。
+- [ ] **T502** `[指标字典 §4.1]` `[事件 Schema §4.2.2]` `[P]` 输出强平触发数、
+      强平成交量占比、`chain_depth` 分布、每条链规模与穿仓金额；普通成交与强平成交
+      不得混计。
+      **「每条链规模」按 `chain_id` 分组**，不能只用 `chain_depth`——同一批扫描里
+      续单重算（继承）、新拖入（+1）、他链重算（保留自身）三种账户可能深度相同却
+      不属于同一条链。归属规则见事件 Schema §4.2.2 的三条角色规则。
 - [ ] **T503** `[指标字典 §5.2]` `[TDD]` 对每个代理逐事件计算 Spread、Impact、
       Revaluation、Fees、Funding 五项 PnL 桥接，使用 `valuation_mark`，残差整数精确为 0。
 - [ ] **T504** `[退化 §4.0—§4.3]` `[TDD]` 样本分类器分离技术无效与经济终点；

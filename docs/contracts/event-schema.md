@@ -676,7 +676,7 @@ MARGIN_CALL(chain_id, chain_depth)
 `payload.accounts` 是数组，**包含全部账户（含从未交易过的）**，按 `agent_id`
 **字典序升序**排列——顺序影响序列化字节与哈希，不得依赖字典遍历顺序。
 
-每个元素的叶字段（**9 项，封闭**）：
+每个元素的叶字段（**11 项，封闭**）：
 
 | 字段 | 类型 | 可空 | 说明 |
 |---|---|---|---|
@@ -689,6 +689,8 @@ MARGIN_CALL(chain_id, chain_depth)
 | `state` | 枚举 | 否 | `ACTIVE` \| `PENDING_LIQUIDATION` \| `LIQUIDATED` |
 | `margin_ratio_bp` | 整数 | **是** | 无仓位时 `null`（账户合同 §3.2） |
 | `liquidation_generation` | 整数 | 否 | 强平代次，见 §4.2.2「恢复后的失效」 |
+| `chain_id` | 字符串 | **是** | 仅 `PENDING_LIQUIDATION` 时非 null |
+| `chain_depth` | 整数 | **是** | 同 `chain_id` |
 
 `payload.exchange` 是对象，叶字段（**2 项**）：`fee_cash_units`（累计手续费，有符号）、
 `risk_pnl_units`（穿仓风险账户，有符号，损失为负）。
@@ -724,6 +726,34 @@ C1（`Σ position ≡ 0`）的求和。
 各自形成一个事务：`transaction_seq = 1` 与 `2`，各自 `record_index = 0`。
 **业务事务从 `transaction_seq = 3` 开始。**
 
+##### bootstrap 屏障（必须显式实现，`enqueue_seq` 不足以保证）
+
+**`enqueue_seq` 只裁决「同 `timestamp` 且同 `priority_class`」的先后。** queue key 是
+`(timestamp, priority_class, enqueue_seq)`，**先比 class**——因此若 `t = 0` 时队列里
+已存在任何 class 0—4 的业务事件，那两个 class 5 的快照会排在它们**后面**，
+「日志前两条恒为初态快照」根本不成立。
+
+因此 bootstrap 是一条**调度约束**，不是靠优先级自然发生的：
+
+> **内核启动时队列中只有这两个 `SNAPSHOT` 事件。任何业务事件（含代理的首次
+> `AGENT_OBSERVE`、预置挂单的 `ORDER_ARRIVAL`）的入队，都发生在两者都提交之后。**
+
+这条约束落在**入队时点**上，与 queue key 的比较规则无关，因此不受 class 影响。
+实现须提供断言：bootstrap 未完成时调用入队接口即抛异常（配 `abort_code = INTERNAL`）。
+
+##### 失败与边界形状
+
+| 情形 | 合法尾部 |
+|---|---|
+| 第一张（ACCOUNT）写出失败 | `terminated=ABORTED`，`last_committed_transaction_seq = null` |
+| **第二张（BOOK）写出失败** | `terminated=ABORTED`，**`last_committed_transaction_seq = 1`**——ACCOUNT 已作为独立事务提交，不是 null |
+| 零业务事务的正常运行 | `terminated=COMPLETED`，`last_committed_transaction_seq = 2`，恰 2 条 EVENT |
+
+**配置校验强制 `max_transactions ≥ 2`**：终止检查以
+`processed_transactions >= max_transactions` 为准（指标字典 §1.1.1），若允许配置
+小于 2，运行会在初态尚未写完时「正常」停机——与「正常结束至少 2 条 EVENT」
+和「`last_committed_transaction_seq ≥ 2`」同时冲突。
+
 ##### 为什么不引入「初始化记录」这第三类
 
 初态快照**完全适配现有的二分法**（§1.4），不需要任何新概念：
@@ -741,9 +771,9 @@ C1（`Σ position ≡ 0`）的求和。
 
 - **正常结束的日志至少有 2 条 EVENT 记录**（§6 的「`EVENT*` 零条或多条」相应收紧为
   「至少两条」）；
-- `RUN_TRAILER.last_committed_transaction_seq` 在正常结束时**恒 ≥ 2**，
-  仅当初始化本身失败时才为 `null`——「零业务事务的正常运行」是合法的，其
-  `last_committed_transaction_seq = 2`。
+- `RUN_TRAILER.last_committed_transaction_seq` 在正常结束时**恒 ≥ 2**；
+  第二张快照失败时为 **1**（第一张已作为独立事务提交），仅第一张失败时才为 `null`。
+  「零业务事务的正常运行」是合法的，其值为 2。
 
 ##### 为什么必须强制
 
@@ -982,7 +1012,7 @@ class 的**最终定序裁决**——两张订单谁先到是外部可观察的�
 | `ORDER_ARRIVAL` | `agent_id`、`order_id`、`action`、`target_order_id`、`side`、`order_type`、`price_ticks`、`quantity_units`、`accepted`、`reject_reason`、`reserved_delta_units`、`origin`、`trigger_ratio_bp`、`liquidation_generation` |
 | `ORDER_CANCELLED` | `order_id`、`agent_id`、`cancelled_qty_units`、`price_ticks`、`side`、`reason`、`reserved_delta_units` |
 | `TRADE_SETTLE` | `maker_order_id`、`taker_order_id`、`maker_agent_id`、`taker_agent_id`、`price_ticks`、`quantity_units`、`notional_cash_units`、`maker_fee_cash_units`、`taker_fee_cash_units`、`valuation_mark_before_half_ticks`、`valuation_mark_after_half_ticks`、`risk_mark_ticks`、`fill_index`、`fill_count`、`postings[]`（叶字段见下表 A） |
-| `MARGIN_CALL` | `agent_id`、`margin_ratio_bp`、`maintenance_bp`、`verdict`、`required_quantity_units`、`chain_depth`、`postings[]`（叶字段见下表 B） |
+| `MARGIN_CALL` | `agent_id`、`margin_ratio_bp`、`maintenance_bp`、`verdict`、`required_quantity_units`、`chain_depth`、`chain_id`、`liquidation_generation_after`、`postings[]`（叶字段见下表 B） |
 | `MARKET_DATA_PUBLISH` | `best_bid`、`best_ask`、`bid_depth_k`、`ask_depth_k`、`last` |
 | `AGENT_OBSERVE` | `agent_id`、`observed_at` |
 | `AGENT_DECIDE` | `agent_id`、`rule_id`、`intents[]` 的 `action`/`side`/`order_type`/`price_ticks`/`quantity_units`（**不含 `intent_id`**） |
@@ -1082,13 +1112,21 @@ src/market_game_sim/schema/event_fields.json   ← 规范真源（合同产物�
 错误的结构、写错可空性或哈希分类**都能通过检查**。T204f3 因此断言：
 
 1. **完整路径**：JSON 中每个 `结构.字段` 在本文档对应章节的表格里出现；
-2. **六项元数据一致**：文档表格中显式标注的类型/枚举/可空性，与 JSON 相同；
-3. **双向覆盖**：文档提到的字段都在 JSON 中，JSON 中的字段都在文档中——
-   只查一个方向，另一个方向的漂移会静默积累。
+2. **全部六项元数据一致**——包括**必备性与哈希分类**，不只是类型/枚举/可空性；
+3. **封闭表的字段数与集合一致**：本文档凡写「**N 项，封闭**」处，N 与该结构在 JSON
+   中的字段数相等，且两边的字段名集合相同；
+4. **哈希清单一致**：E-002 每个事件类型的「纳入」列表与 JSON 中该结构标为
+   `HASH_INCLUDE` 的字段集合相等；
+5. **双向覆盖**：文档提到的字段都在 JSON 中，JSON 中的字段都在文档中。
 
-**更稳妥的长期做法**是由 JSON **生成**本文档的字段附录，人只手写语义说明。
-T204f3 是在未生成前的等价保障；若将来改为生成，可退化为「生成结果与提交内容一致」
-的单条检查。
+第 2—4 条是补出来的，不是设计时想到的：**上一轮把 `chain_id` /
+`chain_depth` / `liquidation_generation_after` 加进 JSON 时，§4.6.1 仍写「9 项，
+封闭」、E-002 的 `MARGIN_CALL` 清单仍是旧集合——防漂移机制在引入它的同一个提交里就
+漂移了。** 而当时的 T204f3 只比较类型/枚举/可空性，恰好挡不住这两处。
+
+**更稳妥的长期做法**是由 JSON **生成**本文档的字段附录与 E-002 哈希清单，人只手写
+语义说明。上面五条是在未生成前的等价保障；若将来改为生成，可退化为「生成结果与提交
+内容逐字节一致」的单条检查——那才是真正消除第二份手工清单。
 
 修改 JSON 属于 schema 变更，按 §2 判断是否提升 `schema_version`。
 

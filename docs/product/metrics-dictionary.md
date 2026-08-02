@@ -57,6 +57,10 @@ while 队列非空:
 在事务边界检查则**恰好停在阈值上，不多不少**：最后一个事务完整提交，
 `processed_transactions` 恰等于 `max_transactions`。
 
+**配置校验强制 `max_transactions ≥ 2`**：前两个事务是 bootstrap 初态快照
+（事件 Schema §4.6.3），它们计入本计数。允许更小的值会让运行在初态尚未写完时
+「正常」停机，与「正常结束至少 2 条 EVENT」直接冲突。
+
 **报告口径**：主指标 `transactions_per_second`；`event_records_per_second` 作为日志
 体积的辅助量同时报告（两者之比即「每事务平均记录数」，是一项有诊断价值的量）。
 

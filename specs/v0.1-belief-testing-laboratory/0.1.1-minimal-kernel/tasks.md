@@ -9,7 +9,8 @@
 - **测试先行**：带 `[TDD]` 的任务，先写失败的测试再写实现；
 - 任务顺序即依赖顺序，同一 Phase 内可并行的标 `[P]`；
 - **任务编号只在本文件内唯一**。引用其他里程碑的任务时必须带里程碑前缀
-  （写 `0.1.2 T104`，不写 `T104`）——各里程碑都有 `T1xx`—`T6xx`，裸编号会指向错误任务。
+  （写 `0.1.2 T104`，不写 `T104`）——各里程碑的编号为 `T0xx`—`T7xx` 且**互相重复**，
+  裸编号会指向错误任务。
 
 ---
 
@@ -21,7 +22,9 @@
       经 `Decimal` 转最小单位整数。**收到 float 即报错**，不接受先转 str 的补救。
 - [ ] **T103** `[ADR-001 §2]` `[TDD]` 配置校验：
       `tick_size × min_quantity` 是 `cash_unit` 的整数倍；
-      `latency_ns ≥ 1`（KR-006）；`leverage_tier_distribution` 各档之和 = 10000。
+      `latency_ns ≥ 1`（KR-006）；`leverage_tier_distribution` 各档之和 = 10000；
+      **`max_transactions ≥ 2`**（前两个事务是 bootstrap 快照，事件 Schema §4.6.3）；
+      **`grace_ns == 0`**（v0.1 强制，非零即拒绝）。
 - [ ] **T104** `[ADR-001 §7]` `[TDD]` 规范序列化：整数字面量、缺失值 `null`、
       UTF-8/NFC、`ensure_ascii=false`、`separators=(",",":")`、键按码位升序、
       每事件一个 LF。**断言两次序列化逐字节相同**。
@@ -72,8 +75,14 @@
       **它们计入 `processed_transactions`**——确实是内核执行的事务，不是特例。
       **不得引入「初始化记录」这第三类**：`SNAPSHOT` 本就是 class 5 队列事件，
       字段、`enqueue_seq`、哈希与失败语义全部沿用，零新增概念。
-      **验收含「零业务事务的正常运行」**：日志恰有 2 条 EVENT，
-      `last_committed_transaction_seq=2`，`terminated=COMPLETED`。
+      **必须显式实现 bootstrap 屏障**：启动时队列中只有这两个事件，任何业务事件的
+      **入队**都发生在两者提交之后。**不能靠 `enqueue_seq=0/1`**——queue key 先比
+      `priority_class`，t=0 若已有 class 0—4 的业务事件，class 5 的快照会排在它们后面。
+      bootstrap 未完成时调用入队接口须抛异常（`abort_code=INTERNAL`）。
+      **三条向量**：① 零业务事务的正常运行——恰 2 条 EVENT、
+      `last_committed_transaction_seq=2`、`COMPLETED`；② **第二张快照写出失败** →
+      `ABORTED` 且 `last_committed_transaction_seq=**1**`（不是 null）；
+      ③ t=0 存在 class 0 业务事件时，屏障必须拒绝其入队而不是让它排到快照之前。
       **`ACCOUNT` 快照必须含全部账户，包括从未成交的**——成交分录只能恢复发生过分录
       的账户，缺了它们 C1/C2 的求和就没有全集。按 `agent_id` 字典序升序排列。
 - [ ] **T204e2** `[事件 Schema §1.5]` `[退化 TI-4/TI-5]` `[TDD]` **终止判别，
@@ -242,8 +251,11 @@
       跨档）下 C1/C2 恒成立、`queue_key` / `log_key` 各自严格递增、状态机无非法转移。
 - [ ] **T606** `[NFR-002]` 覆盖率：订单簿与账本分支覆盖 ≥ 90%（退出条件 E9）。
 - [ ] **T607** `[v0.1 spec §需求追踪矩阵]` `[TDD]` **矩阵校验器**（退出条件 E10）：
-      校验 ① 矩阵 ID 集合 == 需求章节声明的集合；② 归属里程碑目录与 `spec.md` 存在；
-      ③ 引用的退出条件 ID 在该里程碑退出条件表中存在；④ 无「无 owner」的必选需求。
+      **只解析 `specs/v0.1-belief-testing-laboratory/traceability.json`**，不解析
+      Markdown——人类写法（范围、复合 owner、阶段切片）没有可判定 grammar。
+      校验 ① JSON 的 ID 集合 == 需求章节声明的集合；② 归属里程碑目录与 `spec.md` 存在；
+      ③ 引用的退出条件 ID 在该里程碑退出条件表中存在；④ `status=owned` 而 `owners`
+      为空即失败；⑤ spec 展示表与 JSON 一致（或由 JSON 生成）。
       **须有负向夹具**：删掉矩阵中的 0.1.4 映射后 CI 必须失败——只做正向检查无法
       证明它真的在挡东西。
       这条检查存在的原因很具体：FR-019/FR-020/SC-008 曾在三个里程碑之间失去 owner，
