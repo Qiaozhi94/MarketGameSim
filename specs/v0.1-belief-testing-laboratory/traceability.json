@@ -1,5 +1,5 @@
 {
-  "$comment": "需求追踪矩阵的规范真源。v0.1 spec 的展示表由本文件生成或与之比对；T607 只解析本文件，不解析 Markdown。每个 requirement 必须是 owned / deferred / removed 之一。",
+  "$comment": "需求追踪矩阵的规范真源。v0.1 spec 的展示表由本文件生成或与之比对；T607 从 spec 按固定模式提取【已声明的 ID 集合】再与本文件比对——这不是解析矩阵，因此不构成恒真断言。P-* 是参数预注册项、不是 requirement，单列于 preregistration。",
   "matrix_version": 1,
   "statuses": [
     "owned",
@@ -13,6 +13,92 @@
     "0.1.4": "specs/v0.1-belief-testing-laboratory/0.1.4-replay-and-report"
   },
   "requirements": {
+    "US-1": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E4"
+          ],
+          "scope": "确定性运行"
+        },
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E3"
+          ],
+          "scope": "统计特征达标"
+        }
+      ],
+      "note": "用户场景"
+    },
+    "US-2": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E3",
+            "E6"
+          ],
+          "scope": "对照实验与条件性结论"
+        }
+      ],
+      "note": "用户场景"
+    },
+    "US-3": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E1"
+          ],
+          "scope": "PnL 桥接残差为 0"
+        },
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E4"
+          ],
+          "scope": "五项分解完整报告"
+        }
+      ],
+      "note": "用户场景"
+    },
+    "US-4": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.2",
+          "exits": [
+            "E2"
+          ],
+          "scope": "连锁规模与深度"
+        }
+      ],
+      "note": "用户场景"
+    },
+    "US-5": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.1",
+          "exits": [
+            "E6"
+          ],
+          "scope": "因果链机器验证"
+        }
+      ],
+      "note": "用户场景"
+    },
+    "US-6": {
+      "status": "deferred",
+      "defer_to": "v0.2",
+      "owners": [],
+      "note": "股票式制度对照"
+    },
     "FR-001": {
       "status": "owned",
       "owners": [
@@ -58,13 +144,15 @@
           "exits": [
             "E1",
             "E2"
-          ]
+          ],
+          "scope": "账户结构与记账"
         },
         {
           "milestone": "0.1.2",
           "exits": [
             "E1"
-          ]
+          ],
+          "scope": "保证金逻辑"
         }
       ],
       "note": "账户结构 / 保证金逻辑"
@@ -210,13 +298,15 @@
           "milestone": "0.1.1",
           "exits": [
             "E1"
-          ]
+          ],
+          "scope": "PnL 桥接逐事件残差"
         },
         {
           "milestone": "0.1.2",
           "exits": [
             "E4"
-          ]
+          ],
+          "scope": "完整指标时间序列"
         }
       ],
       "note": "指标"
@@ -228,13 +318,15 @@
           "milestone": "0.1.1",
           "exits": [
             "E1"
-          ]
+          ],
+          "scope": "逐事件残差断言"
         },
         {
           "milestone": "0.1.2",
           "exits": [
             "E4"
-          ]
+          ],
+          "scope": "五项分解报告"
         }
       ],
       "note": "PnL 桥接"
@@ -246,13 +338,15 @@
           "milestone": "0.1.1",
           "exits": [
             "E3"
-          ]
+          ],
+          "scope": "空簿/单边簿/无成交"
         },
         {
           "milestone": "0.1.2",
           "exits": [
             "E1"
-          ]
+          ],
+          "scope": "穿仓与连环强平"
         }
       ],
       "note": "退化状态"
@@ -325,13 +419,15 @@
           "milestone": "0.1.1",
           "exits": [
             "E4"
-          ]
+          ],
+          "scope": "均匀分布"
         },
         {
           "milestone": "0.1.2",
           "exits": [
             "E3"
-          ]
+          ],
+          "scope": "完整分布族"
         }
       ],
       "note": "分流 RNG"
@@ -403,13 +499,15 @@
           "milestone": "0.1.1",
           "exits": [
             "E8"
-          ]
+          ],
+          "scope": "L1 核心层解耦"
         },
         {
           "milestone": "0.1.4",
           "exits": [
             "E5"
-          ]
+          ],
+          "scope": "L4 呈现层解耦"
         }
       ],
       "note": "分层解耦"
@@ -483,13 +581,15 @@
           "milestone": "0.1.1",
           "exits": [
             "E6"
-          ]
+          ],
+          "scope": "账户终态自包含"
         },
         {
           "milestone": "0.1.4",
           "exits": [
             "E1"
-          ]
+          ],
+          "scope": "订单簿逐帧自包含"
         }
       ],
       "note": "日志自包含"
@@ -517,18 +617,29 @@
         }
       ],
       "note": "逐帧回放一致"
+    }
+  },
+  "tracked_id_families": [
+    "US",
+    "FR",
+    "KR",
+    "NFR",
+    "SC"
+  ],
+  "preregistration": {
+    "$comment": "P-* 是设计参数而非 requirement，不参与 owner/exit 追踪。",
+    "P-1": {
+      "status": "owned",
+      "note": "因子库构成与 Dirichlet 浓度参数"
+    },
+    "P-2": {
+      "status": "owned",
+      "note": "保证金与杠杆档位参数"
     },
     "P-3": {
       "status": "deferred",
       "defer_to": "v0.2",
-      "owners": [],
-      "note": "订单流预知者，含因果自指缺陷"
-    },
-    "US-6": {
-      "status": "deferred",
-      "defer_to": "v0.2",
-      "owners": [],
-      "note": "股票式制度对照"
+      "note": "订单流预知者可见范围，含因果自指缺陷"
     }
   }
 }

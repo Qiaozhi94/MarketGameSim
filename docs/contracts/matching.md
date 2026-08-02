@@ -2,7 +2,7 @@
 
 **适用范围**：跨规格实现合同（当前交付规格 v0.1）  
 **状态**：Stable（变更须记 ADR 并提升 `schema_version`）  
-**创建日期**：2026-08-01　**更新日期**：2026-08-01  
+**创建日期**：2026-08-01　**更新日期**：2026-08-02  
 **支撑需求**：v0.1 / FR-001—FR-003；PRD / PR-001  
 **关联**：[事件 Schema](event-schema.md)、[账户与保证金](margin-and-account.md)、
 [代理策略](agent-strategy.md)、[退化状态](degenerate-states.md)

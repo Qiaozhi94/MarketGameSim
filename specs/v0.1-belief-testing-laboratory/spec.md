@@ -4,7 +4,7 @@
 **状态**：Draft——**不阻断实现**。根规格的 Draft 表示「后续里程碑可能补充需求」，
 开工与否由各里程碑自己的状态与前置退出门决定（0.1.1 = Ready，可开工）。
 根规格转 Stable 的条件是 **0.1.4** 退出（完整 v0.1 签收）。  
-**创建日期**：2026-07-31　**更新日期**：2026-08-01  
+**创建日期**：2026-07-31　**更新日期**：2026-08-02  
 **关联 PRD**：[`../../docs/product/prd.md`](../../docs/product/prd.md) v0.4.0  
 **架构**：[`plan.md`](plan.md)　**里程碑**：[`0.1.1`](0.1.1-minimal-kernel/spec.md) · [`0.1.2`](0.1.2-leverage-and-first-experiment/spec.md) · [`0.1.3`](0.1.3-robustness/spec.md) · [`0.1.4`](0.1.4-replay-and-report/spec.md)  
 **已生效决策**：[ADR-001](../../docs/adr/001-numeric-and-serialization-contract.md)

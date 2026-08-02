@@ -24,6 +24,8 @@
       `tick_size × min_quantity` 是 `cash_unit` 的整数倍；
       `latency_ns ≥ 1`（KR-006）；`leverage_tier_distribution` 各档之和 = 10000；
       **`max_transactions ≥ 2`**（前两个事务是 bootstrap 快照，事件 Schema §4.6.3）；
+      **拒绝任何预置初始挂单**（v0.1 初始簿恒为空，事件 Schema §4.6.3）——
+      聚合 BOOK 快照不含 `order_id` 与 FIFO 键，预置单无法被独立重放器恢复；
       **`grace_ns == 0`**（v0.1 强制，非零即拒绝）。
 - [ ] **T104** `[ADR-001 §7]` `[TDD]` 规范序列化：整数字面量、缺失值 `null`、
       UTF-8/NFC、`ensure_ascii=false`、`separators=(",",":")`、键按码位升序、
@@ -113,8 +115,21 @@
       ACCOUNT/BOOK 两种形状，每个字段带六项元数据。
       **这是合同产物、设计阶段冻结门，不是实现任务**——`registry.py` 只负责加载它，
       不得内嵌第二份声明。修改它等同修改事件 Schema，须走同一评审流程。
+- [x] **T204f1** `[事件 Schema E-002]` **schema meta-validator 已落地**：
+      `tools/validate_contract_sources.py`（纯标准库，设计阶段可运行）。
+      校验 `event_fields.json` **自身**：每个 constraint 恰有 `when`/`then`、
+      `then` 值合法、`when` 形状在 `meta.constraint_grammar` 中声明、字段引用存在、
+      操作数在 domain 内、`leaf_field_count` 与实际相符、可空字段必有 constraints。
+      **首次运行即抓出两处违规**（comment-only constraint、非法 `then`）与
+      trace 的 7 个缺失 ID——这正是「唯一真源必须自带唯一性检验」的直接印证。
+      **遇到未声明谓词必须失败，不得忽略**——忽略与失败会产生两个都自称合法的实现。
+- [ ] **T204f4** `[事件 Schema E-002]` `[TDD]` **constraint 正反夹具**：为
+      SUBMIT / CANCEL / AGENT / LIQUIDATION / OK / PENDING_LIQUIDATION / BREACHED
+      七种情形各提供一组 valid 与 invalid 记录，断言 validator 分别接受与拒绝。
 - [ ] **T204f3** `[事件 Schema E-002 同步强制]` `[TDD]` **合同↔Schema 双向一致性**：
-      断言 ① **完整路径**（`结构.字段`）双向覆盖；② 文档表格中显式标注的类型/枚举/
+      断言 ① **完整路径**（`结构.字段`）双向覆盖；② **全部六项元数据**一致——含**必备性
+      与哈希分类**；③ 文档凡写「N 项，封闭」处 N 与 JSON 字段数及名集合相等；
+      ④ E-002 的「纳入」列表与 JSON 中 `HASH_INCLUDE` 集合相等；⑤ 文档表格中的类型/枚举/
       可空性与 JSON 一致。**不得只比较裸字段名的出现次数**——`agent_id`、`price_ticks`
       在多个结构中重复，只比名字时「把字段挂到错误结构」「写错可空性或哈希分类」
       全都能通过。只查一个方向，另一个方向的漂移也会静默积累。
@@ -256,7 +271,9 @@
       校验 ① JSON 的 ID 集合 == 需求章节声明的集合；② 归属里程碑目录与 `spec.md` 存在；
       ③ 引用的退出条件 ID 在该里程碑退出条件表中存在；④ `status=owned` 而 `owners`
       为空即失败；⑤ spec 展示表与 JSON 一致（或由 JSON 生成）。
-      **须有负向夹具**：删掉矩阵中的 0.1.4 映射后 CI 必须失败——只做正向检查无法
+      **三类负向夹具**：① 删掉 0.1.4 映射；② 删掉一个阶段 owner（如 FR-004 的 0.1.2
+      切片）；③ 制造 scope 重叠。三者都必须使 CI 失败。**多 owner 须逐个声明 `scope`**。
+      只做正向检查无法
       证明它真的在挡东西。
       这条检查存在的原因很具体：FR-019/FR-020/SC-008 曾在三个里程碑之间失去 owner，
       而当时没有任何机器检查会报警。

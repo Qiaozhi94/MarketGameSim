@@ -87,11 +87,17 @@ E4 的「同源」不等于「一切都来自 `metrics/`」——**效应量、�
 | `sample_classification` | 0.1.2 T504 | 技术无效 / 经济终点分类 |
 | `effect_sizes` | 0.1.2 T604 | 效应量、置信区间、多重比较校正 |
 | `conditional_conclusion` | 0.1.2 T605 | 条件性结论、失效边界、否定条件 |
-| `robustness_summary` | 0.1.3 T601 | 稳健性结论（0.1.3 产出） |
+| `robustness_effects` | 0.1.3 T601 | 各映射/参数单元的效应量与跨参数趋势 |
+| `robustness_conclusion` | **0.1.3 T604** | 最终条件性结论、参数区间、失效边界 |
+| `negative_results` | **0.1.3 T606** | 三类负面结果（极窄参数区 / 映射依赖 / 无杠杆同样崩盘） |
 
 **规则是「不重算」，不是「只读 metrics」**：报告层不得自己跑统计检验或重新聚合，
 但可以且必须消费上述三类产物。若把数值来源限定在 `metrics/`，E4 会在漏掉 PR-019
 核心内容（条件性结论与置信区间）的情况下自称通过。
+
+manifest 顶层有 **`manifest_version`**（清单格式自身的版本，与各 artifact 的
+`schema_version` 解决不同问题：前者管清单结构变更，后者管单个产物的内容格式变更）
+与 **`artifact_root`**（相对实验目录的扫描根）。
 
 manifest 是**封闭清单**，逐 artifact 冻结下列七项，不使用 `metrics/*` 这类 glob：
 
@@ -105,9 +111,17 @@ manifest 是**封闭清单**，逐 artifact 冻结下列七项，不使用 `metr
 | `required` | 布尔；必备件缺失即失败 |
 | `digest` | `blake2b-256` 十六进制小写，长度 64 |
 
-**缺件行为**：任一 `required` 件缺失、哈希不符、`schema_version` 不匹配，或出现
-manifest 未声明的额外件 → **报告生成失败**，不得降级为「部分报告」。
-最后一条（额外件）同样要挡：静默多消费一个未声明产物，等于报告有一个不受控的输入。
+每个 `artifact_id` 还须冻结**最小列/键 Schema**：Parquet 件给出必备列名与类型，
+JSON 件给出必备键与类型。没有它，`schema_version` 就是一个没有被版本化的对象——
+版本号变了也无从判断变了什么。
+
+**缺件行为**：任一 `required` 件缺失、哈希不符、`schema_version` 不匹配，或
+`artifact_root` 下出现 manifest 未声明的**数据件** → **报告生成失败**，不得降级为
+「部分报告」。
+
+「额外件」的匹配集合必须明确，否则规则不可执行：**只比对 `artifact_root` 下
+`format` 所列扩展名（`.parquet` / `.json`）的文件**；日志、HTML 产物、临时文件不在
+扫描集合内。静默多消费一个未声明产物，等于报告有一个不受控的输入。
 
 ### 4.2 逐帧一致性的 oracle 从哪来
 

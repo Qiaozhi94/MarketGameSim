@@ -25,10 +25,118 @@
       "always"
     ],
     "note": "字段一律【恒存在】：required 只有 always，序列化不得省略任何字段（事件 Schema §9）。条件性表达的是【值】而非【是否存在】，写在结构化 constraints 中，不使用自然语言。constraints 的 then 取 null | non_null；when 为可判定谓词。hash 对 RUN_HEADER / RUN_TRAILER 恒为 HASH_EXCLUDE。",
-    "constraint_then_values": [
-      "null",
-      "non_null"
-    ]
+    "constraint_grammar": {
+      "$comment": "constraints 的封闭语法。validator 遇到未在此声明的谓词/操作符/上下文键必须【失败】，不得忽略——忽略与失败会产生两个都自称合法的实现。",
+      "object_shape": {
+        "required_keys": [
+          "when",
+          "then"
+        ],
+        "optional_keys": [
+          "note"
+        ],
+        "$comment": "每个 constraint 对象恰有 when 与 then；说明性文字放 note，不得出现只有 $comment 的对象"
+      },
+      "then_values": [
+        "null",
+        "non_null"
+      ],
+      "when_forms": [
+        {
+          "form": "same_record_equals",
+          "keys": [
+            "field",
+            "equals"
+          ],
+          "semantics": "同一记录内 field 的值等于 equals",
+          "operand_types": [
+            "str",
+            "bool",
+            "int"
+          ]
+        },
+        {
+          "form": "same_record_in",
+          "keys": [
+            "field",
+            "in"
+          ],
+          "semantics": "同一记录内 field 的值属于 in 列表",
+          "operand_types": [
+            "array<str>"
+          ]
+        },
+        {
+          "form": "always",
+          "keys": [
+            "always"
+          ],
+          "semantics": "无条件成立",
+          "operand_types": [
+            "bool"
+          ]
+        },
+        {
+          "form": "queueing",
+          "keys": [
+            "queueing"
+          ],
+          "semantics": "按所属事件类型的 queueing 分类（queue_event / transaction_record）",
+          "operand_types": [
+            "str"
+          ],
+          "domain": [
+            "queue_event",
+            "transaction_record"
+          ]
+        },
+        {
+          "form": "account_has_position",
+          "keys": [
+            "account_has_position"
+          ],
+          "semantics": "该分录/快照对应账户的 position_units != 0",
+          "operand_types": [
+            "bool"
+          ]
+        },
+        {
+          "form": "side_empty",
+          "keys": [
+            "side_empty"
+          ],
+          "semantics": "订单簿该侧无挂单",
+          "operand_types": [
+            "str"
+          ],
+          "domain": [
+            "BID",
+            "ASK"
+          ]
+        },
+        {
+          "form": "no_trade_yet",
+          "keys": [
+            "no_trade_yet"
+          ],
+          "semantics": "本次运行尚无成交",
+          "operand_types": [
+            "bool"
+          ]
+        },
+        {
+          "form": "no_committed_transaction",
+          "keys": [
+            "no_committed_transaction"
+          ],
+          "semantics": "尚无已提交事务",
+          "operand_types": [
+            "bool"
+          ]
+        }
+      ],
+      "extension_rule": "需要新谓词时必须【先】在 when_forms 中声明再使用；就地发明谓词会使 validator 与合同脱钩。"
+    }
   },
   "record_kinds": [
     "RUN_HEADER",
@@ -591,11 +699,9 @@
                 "always": true
               },
               "then": "non_null"
-            },
-            {
-              "$comment": "origin=AGENT 时指向 AGENT_DECIDE；origin=LIQUIDATION 时指向 MARGIN_CALL（chain_depth 的唯一来源）"
             }
-          ]
+          ],
+          "note": "origin=AGENT 时指向 AGENT_DECIDE；origin=LIQUIDATION 时指向 MARGIN_CALL（chain_depth 的唯一来源）"
         },
         "submitted_at": {
           "value_type": "int",
@@ -636,10 +742,17 @@
           "constraints": [
             {
               "when": {
-                "field": "reason",
-                "equals": "IOC_REMAINDER"
+                "field": "order_type",
+                "equals": "MARKET"
               },
-              "then": "null_if_market_order"
+              "then": "null"
+            },
+            {
+              "when": {
+                "field": "order_type",
+                "equals": "LIMIT"
+              },
+              "then": "non_null"
             }
           ]
         },
@@ -652,6 +765,17 @@
           "nullable": false,
           "required": "always",
           "hash": "HASH_INCLUDE"
+        },
+        "order_type": {
+          "value_type": "enum",
+          "enum": [
+            "LIMIT",
+            "MARKET"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE",
+          "note": "被撤订单的类型。加入本记录使其【自描述】——否则无法在不回查原单的情况下判断 price_ticks 是否应为 null"
         },
         "reason": {
           "value_type": "enum",
@@ -771,8 +895,17 @@
         "postings": {
           "value_type": "array",
           "element_structure": "TRADE_POSTING",
-          "array_order": "[MAKER, TAKER]",
-          "length": 2,
+          "array_order": {
+            "kind": "fixed_by_role",
+            "roles": [
+              "MAKER",
+              "TAKER"
+            ]
+          },
+          "length": {
+            "kind": "fixed",
+            "value": 2
+          },
           "nullable": false,
           "required": "always",
           "hash": "HASH_INCLUDE"
@@ -879,8 +1012,22 @@
         "postings": {
           "value_type": "array",
           "element_structure": "WRITE_OFF_POSTING",
-          "array_order": "[ACCOUNT, EXCHANGE_RISK]",
-          "length": "verdict == BREACHED 时为 2，否则 0",
+          "array_order": {
+            "kind": "fixed_by_role",
+            "roles": [
+              "ACCOUNT",
+              "EXCHANGE_RISK"
+            ]
+          },
+          "length": {
+            "kind": "conditional",
+            "when": {
+              "field": "verdict",
+              "equals": "BREACHED"
+            },
+            "then": 2,
+            "otherwise": 0
+          },
           "nullable": false,
           "required": "always",
           "hash": "HASH_INCLUDE"
@@ -899,11 +1046,12 @@
           "constraints": [
             {
               "when": {
-                "spec_version": "v0.1"
+                "always": true
               },
               "then": "non_null"
             }
-          ]
+          ],
+          "note": "v0.1 恒非 null（只有成交能改变 risk_mark，故不含成交的事务不触发扫描）。字段声明为可空是为将来的非成交触发场景预留，v0.1 中出现 null 即为实现缺陷。"
         }
       }
     },
@@ -1019,7 +1167,9 @@
         "intents": {
           "value_type": "array",
           "element_structure": "INTENT",
-          "array_order": "生成顺序",
+          "array_order": {
+            "kind": "generation_order"
+          },
           "nullable": false,
           "required": "always",
           "hash": "HASH_INCLUDE"
@@ -1398,7 +1548,12 @@
         "accounts": {
           "value_type": "array",
           "element_structure": "ACCOUNT_SNAPSHOT_ENTRY",
-          "array_order": "agent_id 字典序升序",
+          "array_order": {
+            "kind": "sort_by",
+            "field": "agent_id",
+            "direction": "asc",
+            "collation": "codepoint"
+          },
           "nullable": false,
           "required": "always",
           "hash": "HASH_INCLUDE"
@@ -1559,7 +1714,11 @@
         "bids": {
           "value_type": "array",
           "element_structure": "BOOK_LEVEL",
-          "array_order": "price_ticks 降序",
+          "array_order": {
+            "kind": "sort_by",
+            "field": "price_ticks",
+            "direction": "desc"
+          },
           "nullable": false,
           "required": "always",
           "hash": "HASH_INCLUDE"
@@ -1567,7 +1726,11 @@
         "asks": {
           "value_type": "array",
           "element_structure": "BOOK_LEVEL",
-          "array_order": "price_ticks 升序",
+          "array_order": {
+            "kind": "sort_by",
+            "field": "price_ticks",
+            "direction": "asc"
+          },
           "nullable": false,
           "required": "always",
           "hash": "HASH_INCLUDE"
