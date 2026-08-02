@@ -65,7 +65,7 @@
 | `DS-` `EV-` `TI-` | 退化参数 / 经济终点 / 技术无效 | `docs/contracts/degenerate-states.md` |
 | `E-` | 事件 Schema 参数 | `docs/contracts/event-schema.md` |
 | `OB-` | 订单簿验收向量 | `docs/contracts/orderbook-vectors.md` |
-| `T1xx`—`T6xx` | 实现任务，**每个里程碑各自成一套**（0.1.1—0.1.4） | `specs/v0.1-.../0.1.x-*/tasks.md` |
+| `T0xx`—`T7xx` | 实现任务，**每个里程碑文件内局部唯一**（0.1.1—0.1.4） | `specs/v0.1-.../0.1.x-*/tasks.md` |
 
 **任务编号只在单个里程碑内唯一。** 0.1.1 与 0.1.2 都有 `T104`、`T604`，含义完全不同。
 跨里程碑引用任务时必须带前缀：写 `0.1.1 T604`，不写 `T604`。

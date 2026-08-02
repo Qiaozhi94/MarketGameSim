@@ -66,10 +66,14 @@
       `terminated`、`abort_code`（`COMPLETED` 时恒 null）、`abort_detail`（不参与判定）、
       `last_committed_transaction_seq`、`record_count`。
       **须有逐字节的尾部向量**——两种 `terminated` 各一条。
-- [ ] **T204e3** `[事件 Schema §4.6.3]` `[TDD]` **强制初态快照**：任何业务事务之前
-      写出一对 t=0 快照（先 `ACCOUNT` 后 `BOOK`，`transaction_seq=0`、
-      `record_index` 为 0/1）；业务事务的 `transaction_seq` 从 **1** 开始。
-      初态快照**不计入 `processed_transactions`**。
+- [ ] **T204e3** `[事件 Schema §4.6.3]` `[TDD]` **强制初态快照**：在 `timestamp=0`
+      预先入队**两个真正的 `SNAPSHOT` 队列事件**（`ACCOUNT` 的 `enqueue_seq=0`、
+      `BOOK` 的 `=1`），弹出后形成 `transaction_seq=1` 与 `2`；业务事务从 **3** 开始。
+      **它们计入 `processed_transactions`**——确实是内核执行的事务，不是特例。
+      **不得引入「初始化记录」这第三类**：`SNAPSHOT` 本就是 class 5 队列事件，
+      字段、`enqueue_seq`、哈希与失败语义全部沿用，零新增概念。
+      **验收含「零业务事务的正常运行」**：日志恰有 2 条 EVENT，
+      `last_committed_transaction_seq=2`，`terminated=COMPLETED`。
       **`ACCOUNT` 快照必须含全部账户，包括从未成交的**——成交分录只能恢复发生过分录
       的账户，缺了它们 C1/C2 的求和就没有全集。按 `agent_id` 字典序升序排列。
 - [ ] **T204e2** `[事件 Schema §1.5]` `[退化 TI-4/TI-5]` `[TDD]` **终止判别，
@@ -82,7 +86,7 @@
       TI-5 指向环境问题（进程被杀/磁盘满），排查方向相反。
 - [ ] **T204f** `[事件 Schema E-002 同步强制]` **字段注册表**
       `src/market_game_sim/schema/registry.py`：**加载 T204f0 的
-      `event-schema.fields.json`**，不得内嵌第二份字段声明。**纯标准库**（KR-005，
+      `schema/event_fields.json`**，不得内嵌第二份字段声明。**纯标准库**（KR-005，
       故用 `json` 而非 `yaml`）。
       每个字段声明六项（与事件 Schema「E-002 同步强制」**逐项一致**）：所属记录类型、
       **值类型**、**枚举值域**（如有）、**可空性**、必备性（含条件必备）、
@@ -94,14 +98,17 @@
       分录变体（`TRADE_POSTING` / `WRITE_OFF_POSTING`）。
       序列化模型（T205）、E-002 哈希投影（T206）与覆盖检查（T206b）**三者全部由它
       生成**——手工维护三份清单必然漂移，而漂移的方向恰好是「新字段静默逃出哈希」。
-- [ ] **T204f0** `[事件 Schema E-002 同步强制]` **编写规范真源**
-      `docs/contracts/event-schema.fields.json`：覆盖三种顶层记录、全部事件类型、
-      两种 posting 变体、`SNAPSHOT.payload` 的 ACCOUNT/BOOK 两种形状，每个字段带
-      六项元数据。**这是合同产物，随合同评审，不是实现细节**；T204f 的 `registry.py`
-      只负责加载它，不得内嵌第二份声明。
+- [x] **T204f0** `[事件 Schema E-002 同步强制]` **规范真源已冻结**：
+      `src/market_game_sim/schema/event_fields.json`（19 个结构、147 条字段声明），
+      覆盖三种顶层记录、全部事件类型、两种 posting 变体、`SNAPSHOT.payload` 的
+      ACCOUNT/BOOK 两种形状，每个字段带六项元数据。
+      **这是合同产物、设计阶段冻结门，不是实现任务**——`registry.py` 只负责加载它，
+      不得内嵌第二份声明。修改它等同修改事件 Schema，须走同一评审流程。
 - [ ] **T204f3** `[事件 Schema E-002 同步强制]` `[TDD]` **合同↔Schema 双向一致性**：
-      断言 ① 本合同散文中出现的每个字段名都存在于 JSON；② JSON 中每个字段名都在
-      合同中被提及至少一次。**只查一个方向，另一个方向的漂移会静默积累。**
+      断言 ① **完整路径**（`结构.字段`）双向覆盖；② 文档表格中显式标注的类型/枚举/
+      可空性与 JSON 一致。**不得只比较裸字段名的出现次数**——`agent_id`、`price_ticks`
+      在多个结构中重复，只比名字时「把字段挂到错误结构」「写错可空性或哈希分类」
+      全都能通过。只查一个方向，另一个方向的漂移也会静默积累。
       本检查与 T204f2 不同：T204f2 只证明实现内部三个模块同源，证明不了那份声明与
       合同含义相同——实现者可以自洽地实现一个错的 schema。
 - [ ] **T204f2** `[事件 Schema §6.1/§6.2、E-002]` `[TDD]` **注册表同源夹具**：

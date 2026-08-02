@@ -1,0 +1,1183 @@
+{
+  "$comment": "事件日志字段的规范真源（合同产物，随 docs/contracts/event-schema.md 一同评审）。此文件不是实现细节：registry.py 只负责加载它，不得内嵌第二份声明。放在包内而非 docs/ 是因为 wheel 只打包 src/market_game_sim，装包后须能由 importlib.resources 读取。",
+  "schema_version": 2,
+  "meta": {
+    "field_metadata_keys": [
+      "value_type",
+      "enum",
+      "nullable",
+      "required",
+      "hash"
+    ],
+    "value_types": [
+      "int",
+      "str",
+      "bool",
+      "enum",
+      "array",
+      "object"
+    ],
+    "hash_classes": [
+      "HASH_INCLUDE",
+      "HASH_EXCLUDE"
+    ],
+    "required_values": [
+      "always",
+      "conditional"
+    ],
+    "note": "required=conditional 时必须同时给出 required_when；hash 对 RUN_HEADER / RUN_TRAILER 恒为 HASH_EXCLUDE（整条记录不参与摘要哈希）。"
+  },
+  "record_kinds": [
+    "RUN_HEADER",
+    "EVENT",
+    "RUN_TRAILER"
+  ],
+  "structures": {
+    "RUN_HEADER": {
+      "kind": "top_level",
+      "hash": "HASH_EXCLUDE",
+      "fields": {
+        "record_kind": {
+          "value_type": "enum",
+          "enum": [
+            "RUN_HEADER"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "schema_version": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "run_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "code_version": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "config_hash": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "master_seed": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "started_at_wall": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "tick_size": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "min_quantity": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "cash_unit": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "run_mode": {
+          "value_type": "enum",
+          "enum": [
+            "benchmark",
+            "research",
+            "interactive"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "information_set_mode": {
+          "value_type": "enum",
+          "enum": [
+            "digest",
+            "full"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        }
+      }
+    },
+    "RUN_TRAILER": {
+      "kind": "top_level",
+      "hash": "HASH_EXCLUDE",
+      "fields": {
+        "record_kind": {
+          "value_type": "enum",
+          "enum": [
+            "RUN_TRAILER"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "terminated": {
+          "value_type": "enum",
+          "enum": [
+            "COMPLETED",
+            "ABORTED"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "abort_code": {
+          "value_type": "enum",
+          "enum": [
+            "QUEUE_KEY_MONOTONICITY",
+            "CLASS_REGRESSION_NOT_WHITELISTED",
+            "CONSERVATION_BREACH",
+            "ILLEGAL_STATE_TRANSITION",
+            "CONFIG_INVARIANT",
+            "INTERNAL"
+          ],
+          "nullable": true,
+          "required": "conditional",
+          "required_when": "terminated == ABORTED 时非 null；COMPLETED 时恒为 null",
+          "hash": "HASH_EXCLUDE"
+        },
+        "abort_detail": {
+          "value_type": "str",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_EXCLUDE",
+          "note": "诊断文本，随平台变化，不得被程序解析"
+        },
+        "last_committed_transaction_seq": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_EXCLUDE",
+          "note": "正常结束的运行恒 >= 2（两条初始化快照事务）；仅当初始化本身失败时为 null"
+        },
+        "record_count": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        }
+      }
+    },
+    "EVENT_COMMON": {
+      "kind": "event_common",
+      "fields": {
+        "record_kind": {
+          "value_type": "enum",
+          "enum": [
+            "EVENT"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "schema_version": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "event_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "run_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "timestamp": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "transaction_seq": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "record_index": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "priority_class": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "event_type": {
+          "value_type": "enum",
+          "enum": [
+            "ORDER_ARRIVAL",
+            "ORDER_CANCELLED",
+            "TRADE_SETTLE",
+            "MARGIN_CALL",
+            "MARKET_DATA_PUBLISH",
+            "AGENT_OBSERVE",
+            "AGENT_DECIDE",
+            "SNAPSHOT"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "enqueue_seq": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "conditional",
+          "required_when": "队列事件非 null；事务记录为 null",
+          "hash": "HASH_INCLUDE"
+        }
+      }
+    },
+    "ORDER_ARRIVAL": {
+      "kind": "event",
+      "priority_class": 0,
+      "queueing": "queue_event",
+      "fields": {
+        "agent_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "order_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "action": {
+          "value_type": "enum",
+          "enum": [
+            "SUBMIT",
+            "CANCEL"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "target_order_id": {
+          "value_type": "str",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "side": {
+          "value_type": "enum",
+          "enum": [
+            "BUY",
+            "SELL"
+          ],
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "order_type": {
+          "value_type": "enum",
+          "enum": [
+            "LIMIT",
+            "MARKET"
+          ],
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "price_ticks": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "quantity_units": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "accepted": {
+          "value_type": "bool",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "reject_reason": {
+          "value_type": "enum",
+          "enum": [
+            "TICK_MISALIGNED",
+            "QUANTITY_MISALIGNED",
+            "INSUFFICIENT_MARGIN",
+            "REGIME_HOOK",
+            "UNKNOWN_ORDER",
+            "LIQUIDATION_STALE"
+          ],
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "reserved_delta_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "origin": {
+          "value_type": "enum",
+          "enum": [
+            "AGENT",
+            "LIQUIDATION"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "trigger_ratio_bp": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "liquidation_generation": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "conditional",
+          "required_when": "origin == LIQUIDATION 时非 null",
+          "hash": "HASH_INCLUDE"
+        },
+        "intent_id": {
+          "value_type": "str",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "decision_event_id": {
+          "value_type": "str",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "submitted_at": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        }
+      }
+    },
+    "ORDER_CANCELLED": {
+      "kind": "event",
+      "priority_class": 0,
+      "queueing": "transaction_record",
+      "fields": {
+        "order_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "agent_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "cancelled_qty_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "price_ticks": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "side": {
+          "value_type": "enum",
+          "enum": [
+            "BUY",
+            "SELL"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "reason": {
+          "value_type": "enum",
+          "enum": [
+            "AGENT_REQUEST",
+            "IOC_REMAINDER",
+            "SELF_TRADE_PREVENTION",
+            "LIQUIDATED_ACCOUNT"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "reserved_delta_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "caused_by_event_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        }
+      }
+    },
+    "TRADE_SETTLE": {
+      "kind": "event",
+      "priority_class": 1,
+      "queueing": "transaction_record",
+      "fields": {
+        "maker_order_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "taker_order_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "maker_agent_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "taker_agent_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "price_ticks": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "quantity_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "notional_cash_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "maker_fee_cash_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "taker_fee_cash_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "valuation_mark_before_half_ticks": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "valuation_mark_after_half_ticks": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "risk_mark_ticks": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "fill_index": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "fill_count": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "postings": {
+          "value_type": "array",
+          "element_structure": "TRADE_POSTING",
+          "array_order": "[MAKER, TAKER]",
+          "length": 2,
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "trade_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "caused_by_event_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        }
+      }
+    },
+    "MARGIN_CALL": {
+      "kind": "event",
+      "priority_class": 1,
+      "queueing": "transaction_record",
+      "fields": {
+        "agent_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "margin_ratio_bp": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "maintenance_bp": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "verdict": {
+          "value_type": "enum",
+          "enum": [
+            "OK",
+            "PENDING_LIQUIDATION",
+            "BREACHED"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "required_quantity_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "chain_depth": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "chain_id": {
+          "value_type": "str",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "liquidation_generation_after": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "postings": {
+          "value_type": "array",
+          "element_structure": "WRITE_OFF_POSTING",
+          "array_order": "[ACCOUNT, EXCHANGE_RISK]",
+          "length": "verdict == BREACHED 时为 2，否则 0",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "caused_by_event_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "risk_mark_event_id": {
+          "value_type": "str",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        }
+      }
+    },
+    "MARKET_DATA_PUBLISH": {
+      "kind": "event",
+      "priority_class": 2,
+      "queueing": "transaction_record",
+      "fields": {
+        "best_bid": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "best_ask": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "bid_depth_k": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "ask_depth_k": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "last": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        }
+      }
+    },
+    "AGENT_OBSERVE": {
+      "kind": "event",
+      "priority_class": 3,
+      "queueing": "queue_event",
+      "fields": {
+        "agent_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "observed_at": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "market_data_event_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "information_set": {
+          "value_type": "object",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        }
+      }
+    },
+    "AGENT_DECIDE": {
+      "kind": "event",
+      "priority_class": 4,
+      "queueing": "queue_event",
+      "fields": {
+        "agent_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "rule_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "intents": {
+          "value_type": "array",
+          "element_structure": "INTENT",
+          "array_order": "生成顺序",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "observation_event_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "internal_state": {
+          "value_type": "object",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        }
+      }
+    },
+    "SNAPSHOT": {
+      "kind": "event",
+      "priority_class": 5,
+      "queueing": "queue_event",
+      "fields": {
+        "snapshot_type": {
+          "value_type": "enum",
+          "enum": [
+            "ACCOUNT",
+            "BOOK"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "payload": {
+          "value_type": "object",
+          "discriminated_by": "snapshot_type",
+          "variants": {
+            "ACCOUNT": "ACCOUNT_PAYLOAD",
+            "BOOK": "BOOK_PAYLOAD"
+          },
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        }
+      }
+    },
+    "INTENT": {
+      "kind": "nested",
+      "fields": {
+        "action": {
+          "value_type": "enum",
+          "enum": [
+            "SUBMIT",
+            "CANCEL"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "side": {
+          "value_type": "enum",
+          "enum": [
+            "BUY",
+            "SELL"
+          ],
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "order_type": {
+          "value_type": "enum",
+          "enum": [
+            "LIMIT",
+            "MARKET"
+          ],
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "price_ticks": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "quantity_units": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "intent_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        }
+      }
+    },
+    "TRADE_POSTING": {
+      "kind": "nested",
+      "leaf_field_count": 15,
+      "fields": {
+        "posting_type": {
+          "value_type": "enum",
+          "enum": [
+            "TRADE_POSTING"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "agent_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "role": {
+          "value_type": "enum",
+          "enum": [
+            "MAKER",
+            "TAKER"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "wallet_delta_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "position_delta_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "entry_notional_delta_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "realized_pnl_delta_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "fee_delta_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "reserved_delta_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "wallet_after_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "position_after_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "entry_notional_after_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "equity_after_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "margin_ratio_after_bp": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "risk_pnl_delta_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        }
+      }
+    },
+    "WRITE_OFF_POSTING": {
+      "kind": "nested",
+      "leaf_field_count": 8,
+      "$comment": "EXCHANGE_RISK 侧的三个 *_after 必须为 null 而非 0：0 表示『存在且为零』，会让重放器把风险账户当作持仓归零的普通账户纳入 C1 求和。",
+      "fields": {
+        "posting_type": {
+          "value_type": "enum",
+          "enum": [
+            "WRITE_OFF_POSTING"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "role": {
+          "value_type": "enum",
+          "enum": [
+            "ACCOUNT",
+            "EXCHANGE_RISK"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "agent_id": {
+          "value_type": "str",
+          "nullable": true,
+          "required": "conditional",
+          "required_when": "role == ACCOUNT 时非 null；role == EXCHANGE_RISK 时恒 null",
+          "hash": "HASH_INCLUDE"
+        },
+        "wallet_delta_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "wallet_after_units": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "conditional",
+          "required_when": "role == ACCOUNT 时为 0；role == EXCHANGE_RISK 时恒 null",
+          "hash": "HASH_INCLUDE"
+        },
+        "position_after_units": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "conditional",
+          "required_when": "同 wallet_after_units",
+          "hash": "HASH_INCLUDE"
+        },
+        "entry_notional_after_units": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "conditional",
+          "required_when": "同 wallet_after_units",
+          "hash": "HASH_INCLUDE"
+        },
+        "risk_pnl_delta_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        }
+      }
+    },
+    "ACCOUNT_PAYLOAD": {
+      "kind": "nested",
+      "fields": {
+        "accounts": {
+          "value_type": "array",
+          "element_structure": "ACCOUNT_SNAPSHOT_ENTRY",
+          "array_order": "agent_id 字典序升序",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "exchange": {
+          "value_type": "object",
+          "element_structure": "EXCHANGE_SNAPSHOT",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        }
+      }
+    },
+    "ACCOUNT_SNAPSHOT_ENTRY": {
+      "kind": "nested",
+      "leaf_field_count": 11,
+      "fields": {
+        "agent_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "wallet_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "position_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "entry_notional_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "reserved_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "realized_pnl_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "state": {
+          "value_type": "enum",
+          "enum": [
+            "ACTIVE",
+            "PENDING_LIQUIDATION",
+            "LIQUIDATED"
+          ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "margin_ratio_bp": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "liquidation_generation": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "chain_id": {
+          "value_type": "str",
+          "nullable": true,
+          "required": "conditional",
+          "required_when": "state == PENDING_LIQUIDATION 时非 null；否则 null",
+          "hash": "HASH_INCLUDE"
+        },
+        "chain_depth": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "conditional",
+          "required_when": "同 chain_id",
+          "hash": "HASH_INCLUDE"
+        }
+      }
+    },
+    "EXCHANGE_SNAPSHOT": {
+      "kind": "nested",
+      "leaf_field_count": 2,
+      "fields": {
+        "fee_cash_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "risk_pnl_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        }
+      }
+    },
+    "BOOK_PAYLOAD": {
+      "kind": "nested",
+      "fields": {
+        "bids": {
+          "value_type": "array",
+          "element_structure": "BOOK_LEVEL",
+          "array_order": "price_ticks 降序",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "asks": {
+          "value_type": "array",
+          "element_structure": "BOOK_LEVEL",
+          "array_order": "price_ticks 升序",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "last_ticks": {
+          "value_type": "int",
+          "nullable": true,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        }
+      }
+    },
+    "BOOK_LEVEL": {
+      "kind": "nested",
+      "leaf_field_count": 3,
+      "fields": {
+        "price_ticks": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "quantity_units": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        },
+        "order_count": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_INCLUDE"
+        }
+      }
+    }
+  }
+}

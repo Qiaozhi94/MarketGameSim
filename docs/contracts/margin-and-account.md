@@ -37,9 +37,16 @@
 | `entry_notional_units` | 开仓成本累计 | 多头为正，空头为负（§2.1） |
 | `reserved_units` | **持仓 + 活动挂单**在最坏情形下的保证金占用总额（含费用上界，代理策略 §11.1） | 非负 |
 | `realized_pnl_units` | 已实现盈亏累计 | 有符号 |
+| `state` | `ACTIVE` \| `PENDING_LIQUIDATION` \| `LIQUIDATED` | 状态机见 plan §3.4 |
+| `liquidation_generation` | 强平代次，**初始值 0** | 单调递增；每个产生新强平动作的决定 +1（事件 Schema §4.2.2） |
+| `chain_id` | 所属连锁标识 | 仅 `PENDING_LIQUIDATION` 期间非 null，恢复或核销时清空 |
+| `chain_depth` | 所属连锁层数 | 同 `chain_id` |
 
 **没有「库存」，也没有负现金表达融资。** 杠杆通过「仓位名义价值 > 钱包余额」体现，
 不通过借款体现。
+
+后四个字段是账户状态的一部分，出现在 `ACCOUNT` 快照（事件 Schema §4.6.1）——
+重放器需要它们才能重现同一个强平代次校验与连锁归属。
 
 ## 2. 核心量
 
@@ -272,7 +279,15 @@ q ≥ |position| − risk_equity × 10000 / (risk_mark × target_bp)
 `required_quantity_units`——价格已经移动，原数量不再对应 `target_bp`。
 
 **`required_quantity_units` 发生变化时产生一个新的 `MARGIN_CALL` 事件**
-（`verdict` 仍为 `PENDING_LIQUIDATION`），`chain_depth` 继承自触发它的那次判定。
+（`verdict` 仍为 `PENDING_LIQUIDATION`）。
+
+该判定**同时做两件事**（事件 Schema §4.2.2）：
+
+1. `liquidation_generation += 1` 并调度一张**替代**强平单——旧的在途单随即过期，
+   到达时被拒（`LIQUIDATION_STALE`）。**不换代是错的**：那会让新旧两张单都通过验证，
+   账户被过量强平；
+2. `chain_id` 与 `chain_depth` **继承自触发它的那次判定，不 +1**——这是同一条链上的
+   同一个受害者在续单，链条并没有延长。被本次强平成交**新拖入**的其他账户才是 +1。
 
 **这是「状态未变但必须记录」的情形**：账户从 `PENDING_LIQUIDATION` 到
 `PENDING_LIQUIDATION`，没有状态转移，却产生了一个新的下单数量——那是一个**可行动的

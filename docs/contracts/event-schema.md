@@ -408,6 +408,8 @@ SC-006 的「每一跳唯一存在」在快照上无法成立。
 | `verdict` | `OK` \| `PENDING_LIQUIDATION` \| `BREACHED`（穿仓）——**只有三个值**，见「何时产生 `MARGIN_CALL`」 |
 | `required_quantity_units` | 恢复至 `target_bp` 所需的最小平仓数量（账户合同 §4.2）；`OK` 时为 0 |
 | `chain_depth` | 该判定所处的连锁层数，0 表示非连锁触发（指标字典 §4.1） |
+| `chain_id` | 所属连锁的标识（新链取本事件的 `event_id`）；`verdict = OK` 的恢复判定为 null |
+| `liquidation_generation_after` | 该判定执行后账户的强平代次，使代次演进可仅凭日志重放 |
 | `postings` | `WRITE_OFF_POSTING[]`：**仅 `verdict = BREACHED` 时**长度为 2（`[ACCOUNT, EXCHANGE_RISK]`），否则为空数组 `[]`。字段表见 §4.2.3 |
 
 ##### 何时产生 `MARGIN_CALL`：记录「可行动的风险决定」
@@ -457,7 +459,9 @@ SC-006 的「每一跳唯一存在」在快照上无法成立。
 「已判定需强平、强平单已发出但未成交」这一情形由 `PENDING_LIQUIDATION` 覆盖——
 强平单的存在由 `ORDER_ARRIVAL(origin = LIQUIDATION)` 记录，不需要第二个状态。
 
-因此 OB-8 中的 **`m` = 本轮扫描中发生状态转移的账户数**，不是被扫描的账户数。
+因此 OB-8 中的 **`m` = 本轮批末扫描中产生「可行动风险决定」的账户数**——不是被扫描
+的账户数，也不只是状态转移数：`PENDING → PENDING` 且数量重算同样计入。强平单**自己
+事务内**的重算不计入本轮 `m`（它有自己的 `transaction_seq`）。
 
 **为什么因果父是 `ORDER_ARRIVAL` 而不是某笔 `TRADE_SETTLE`**：跨档成交产生多笔
 `TRADE_SETTLE`，而风险扫描在**整批之后只做一次**（§4.2.2 扫描范围）。此时「导致该
@@ -544,9 +548,42 @@ C2 守恒（账户合同 §5）。
 要求，不是效率考虑：顺序影响 **`record_index` 分配**，进而影响 KPI-002 的哈希。
 （`transaction_seq` 在同一父事务内恒定不变，不受此影响。）
 
-`chain_depth` 传播规则：由成交直接触发的判定为该成交的 `chain_depth`；由**强平单
-成交**触发的判定为 `触发它的强平判定的 chain_depth + 1`。普通代理成交触发的判定
-恒为 0。
+##### `chain_depth` / `chain_id`：来源与传播（冻结）
+
+**唯一来源是因果外键链，不是成交记录。** `TRADE_SETTLE` **没有** `chain_depth`
+字段；`ORDER_ARRIVAL` 也**没有** `trigger_event_id`——此前两处表述引用了不存在的
+字段。实际链路是：
+
+```text
+MARGIN_CALL(chain_id, chain_depth)
+  → ORDER_ARRIVAL.decision_event_id 指向它（origin = LIQUIDATION）
+  → 该强平单的 TRADE_SETTLE
+  → 批末扫描产生的下一批 MARGIN_CALL
+```
+
+判定本次扫描的「父判定」：若触发本次扫描的 `ORDER_ARRIVAL` 的
+`origin = LIQUIDATION`，其 `decision_event_id` 指向的 `MARGIN_CALL` 即父判定；
+`origin = AGENT` 时无父判定。
+
+**按账户角色分三条规则，不可只用一条**：
+
+| 情形 | `chain_id` | `chain_depth` |
+|---|---|---|
+| 无父判定（普通代理成交触发） | **新建**，取本 `MARGIN_CALL` 的 `event_id` | **0** |
+| **同一账户的续单重算**（父判定的 `agent_id` == 本账户） | 继承父判定的 | **继承父判定的**，不 +1 |
+| 本次强平成交**新拖入**的其他账户 | 继承父判定的 | 父判定的 **+ 1** |
+| 已在别的链中 pending、本次仅数量重算 | **保留其自身的** `chain_id` | **保留其自身的** `chain_depth` |
+
+第 2、4 行是此前冲突的根源：事件 Schema 曾一律写「+1」，账户合同 §4.3 却写「继承」。
+两者都对，但**说的是不同的账户**——续单重算是同一条链上的同一个受害者，深度不该增长；
+被新拖进来的账户才是链条延长了一节。
+
+`chain_id` 是新增字段，用于把「深度」与「属于哪条链」分开——同一批扫描可能同时包含
+三种情形（续单重算、新拖入、他链重算），只有深度无法区分它们，而 KPI 要报告的
+「每条链的规模」需要 `chain_id` 才能分组。
+
+**`chain_id` 与 `chain_depth` 写入 `ACCOUNT` 快照所需的账户状态**：账户在
+`PENDING_LIQUIDATION` 期间保留其所属链，恢复或核销时清空。
 
 ##### 恢复后的失效：强平代次 `liquidation_generation`
 
@@ -554,13 +591,27 @@ C2 守恒（账户合同 §5）。
 内，其他成交可能让该账户恢复**（记 `verdict = OK`，状态回到 `ACTIVE`）——但已经入队
 的强平单不会自动消失，到达时会照常卖出，**强平一个已经健康的账户**。
 
-因此每个账户带一个单调递增的整数 `liquidation_generation`：
+因此每个账户带一个单调递增的整数 `liquidation_generation`（账户合同 §1 的账户字段，
+**初始值 0**）：
 
 | 时点 | 动作 |
 |---|---|
-| `ACTIVE → PENDING_LIQUIDATION` | `liquidation_generation += 1`；强平单携带该值 |
-| `PENDING_LIQUIDATION → ACTIVE`（恢复） | `liquidation_generation += 1`——**旧值随即过期** |
+| `ACTIVE → PENDING_LIQUIDATION` | `+= 1`；调度强平单，携带该值 |
+| **`PENDING → PENDING` 且 `required_quantity_units` 变化** | **`+= 1`**；调度**替代**强平单，携带新值——**旧单随即过期** |
+| `PENDING_LIQUIDATION → ACTIVE`（恢复） | `+= 1`——旧值过期，**不调度新单** |
 | 强平 `ORDER_ARRIVAL` 到达交易所 | 准入阶段重验：账户仍为 `PENDING_LIQUIDATION` **且** 订单携带的代次 == 账户当前代次 |
+
+**每一个产生新强平动作的决定都换代**，这是「至多一张在途强平单有效」的实现方式。
+第 2 行是 P0-Q03 的关闭点：数量重算既然是一个「可行动的风险决定」（§4.2.2），
+它就必然要么调度一张替代单、要么什么都不做——**不能既宣称有新数量又不换代**，
+那会让新旧两张单都通过验证，账户被过量强平。
+
+代次只增不减，因此乱序到达也安全：任意一张携带旧代次的单到达时都会被拒，
+与到达顺序无关。
+
+`MARGIN_CALL` 携带 **`liquidation_generation_after`**（该判定执行后的代次值），
+使代次演进可仅凭日志重放——否则运行在新单到达或下一次快照之前终止时，无法验证代次
+是否正确更新。
 
 任一条件不满足即**拒绝**：`accepted = false`、
 `reject_reason = LIQUIDATION_STALE`，事务只有 `record_index = 0`，
@@ -666,14 +717,33 @@ C1（`Σ position ≡ 0`）的求和。
 ——账户追溯由 §4.2.1 的分录承担。快照的作用是回放与图表，以及与分录累加值的
 交叉核对（两者不一致即为实现缺陷）。
 
-#### 4.6.3 强制初态快照（`transaction_seq = 0`）
+#### 4.6.3 强制初态快照（两个真正的队列事件）
 
-**日志必须在任何业务事务之前写出一对 t=0 快照**：先 `ACCOUNT` 后 `BOOK`，
-两条都用 `transaction_seq = 0`、`record_index` 分别为 0 和 1、`timestamp = 0`。
+**内核在 `timestamp = 0` 预先入队两个 `SNAPSHOT` 队列事件**：先 `ACCOUNT`
+（`enqueue_seq = 0`）后 `BOOK`（`enqueue_seq = 1`）。它们像其他队列事件一样弹出，
+各自形成一个事务：`transaction_seq = 1` 与 `2`，各自 `record_index = 0`。
+**业务事务从 `transaction_seq = 3` 开始。**
 
-业务事务的 `transaction_seq` 从 **1** 开始。初态快照**不是队列事务**，
-**不计入 `processed_transactions`**（指标字典 §1.1）——它没有从队列弹出，
-也没有改变任何状态。
+##### 为什么不引入「初始化记录」这第三类
+
+初态快照**完全适配现有的二分法**（§1.4），不需要任何新概念：
+
+| 曾考虑的方案 | 问题 |
+|---|---|
+| 放进 `RUN_HEADER` 的 `initial_state` | 头部要复制整套账户与簿的 payload schema，形成第二份定义 |
+| 定义「初始化事务」第三类来源 | 要为它单独规定 `enqueue_seq`、priority class、计数、哈希、失败语义与合法日志形状 |
+| **两个真正的 `SNAPSHOT` 队列事件**（采用） | **零新增概念**——`SNAPSHOT` 本就是 class 5 队列事件，字段、`enqueue_seq`、哈希、失败语义全部沿用 |
+
+**它们计入 `processed_transactions`**，因为它们确实是内核弹出并执行的事务。这不是
+妥协，而是更诚实的计数：写出全量账户快照是真实工作量，尤其在 190 个账户时。
+
+由此还得到两条更紧的日志形状约束：
+
+- **正常结束的日志至少有 2 条 EVENT 记录**（§6 的「`EVENT*` 零条或多条」相应收紧为
+  「至少两条」）；
+- `RUN_TRAILER.last_committed_transaction_seq` 在正常结束时**恒 ≥ 2**，
+  仅当初始化本身失败时才为 `null`——「零业务事务的正常运行」是合法的，其
+  `last_committed_transaction_seq = 2`。
 
 ##### 为什么必须强制
 
@@ -690,9 +760,10 @@ C1（`Σ position ≡ 0`）的求和。
 
 ##### 帧的定义
 
-**一帧 = 一个已提交事务之后的完整状态。** 第 0 帧即初态快照；第 k 帧是
-`transaction_seq = k` 提交后的状态。0.1.4 的逐帧比较按此对齐——帧边界取事务边界，
-不取单条记录边界，因为事务内的中间态本就不该被观察到（§1.4）。
+**一帧 = 一个已提交事务之后的完整状态。** 第 0 帧由 `transaction_seq = 1`（账户）与
+`2`（订单簿）两条初态快照共同构成；第 k 帧是 `transaction_seq = k + 2` 提交后的状态。
+0.1.4 的逐帧比较按此对齐——帧边界取事务边界，不取单条记录边界，因为事务内的中间态
+本就不该被观察到（§1.4）。
 
 ### 4.7 ORDER_CANCELLED（class 0，事务记录）
 
@@ -791,9 +862,10 @@ trade_id
 
 ```text
 RUN_HEADER          恰好一条，文件第一行
-EVENT*              零条或多条，§4 的事件记录
+EVENT+              至少两条，§4 的事件记录
                     ├ 前两条恒为 t=0 的 ACCOUNT / BOOK 快照（§4.6.3）
-                    └ 其余为业务事务的记录，transaction_seq 从 1 开始
+                    │   它们是真正的队列事件，transaction_seq = 1 与 2
+                    └ 其余为业务事务的记录，transaction_seq 从 3 开始
 RUN_TRAILER         至多一条，文件最后一行
 ```
 
@@ -974,29 +1046,49 @@ class 的**最终定序裁决**——两张订单谁先到是外部可观察的�
 百行且无人能核对——本文档已经在一个 8 字段的结构上数错过一次。因此：
 
 ```text
-docs/contracts/event-schema.fields.json    ← 规范真源（与本合同同级，随合同评审）
+src/market_game_sim/schema/event_fields.json   ← 规范真源（合同产物，随本合同评审）
         │
-        ├─ 被 src/market_game_sim/schema/registry.py 直接加载（json，标准库，KR-005）
+        ├─ 被 src/market_game_sim/schema/registry.py 加载（json + importlib.resources）
         │       ├→ 序列化模型：每种记录的必备字段、顺序与类型
         │       ├→ E-002 投影：哈希输入的字段选择
         │       └→ T206b 覆盖检查：纳入 ∪ 排除 是否恰好覆盖必备字段
         │
-        └─ 被一致性测试与本文档比对（见下）
+        └─ 被 T204f3 与本文档双向比对（见下）
 ```
+
+**该文件已存在**（19 个结构、147 条字段声明），不是待办任务。它是**合同产物**：
+修改它等同修改本合同，须走同一评审流程；`registry.py` 只负责加载，**不得内嵌
+第二份声明**。
 
 **用 JSON 而非 YAML**：注册表被 L1 核心层加载，KR-005 禁止第三方依赖，
 `json` 在标准库而 `yaml` 不在。
+
+**放在包内而非 `docs/contracts/`**：wheel 只打包 `src/market_game_sim`
+（`pyproject.toml` 的 `[tool.hatch.build.targets.wheel]`），装包后 `docs/` 不可读。
+规范文件必须能由 `importlib.resources` 取到，否则安装后的 registry 会读不到它——
+而那正是「运行时加载规范真源」这一设计的前提。
 
 ##### 规范地位与冲突处理
 
 | | 角色 |
 |---|---|
-| `event-schema.fields.json` | **规范**——字段名、类型、枚举、可空性、必备性、哈希分类的唯一定义 |
+| `event_fields.json` | **规范**——字段名、所属结构、类型、枚举、可空性、必备性、哈希分类的唯一定义 |
 | 本文档的 §4 / §6 表格与散文 | **解释性**——说明每个字段**为什么**存在、取值语义、设计权衡 |
 
-**冲突时以 JSON 为准**，但冲突本身即缺陷：一致性测试（T204f3）断言本文档中出现的
-每个字段名都存在于 JSON、且 JSON 中每个字段名都在本文档中被提及至少一次。
-**双向检查**——只查一个方向，另一个方向的漂移就会静默积累。
+**冲突时以 JSON 为准**，但冲突本身即缺陷，由 T204f3 挡住。
+
+**一致性检查必须比较结构化内容，不能只比字段名出现次数。** `agent_id`、
+`price_ticks` 这类字段名在多个结构中重复出现，只查「名字两边都有」时，把字段挂到
+错误的结构、写错可空性或哈希分类**都能通过检查**。T204f3 因此断言：
+
+1. **完整路径**：JSON 中每个 `结构.字段` 在本文档对应章节的表格里出现；
+2. **六项元数据一致**：文档表格中显式标注的类型/枚举/可空性，与 JSON 相同；
+3. **双向覆盖**：文档提到的字段都在 JSON 中，JSON 中的字段都在文档中——
+   只查一个方向，另一个方向的漂移会静默积累。
+
+**更稳妥的长期做法**是由 JSON **生成**本文档的字段附录，人只手写语义说明。
+T204f3 是在未生成前的等价保障；若将来改为生成，可退化为「生成结果与提交内容一致」
+的单条检查。
 
 修改 JSON 属于 schema 变更，按 §2 判断是否提升 `schema_version`。
 
