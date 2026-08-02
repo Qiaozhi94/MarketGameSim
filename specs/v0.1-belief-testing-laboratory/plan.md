@@ -187,7 +187,12 @@ ACTIVE ──保证金率 < maint_bp──▶ PENDING_LIQUIDATION
 | **0.1.1** | 最小确定性内核（**无杠杆**） | C1/C2 逐事件精确成立；账户案例 1—5、10 与订单簿向量 `{OB-1…OB-7, OB-9a}` 通过；确定性哈希稳定 | [0.1.1 spec](0.1.1-minimal-kernel/spec.md) / [tasks](0.1.1-minimal-kernel/tasks.md) |
 | **0.1.2** | 杠杆、强平、第一个实验闭环 | 十个验收案例全部通过；一项预注册实验可从配置追溯到条件性结论 | [0.1.2 spec](0.1.2-leverage-and-first-experiment/spec.md) / [tasks](0.1.2-leverage-and-first-experiment/tasks.md) |
 | **0.1.3** | 模型稳健性 | 旗舰结论不依赖单一行为映射或单一参数点 | [0.1.3 spec](0.1.3-robustness/spec.md) / [tasks](0.1.3-robustness/tasks.md) |
+| **0.1.4** | 回放与报告 | 回放器仅以日志为输入逐帧还原（SC-008）；单文件离线可用 | [0.1.4 spec](0.1.4-replay-and-report/spec.md) / [tasks](0.1.4-replay-and-report/tasks.md) |
 | **v0.2+/v0.3+** | 平台扩展、交互产品 | **按证据决定是否立项** | PRD §15，暂不写规格 |
+
+**完整 v0.1 签收 = 0.1.1—0.1.4 全部退出条件通过。** 0.1.4 独立成里程碑而非并入
+0.1.3，是因为 FR-019/FR-020/SC-008 曾在三个里程碑之间互相推诿（「0.1.2」→
+「0.1.3 或按需」→「后续展示阶段」），最终无人负责——必选需求必须有唯一 owner。
 
 v0.2 及以后不预先写规格：PRD 要求「每项都须先说明它服务于哪个新的可证伪问题」，而该
 问题的存在与否取决于 0.1.2/0.1.3 的结果。现在写等于在没有证据时预支判断。

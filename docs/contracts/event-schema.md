@@ -64,9 +64,13 @@ queue_key(e') > queue_key(current_queue_event)
 `ORDER_ARRIVAL` 是唯一回退」，与 §4.2.2 的强平流程自相矛盾。
 
 `liquidation_latency_ns` 不是权宜之计——交易所风控从判定到下单本就有延迟，且该延迟
-是一个**有研究意义的参数**：风控反应越慢，连锁强平的价格滑落越深。它与 `grace_ns`
-语义不同：`grace_ns` 是给账户补保证金的宽限窗口，`liquidation_latency_ns` 是宽限
-结束后风控自身的下单耗时。
+是一个**有研究意义的参数**：风控反应越慢，连锁强平的价格滑落越深。
+
+它与 `grace_ns` 语义不同：`grace_ns` 是给账户补保证金的宽限窗口，
+`liquidation_latency_ns` 是风控自身的下单耗时。**v0.1 强制 `grace_ns = 0`**
+（配置校验拒绝非零值，v0.1 spec §保证金参数）——非零宽限期需要一个新的 grace-expiry
+队列事件类型，属于对本文 §3 冻结清单的破坏性变更。因此 v0.1 中跌破维持线后
+**立即**调度强平单，只跨越 `liquidation_latency_ns` 这一段。
 
 `TRADE_SETTLE` → `MARGIN_CALL` / `MARKET_DATA_PUBLISH` 都是同一父事务内的记录链，
 靠 `record_index` 推进，不受 queue-key 规则约束。`AGENT_OBSERVE` → `AGENT_DECIDE`
@@ -205,16 +209,31 @@ KR-006 单调性违反、C1/C2 失衡、状态机非法转移、回退跳转白�
    统计分析或任何实验结论；
 5. **禁止从中断点恢复或续跑。** 修复缺陷后必须以同一配置与种子完整重跑。
 
-**TI-4 与 TI-5 互斥，按尾部记录判别**：
+**TI-4 与 TI-5 互斥，判别顺序固定为「先结构、后语义」**：
 
-| 情形 | 尾部 | 判据 |
+```text
+阶段 1  结构完整性（任一失败即 TI-5，不再看 terminated）
+        ├ 每一行是合法 JSON，无截断
+        ├ 首行为 RUN_HEADER，末行为 RUN_TRAILER
+        └ record_count == 实际行数
+阶段 2  终止语义（仅在阶段 1 全通过后执行）
+        ├ terminated = COMPLETED → 有效运行
+        └ terminated = ABORTED   → TI-4，按 abort_code 归因
+```
+
+**必须先结构后语义**：一份带 `ABORTED` 尾部、随后又被截断的日志会同时命中两条
+条件。没有优先级时两个实现会给出不同的诊断码，而诊断码决定了排查方向。
+
+固定顺序的理由：结构损坏时 `terminated` 字段**本身就不可信**——它可能是半写入的，
+也可能属于一次更早的运行。先信任一个可能已损坏的字段再据此归因，是把因果搞反了。
+
+| 情形 | 判据 | 排查方向 |
 |---|---|---|
-| 正常结束 | `terminated = COMPLETED` | 有效运行 |
-| 内核 fail-stop | `terminated = ABORTED` | **TI-4**——内核**知道**自己出了问题并留下了 `abort_code` |
-| 尾部缺失或被截断 | 无 `RUN_TRAILER`，或 `record_count` 与实际行数不符 | **TI-5**——内核**没来得及知道**（进程被杀、磁盘写满、断电） |
+| 结构完整 + `COMPLETED` | 有效运行 | — |
+| 结构完整 + `ABORTED` | **TI-4** | 内核缺陷，由 `abort_code` 直接定位 |
+| 结构损坏（无论 `terminated` 为何） | **TI-5** | 环境问题：进程被杀、磁盘写满、断电；查系统日志而非代码 |
 
-两者都**整份拒绝**，但诊断码不同：TI-4 指向内核缺陷，可由 `abort_code` 直接定位；
-TI-5 指向环境问题，须查系统日志而非代码。混为一谈会让排查方向从一开始就错。
+两者都**整份拒绝**，但诊断码不同。混为一谈会让排查方向从一开始就错。
 
 **验证器的对应义务**：`verify` 遇到上述任一情形都必须**拒绝整份日志**，不得
 「尽力而为地校验前半段」。半截运行的部分校验通过没有任何证据价值。
@@ -284,9 +303,13 @@ class 0/3/4/5 决定**队列事件**在同一时间戳的弹出顺序。class 1�
 
 ## 4. 事件类型与必备字段
 
-所有日志记录共有：`schema_version`、`event_id`、`timestamp`、`transaction_seq`、
-`record_index`、`priority_class`、`event_type`、`run_id`。队列事件另有 `enqueue_seq`；
-事务记录通过父事件或因果外键定位其事务，不单独入队。
+**本节只描述 `record_kind = EVENT` 的记录。** `RUN_HEADER` 与 `RUN_TRAILER` 是另外
+两种顶层记录，字段表见 §6.1 / §6.2，**不继承本节的共有字段**。
+
+全部 EVENT 记录共有：`record_kind`（恒为 `"EVENT"`）、`schema_version`、`event_id`、
+`timestamp`、`transaction_seq`、`record_index`、`priority_class`、`event_type`、
+`run_id`。队列事件另有 `enqueue_seq`；事务记录通过父事件或因果外键定位其事务，
+不单独入队。
 
 ### 4.1 ORDER_ARRIVAL（class 0）
 
@@ -380,10 +403,44 @@ SC-006 的「每一跳唯一存在」在快照上无法成立。
 | `risk_mark_event_id` | 确立本次判定所用 `risk_mark` 的那笔成交 = **本批最后一笔 `TRADE_SETTLE`**（因果外键） |
 | `margin_ratio_bp` | 判定时的保证金率（整数万分数，账户合同 §3.2） |
 | `maintenance_bp` | 当时生效的维持保证金率 |
-| `verdict` | `OK` \| `PENDING_LIQUIDATION` \| `LIQUIDATING` \| `BREACHED`（穿仓） |
+| `verdict` | `OK` \| `PENDING_LIQUIDATION` \| `BREACHED`（穿仓）——**只有三个值**，见「何时产生 `MARGIN_CALL`」 |
 | `required_quantity_units` | 恢复至 `target_bp` 所需的最小平仓数量（账户合同 §4.2）；`OK` 时为 0 |
 | `chain_depth` | 该判定所处的连锁层数，0 表示非连锁触发（指标字典 §4.1） |
 | `postings` | `WRITE_OFF_POSTING[]`：**仅 `verdict = BREACHED` 时**长度为 2（`[ACCOUNT, EXCHANGE_RISK]`），否则为空数组 `[]`。字段表见 §4.2.3 |
+
+##### 何时产生 `MARGIN_CALL`：只记录状态转移，不记录每次安全扫描
+
+**扫描集合**与**记录集合**是两回事，此前没有分清：
+
+| | 定义 |
+|---|---|
+| **扫描集合** | 阶段 1：本批成交涉及的账户；阶段 2：**全部非零仓位账户**（O(N)） |
+| **记录集合** | 扫描结果中**发生状态转移**的账户，按 `agent_id` 升序 |
+
+**记录集合恒是扫描集合的子集，通常远小于它。** 逐条规则：
+
+| 扫描前状态 | 扫描结果 | 是否产生 `MARGIN_CALL` | `verdict` |
+|---|---|---|---|
+| `ACTIVE` | 保证金充足 | **否** | — |
+| `ACTIVE` | 跌破维持线 | **是** | `PENDING_LIQUIDATION` |
+| `PENDING_LIQUIDATION` | 仍不足 | **否**（状态未变） | — |
+| `PENDING_LIQUIDATION` | 恢复至维持线以上 | **是** | `OK` |
+| 任意 | `position == 0 且 wallet < 0` | **是** | `BREACHED` |
+| `LIQUIDATED` | — | **否**（终态，不再扫描） | — |
+
+**`OK` 只用于 `PENDING_LIQUIDATION → ACTIVE` 的恢复转移**，不是「每次安全扫描都记
+一条」。后者会使日志量为 `O(账户数 × 成交数)`——190 个账户下每笔成交产生上百条纯
+噪声记录，日志体积、摘要哈希与性能全部被它主导，而其中有信息量的不足 1%。
+
+「检查过且安全」这一证据由**恢复转移**承载：真正有研究价值的是「跌破后又回来了」，
+而不是「一直没跌破」。后者由「没有 `PENDING_LIQUIDATION` 记录」这一事实本身表达。
+
+**`LIQUIDATING` 已从 `verdict` 中删除**：它不在账户状态机
+（`ACTIVE ↔ PENDING_LIQUIDATION → LIQUIDATED`，plan §3.4）中，也没有生成时点。
+「已判定需强平、强平单已发出但未成交」这一情形由 `PENDING_LIQUIDATION` 覆盖——
+强平单的存在由 `ORDER_ARRIVAL(origin = LIQUIDATION)` 记录，不需要第二个状态。
+
+因此 OB-8 中的 **`m` = 本轮扫描中发生状态转移的账户数**，不是被扫描的账户数。
 
 **为什么因果父是 `ORDER_ARRIVAL` 而不是某笔 `TRADE_SETTLE`**：跨档成交产生多笔
 `TRADE_SETTLE`，而风险扫描在**整批之后只做一次**（§4.2.2 扫描范围）。此时「导致该
@@ -419,7 +476,7 @@ SC-006 的「每一跳唯一存在」在快照上无法成立。
 根本无法用 `0` 填充。「其余写 0」不是一份可实现的合同——字段注册表（E-002 同步强制）
 无法据此确定类型与空值规则。
 
-`WRITE_OFF_POSTING` 的**完整字段表**（共 7 项，无其他字段）：
+`WRITE_OFF_POSTING` 的**完整字段表**（共 **8** 项，无其他字段）：
 
 | 字段 | `role = ACCOUNT` | `role = EXCHANGE_RISK` |
 |---|---|---|
@@ -448,9 +505,9 @@ C2 守恒（账户合同 §5）。
 活跃也非已核销——那是需要额外定义的第三种状态。复用 `MARGIN_CALL` 使
 `priority_class` 冻结清单不变（§3）。
 
-**判定事件独立记录、不与成交合并**，理由有二：判定可能得出 `OK`（不产生任何订单），
-而「检查过且安全」本身是研究连锁传导所需的证据；`chain_depth` 只有在判定层面才能
-逐层累计。
+**判定事件独立记录、不与成交合并**，理由有二：判定的后果（进入待强平、恢复、穿仓
+核销）与成交本身是不同的状态转移，合并会使「哪笔成交造成了谁的强平」不可分离；
+`chain_depth` 也只有在判定层面才能逐层累计。
 
 **扫描范围与顺序**：**一次 `ORDER_ARRIVAL` 的全部 `TRADE_SETTLE` 结算完毕后**
 （跨档成交可能产生多笔，撮合合同 §2.2），执行**两阶段检查**（账户合同 §4.1）——
@@ -629,8 +686,26 @@ RUN_TRAILER         至多一条，文件最后一行
 
 ### 6.1 RUN_HEADER
 
-`run_id`、代码版本、配置哈希、`master_seed`、开始时间（墙钟）、`schema_version`，
-以及数值单位定义 `tick_size`、`min_quantity`、`cash_unit`（ADR-001 §7、PR-012）。
+**恰好一条，文件第一行**（PR-012、ADR-001 §7）。整条不参与 §7 摘要哈希。
+
+| 字段 | 类型 | 可空 | 说明 |
+|---|---|---|---|
+| `record_kind` | 枚举 | 否 | 恒为 `"RUN_HEADER"` |
+| `schema_version` | 整数 | 否 | 事件日志格式版本，当前为 `2`（§2） |
+| `run_id` | 字符串 | 否 | 本次运行的唯一标识 |
+| `code_version` | 字符串 | 否 | Git commit SHA，工作区不干净时追加 `-dirty` |
+| `config_hash` | 字符串 | 否 | 规范化配置的 `blake2b` 摘要（十六进制） |
+| `master_seed` | 整数 | 否 | 主种子（KR-004） |
+| `started_at_wall` | 字符串 | 否 | 墙钟时间，RFC 3339 带时区。**不参与任何判定**，与 `timestamp` 的整数纳秒逻辑时间无关 |
+| `tick_size` | 字符串 | 否 | 十进制字面量（如 `"0.01"`），**字符串而非浮点**（ADR-001 §2） |
+| `min_quantity` | 字符串 | 否 | 同上 |
+| `cash_unit` | 字符串 | 否 | 同上 |
+| `run_mode` | 枚举 | 否 | `benchmark` \| `research` \| `interactive`（v0.1 / D-7） |
+| `information_set_mode` | 枚举 | 否 | `digest` \| `full`（E-001）。研究运行必须为 `full` |
+
+三个单位字段用**字符串十进制**而非浮点，与配置解析同一理由（ADR-001 §2）：
+`0.01` 在 IEEE 754 下不可精确表示，写成浮点会使不同平台的 header 逐字节不同，
+而 header 也受 §9 规范序列化约束。
 
 ### 6.2 RUN_TRAILER
 
@@ -697,8 +772,17 @@ KPI-006 的证据能力因此逐年衰减。§5 的引用完整性断言在两�
 不使用「以及各类型的语义字段」这类开放表述——开放表述会让新增字段默默落在清单外，
 而 KPI-002 恰恰无法检出「本该被覆盖却没被覆盖」的字段。
 
-**全部记录共有**：`schema_version`、`timestamp`、`transaction_seq`、`record_index`、
-`priority_class`、`event_type`。**队列事件另有 `enqueue_seq`，同样纳入。**
+**只有 `record_kind = EVENT` 的记录参与哈希。** `RUN_HEADER` 与 `RUN_TRAILER`
+（§6）**整条排除**——它们携带 `run_id`、墙钟时间、`abort_detail` 等按下述规则恒排除
+的内容，且不是市场语义。
+
+**全部 EVENT 记录共有**：`schema_version`、`timestamp`、`transaction_seq`、
+`record_index`、`priority_class`、`event_type`。**队列事件另有 `enqueue_seq`，
+同样纳入。**
+
+**`record_kind` 排除**：它是文件结构的判别标签，而进入哈希的记录**恒为 `EVENT`**，
+因此该字段在哈希输入中是常量，零判别力。这与 `schema_version` 纳入并不矛盾——后者
+会随 schema 变更而改变，正是要让哈希反映的东西。
 
 `schema_version` 纳入是刻意的：schema 变更本就使历史哈希不可比（§2），让哈希自己
 反映这一点，比依赖人工核对元数据头部可靠。`enqueue_seq` 纳入是因为它是同时间戳同
@@ -737,7 +821,7 @@ class 的**最终定序裁决**——两张订单谁先到是外部可观察的�
 数组顺序**固定为 `[ACCOUNT, EXCHANGE_RISK]`**。交易所侧的 `agent_id` 为 `null`，
 无法参与按 `agent_id` 的排序，因此顺序必须由角色而非标识决定。
 
-叶字段（7 项）：`posting_type`、`role`、`agent_id`、`wallet_delta_units`、
+叶字段（**8** 项）：`posting_type`、`role`、`agent_id`、`wallet_delta_units`、
 `wallet_after_units`、`position_after_units`、`entry_notional_after_units`、
 `risk_pnl_delta_units`。**全部纳入。** 各字段在两种 `role` 下的取值与可空性见
 §4.2.3——`EXCHANGE_RISK` 侧的 `wallet_after_units` 等为 `null` 而非 `0`。
@@ -777,12 +861,32 @@ src/market_game_sim/schema/registry.py     ← 唯一真源（纯标准库，KR-
   └→ T206b 覆盖检查：纳入 ∪ 排除 是否恰好覆盖必备字段集合
 ```
 
-注册表为每个字段声明四项：所属事件类型、是否必备、`HASH_INCLUDE | HASH_EXCLUDE`、
-嵌套路径（`postings[].wallet_delta_units` 这类叶字段写全路径）。
+注册表为每个字段声明**六项**（与 0.1.1 T204f 逐项一致，两处不得各写各的）：
 
-**覆盖检查的判据**：对每个事件类型，`必备字段集合 == 纳入集合 ∪ 排除集合` 且两集合
-不相交。任一字段既不在纳入也不在排除侧即测试失败。**默认落入哪一侧都是错的**——
-新增字段时遗漏分类必须显式暴露，而不是安静地逃出 KPI-002 或安静地使哈希频繁误报。
+| 元数据项 | 说明 |
+|---|---|
+| **所属记录类型** | `RUN_HEADER` / `RUN_TRAILER` / 某个 `event_type` / 某个 posting 变体 |
+| **值类型** | 整数 / 字符串 / 布尔 / 枚举 / 数组 / 嵌套对象 |
+| **枚举值域** | 枚举字段的封闭取值集合（如 `role ∈ {MAKER, TAKER}`） |
+| **可空性** | 是否允许 `null`，**可随变体不同**——`wallet_after_units` 在 `ACCOUNT` 侧非空、在 `EXCHANGE_RISK` 侧为空 |
+| **必备性** | 恒必备 / 条件必备（写明条件，如「`verdict = BREACHED` 时 `postings` 非空」） |
+| **哈希分类** | `HASH_INCLUDE` \| `HASH_EXCLUDE`（`RUN_HEADER`/`RUN_TRAILER` 整条恒 EXCLUDE） |
+
+嵌套字段以**全路径**登记（`postings[].wallet_delta_units`），数组的**元素顺序规则**
+一并登记（表 A 为 `[MAKER, TAKER]`，表 B 为 `[ACCOUNT, EXCHANGE_RISK]`）。
+
+**只登记字段名与哈希分类不够**：判别联合要求「同一字段名在不同变体下有不同可空性」，
+缺少值类型与可空性时无法生成正确的序列化模型，也无法校验 `null` 与 `0` 的区别
+（§4.2.3）。
+
+**覆盖检查的判据**：对每个记录类型与 posting 变体，
+`必备字段集合 == 纳入集合 ∪ 排除集合` 且两集合不相交。任一字段既不在纳入也不在排除侧
+即测试失败。**默认落入哪一侧都是错的**——新增字段时遗漏分类必须显式暴露，而不是
+安静地逃出 KPI-002 或安静地使哈希频繁误报。
+
+**字段计数断言**：注册表须同时导出每个结构的叶字段数，测试断言与本文声明的数量相等
+（`TRADE_POSTING` = 15、`WRITE_OFF_POSTING` = 8）。这条断言存在的原因很实际——
+本文档曾把 `WRITE_OFF_POSTING` 的 8 个字段写成「共 7 项」，而人工核对没有发现。
 
 本节文字与注册表冲突时，**以本节为准**，并按 §2 判断是否需要提升 `schema_version`。
 
