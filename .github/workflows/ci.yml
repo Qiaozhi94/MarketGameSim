@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# 同一分支的新提交取消仍在跑的旧任务，避免排队浪费。
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # 真源自校验放在最前，且【不安装任何依赖】——它只用标准库。
+  # 两份机器真源自相矛盾时，后面的 lint 与测试都没有意义，因此这一步失败即中止。
+  contract-sources:
+    name: 真源自校验
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: 校验 event_fields.json 与 traceability.json
+        run: python tools/validate_contract_sources.py
+
+  lint:
+    name: ruff
+    needs: contract-sources
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+      - run: ruff format --check .
+
+  test:
+    name: pytest (${{ matrix.python-version }})
+    needs: contract-sources
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 下限锁 3.11（requires-python）；上限跟随，用于尽早发现新版本的行为差异。
+        # NFR-001 要求逐事件一致，跨版本差异必须在实现阶段就暴露，而不是实验阶段。
+        python-version: ["3.11", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: pip install -e ".[dev]"
+      # PYTHONHASHSEED=0 是第二道防线：事件摘要哈希必须用 hashlib，
+      # 但若实现误用内置 hash()，随机加盐会让 KPI-002 间歇失败且极难定位。
+      # 固定它使这类缺陷在本地与 CI 表现一致，便于排查（参考机口径 §3）。
+      #
+      # 暂不加 --cov：领域层还没有代码，覆盖率插件只会刷 CoverageWarning。
+      # 覆盖率门槛（订单簿与账本分支 >= 90%）由 0.1.1 T606 / 退出条件 E9 负责，
+      # 实现落地后在此加回 `--cov=market_game_sim --cov-fail-under=90`。
+      - env:
+          PYTHONHASHSEED: "0"
+        run: pytest

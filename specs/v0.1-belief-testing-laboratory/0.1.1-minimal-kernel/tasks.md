@@ -115,6 +115,13 @@
       ACCOUNT/BOOK 两种形状，每个字段带六项元数据。
       **这是合同产物、设计阶段冻结门，不是实现任务**——`registry.py` 只负责加载它，
       不得内嵌第二份声明。修改它等同修改事件 Schema，须走同一评审流程。
+- [x] **T000** `[检视报告 §35.5]` **CI 已接入**：`.github/workflows/ci.yml` 三个 job——
+      `contract-sources`（真源自校验，**不装任何依赖、最先跑、失败即中止后续**）、
+      `lint`（ruff check + format）、`test`（pytest，Python 3.11 与 3.13 双版本，
+      `PYTHONHASHSEED=0`）。校验器同时是 `tests/unit/test_contract_sources.py`，
+      本地 `pytest` 即可触发，开发者不必记住还有个脚本要跑。
+      **覆盖率门槛暂未接入**——领域层无代码时 `--cov` 只会刷 CoverageWarning；
+      由 T606 在实现落地后加回 `--cov-fail-under=90`。
 - [x] **T204f1** `[事件 Schema E-002]` **schema meta-validator 已落地**：
       `tools/validate_contract_sources.py`（纯标准库，设计阶段可运行）。
       校验 `event_fields.json` **自身**：每个 constraint 恰有 `when`/`then`、
@@ -301,6 +308,7 @@
 - [ ] E8 核心层无第三方导入（T604）
 - [ ] E9 分支覆盖 ≥ 90%（T606）
 - [ ] **E10** 需求追踪矩阵校验器生效，负向夹具通过（T607）
+- [x] **E11** 真源自校验在 CI 中生效（T000）
 
 ## 遇到合同缺陷时
 
