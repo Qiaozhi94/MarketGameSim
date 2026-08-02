@@ -427,8 +427,11 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 → [`0.1.4-replay-and-report/spec.md`](../../specs/v0.1-belief-testing-laboratory/0.1.4-replay-and-report/spec.md)
 → [`0.1.4-replay-and-report/tasks.md`](../../specs/v0.1-belief-testing-laboratory/0.1.4-replay-and-report/tasks.md)
 
-单文件 HTML 回放器（PR-018）、K 线视图（PR-019）、总结报告（PR-020）。回放器是
-事件日志的消费者，不导入内核（v0.1 / D-7、ADR-004）。
+单文件 HTML 回放器（**PR-018**）、总结报告（**PR-019**）、K 线视图（**PR-020**）。
+回放器是事件日志的消费者，不导入内核（v0.1 / D-7、ADR-004）。
+
+（此前本行把 PR-019 与 PR-020 写反了——§9.5 的定义是 PR-019 = 总结报告、
+PR-020 = K 线视图。以 §9.5 为准。）
 
 **退出条件**：回放器仅以事件日志为输入逐帧还原整段仿真（KPI-012 / SC-008）；
 产物单文件、断网可打开。

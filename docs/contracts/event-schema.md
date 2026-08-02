@@ -241,7 +241,8 @@ KR-006 单调性违反、C1/C2 失衡、状态机非法转移、回退跳转白�
 #### 为什么不做回滚
 
 回滚需要为账户、订单簿、`reserved` 与待入队事件维护 undo log 或每事务写时复制。
-代价是**每个事件都要付的分配开销**，而 KPI-004 的 10 秒门槛正是按事件吞吐量定的。
+代价是**每个事务都要付的分配开销**，而 KPI-004 的 10 秒门槛正是按事务吞吐量
+（`transactions_per_second`，指标字典 §1.1）定的。
 
 买到的是什么？是「内核已经证明自己有 bug，但运行继续，并产出结果」。这比中止更糟：
 带缺陷的运行会生成看似正常的日志与统计，而缺陷发生在哪个事务已被回滚抹掉。
@@ -331,6 +332,7 @@ class 0/3/4/5 决定**队列事件**在同一时间戳的弹出顺序。class 1�
 | `reserved_delta_units` | 保证金占用变动：下单预冻结为正，撤单/拒绝释放为负（§4.2.1） |
 | `origin` | `AGENT` \| `LIQUIDATION`——强平单由风控产生，不来自代理决策 |
 | `trigger_ratio_bp` | `origin=LIQUIDATION` 时的触发保证金率（整数万分数），否则 null |
+| `liquidation_generation` | `origin=LIQUIDATION` 时携带调度它的那一代次；否则 null。到达时与账户当前代次比对，不等即拒（§4.2.2「恢复后的失效」） |
 
 `submitted_at` 与 `timestamp` 并存是速度优势可归因的前提（A-003）。
 `intent_id` 与 `decision_event_id` 是 KPI-006 追溯链的中间环节（§5）。
@@ -408,25 +410,40 @@ SC-006 的「每一跳唯一存在」在快照上无法成立。
 | `chain_depth` | 该判定所处的连锁层数，0 表示非连锁触发（指标字典 §4.1） |
 | `postings` | `WRITE_OFF_POSTING[]`：**仅 `verdict = BREACHED` 时**长度为 2（`[ACCOUNT, EXCHANGE_RISK]`），否则为空数组 `[]`。字段表见 §4.2.3 |
 
-##### 何时产生 `MARGIN_CALL`：只记录状态转移，不记录每次安全扫描
+##### 何时产生 `MARGIN_CALL`：记录「可行动的风险决定」
 
 **扫描集合**与**记录集合**是两回事，此前没有分清：
 
 | | 定义 |
 |---|---|
 | **扫描集合** | 阶段 1：本批成交涉及的账户；阶段 2：**全部非零仓位账户**（O(N)） |
-| **记录集合** | 扫描结果中**发生状态转移**的账户，按 `agent_id` 升序 |
+| **记录集合** | 扫描结果中构成**可行动风险决定**的账户，按 `agent_id` 升序 |
 
-**记录集合恒是扫描集合的子集，通常远小于它。** 逐条规则：
+**「可行动」的判据：本次判定是否产生了一个新的、需要执行的风控动作。** 状态转移是
+其中一种情形，但**不是唯一情形**——部分强平成交后 `required_quantity_units` 被重算，
+状态仍是 `PENDING_LIQUIDATION → PENDING_LIQUIDATION`，却产生了一个新的下单数量，
+那是必须留痕的风控决定（账户合同 §4.3）。
+
+此前写成「只记录状态转移」，与账户合同 §4.3 的「每次重算都产生新的 `MARGIN_CALL`」
+直接冲突：两个实现各遵守一份合同都会违反另一份。
+
+逐条规则：
 
 | 扫描前状态 | 扫描结果 | 是否产生 `MARGIN_CALL` | `verdict` |
 |---|---|---|---|
-| `ACTIVE` | 保证金充足 | **否** | — |
-| `ACTIVE` | 跌破维持线 | **是** | `PENDING_LIQUIDATION` |
-| `PENDING_LIQUIDATION` | 仍不足 | **否**（状态未变） | — |
-| `PENDING_LIQUIDATION` | 恢复至维持线以上 | **是** | `OK` |
-| 任意 | `position == 0 且 wallet < 0` | **是** | `BREACHED` |
-| `LIQUIDATED` | — | **否**（终态，不再扫描） | — |
+| `ACTIVE` | 保证金充足 | **否**——无动作 | — |
+| `ACTIVE` | 跌破维持线 | **是**——首次进入待强平 | `PENDING_LIQUIDATION` |
+| `PENDING_LIQUIDATION` | 仍不足，**`required_quantity_units` 不变** | **否**——无新动作 | — |
+| `PENDING_LIQUIDATION` | 仍不足，**`required_quantity_units` 变化** | **是**——新的下单数量 | `PENDING_LIQUIDATION` |
+| `PENDING_LIQUIDATION` | 恢复至维持线以上 | **是**——撤销待强平 | `OK` |
+| 任意 | `position == 0 且 wallet < 0` | **是**——核销 | `BREACHED` |
+| `LIQUIDATED` | — | **否**——终态，不再扫描 | — |
+
+第 3、4 行的区别是**唯一判据是 `required_quantity_units` 是否变化**，不是「状态是否
+变化」。这使规则对两份合同同时成立，且没有引入新的事件类型。
+
+**OB-8 的 `m` 只统计批末扫描产生的记录**，不含强平单成交后的重算——后者发生在
+**强平单自己的事务**内（那是另一个 `ORDER_ARRIVAL`），有自己的 `transaction_seq`。
 
 **`OK` 只用于 `PENDING_LIQUIDATION → ACTIVE` 的恢复转移**，不是「每次安全扫描都记
 一条」。后者会使日志量为 `O(账户数 × 成交数)`——190 个账户下每笔成交产生上百条纯
@@ -531,6 +548,32 @@ C2 守恒（账户合同 §5）。
 成交**触发的判定为 `触发它的强平判定的 chain_depth + 1`。普通代理成交触发的判定
 恒为 0。
 
+##### 恢复后的失效：强平代次 `liquidation_generation`
+
+跌破维持线时，强平单被调度到 `timestamp + liquidation_latency_ns`。**在这段延迟窗口
+内，其他成交可能让该账户恢复**（记 `verdict = OK`，状态回到 `ACTIVE`）——但已经入队
+的强平单不会自动消失，到达时会照常卖出，**强平一个已经健康的账户**。
+
+因此每个账户带一个单调递增的整数 `liquidation_generation`：
+
+| 时点 | 动作 |
+|---|---|
+| `ACTIVE → PENDING_LIQUIDATION` | `liquidation_generation += 1`；强平单携带该值 |
+| `PENDING_LIQUIDATION → ACTIVE`（恢复） | `liquidation_generation += 1`——**旧值随即过期** |
+| 强平 `ORDER_ARRIVAL` 到达交易所 | 准入阶段重验：账户仍为 `PENDING_LIQUIDATION` **且** 订单携带的代次 == 账户当前代次 |
+
+任一条件不满足即**拒绝**：`accepted = false`、
+`reject_reason = LIQUIDATION_STALE`，事务只有 `record_index = 0`，
+`reserved_delta_units` 释放该单占用（强平单本身不占用初始保证金，故通常为 0）。
+
+**用「拒绝」而非「专用取消记录」**：这张单从未进过簿，没有东西可撤销；
+`ORDER_ARRIVAL(accepted=false)` 已是被拒订单的既有表达（§4.1），复用它不新增记录
+类型，也让「风控发了单但没执行」这件事出现在同一处统计里——**过期强平单的发生频率
+本身是一项观测量**：它高说明 `liquidation_latency_ns` 相对市场波动过长。
+
+`liquidation_generation` 纳入摘要哈希（E-002），并出现在 `ACCOUNT` 快照（§4.6.1）
+——它是账户状态的一部分，重放器需要它才能重现同一个拒绝判定。
+
 ### 4.3 MARKET_DATA_PUBLISH（class 2）
 
 盘口摘要：`best_bid`、`best_ask`、各侧 k 档深度、`last`。**未定义值写 `null`**
@@ -574,13 +617,82 @@ C2 守恒（账户合同 §5）。
 
 | 字段 | 说明 |
 |---|---|
-| `snapshot_type` | `ACCOUNT` \| `BOOK` |
-| `payload` | 账户或订单簿完整状态 |
+| `snapshot_type` | `ACCOUNT` \| `BOOK`（判别标签） |
+| `payload` | 判别联合，形状由 `snapshot_type` 决定，见 §4.6.1 / §4.6.2 |
+
+#### 4.6.1 payload：`snapshot_type = ACCOUNT`
+
+`payload.accounts` 是数组，**包含全部账户（含从未交易过的）**，按 `agent_id`
+**字典序升序**排列——顺序影响序列化字节与哈希，不得依赖字典遍历顺序。
+
+每个元素的叶字段（**9 项，封闭**）：
+
+| 字段 | 类型 | 可空 | 说明 |
+|---|---|---|---|
+| `agent_id` | 字符串 | 否 | |
+| `wallet_units` | 整数 | 否 | |
+| `position_units` | 整数 | 否 | 有符号 |
+| `entry_notional_units` | 整数 | 否 | |
+| `reserved_units` | 整数 | 否 | |
+| `realized_pnl_units` | 整数 | 否 | 累计值 |
+| `state` | 枚举 | 否 | `ACTIVE` \| `PENDING_LIQUIDATION` \| `LIQUIDATED` |
+| `margin_ratio_bp` | 整数 | **是** | 无仓位时 `null`（账户合同 §3.2） |
+| `liquidation_generation` | 整数 | 否 | 强平代次，见 §4.2.2「恢复后的失效」 |
+
+`payload.exchange` 是对象，叶字段（**2 项**）：`fee_cash_units`（累计手续费，有符号）、
+`risk_pnl_units`（穿仓风险账户，有符号，损失为负）。
+
+**交易所账户不放进 `accounts` 数组**——它没有 `agent_id`、没有仓位，混进去会污染
+C1（`Σ position ≡ 0`）的求和。
+
+#### 4.6.2 payload：`snapshot_type = BOOK`
+
+| 字段 | 类型 | 说明 |
+|---|---|---|
+| `bids` | 数组 | 价位聚合，按 `price_ticks` **降序** |
+| `asks` | 数组 | 价位聚合，按 `price_ticks` **升序** |
+| `last_ticks` | 整数 \| null | 最近成交价；首笔成交前为 `null` |
+
+`bids` / `asks` 的每个元素（**3 项**）：`price_ticks`（整数）、
+`quantity_units`（整数，该价位聚合数量）、`order_count`（整数，该价位挂单笔数）。
+
+**快照记录聚合价位，不记录单张订单。** 单张订单的存续由 `ORDER_ARRIVAL` /
+`TRADE_SETTLE` / `ORDER_CANCELLED` 三类记录完整表达（§4.7），快照重复它只会引入
+第二个真源。`order_count` 保留是因为它无法从聚合量推出，且对诊断「一张大单 vs 多张
+小单」有价值。
 
 账户快照频率可配置（FR-015），是回放中绘制持仓与 PnL 演化曲线的数据来源
 （v0.1 / D-7）。快照是状态观测而非状态转移，**不携带因果外键，也不承担账户追溯**
 ——账户追溯由 §4.2.1 的分录承担。快照的作用是回放与图表，以及与分录累加值的
 交叉核对（两者不一致即为实现缺陷）。
+
+#### 4.6.3 强制初态快照（`transaction_seq = 0`）
+
+**日志必须在任何业务事务之前写出一对 t=0 快照**：先 `ACCOUNT` 后 `BOOK`，
+两条都用 `transaction_seq = 0`、`record_index` 分别为 0 和 1、`timestamp = 0`。
+
+业务事务的 `transaction_seq` 从 **1** 开始。初态快照**不是队列事务**，
+**不计入 `processed_transactions`**（指标字典 §1.1）——它没有从队列弹出，
+也没有改变任何状态。
+
+##### 为什么必须强制
+
+没有它，**只读日志无法重建第一帧，也无法重建完整账户集合**：
+
+- 成交分录只能恢复**发生过分录的账户**。一个从未成交的账户不会在日志里出现任何
+  一次，重放器无从知道它存在、更无从知道它的初始钱包——而 C1/C2 的求和需要全集；
+- 周期性快照的频率**可配置**，因此不能假定 `t=0` 附近必然有一条；
+- `initial_price` 与初始簿（0.1.1 为空簿，但配置可能预置挂单）同样只在配置里，
+  而配置**不在日志内**。
+
+日志自包含（SC-006）要求「仅凭日志」，配置哈希只能证明用了哪份配置，不能替代内容。
+**这是 0.1.4 逐帧回放（SC-008）的第一帧来源，也是 0.1.1 T603 重建账户全集的前提。**
+
+##### 帧的定义
+
+**一帧 = 一个已提交事务之后的完整状态。** 第 0 帧即初态快照；第 k 帧是
+`transaction_seq = k` 提交后的状态。0.1.4 的逐帧比较按此对齐——帧边界取事务边界，
+不取单条记录边界，因为事务内的中间态本就不该被观察到（§1.4）。
 
 ### 4.7 ORDER_CANCELLED（class 0，事务记录）
 
@@ -663,9 +775,12 @@ trade_id
 - **事务完整性**（§1.5）：每个 `transaction_seq` 必须以 `record_index=0` 起始且
   中间无空洞；`RUN_TRAILER.last_committed_transaction_seq` 必须等于日志中出现过的
   最大 `transaction_seq`；
-- **终止判别**（§1.5）：`terminated = ABORTED` → 判 **TI-4** 并整份拒绝；
-  缺少 `RUN_TRAILER` 或 `record_count` 与实际行数不符 → 判 **TI-5** 并整份拒绝。
-  两种情形都不做部分校验。
+- **终止判别**（§1.5）：**先结构、后语义，顺序不可颠倒**——
+  **阶段 1** 校验 JSON 完整性、首尾记录存在、`record_count` 与实际行数相符，
+  任一失败即判 **TI-5** 并整份拒绝，**此时不再读 `terminated`**；
+  **阶段 2** 仅在阶段 1 全通过后执行，`terminated = ABORTED` → 判 **TI-4**。
+  一份带 `ABORTED` 尾部又被截断的日志判 **TI-5**——结构损坏时 `terminated` 本身
+  就不可信。两种情形都不做部分校验。
 
 该断言不依赖重放，因而不随代码版本失效——这是 KPI-006 从「展示层可读」升级为
 「可机器验证」的关键。
@@ -677,6 +792,8 @@ trade_id
 ```text
 RUN_HEADER          恰好一条，文件第一行
 EVENT*              零条或多条，§4 的事件记录
+                    ├ 前两条恒为 t=0 的 ACCOUNT / BOOK 快照（§4.6.3）
+                    └ 其余为业务事务的记录，transaction_seq 从 1 开始
 RUN_TRAILER         至多一条，文件最后一行
 ```
 
@@ -790,7 +907,7 @@ class 的**最终定序裁决**——两张订单谁先到是外部可观察的�
 
 | 事件类型 | 纳入哈希的字段 |
 |---|---|
-| `ORDER_ARRIVAL` | `agent_id`、`order_id`、`action`、`target_order_id`、`side`、`order_type`、`price_ticks`、`quantity_units`、`accepted`、`reject_reason`、`reserved_delta_units`、`origin`、`trigger_ratio_bp` |
+| `ORDER_ARRIVAL` | `agent_id`、`order_id`、`action`、`target_order_id`、`side`、`order_type`、`price_ticks`、`quantity_units`、`accepted`、`reject_reason`、`reserved_delta_units`、`origin`、`trigger_ratio_bp`、`liquidation_generation` |
 | `ORDER_CANCELLED` | `order_id`、`agent_id`、`cancelled_qty_units`、`price_ticks`、`side`、`reason`、`reserved_delta_units` |
 | `TRADE_SETTLE` | `maker_order_id`、`taker_order_id`、`maker_agent_id`、`taker_agent_id`、`price_ticks`、`quantity_units`、`notional_cash_units`、`maker_fee_cash_units`、`taker_fee_cash_units`、`valuation_mark_before_half_ticks`、`valuation_mark_after_half_ticks`、`risk_mark_ticks`、`fill_index`、`fill_count`、`postings[]`（叶字段见下表 A） |
 | `MARGIN_CALL` | `agent_id`、`margin_ratio_bp`、`maintenance_bp`、`verdict`、`required_quantity_units`、`chain_depth`、`postings[]`（叶字段见下表 B） |
@@ -849,17 +966,45 @@ class 的**最终定序裁决**——两张订单谁先到是外部可观察的�
 只剩 `agent_id` 与 `observed_at` 入哈希——它观察到了什么由行情发布记录承载，
 无需重复。
 
-#### 同步强制：单一字段注册表
+#### 同步强制：机器可读字段 Schema 是规范真源
 
-本表、序列化模型与覆盖检查是**三份清单描述同一件事**，手工维护必然漂移。因此实现
-必须建立**唯一的机器可读字段注册表**，三者全部由它生成：
+本表、序列化模型与覆盖检查是**三份清单描述同一件事**，手工维护必然漂移。
+
+**Markdown 表达不了这件事。** 六项元数据 × 约 60 个字段 × 嵌套变体，写成表格会有上
+百行且无人能核对——本文档已经在一个 8 字段的结构上数错过一次。因此：
 
 ```text
-src/market_game_sim/schema/registry.py     ← 唯一真源（纯标准库，KR-005）
-  ├→ 序列化模型：每个事件类型的必备字段与顺序
-  ├→ E-002 投影：哈希输入的字段选择
-  └→ T206b 覆盖检查：纳入 ∪ 排除 是否恰好覆盖必备字段集合
+docs/contracts/event-schema.fields.json    ← 规范真源（与本合同同级，随合同评审）
+        │
+        ├─ 被 src/market_game_sim/schema/registry.py 直接加载（json，标准库，KR-005）
+        │       ├→ 序列化模型：每种记录的必备字段、顺序与类型
+        │       ├→ E-002 投影：哈希输入的字段选择
+        │       └→ T206b 覆盖检查：纳入 ∪ 排除 是否恰好覆盖必备字段
+        │
+        └─ 被一致性测试与本文档比对（见下）
 ```
+
+**用 JSON 而非 YAML**：注册表被 L1 核心层加载，KR-005 禁止第三方依赖，
+`json` 在标准库而 `yaml` 不在。
+
+##### 规范地位与冲突处理
+
+| | 角色 |
+|---|---|
+| `event-schema.fields.json` | **规范**——字段名、类型、枚举、可空性、必备性、哈希分类的唯一定义 |
+| 本文档的 §4 / §6 表格与散文 | **解释性**——说明每个字段**为什么**存在、取值语义、设计权衡 |
+
+**冲突时以 JSON 为准**，但冲突本身即缺陷：一致性测试（T204f3）断言本文档中出现的
+每个字段名都存在于 JSON、且 JSON 中每个字段名都在本文档中被提及至少一次。
+**双向检查**——只查一个方向，另一个方向的漂移就会静默积累。
+
+修改 JSON 属于 schema 变更，按 §2 判断是否提升 `schema_version`。
+
+##### 这与「实现内部三者同源」不是一回事
+
+T204f2 证明的是 registry、serializer、hash projection 三个**实现模块**读同一份声明；
+它无法证明那份声明与合同含义相同——实现者可以自洽地实现一个错的 schema。
+**T204f3 才是合同与实现之间的那道检查。**
 
 注册表为每个字段声明**六项**（与 0.1.1 T204f 逐项一致，两处不得各写各的）：
 
@@ -888,7 +1033,8 @@ src/market_game_sim/schema/registry.py     ← 唯一真源（纯标准库，KR-
 （`TRADE_POSTING` = 15、`WRITE_OFF_POSTING` = 8）。这条断言存在的原因很实际——
 本文档曾把 `WRITE_OFF_POSTING` 的 8 个字段写成「共 7 项」，而人工核对没有发现。
 
-本节文字与注册表冲突时，**以本节为准**，并按 §2 判断是否需要提升 `schema_version`。
+本节文字与 `event-schema.fields.json` 冲突时，**以 JSON 为准**（见上「规范地位」），
+但冲突本身即缺陷，须由 T204f3 的双向一致性测试挡住。
 
 ### E-003：深度档位
 

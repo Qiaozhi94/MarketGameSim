@@ -18,7 +18,7 @@
 ## Phase 0：准入门与预注册
 
 - [ ] **T001** `[0.1.1 退出清单]` `[TDD]` 建立 0.1.2 启动门：自动验证 0.1.1 的
-      **E1—E9 及 E5b、E5c、E6b**（共 12 项）证据均存在且通过；任一失败时 0.1.2 测试
+      **E1—E10 及 E5b、E5c、E6b**（共 13 项）证据均存在且通过；任一失败时 0.1.2 测试
       套件立即停止，不允许跳过。门的 ID 集合须由 0.1.1 `spec.md` 的退出条件表生成，
       不得手工抄写。
 - [ ] **T002** `[PRD §17.2 C]` `[方法论 §9.3/§10.1]` 编写并冻结 0.1.2 基准市场
@@ -36,8 +36,12 @@
       等价界与 bootstrap 口径；每一项都须重新映射到当前旗舰问题，不得整份照搬。
 - [ ] **T007** `[订单簿向量 OB-8/OB-9b]` `[账户 §4]` **合同冻结门（先于一切编码）**：
       补齐 OB-8 与 OB-9b 的**完整整数黄金值**——账户初态、费率、逐步计算过程、
-      `postings`、事件顺序与终态；OB-8 须含安全 / 首次跌破 / 已 pending 仍不足 /
-      恢复 / 穿仓**五种账户**，验证 `m` = 状态转移数而非扫描数。
+      `postings`、事件顺序与终态；OB-8 须含安全 / 首次跌破 / 已 pending 且数量不变 /
+      已 pending 且**数量重算** / 恢复 / 穿仓**六种账户**，验证 `m` = 可行动风险决定数
+      而非扫描数。
+      **另须两条向量**：① 部分强平成交后 `required_quantity_units` 重算（发生在强平单
+      自己的事务内，`PENDING → PENDING` 仍必须写记录）；② **延迟窗口内恢复**——
+      强平单到达时账户已回到 `ACTIVE`，须 `reject_reason=LIQUIDATION_STALE`。
       **本任务的产出须经评审后冻结，T104/T201 只消费、不修改。**
       理由：由实现者在写代码的同时写黄金值，等于看到结果后反向选择「正确答案」，
       向量就失去了独立预言的作用——而它本来是设计阶段唯一能约束实现的东西。
@@ -72,15 +76,27 @@
       `ORDER_ARRIVAL` 事务完成全批结算后只运行一次两阶段扫描：先捕获零仓位负钱包，
       再按 `agent_id` 升序检查非零仓位保证金；批内不得提前触发。
       **消费 T007 已冻结的 OB-8 黄金值，不得修改它**。`m ≥ 2`；
-      **`m` = 发生状态转移的账户数**，保持 `ACTIVE` 且充足、或保持 `PENDING` 且仍不足
-      的账户**不产生记录**（事件 Schema §4.2.2）；`MARKET_DATA_PUBLISH` 的
-      `record_index` 为 `4+m`，且恒为事务最后一条记录（事件 Schema §1.4）。
+      **`m` = 产生「可行动风险决定」的账户数**（事件 Schema §4.2.2）：保持 `ACTIVE`
+      且充足、或保持 `PENDING` 且 `required_quantity_units` **不变**的账户不产生记录；
+      但 `PENDING → PENDING` 且**数量重算**时**必须**产生记录。
+      `MARKET_DATA_PUBLISH` 的 `record_index` 为 `4+m`，且恒为事务最后一条记录。
 - [ ] **T202** `[账户 §4.1]` `[事件 Schema §4.2.2]` `[TDD]` 实现
       `ACTIVE ↔ PENDING_LIQUIDATION → LIQUIDATED` 状态机与 `liquidation_latency_ns`；
-      **只有发生状态转移的账户写 `MARGIN_CALL`**，`verdict ∈ {OK, PENDING_LIQUIDATION,
-      BREACHED}`（`LIQUIDATING` 已删除）。`OK` **仅用于 `PENDING → ACTIVE` 的恢复
-      转移**，不得每次安全扫描都记一条——那会使日志量为 O(账户数 × 成交数)。
+      **只有产生「可行动风险决定」的账户写 `MARGIN_CALL`**（事件 Schema §4.2.2），
+      `verdict ∈ {OK, PENDING_LIQUIDATION, BREACHED}`（`LIQUIDATING` 已删除）。
+      `OK` **仅用于 `PENDING → ACTIVE` 的恢复转移**，不得每次安全扫描都记一条——
+      那会使日志量为 O(账户数 × 成交数)。
+      **但 `PENDING → PENDING` 且 `required_quantity_units` 变化时必须记录**
+      （账户合同 §4.3）——那是新的下单数量，是决定不是状态。判据是数量是否变化，
+      不是状态是否变化。
       **配置校验拒绝非零 `grace_ns`**（v0.1 spec §保证金参数），不静默忽略。
+- [ ] **T202b** `[事件 Schema §4.2.2「恢复后的失效」]` `[TDD]` **强平代次**
+      `liquidation_generation`：进入 pending 与恢复时各 +1；强平 `ORDER_ARRIVAL` 到达
+      时重验「仍为 pending 且代次最新」，不满足即
+      `accepted=false, reject_reason=LIQUIDATION_STALE`（事务只有 `r0`）。
+      **验收用例**：跌破 → 调度强平单 → **在 `liquidation_latency_ns` 窗口内**由他人
+      成交推动价格使该账户恢复 → 强平单到达 → **必须被拒**。
+      没有这条，一个已经健康的账户会被窗口内的陈旧强平单卖掉。
 - [ ] **T203** `[账户 §4.2]` `[TDD]` 以整数二分求最小强平量；把 taker 手续费纳入
       平仓后 `risk_equity`，并同时证明 `q` 可行、`q−1 step` 不可行。不得用闭式近似值
       直接下单。
@@ -173,7 +189,8 @@
 - [ ] **T701** `[benchmarks README §1]` `[TDD]` 实现 BENCH-001 覆盖断言：至少一次
       强平、一次 `chain_depth>=1`、一次部分成交、一次撤单和一次单边簿事件；任一缺失则
       基准无效。
-- [ ] **T702** `[benchmarks README §2]` 实现 CALIB-001、归一化耗时、事件吞吐量与
+- [ ] **T702** `[benchmarks README §2]` 实现 CALIB-001、归一化耗时、事务吞吐量（`transactions_per_second` 为主指标，
+      `event_records_per_second` 为辅助）与
       `book_operations` 计数；首次校准后冻结 `max_transactions` 和 golden，变更须说明原因。
 - [ ] **T703** `[KPI-004/NFR-003]` 在参考口径验证归一化耗时 ≤ 10 秒，并记录同机
       相对回归；不得通过关闭强平或减少覆盖路径来换取性能。

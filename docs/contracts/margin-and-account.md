@@ -271,7 +271,20 @@ q ≥ |position| − risk_equity × 10000 / (risk_mark × target_bp)
 强平单部分成交后，**不沿用原 `q` 的剩余部分**，而是按新的账户状态**重新计算**
 `required_quantity_units`——价格已经移动，原数量不再对应 `target_bp`。
 
-每次重算产生一个新的 `MARGIN_CALL` 事件，`chain_depth` 继承自触发它的那次判定。
+**`required_quantity_units` 发生变化时产生一个新的 `MARGIN_CALL` 事件**
+（`verdict` 仍为 `PENDING_LIQUIDATION`），`chain_depth` 继承自触发它的那次判定。
+
+**这是「状态未变但必须记录」的情形**：账户从 `PENDING_LIQUIDATION` 到
+`PENDING_LIQUIDATION`，没有状态转移，却产生了一个新的下单数量——那是一个**可行动的
+风险决定**，必须留痕。事件 Schema §4.2.2 的记录规则以「是否产生新的可行动决定」为
+判据，正是为了同时覆盖本节与状态转移两种情形；若写成「只记录状态转移」，本节的重算
+就会与之直接冲突。
+
+重算后数量**不变**时不写记录——没有新决定，写了只是重复。
+
+该重算发生在**强平单自己的事务**内（那是一个 `origin=LIQUIDATION` 的
+`ORDER_ARRIVAL`），有自己的 `transaction_seq`，因此**不计入 OB-8 的 `m`**——后者只
+统计批末扫描那一轮。
 
 ## 5. 穿仓与核销
 
