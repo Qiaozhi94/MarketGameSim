@@ -17,8 +17,8 @@ jobs:
     name: 真源自校验
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - name: 校验 event_fields.json 与 traceability.json
@@ -29,8 +29,8 @@ jobs:
     needs: contract-sources
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
       - run: pip install -e ".[dev]"
@@ -48,8 +48,8 @@ jobs:
         # NFR-001 要求逐事件一致，跨版本差异必须在实现阶段就暴露，而不是实验阶段。
         python-version: ["3.11", "3.13"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python-version }}
       - run: pip install -e ".[dev]"
