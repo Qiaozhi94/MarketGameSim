@@ -6,14 +6,13 @@
 **方向对照基线**：Git 提交 `41240a2`（001 Market Simulation Foundation 冻结版本）  
 **报告性质**：设计阶段评审；未检视尚未实现的运行结果与代码正确性  
 **首次结论**：**有条件通过方向评审；暂不建议按当时完整范围直接进入实现。**  
-**最新复审结论**（第 33 章）：**0.1.1 全面 Go。** 第 32 章的 4 个 P0 与 3 个 P1 已
-全部关闭——新增**显式 bootstrap 屏障**（`enqueue_seq` 只裁决同 class，撑不起
-「日志前两条恒为初态快照」）、修复规范 JSON 与合同两张封闭表的漂移、把
-`required_when` 自然语言改为结构化 `constraints`、并新增第二份机器真源
-`traceability.json`。**全部 P0 与 P1 均已关闭**，剩余四项都不阻断编码，见下表。
+**最新复审结论**（第 34 章）：**暂不满足最终封板；0.1.1 仍是有条件 Go。** 第 33 章
+关闭了 bootstrap、强平任务和 oracle 等主体问题，但两份新增机器真源的反向校验未通过：
+`event_fields.json` 有 2 个不符合自身声明的 constraint，`traceability.json` 又遗漏
+同一需求章节中的 7 个 ID。另有 **2 项 P1、2 项 P2**，详见第 34 章。
 
-> 状态说明：第 1—32 章保留历轮检视原文作为审计历史，**每个问题标题已就地标注终态**。
-> 当前有效的关闭审计与开工边界以第 33 章为准。
+> 状态说明：第 1—33 章保留历轮检视原文作为审计历史。第 33 章的主体关闭证据仍有效，
+> 但“全面 Go”结论已被机器真源反向校验取代；当前开工边界以第 34 章为准。
 
 ### 标记图例
 
@@ -25,16 +24,18 @@
 | `【未关闭 · 后移】` | 有意后移到指定阶段，不是遗漏 |
 | `【开放 · 非阻断】` | 待对应模块启用时落地 |
 
-### 当前未关闭意见（全部非阻断）
+### 当前未关闭意见
 
 | 意见 | 性质 | 何时了结 |
 |---|---|---|
+| P0-T01 event_fields 约束语言未闭合且实例已违规 | **阻断 registry/serializer/validator** | 编码前关闭，见 §34.2 |
+| P0-T02 traceability 的被追踪集合不完整、真源关系矛盾 | **阻断 T607/E10** | 编码前关闭，见 §34.3 |
+| P1-T01 artifact manifest 版本与 producer 合同仍未封闭 | **阻断 0.1.4 报告层** | 0.1.4 编码前关闭，见 §34.4 |
+| P1-T02 预置初始订单无法仅凭聚合快照重放 | **当前 0.1.1 空簿不阻断** | 支持预置订单前关闭，见 §34.4 |
 | P0-04 / P1-06 市场可信度门槛与双重使用 | **有意后移** | 0.1.2 T002/T003/T004，正式实验前冻结；不阻断 0.1.1 编码 |
 | P2-H01（承自 P1-F03/P1-G04）旧术语残留 | 文档卫生 | 核心合同已统一，历史评审段落保留原文；择机纯文案清扫 |
 | P2-I03 可选测试/分析依赖 | 依赖落地 | Hypothesis / Parquet 按模块启用时加入，不预装无用依赖 |
 | P2 行尾空格 | **误报，不修** | 两空格是本仓库全部文档的硬换行约定，见 §24.3 |
-
-**0.1.1 编码不被上述任何一项阻断。**
 
 ## 1. 执行摘要
 
@@ -3216,3 +3217,151 @@ P0，且几乎都不是「方向错」，而是**「新引入的机制自身缺�
 其正确性要到 T204f/T204f3/T607 才被检验；`constraints` 的 `when` 谓词词汇表
 （`field/equals`、`account_has_position`、`side_empty` 等）是随字段需要逐个引入的，
 实现时若发现需要新谓词，须先扩充 `meta` 再使用，不得就地发明。
+
+## 34. 2026-08-02 代码开发前机器真源反向复审（T 系列）
+
+### 34.1 S 系列关闭审计与自动检查
+
+第 33 章的修复并非全部失效。本轮逐项确认：
+
+| S 系列 | 本轮状态 |
+|---|---|
+| P0-S01 bootstrap 屏障 | **主体关闭**：入队屏障、`max_transactions >= 2`、第二张失败时 seq=1 与三条向量均已写入合同/任务 |
+| P0-S02 封闭字段表漂移 | **字段集合关闭，校验任务尾项转 P0-T01**：ACCOUNT 已为 11 项，E-002 已补两字段；但 T204f3 任务仍只写三项元数据 |
+| P0-S03 自然语言 `required_when` | **方案方向成立，实际约束语言转 P0-T01**：147 个字段已全部 `required=always`，但 constraint 实例未通过自身 grammar |
+| P0-S04 强平任务旧协议 | **关闭**：T007/T202b/T204/T502 已同步换代、因果外键、乱序与 chain 分组 |
+| P1-S01 T607 无机器源 | **机器文件已落地，覆盖边界转 P0-T02** |
+| P1-S02 oracle 帧对齐 | **关闭**：bootstrap 合成第 0 帧、11+2 投影、先比帧键/数量均已同步 |
+| P1-S03 manifest 开放 glob | **主体改进，余项转 P1-T01** |
+| P2 任务编号说明 | **关闭**：两份 tasks 已统一为 `T0xx—T7xx` |
+
+自动检查：全部本地 Markdown 链接目标存在；各 `tasks.md` 内无重复任务 ID；两份 JSON
+都能被标准库解析；19 个结构、147 个字段与基础元数据键仍完整；当前 trace owner 指向的
+里程碑目录与 exit ID 均存在；`git diff --check` 无新增格式错误。
+
+反向校验同时得到两个失败结果：
+
+- `event_fields.json` 有 **34 个带 constraints 的字段、54 个 constraint 对象**，其中
+  **2 个违反文件自己声明的语法**；
+- v0.1 spec 中以标题/需求条目声明了 47 个 `US/P/FR/KR/NFR/SC` ID，trace 文件只有
+  40 个，缺 **P-1、P-2、US-1—US-5**。
+
+### 34.2 P0-T01：`event_fields.json` 的 constraint 语言尚未成为可执行合同
+
+第 33 章称 `when` 是“可判定谓词”、`then ∈ {null, non_null}`，但文件本身已经出现
+反例：
+
+1. `ORDER_ARRIVAL.decision_event_id.constraints` 数组的第二个元素只有 `$comment`，
+   **没有 `when` 与 `then`**；通用 validator 若按 constraint 对象读取会失败；
+2. `ORDER_CANCELLED.price_ticks` 使用 `then = "null_if_market_order"`，不在 meta 冻结的
+   `{null, non_null}` 中；而该记录又没有 `order_type` 字段，单凭同记录的
+   `reason = IOC_REMAINDER` 无法判断原单是 LIMIT 还是 MARKET；
+3. `meta` 只列了 then 值，没有冻结 when 的 grammar。实际已混用
+   `field+equals`、`field+in`、`always`、`queueing`、`account_has_position`、
+   `no_trade_yet`、`side_empty`、`spec_version` 等多套形状；“需要时再扩充”不是当前
+   文件的机器语法；
+4. 数组规则仍有自然语言：例如 MARGIN_CALL postings 的 `length` 写成
+   “`verdict == BREACHED 时为 2，否则 0`”，`array_order` 也包含“生成顺序”等自由文本。
+   若这些只供人读，应从 validator 元数据分离；若要驱动模型，必须结构化；
+5. 0.1.1 T204f 仍写“必备性（含条件必备）”，T204f3 仍只比较路径及
+   类型/枚举/可空性，没有同步第 33 章已承诺的必备性、哈希分类、封闭计数与 E-002 集合；
+6. P0-S03 的关闭条件要求 SUBMIT/CANCEL/AGENT/LIQUIDATION/OK/PENDING/BREACHED 的
+   valid/invalid fixtures，当前任务清单没有这些 constraint 夹具。
+
+这不是文案问题：T204f 要让 registry、serializer 与 validator 从该文件生成行为，而
+当前两个合法实现可以分别选择“忽略未知谓词”或“遇到未知谓词失败”，结果不同。
+
+**关闭条件**：
+
+1. 为 schema 本身提交 meta-schema（可以是项目自定义 JSON grammar），冻结所有
+   predicate/operator/context key 与 operand 类型；
+2. 让设计阶段检查先验证 schema 自身，确保每个 constraint 恰有 `when/then`、then 值合法、
+   字段引用存在、谓词穷尽；
+3. 删除 comment-only constraint；对 ORDER_CANCELLED 二选一：增加可判定的 `order_type`，
+   或定义能沿 `order_id` 回查原单的跨记录谓词及其失败语义；
+4. 把条件数组长度/顺序改为结构化规则或明确标成非执行注释；
+5. 同步 T204f/T204f3，并补七组正反 fixture；全部通过后再把 T204f0 标 `[x]`。
+
+### 34.3 P0-T02：`traceability.json` 没有定义“哪些 ID 必须被追踪”
+
+结构化文件解决了 Markdown 范围/exit 的解析问题，但没有解决集合边界：
+
+- 同一 v0.1 spec 的“用户故事”章节声明 US-1—US-6；JSON 只放了后移的 **US-6**，
+  却遗漏已由 v0.1 实现的 **US-1—US-5**；
+- 参数预注册章节声明 P-1—P-3；JSON 只放了后移的 **P-3**，遗漏 P-1/P-2；
+- T607 一面要求“JSON ID 集合 == 需求章节声明集合”，一面又说“只解析 JSON，不解析
+  Markdown”。如果 JSON 自己既是待检集合又是期望集合，这个相等断言是恒真；若要读
+  章节标题，就不再是“只解析 JSON”；
+- JSON 允许一个 requirement 有多个 owners，但没有结构化 `scope/deliverable`。
+  FR-004、FR-016/017、FR-018、SC-006 等阶段切片只能藏在 `note`，机器仍无法证明
+  “唯一归属且没有重叠/遗漏”；
+- NFR-002 的展示表写“各里程碑各自”，JSON 只列 0.1.1 E9，展示与真源的责任范围不同。
+
+当前 owner 的目录/exit 引用全部有效，只能证明“已写进去的边存在”，不能证明“该有的
+节点和切片都存在”。
+
+**关闭条件**：先冻结 tracked ID family 与声明源。建议 JSON 成为 US/FR/KR/NFR/SC 及
+明确后移项的唯一声明清单，规格标题/展示矩阵由它生成并逐字节比对；若 P-1/P-2/P-3 是
+参数而非 requirement，则三者全部移出 requirement matrix，另设 preregistration 表，不能
+只放后移的 P-3。为多 owner 增加结构化 `scope`，校验 scope 非空、互斥且覆盖完整需求。
+T607 至少加入“删除 US-1”“删除一个阶段 owner”“制造 scope 重叠”三类负向夹具。
+
+### 34.4 P1 重要项
+
+#### P1-T01：artifact manifest 丢了全局版本，producer 与产物 Schema 仍未闭合
+
+逐 artifact ID 和精确路径替代 glob 是有效改进，但 S03 尚未完全关闭：
+
+- 上一轮已经冻结的全局 `manifest_version` 在本轮七项清单中消失，只剩每个 artifact 的
+  `schema_version`；两者解决的问题不同；
+- 表中 `robustness_summary` 指向 **0.1.3 T601**，但 T601 产出的是各映射/参数单元的
+  效应量；最终条件性结论在 **T604**，负面结果在 **T606**。当前报告会漏掉真正的稳健性
+  结论和否定条件；同页 producer 示例又写 0.1.3 T603，三处互相不一致；
+- 合同只声明 `format = parquet|json`，没有冻结 8 个 artifact 各自的列/键 Schema。
+  `schema_version` 有字段名却没有被版本化的对象；
+- “出现 manifest 未声明的额外件即失败”没有定义扫描根目录。若报告只接收 manifest 中
+  的精确路径，它根本看不到“额外件”；若扫描整个实验目录，临时文件/HTML 是否算额外
+  又没有边界。
+
+**关闭条件**：恢复全局 `manifest_version`；把 0.1.3 的最终结论/负面结果分别映射到
+T604/T606（必要时拆 artifact）；为每个 artifact 冻结最小列/键 Schema 与版本；定义
+manifest 的 artifact root 及“额外件”的匹配集合，或删除无法执行的额外件规则。
+
+#### P1-T02：允许预置初始订单时，聚合 BOOK 快照不足以重建订单簿
+
+bootstrap 屏障规定任何业务 `ORDER_ARRIVAL` 都在两张快照提交后才入队；Schema 同时又
+称配置可能预置初始挂单。若预置单在快照前直接写进簿：
+
+- BOOK 快照只含价位聚合量与 `order_count`，不含 `order_id`、agent、单张数量与时间优先；
+- 这些订单没有更早的 ORDER_ARRIVAL；后续成交/撤销引用它们时，独立重放器无法恢复
+  单张订单和 FIFO 次序；
+- 这与 §4.6.2“单张订单生命周期由三类事件完整表达”以及 SC-006 自包含冲突。
+
+0.1.1 当前明确为空簿，因此此项不阻断当前空簿启动代码。**关闭条件**：v0.1 配置校验
+明确拒绝预置订单，并删除“配置可能预置挂单”；未来若支持，须在 bootstrap 后用正常
+ORDER_ARRIVAL 建簿，初态仍保持空簿，或扩展初态合同以完整记录单张订单及 FIFO 键。
+
+### 34.5 P2 文档卫生
+
+- 第 33 章称“32 个字段改写”，实际是 **34 个字段、54 个 constraint 对象**；
+- P2 的任务编号说明已修复，但第 33 章称“P2 全部关闭”并不准确：本轮实质修改后的
+  event Schema 与 v0.1 spec 头部仍写 `更新日期：2026-08-01`。若日期代表最后实质修改，
+  应更新为 2026-08-02；若代表首次冻结，应改字段名。
+
+### 34.6 最终开工边界
+
+**可以开始**：配置值对象、queue key/纯事件堆、订单簿、价格时间优先、撮合逻辑、空簿
+启动以及不依赖日志 Schema 的向量测试；P0-S01/P0-S04 已关闭，无需重做。
+
+**暂缓**：
+
+- T204f/T204f0/T204f2/T204f3、T205/T206 的 registry/validator/serializer/hash，直到
+  P0-T01 关闭；
+- T607 与退出条件 E10，直到 P0-T02 关闭；
+- 0.1.4 报告层，直到 P1-T01 关闭；
+- 任何“预置初始订单”能力，直到 P1-T02 关闭。
+
+最终判断：主体市场设计已经可以编码，但**两份机器真源还没有通过对自身语法和全集边界
+的验证**。这恰好是第 33 章总结中提出的原则——唯一真源必须同时具备检验其唯一性的
+手段——本轮应先把这条原则落实到 schema meta-validator 与 trace coverage validator，
+再恢复“0.1.1 全面 Go”。
