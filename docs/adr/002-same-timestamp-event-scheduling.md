@@ -1,7 +1,8 @@
 # ADR-002：同时间戳事件调度与因果链的强制表达
 
 日期：2026-07-30  
-状态：Accepted（2026-08-01 修订为 queue key / log key 双键）
+状态：Accepted（2026-08-01 修订为 queue key / log key 双键；2026-08-02 修订
+KPI-006 路径为 AGENT/LIQUIDATION 分支，见 §3 附注）
 关联规格：[`../../specs/v0.1-belief-testing-laboratory/spec.md`](../../specs/v0.1-belief-testing-laboratory/spec.md)  
 解决问题：PRD Q-012  
 关联决策：v0.1 规格 D-5（离散事件内核）  
@@ -111,9 +112,17 @@ trade_id → caused_by_event_id → taker/maker order_id
 
 账户变化经 `TRADE_SETTLE` 的 `trade_id` 与账户快照关联，构成 US-3 要求的完整链条。
 
+> **2026-08-02 附注**：上表与路径写于 0.1.1（无杠杆、无强平），只覆盖
+> `origin = AGENT` 的成交。0.1.2 引入强平后，`origin = LIQUIDATION` 的订单
+> `intent_id` 恒为 null、`decision_event_id` 指向 `MARGIN_CALL` 而非
+> `AGENT_DECIDE`，不满足上表路径——这不是本决策被推翻，而是范围扩大后需要
+> 第二条分支。当前生效的双分支路径与 §4 断言的更新版见
+> [事件 Schema §5.1—§5.2](../contracts/event-schema.md#5-因果链与引用完整性kpi-006)，
+> 本节保留作为原始决策记录，不再更新。
+
 ### 4. 引用完整性作为验收断言（SC-006）
 
-对每次运行的事件日志：
+对每次运行的事件日志（**历史记录，当前断言见事件 Schema §5.2**）：
 
 - **遍历全部** `TRADE_SETTLE`（非抽样），沿上表逐跳解析；
 - 每一跳的目标事件必须在日志中**唯一存在**，且其 `log_key` **严格小于**引用方；
