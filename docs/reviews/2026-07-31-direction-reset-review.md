@@ -6,14 +6,13 @@
 **方向对照基线**：Git 提交 `41240a2`（001 Market Simulation Foundation 冻结版本）  
 **报告性质**：设计阶段评审；未检视尚未实现的运行结果与代码正确性  
 **首次结论**：**有条件通过方向评审；暂不建议按当时完整范围直接进入实现。**  
-**最新复审结论**（第 35 章）：**0.1.1 全面 Go。** 第 34 章的 2 个 P0 与 2 个 P1 已
-全部关闭，且本轮**产出了可运行的真源自校验器** `tools/validate_contract_sources.py`
-——它首次运行即列出第 34 章手工找到的全部 10 项问题，现已全部修复并通过。
-constraint grammar 已冻结，trace 补齐 US-1—US-5 且 P-* 移出 requirements。
-**全部 P0 与 P1 均已关闭**，剩余四项都不阻断编码，见下表。
+**最新复审结论**（第 36 章）：**基础市场代码 Go，但 0.1.1 尚未最终封板。** 第 35 章
+新增的校验器、测试和 CI 均能运行且当前全绿；但审查发现绿色结果存在假阴性：JSON 已从
+147 增至 148 字段，Markdown/E-002/向量仍是旧集合，校验器没有发现；trace 校验也没有
+实现展示表一致性或 scope 重叠/覆盖。当前为 **2 项 P0、3 项 P1、2 项 P2**，见第 36 章。
 
-> 状态说明：第 1—34 章保留历轮检视原文作为审计历史，**每个问题标题已就地标注终态**。
-> 当前有效的关闭审计与开工边界以第 35 章为准。
+> 状态说明：第 1—35 章保留历轮检视原文作为审计历史。第 35 章的可运行产物仍然有效，
+> 但其“全面 Go”结论已被本轮代码审查与变异视角复核取代；当前边界以第 36 章为准。
 
 ### 标记图例
 
@@ -25,16 +24,19 @@ constraint grammar 已冻结，trace 补齐 US-1—US-5 且 P-* 移出 requireme
 | `【未关闭 · 后移】` | 有意后移到指定阶段，不是遗漏 |
 | `【开放 · 非阻断】` | 待对应模块启用时落地 |
 
-### 当前未关闭意见（全部非阻断）
+### 当前未关闭意见
 
 | 意见 | 性质 | 何时了结 |
 |---|---|---|
+| P0-U01 schema 校验器漏检当前 148/147 真源漂移 | **阻断 registry/serializer/hash** | 编码前关闭，见 §36.2 |
+| P0-U02 trace 校验器未实现展示表与 scope 证明 | **阻断 T607/E10** | 编码前关闭，见 §36.3 |
+| P1-U01 artifact 最小列/键 Schema 仍未实际冻结 | **阻断 0.1.4 报告层** | 0.1.4 编码前关闭，见 §36.4 |
+| P1-U02 自校验测试没有负向变异 | **降低 CI 可信度** | 与 P0-U01/U02 一并关闭，见 §36.4 |
+| P1-U03 固定 hash seed 掩盖内置 hash() | **阻断 KPI-002 确定性门** | 哈希实现前关闭，见 §36.4 |
 | P0-04 / P1-06 市场可信度门槛与双重使用 | **有意后移** | 0.1.2 T002/T003/T004，正式实验前冻结；不阻断 0.1.1 编码 |
 | P2-H01（承自 P1-F03/P1-G04）旧术语残留 | 文档卫生 | 核心合同已统一，历史评审段落保留原文；择机纯文案清扫 |
 | P2-I03 可选测试/分析依赖 | 依赖落地 | Hypothesis / Parquet 按模块启用时加入，不预装无用依赖 |
 | P2 行尾空格 | **误报，不修** | 两空格是本仓库全部文档的硬换行约定，见 §24.3 |
-
-**0.1.1 编码不被上述任何一项阻断。**
 
 ## 1. 执行摘要
 
@@ -3429,3 +3431,136 @@ grammar）。本轮第一次不是补文字，而是补**可执行的检验**—
 **仍然为真的限制**：全部向量期望值仍为人工推算；两份 JSON 尚未被任何实现消费，
 `registry.py` 能否真的只从它们生成行为，要到 T204f/T204f2/T204f3 才被检验；
 `tools/validate_contract_sources.py` 目前不在 CI 中，须随 0.1.1 工具链接入。
+
+## 36. 2026-08-02 最终代码与契约联合检查（U 系列）
+
+### 36.1 检查范围与实跑结果
+
+本轮首次同时按设计封板和代码审查标准检查：
+
+- 第 34 章 T 系列的合同修复；
+- `event_fields.json`、`traceability.json` 两份机器真源；
+- `tools/validate_contract_sources.py` 及 pytest 入口；
+- GitHub Actions 的 contract-sources / lint / test 三个 job；
+- 新增字段对 Markdown、E-002、黄金向量和任务计数的反向影响。
+
+实跑结果：
+
+| 检查 | 结果 |
+|---|---|
+| `python tools/validate_contract_sources.py` | 通过 |
+| `pytest -q` | **3 passed** |
+| `ruff check .` | 通过 |
+| `ruff format --check .` | 4 files already formatted |
+| 本地 Markdown 链接 | 0 个断链 |
+| tasks 内重复任务 ID | 0 |
+| `git diff --check` | 通过 |
+| GitHub action 版本 | 官方 release 已确认 checkout v7.0.1、setup-python v7.0.0，`@v7` 有效 |
+
+这些绿色结果证明脚本可运行、当前输入满足**脚本已经实现的子集**，但不证明脚本覆盖了
+任务和报告声称的全部判据。单独的代码审查报告见仓库根目录
+`code-review-report.md`；本章只保留会影响开工边界的结论。
+
+### 36.2 P0-U01：schema 自校验漏掉了仓库里已经发生的 148/147 漂移
+
+为解决 `ORDER_CANCELLED.price_ticks` 的条件判定，JSON 给 `ORDER_CANCELLED` 新增了
+`order_type`，总字段数由 147 变为 **148**。这个设计本身合理，但同步链没有完成：
+
+- 事件 Schema §4.7 的 ORDER_CANCELLED 字段表仍只有旧 8 项，没有 `order_type`；
+- E-002 的 ORDER_CANCELLED 哈希清单没有 `order_type`，JSON 却将其标为
+  `HASH_INCLUDE`；
+- OB-6/OB-7 的黄金记录仍未给 `order_type`；
+- 0.1.1 T204f0 与事件 Schema 的真源说明仍写“19 个结构、147 条字段”，同时还标 `[x]`；
+- 第 35 章自己写“现为 148 字段”，说明同一提交内已经有两种答案。
+
+`validate_schema()` 仍返回成功，因为它只检查 JSON 内部的少量外形，不执行 T204f3 的
+Markdown/哈希集合比较。它还没有检查：
+
+- `constraint_grammar.operand_types`（字段存在但代码完全不消费）；
+- `always/account_has_position/no_trade_yet` 等操作数确实为 bool；
+- `same_record_equals/in` 的值属于被引用 enum 的值域；
+- 结构/element_structure 引用存在；
+- 已结构化的数组 `length` / `array_order` grammar 和字段引用；
+- 冲突、重复或永远覆盖不到的 constraints。
+
+因此“meta-validator 已证明 schema 自身完整”的结论过强；当前绿色 CI 已经给出实际反例。
+
+**关闭条件**：先同步 ORDER_CANCELLED 表、E-002、OB-6/7 与 148 计数；再让 validator
+校验上述元数据，并把 T204f3 的字段集合/E-002 比较提前到设计阶段执行。更稳妥的做法仍是
+由 JSON 生成字段附录和哈希表。新增字段后，CI 必须能在未同步 Markdown 时立即失败。
+
+### 36.3 P0-U02：trace 校验只证明“边存在”，没有实现 T607 承诺的责任完整性
+
+`validate_trace()` 已能发现缺 ID、未知 milestone 与不存在的 exit，改进成立；但还没有
+完成 T607 的另外两类核心判据：
+
+1. **展示表一致性没有实现。** 任务写“spec 展示表与 JSON 一致（或生成）”，代码完全
+   不读取表格。当前 NFR-002 表格写“各里程碑各自 / 0.1.2 附加门槛”，JSON 只有
+   0.1.1 E9，CI 仍通过；US-1—US-6 也没有展示行；
+2. **scope 只检查非空。** `scope` 是自由文本，两个 owner 写同一个字符串、交换职责或
+   漏掉一半责任都能通过，无法实现任务承诺的“制造 scope 重叠必须失败”；
+3. `tracked_id_families` 没有被代码消费，前缀仍硬编码在 `DECL_PATTERNS`；US 正则仅支持
+   单位数字 `US-\d`，未来 US-10 会静默漏检；
+4. `preregistration` 已成为 JSON 真源的一部分，却完全没有被 validator 校验，也没有与
+   spec 的 P-1—P-3 标题集合对照；
+5. T607 文本仍说“只解析 JSON、不解析 Markdown”，下一行又要求与需求章节声明集合及
+   展示表比较，执行边界自相矛盾。
+
+**关闭条件**：由 trace JSON 生成展示表并做 golden diff；把多 owner 的责任切片换成
+稳定 `scope_id` 与封闭 scope 集，而非自由文本；由 `tracked_id_families` 动态生成提取
+规则并支持多位编号；校验 preregistration；落实三类负向变异测试。若不打算机器证明
+scope 互斥/覆盖，就必须降低 T607 的退出承诺，不能只检查“字符串非空”却称证明完整。
+
+### 36.4 P1 重要项
+
+#### P1-U01：artifact Schema 仍是一条未来要求，不是已冻结产物
+
+P1-T01 的 manifest 顶层版本、artifact root、producer 与扫描边界已补齐；但“每个
+artifact 还须冻结最小列/键 Schema”目前只有一句要求，没有 10 个 artifact 的实际列/键、
+类型或机器文件。`schema_version` 仍没有对应的被版本化对象。
+
+**关闭条件**：提交 artifact Schema 真源，至少逐项给必备列/键、类型、nullability、
+主键/排序与版本；0.1.2/0.1.3 producer 和 0.1.4 consumer 共用它，并配缺列、错类型、
+未知列（按兼容策略）负向夹具。此项不阻断 0.1.1 基础市场实现，但阻断 0.1.4 报告层。
+
+#### P1-U02：当前三个测试都是 happy path，不能证明 guard 真会挡错误
+
+`test_event_fields_schema_is_self_consistent` 与 `test_traceability...` 只对当前文件断言
+`errors == []`；`test_validator_exits_zero` 又调用同样两函数。删除一段校验逻辑时三者仍可
+同时通过。T204f4 的七组正反 constraint 夹具与 T607 的三类负向夹具尚未实现。
+
+**关闭条件**：把 validator 改为接收 path/data，测试在临时输入上逐项注入未知谓词、
+错误 operand、非法数组规则、字段表漂移、缺 owner、重复/重叠 scope 与展示表漂移，并
+断言每种变异产生稳定错误码/消息。
+
+#### P1-U03：`PYTHONHASHSEED=0` 让误用内置 `hash()` 的实现稳定通过
+
+CI 注释称固定 hash seed 是防止误用 `hash()` 的第二道防线，实际效果相反：同一 seed
+使错误实现在每次 CI 中也稳定，无法暴露跨进程随机盐。普通测试固定 seed 有利复现，
+但 KPI-002 确定性门必须另起两个独立进程，用不同 `PYTHONHASHSEED` 生成同一运行摘要并
+逐字节比较；两者不同即失败。
+
+### 36.5 P2 与安全加固
+
+- 第 35 章尾部仍称 validator“目前不在 CI”，但后续提交已经接入；T204f0/Schema 的
+  147 计数也应同步为 148。这些历史段可保留，但顶部当前结论不能引用它们为现状；
+- GitHub 官方仓库确认两个 `@v7` tag 有效，不存在版本号错误。作为供应链加固，可为
+  workflow 增加顶层 `permissions: contents: read`，并在需要更强可重复性时把 action
+  固定到完整 commit SHA；这不是当前功能阻断项。
+
+### 36.6 最终开工边界
+
+**可以开始**：配置值对象、bootstrap、事件队列、订单簿、价格时间优先、撮合、账户纯
+计算、空簿启动，以及不依赖日志 Schema 的向量测试。
+
+**暂缓**：
+
+- registry、validator、serializer、事件摘要哈希及 T204f0/f2/f3/f4，直到 P0-U01 与
+  P1-U02 关闭；
+- T607/E10，直到 P0-U02 与对应负向夹具关闭；
+- KPI-002 跨进程确定性签收，直到 P1-U03 关闭；
+- 0.1.4 artifact consumer/report，直到 P1-U01 关闭。
+
+最终判断：代码骨架质量良好，action 版本有效，当前工具也确实抓住了一部分错误；但它
+尚未覆盖自己和任务声称的完整判据，并已漏掉一个真实跨真源漂移。因此目前最准确的状态
+是 **“基础实现 Go，机器真源消费链暂缓”**，而不是“0.1.1 全面 Go”。
