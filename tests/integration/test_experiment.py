@@ -109,6 +109,56 @@ def test_run_one_completes():
     assert len(result.events) > 0
 
 
+def test_run_one_enqueues_and_processes_extra_events():
+    """ExperimentConfig.extra_accounts/extra_events (added for bench/shock.py's
+    forcing-trade mechanism): a positive test that an injected event is
+    actually processed through the real kernel/matching pipeline -- not
+    just accepted as a config field."""
+    mm = _mm_spec()
+    b = _belief_spec("agent-0")
+    extra_event = {
+        "event_type": "ORDER_ARRIVAL",
+        "timestamp": 1,
+        "agent_id": "injected",
+        "order_id": "injected-0",
+        "action": "SUBMIT",
+        "side": "SELL",
+        "order_type": "MARKET",
+        "price_ticks": None,
+        "quantity_units": 1,
+    }
+    cfg = ExperimentConfig(
+        seed=1,
+        max_transactions=100,
+        agent_specs=[mm, b],
+        agent_signals={"agent-0": 10_000},
+        extra_accounts={"injected": 10**16},
+        extra_events=[extra_event],
+    )
+    result = run_one(cfg)
+    assert result.terminated == "COMPLETED", f"abort: {result.abort_code}"
+    injected_records = [e for e in result.events if e.get("order_id") == "injected-0"]
+    assert len(injected_records) >= 1
+    assert "injected" in result.accounts  # pre-funded account was actually registered
+
+
+def test_run_one_without_extra_events_behaves_as_before():
+    """Negative/contrast case: omitting extra_accounts/extra_events (the
+    default) must not introduce any phantom accounts or events -- confirms
+    the new fields are purely additive."""
+    mm = _mm_spec()
+    b = _belief_spec("agent-0")
+    cfg = ExperimentConfig(
+        seed=1,
+        max_transactions=100,
+        agent_specs=[mm, b],
+        agent_signals={"agent-0": 10_000},
+    )
+    result = run_one(cfg)
+    assert result.terminated == "COMPLETED"
+    assert set(result.accounts.keys()) == {"mm-0", "agent-0"}
+
+
 def test_run_multi_seed_completes():
     mm = _mm_spec()
     b = _belief_spec("agent-0")

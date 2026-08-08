@@ -282,6 +282,8 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
     accounts: dict[str, Account] = {}
     for spec in config.agent_specs:
         accounts[spec.agent_id] = Account(agent_id=spec.agent_id, wallet_units=10**14)
+    for agent_id, wallet_units in config.extra_accounts.items():
+        accounts[agent_id] = Account(agent_id=agent_id, wallet_units=wallet_units)
     initial_wallet_sum = sum(a.wallet_units for a in accounts.values())
 
     kernel = EventKernel(run_id=f"exp-s{config.seed}")
@@ -327,6 +329,9 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
                 "information_set": {},
             }
         )
+
+    for event in config.extra_events:
+        kernel.enqueue(event)
 
     kernel.run(_dispatch_agents, world, max_transactions=config.max_transactions)
 

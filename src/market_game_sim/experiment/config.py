@@ -27,6 +27,14 @@ class ExperimentConfig:
     agent_specs: list[AgentSpec] = field(default_factory=list)
     agent_signals: dict[str, int] = field(default_factory=dict)
     group_label: str = "control"  # "control" | "treatment" for paired experiments
+    # Generic escape hatch (not benchmark-specific itself): extra pre-funded
+    # accounts + raw events to enqueue alongside the normal AGENT_OBSERVE
+    # cycle. bench/shock.py uses this to inject a one-shot forcing trade so
+    # BENCH-001's coverage assertions can actually be exercised within a
+    # bounded transaction budget -- belief-agent/market-maker research
+    # configs simply never set these and see no behavior change.
+    extra_accounts: dict[str, int] = field(default_factory=dict)  # agent_id -> wallet_units
+    extra_events: list[dict] = field(default_factory=list)
 
 
 def compute_config_hash(config: ExperimentConfig) -> str:
