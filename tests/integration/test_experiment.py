@@ -425,6 +425,34 @@ def test_run_paired_produces_bootstrap_effect_and_conclusion():
     assert "在参与者结构" in comparison["conditional_conclusion"]
 
 
+def test_run_paired_comparison_carries_traceable_config_hashes():
+    """E3 (0.1.2 退出条件): the conditional conclusion must be traceable back
+    to the exact control/treatment configs via a content hash -- distinct
+    configs (they differ in leverage_tier, the treatment field) must get
+    distinct hashes, and re-hashing the same config object must reproduce
+    the same value recorded in the comparison dict."""
+    from market_game_sim.experiment.config import compute_config_hash
+
+    mm = _mm_spec()
+    b_control = _belief_spec("agent-0")
+    b_treatment = replace(b_control, leverage_tier=50)
+    control = ExperimentConfig(
+        seed=1, max_transactions=60, agent_specs=[mm, b_control], agent_signals={"agent-0": 10_000}
+    )
+    treatment = ExperimentConfig(
+        seed=1,
+        max_transactions=60,
+        agent_specs=[mm, b_treatment],
+        agent_signals={"agent-0": 10_000},
+    )
+    _c, _t, comparison = run_paired(control, treatment, [1], n_resamples=200)
+    assert comparison["control_config_hash"] == compute_config_hash(control)
+    assert comparison["treatment_config_hash"] == compute_config_hash(treatment)
+    # negative half: control/treatment differ (leverage_tier) -> must not
+    # collide onto the same hash.
+    assert comparison["control_config_hash"] != comparison["treatment_config_hash"]
+
+
 def test_build_study_report():
     mm = _mm_spec()
     b = _belief_spec("agent-0")

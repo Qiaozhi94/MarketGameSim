@@ -4,7 +4,9 @@ wires ExperimentProtocol into run_one/run_multi_seed)."""
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import hashlib
+import json
+from dataclasses import asdict, dataclass, field
 
 from market_game_sim.agent.scheduler import AgentSpec
 
@@ -25,3 +27,17 @@ class ExperimentConfig:
     agent_specs: list[AgentSpec] = field(default_factory=list)
     agent_signals: dict[str, int] = field(default_factory=dict)
     group_label: str = "control"  # "control" | "treatment" for paired experiments
+
+
+def compute_config_hash(config: ExperimentConfig) -> str:
+    """E3 (0.1.2 退出条件): stable content hash of a full ``ExperimentConfig``
+    (including every ``AgentSpec``), so a reported conditional conclusion can
+    be traced back to the exact configuration that produced it.
+
+    Uses ``hashlib.blake2b`` over a canonical (sorted-key, no whitespace)
+    JSON serialization of ``dataclasses.asdict`` -- not Python's builtin
+    ``hash()``, which is per-process-salted and would make the same config
+    hash differently across runs (reference-machine.md §3).
+    """
+    canonical = json.dumps(asdict(config), sort_keys=True, separators=(",", ":"))
+    return hashlib.blake2b(canonical.encode("utf-8"), digest_size=16).hexdigest()

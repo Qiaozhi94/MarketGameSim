@@ -17,7 +17,7 @@ from market_game_sim.eventlog.bootstrap import (
     build_account_payload_from_accounts,
     build_book_payload,
 )
-from market_game_sim.experiment.config import ExperimentConfig
+from market_game_sim.experiment.config import ExperimentConfig, compute_config_hash
 from market_game_sim.experiment.protocol import ExperimentProtocol, ProtocolStage
 from market_game_sim.experiment.stats import bootstrap_proportion_diff, build_conditional_conclusion
 from market_game_sim.kernel.runner import EventKernel
@@ -177,6 +177,11 @@ def run_paired(
     comparison = {
         "n_seeds": len(seeds),
         "treatment_field": treatment_field,
+        # E3 (0.1.2 退出条件): traces this conditional_conclusion back to the
+        # exact ExperimentConfig that produced it -- without this, "预注册
+        # 实验可从配置哈希追溯到条件性结论" has no machine-checkable link.
+        "control_config_hash": compute_config_hash(control),
+        "treatment_config_hash": compute_config_hash(treatment),
         "control": {
             "n_completed": sum(1 for r in c_results if r.terminated == "COMPLETED"),
             "n_endpoint": sum(control_outcomes),
