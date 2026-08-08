@@ -634,6 +634,49 @@ def test_build_study_report_includes_market_validation_matrix():
             assert item["verdict"] == "NOT_APPLICABLE"
 
 
+def test_build_study_report_includes_zero_sum_declaration():
+    """KPI-011 (PRD §13.4): build_study_report must surface a per-seed
+    zero-sum declaration whose identity actually holds (residual 0) on a
+    real run, not just endpoint/continuous/impact/market_validation."""
+    mm = _mm_spec()
+    b = _belief_spec("agent-0")
+    cfg = ExperimentConfig(
+        seed=1,
+        max_transactions=60,
+        agent_specs=[mm, b],
+        agent_signals={"agent-0": 10_000},
+    )
+    results = run_multi_seed(cfg, [1, 2])
+    report = build_study_report(results)
+    assert "zero_sum" in report
+    per_seed = report["zero_sum"]
+    assert set(per_seed) == {1, 2}
+    for decl in per_seed.values():
+        assert decl["residual_units"] == 0
+        assert "不是研究发现" in decl["declaration_text"]
+        assert set(decl["per_agent_pnl_units"]) == {"mm-0", "agent-0"}
+
+
+def test_build_study_report_zero_sum_skips_technical_invalid_runs():
+    """Negative/contrast case: a technical-invalid run's account states
+    can't support a meaningful declaration (its event log already failed
+    integrity/conservation) -- must be excluded, not silently included with
+    a bogus residual."""
+    account = Account(agent_id="A", wallet_units=10**11)
+    ti_result = RunResult(
+        seed=99,
+        terminated="ABORTED",
+        abort_code="SOME_ABORT",
+        events=[],
+        book_last_ticks=None,
+        accounts={"A": account},
+        liquidation_metrics=LiquidationMetrics(),
+        classification=RunClassification(is_technical_invalid=True, technical_invalid_code="TI-4"),
+    )
+    report = build_study_report([ti_result])
+    assert report["zero_sum"] == {}
+
+
 def test_build_market_validation_report_skips_technical_invalid_runs():
     """A run whose classification is_technical_invalid must not contribute
     a matrix entry: its event log already failed integrity/conservation

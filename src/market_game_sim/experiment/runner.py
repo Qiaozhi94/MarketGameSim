@@ -7,7 +7,7 @@ and classification for a configurable number of seeds.
 from __future__ import annotations
 
 import dataclasses
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from market_game_sim.agent.handler import handle_agent_decide, handle_agent_observe
 from market_game_sim.agent.scheduler import AgentSpec
@@ -30,7 +30,7 @@ from market_game_sim.metrics.liquidation import (
     classify_run,
     compute_liquidation_metrics,
 )
-from market_game_sim.metrics.report import build_report
+from market_game_sim.metrics.report import build_report, build_zero_sum_declaration
 from market_game_sim.metrics.sampling import (
     compute_price_impact,
     sample_agent_series,
@@ -208,6 +208,9 @@ class RunResult:
     classification: RunClassification
     group_label: str = "control"
     book_operation_count: int = 0
+    initial_baseline: dict[str, int] = field(default_factory=dict)
+    exchange_fee_units: int = 0
+    exchange_risk_pnl_units: int = 0
 
 
 def _dispatch_agents(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
@@ -292,6 +295,12 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
             entry_notional_units=state.get("entry_notional_units", 0),
         )
     initial_wallet_sum = sum(a.wallet_units for a in accounts.values())
+    # KPI-011 (metrics/report.py::build_zero_sum_declaration): baseline is
+    # wallet-minus-entry at t=0, not just wallet -- extra_positions accounts
+    # start with a nonzero entry_notional (already-open position), and using
+    # wallet alone there would miscount their starting notional exposure as
+    # a fabricated loss.
+    initial_baseline = {aid: a.wallet_units - a.entry_notional_units for aid, a in accounts.items()}
 
     kernel = EventKernel(run_id=f"exp-s{config.seed}")
     kernel.bootstrap(
@@ -385,6 +394,9 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
         classification=classification,
         group_label=config.group_label,
         book_operation_count=world["book"].operation_count,
+        initial_baseline=initial_baseline,
+        exchange_fee_units=world["exchange_fee_units"],
+        exchange_risk_pnl_units=world["exchange_risk_pnl_units"],
     )
 
 
@@ -466,6 +478,19 @@ def build_study_report(results: list[RunResult]) -> dict:
             impact_bps.extend(s.impact_bp for s in compute_price_impact(r.events, mult=1000))
     report = build_report(classifications, metrics_list, continuous_samples, endpoint_samples)
     market_validation = build_market_validation_report(results)
+    # KPI-011: per-seed zero-sum declaration -- skips technical-invalid runs
+    # for the same reason build_market_validation_report does (a run whose
+    # event log failed integrity/conservation checks can't support any
+    # further declaration built from its account states).
+    zero_sum = {
+        r.seed: dataclasses.asdict(
+            build_zero_sum_declaration(
+                r.accounts, r.initial_baseline, r.exchange_fee_units, r.exchange_risk_pnl_units
+            )
+        )
+        for r in results
+        if not r.classification.is_technical_invalid
+    }
     return {
         "endpoint": {
             "rate": report.endpoint.rate,
@@ -487,6 +512,7 @@ def build_study_report(results: list[RunResult]) -> dict:
         "n_runs": len(results),
         "n_completed": sum(1 for r in results if r.terminated == "COMPLETED"),
         "market_validation": market_validation,
+        "zero_sum": zero_sum,
     }
 
 

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from market_game_sim.ledger.account import Account
 from market_game_sim.metrics.liquidation import LiquidationMetrics, RunClassification
 
 
@@ -148,4 +149,68 @@ def build_report(
         endpoint=build_endpoint_part(classifications, metrics_list, endpoint_samples),
         continuous=build_continuous_part(valid_samples),
         technical_invalid_rate=n_ti / n if n > 0 else 0.0,
+    )
+
+
+@dataclass
+class ZeroSumDeclaration:
+    """KPI-011 (PRD §13.4 / 方法论 §10.4): a closed market's aggregate PnL
+    net of fees is an accounting identity, not a finding -- must be stated
+    explicitly rather than reported as a result."""
+
+    total_pnl_units: int
+    expected_negative_fees_units: int
+    residual_units: int
+    per_agent_pnl_units: dict[str, int]
+    declaration_text: str
+
+
+def build_zero_sum_declaration(
+    accounts: dict[str, Account],
+    initial_baseline: dict[str, int],
+    exchange_fee_units: int,
+    exchange_risk_pnl_units: int,
+) -> ZeroSumDeclaration:
+    """Computes each agent's total PnL (``(wallet − entry_notional) −
+    initial_baseline``, same terms as ``ledger.conservation.check_c2``) and
+    states the identity explicitly, per PRD §13.4: "报告必须显式声明该恒等式，
+    避免把它误读为结论"——the only content-ful question is the distribution
+    ("谁亏、亏多少"), not the fact that the total is negative.
+
+    ``initial_baseline[agent_id]`` must be ``wallet_units − entry_notional_units``
+    **at t=0** for that agent, not just its starting wallet -- a freshly
+    bootstrapped agent starts flat (entry=0) so the two coincide, but a
+    pre-positioned account (``ExperimentConfig.extra_positions``, e.g.
+    bench/leverage_seed.py's already-leveraged victims) starts with a
+    nonzero entry_notional, and using wallet alone there would count its
+    starting notional exposure as a fabricated loss.
+
+    ``residual_units`` should always be 0 for a run that already passed
+    ``check_c1_c2`` (technical-invalid runs are excluded upstream); reported
+    rather than asserted here since this is the reporting layer, not the
+    validation gate.
+    """
+    per_agent_pnl = {
+        aid: (a.wallet_units - a.entry_notional_units) - initial_baseline.get(aid, 0)
+        for aid, a in accounts.items()
+    }
+    total_pnl = sum(per_agent_pnl.values())
+    expected = -(exchange_fee_units + exchange_risk_pnl_units)
+    residual = total_pnl - expected
+    n_losers = sum(1 for v in per_agent_pnl.values() if v < 0)
+    n_winners = sum(1 for v in per_agent_pnl.values() if v > 0)
+    text = (
+        f"封闭市场零和恒等式（PRD §13.4）：{len(per_agent_pnl)} 个代理扣除手续费/"
+        f"穿仓核销后的权益变动之和为 {total_pnl}（最小单位），恰等于交易所收取费用"
+        f"与穿仓核销之和的负值 {expected}（残差 {residual}，验证一致时应为 0）"
+        f"——这是会计恒等式，不是研究发现。"
+        f"有内容的问题是分布：{n_losers} 个代理净亏损、{n_winners} 个代理净盈利，"
+        f"具体到每个代理的金额见 per_agent_pnl_units。"
+    )
+    return ZeroSumDeclaration(
+        total_pnl_units=total_pnl,
+        expected_negative_fees_units=expected,
+        residual_units=residual,
+        per_agent_pnl_units=per_agent_pnl,
+        declaration_text=text,
     )
