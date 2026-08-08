@@ -20,7 +20,7 @@ from market_game_sim.eventlog.bootstrap import (
     build_book_payload,
 )
 from market_game_sim.kernel.runner import EventKernel
-from market_game_sim.ledger.account import Account
+from market_game_sim.ledger.account import Account, AccountState
 
 MULT = 1000
 MULT_HALF = MULT // 2
@@ -59,6 +59,10 @@ def _run(
     maker_bps: int = 0,
     taker_bps: int = 0,
     initial_price: int = 10000,
+    initial_bp_per_agent: dict[str, int] | None = None,
+    maint_bp: int | None = None,
+    target_bp: int | None = None,
+    liquidation_latency_ns: int = 1_000_000,
 ) -> tuple[list[dict], dict[str, Account]]:
     kernel = EventKernel(run_id="acc")
     kernel.bootstrap(
@@ -75,7 +79,16 @@ def _run(
         "maker_bps": maker_bps,
         "taker_bps": taker_bps,
         "initial_price_ticks": initial_price,
+        "agent_initial_bp": initial_bp_per_agent or {},
     }
+    if maint_bp is not None:
+        # Enables the two-phase risk scan (_run_post_batch_risk_check is a
+        # no-op when maint_bp is absent) -- only case 8/9 need this; every
+        # other case intentionally leaves it unset to keep the risk gate
+        # out of the picture.
+        world["maint_bp"] = maint_bp
+        world["target_bp"] = target_bp if target_bp is not None else 1000
+        world["liquidation_latency_ns"] = liquidation_latency_ns
     for e in events:
         kernel.enqueue(e)
     kernel.run(match_order, world, max_transactions=10000)
@@ -415,7 +428,13 @@ class TestCase5Fees:
             _limit("b1", "B", "SELL", ticks(100), units(10), t=100),
             _limit("a1", "A", "BUY", ticks(100), units(10), t=200),
         ]
-        records, accts = _run(events, accts, maker_bps=-1, taker_bps=5)
+        records, accts = _run(
+            events,
+            accts,
+            maker_bps=-1,
+            taker_bps=5,
+            initial_bp_per_agent={"A": 1000, "B": 1000},
+        )
         return records, accts
 
     def test_fee_integers(self):
@@ -489,6 +508,392 @@ class TestCase10Funding:
         assert accts["A"].wallet_units == cash(10000)
         assert accts["B"].wallet_units == cash(10000)
         assert accts["C"].wallet_units == cash(10000)
+
+
+class TestCase6LeverageBoundary:
+    """Case 6: 3x boundary -- ``initial_bp = ceil(10000/3) = 3334`` rejects 30.000.
+
+    Per acceptance-vectors §3 case 6 (with case 6 projections in §4):
+    29.994 qty -> 999.99996 IM -> 1000 equity -> PASS
+    29.995 qty -> 1000.0333 IM -> 1000 equity -> REJECT
+    30.000 qty -> 1000.2 IM -> 1000 equity -> REJECT
+    """
+
+    def test_initial_bp_3x_is_3334_ceiling(self):
+        from market_game_sim.ledger.account import initial_margin_bp_for_tier
+
+        assert initial_margin_bp_for_tier(3) == 3334
+
+    def test_29994_qty_fits_under_1000_equity(self):
+        from market_game_sim.ledger.margin import initial_margin_required
+
+        notional = 29994 * 10000 * 1000  # qty * price * MULT
+        im = initial_margin_required(notional, 3334)
+        assert im == 99_999_996_000  # < 1e11 = 1000 human
+        assert im < 100_000_000_000  # strict pass
+
+    def test_29995_qty_exceeds_equity(self):
+        from market_game_sim.ledger.margin import initial_margin_required
+
+        notional = 29995 * 10000 * 1000
+        im = initial_margin_required(notional, 3334)
+        assert im > 100_000_000_000  # reject
+
+    def test_30000_qty_exceeds_equity(self):
+        from market_game_sim.ledger.margin import initial_margin_required
+
+        notional = 30000 * 10000 * 1000
+        im = initial_margin_required(notional, 3334)
+        assert im > 100_000_000_000  # reject
+
+
+class TestCase7bReservedUnits:
+    """Case 7b: reserved_units -- total-occupancy (position + worst-case orders)."""
+
+    def test_scenario1_baseline(self):
+        from market_game_sim.ledger.reserved import (
+            compute_reserved_after,
+        )
+
+        r = compute_reserved_after(
+            position_units=100000,
+            active_orders=[],
+            risk_mark_ticks=10000,
+            initial_bp=1000,
+            fee_bps=5,
+            mult=1000,
+        )
+        assert r == 100_000_000_000
+
+    def test_scenario2_same_direction_buys(self):
+        from market_game_sim.ledger.reserved import (
+            ActiveOrder,
+            compute_reserved_after,
+        )
+
+        r = compute_reserved_after(
+            position_units=100000,
+            active_orders=[
+                ActiveOrder("BUY", 10000, 20000),
+                ActiveOrder("BUY", 10000, 30000),
+            ],
+            risk_mark_ticks=10000,
+            initial_bp=1000,
+            fee_bps=5,
+            mult=1000,
+        )
+        assert r == 150_250_000_000  # 1500 margin + 2.5 fees
+
+    def test_scenario3_bilateral_does_not_cancel(self):
+        from market_game_sim.ledger.reserved import (
+            ActiveOrder,
+            compute_reserved_after,
+        )
+
+        r = compute_reserved_after(
+            position_units=100000,
+            active_orders=[
+                ActiveOrder("BUY", 10000, 20000),
+                ActiveOrder("SELL", 10000, 50000),
+            ],
+            risk_mark_ticks=10000,
+            initial_bp=1000,
+            fee_bps=5,
+            mult=1000,
+        )
+        assert r == 120_350_000_000  # max(|120|, |50|) = 120 -> 1200 + 3.5 fees
+
+    def test_scenario4_after_buy_fill(self):
+        from market_game_sim.ledger.reserved import (
+            ActiveOrder,
+            compute_reserved_after,
+        )
+
+        r = compute_reserved_after(
+            position_units=120000,
+            active_orders=[ActiveOrder("SELL", 10000, 50000)],
+            risk_mark_ticks=10000,
+            initial_bp=1000,
+            fee_bps=5,
+            mult=1000,
+        )
+        assert r == 120_250_000_000  # 1200 + 2.5 fees
+
+    def test_reserved_delta_1_to_2(self):
+        from market_game_sim.ledger.reserved import (
+            ActiveOrder,
+            compute_reserved_after,
+        )
+
+        r1 = compute_reserved_after(
+            position_units=100000,
+            active_orders=[],
+            risk_mark_ticks=10000,
+            initial_bp=1000,
+            fee_bps=5,
+            mult=1000,
+        )
+        r2 = compute_reserved_after(
+            position_units=100000,
+            active_orders=[
+                ActiveOrder("BUY", 10000, 20000),
+                ActiveOrder("BUY", 10000, 30000),
+            ],
+            risk_mark_ticks=10000,
+            initial_bp=1000,
+            fee_bps=5,
+            mult=1000,
+        )
+        assert r2 - r1 == 50_250_000_000  # +502.5 human
+
+
+class TestCase8LiquidationRetry:
+    """Case 8: no-counterparty liquidation, no false retry, real retry on a
+    new trade (acceptance-vectors.md §3 案例8).  State-machine sequence, no
+    numeric assertions per the spec ("案例 8 为状态机序列，无数值断言").
+
+    A opens a leveraged long, M's resting sell drops risk_mark and triggers
+    PENDING_LIQUIDATION.  A's auto-scheduled LIQUIDATION order arrives with
+    nothing to trade against (book only has SELL-side liquidity) -> full
+    IOC cancel.  A same-side resting order (Y) then enters the book without
+    trading -- must NOT itself produce a new LIQUIDATION order (step 5:
+    "不触发重试"，挂单不改变 risk_mark).  A real trade (W/Z) then moves
+    risk_mark further -> triggers a genuine re-scan -> a second, larger
+    LIQUIDATION order (required_quantity recomputed against the new mark).
+    """
+
+    def _scenario(self):
+        lat = 1_000_000
+        accts = {
+            "M": Account("M", 10**16),
+            "A": Account(
+                "A",
+                wallet_units=5000 * CASH,
+                position_units=500_000,
+                entry_notional_units=50000 * CASH,
+            ),
+            "S": Account(
+                "S",
+                wallet_units=50000 * CASH,
+                position_units=-500_000,
+                entry_notional_units=-50000 * CASH,
+            ),
+            "X": Account("X", 10**16),
+            "Y": Account("Y", 10**16),
+            "W": Account("W", 10**16),
+            "Z": Account("Z", 10**16),
+        }
+        events = [
+            _limit("m1", "M", "SELL", 9400, 500_000, t=100),
+            {
+                "event_type": "ORDER_ARRIVAL",
+                "timestamp": 200,
+                "agent_id": "X",
+                "order_id": "x1",
+                "action": "SUBMIT",
+                "side": "BUY",
+                "order_type": "MARKET",
+                "price_ticks": None,
+                "quantity_units": 100_000,
+            },
+            # step 5: same-side resting order after the first (failed)
+            # liquidation attempt -- must not itself trigger a retry.
+            _limit("y1", "Y", "SELL", 9500, 1_000, t=200 + lat + 100),
+            # step 6: a real trade at a new price moves risk_mark further.
+            _limit("w1", "W", "SELL", 9000, 50_000, t=200 + lat + 200),
+            {
+                "event_type": "ORDER_ARRIVAL",
+                "timestamp": 200 + lat + 300,
+                "agent_id": "Z",
+                "order_id": "z1",
+                "action": "SUBMIT",
+                "side": "BUY",
+                "order_type": "MARKET",
+                "price_ticks": None,
+                "quantity_units": 50_000,
+            },
+        ]
+        for e in events:
+            e.setdefault("origin", "")
+        records, accts = _run(events, accts, maker_bps=0, taker_bps=0, maint_bp=500, target_bp=1000)
+        return records, accts
+
+    def test_sequence_matches_state_machine(self):
+        records, _ = self._scenario()
+        types = [
+            (r.get("event_type"), r.get("agent_id"), r.get("origin"))
+            for r in records
+            if r.get("event_type")
+            in ("TRADE_SETTLE", "MARGIN_CALL", "ORDER_ARRIVAL", "ORDER_CANCELLED")
+        ]
+        # 1. M/X trade (risk_mark drops) -> triggers phase-2 scan.
+        idx_trade1 = next(i for i, t in enumerate(types) if t[0] == "TRADE_SETTLE")
+        # 2. A flagged PENDING_LIQUIDATION, after the triggering trade.
+        idx_mc1 = next(i for i, t in enumerate(types) if t[0] == "MARGIN_CALL")
+        assert idx_mc1 > idx_trade1
+        assert types[idx_mc1][1] == "A"
+        # 3. A's LIQUIDATION order arrives.
+        idx_liq1 = next(
+            i for i, t in enumerate(types) if t[0] == "ORDER_ARRIVAL" and t[2] == "LIQUIDATION"
+        )
+        assert types[idx_liq1][1] == "A"
+        # 4. No counterparty -> full IOC cancel (no TRADE_SETTLE in between).
+        idx_cancel1 = idx_liq1 + 1
+        assert types[idx_cancel1][0] == "ORDER_CANCELLED"
+        # 5. Y's same-side resting order does not appear between the first
+        #    cancel and the next real trade as a MARGIN_CALL trigger --
+        #    i.e. no MARGIN_CALL immediately follows Y's ORDER_ARRIVAL.
+        idx_y = next(i for i, t in enumerate(types) if t[1] == "Y")
+        assert types[idx_y + 1][0] != "MARGIN_CALL"
+        # 6. W/Z trade happens after Y, moving risk_mark again.
+        idx_trade2 = next(i for i, t in enumerate(types) if t[0] == "TRADE_SETTLE" and i > idx_y)
+        assert idx_trade2 > idx_y
+        # 7. A second MARGIN_CALL + LIQUIDATION order follows the new trade.
+        idx_mc2 = next(i for i, t in enumerate(types) if t[0] == "MARGIN_CALL" and i > idx_trade2)
+        assert types[idx_mc2][1] == "A"
+        idx_liq2 = next(
+            i
+            for i, t in enumerate(types)
+            if t[0] == "ORDER_ARRIVAL" and t[2] == "LIQUIDATION" and i > idx_mc2
+        )
+        assert types[idx_liq2][1] == "A"
+
+    def test_first_liquidation_fully_cancelled_no_counterparty(self):
+        records, _ = self._scenario()
+        mcs = [r for r in records if r.get("event_type") == "MARGIN_CALL"]
+        first_req_qty = mcs[0]["required_quantity_units"]
+        cancels = [
+            r
+            for r in records
+            if r.get("event_type") == "ORDER_CANCELLED" and r.get("order_id") == "liq-A-4"
+        ]
+        assert len(cancels) == 1
+        assert cancels[0]["cancelled_qty_units"] == first_req_qty
+
+    def test_second_margin_call_recomputes_larger_requirement(self):
+        """risk_mark dropped further (9000 vs 9400) -> the recomputed
+        required_quantity for the second attempt must differ from (be
+        larger than) the first, confirming a genuine re-evaluation
+        happened rather than reusing stale state."""
+        records, _ = self._scenario()
+        mcs = [r for r in records if r.get("event_type") == "MARGIN_CALL"]
+        assert len(mcs) == 2
+        assert mcs[1]["required_quantity_units"] > mcs[0]["required_quantity_units"]
+
+
+class TestCase9BankruptcyWriteOff:
+    """Case 9: undercollateralized liquidation, phase-1 write-off, replay
+    (acceptance-vectors.md §3 案例9).  A(wallet=5000, tier=10) opens a
+    leveraged long, an unrelated C/D trade drops risk_mark to 80,
+    triggering PENDING_LIQUIDATION; A's liquidation trade against B closes
+    the position but leaves wallet negative (-5000) -- exactly the P0-G02
+    dead zone the spec calls out: once position hits 0 mid-transaction,
+    phase 2 (margin_ratio-based) would skip the account (margin_ratio is
+    null at position=0), so only phase 1's explicit
+    ``position==0 and wallet<0`` check can catch it, in the SAME
+    transaction as the liquidation trade.
+
+    The wallet=-1 cash_unit boundary ("最小的穿仓也必须被捕获") is covered
+    at the unit level in tests/unit/ledger/test_bankruptcy.py::
+    test_find_breached_returns_sorted.
+    """
+
+    def _scenario(self):
+        accts = {
+            "A": Account("A", cash(5000)),
+            "B": Account("B", cash(500000)),
+            "C": Account("C", cash(1000)),
+            "D": Account("D", cash(1000)),
+        }
+        events = [
+            _limit("b1", "B", "SELL", ticks(100), units(500), t=100),
+            _limit("a1", "A", "BUY", ticks(100), units(500), t=200),
+            _limit("d1", "D", "SELL", ticks(80), units(1), t=300),
+            _limit("c1", "C", "BUY", ticks(80), units(1), t=400),
+            _limit("b2", "B", "BUY", ticks(80), units(500), t=500),
+        ]
+        records, accts = _run(
+            events,
+            accts,
+            maker_bps=0,
+            taker_bps=0,
+            maint_bp=500,
+            target_bp=1000,
+            initial_bp_per_agent={"A": 1000},
+        )
+        return records, accts
+
+    def test_final_state_matches_table(self):
+        _, accts = self._scenario()
+        assert accts["A"].wallet_units == 0
+        assert accts["A"].position_units == 0
+        assert accts["A"].entry_notional_units == 0
+        assert accts["A"].state == AccountState.LIQUIDATED
+        assert accts["B"].wallet_units == cash(510000)
+        assert accts["B"].position_units == 0
+        assert accts["B"].entry_notional_units == 0
+        assert accts["C"].wallet_units == cash(1000)
+        assert accts["C"].position_units == units(1)
+        assert accts["C"].entry_notional_units == cash(80)
+        assert accts["D"].wallet_units == cash(1000)
+        assert accts["D"].position_units == -units(1)
+        assert accts["D"].entry_notional_units == -cash(80)
+
+    def test_step3_liquidation_trade_deltas(self):
+        records, _ = self._scenario()
+        trades = _trades(records)
+        liq_trade = next(
+            t for t in trades if t["price_ticks"] == ticks(80) and t["quantity_units"] > units(1)
+        )
+        by_agent = {p["agent_id"]: p for p in liq_trade["postings"]}
+        assert by_agent["A"]["wallet_delta_units"] == -cash(10000)
+        assert by_agent["A"]["position_delta_units"] == -units(500)
+        assert by_agent["A"]["entry_notional_delta_units"] == -cash(50000)
+        assert by_agent["B"]["wallet_delta_units"] == cash(10000)
+        assert by_agent["B"]["position_delta_units"] == units(500)
+        assert by_agent["B"]["entry_notional_delta_units"] == cash(50000)
+
+    def test_step4_write_off_posting_shape(self):
+        """事件 Schema §4.2.3: [ACCOUNT, EXCHANGE_RISK], exchange side's
+        *_after fields are null (not 0)."""
+        records, _ = self._scenario()
+        breached = next(
+            r
+            for r in records
+            if r.get("event_type") == "MARGIN_CALL" and r.get("verdict") == "BREACHED"
+        )
+        postings = breached["postings"]
+        assert len(postings) == 2
+        assert postings[0]["posting_type"] == "WRITE_OFF_POSTING"
+        assert postings[0]["role"] == "ACCOUNT"
+        assert postings[0]["agent_id"] == "A"
+        assert postings[0]["wallet_delta_units"] == cash(5000)
+        assert postings[0]["wallet_after_units"] == 0
+        assert postings[0]["position_after_units"] == 0
+        assert postings[0]["entry_notional_after_units"] == 0
+        assert postings[1]["posting_type"] == "WRITE_OFF_POSTING"
+        assert postings[1]["role"] == "EXCHANGE_RISK"
+        assert postings[1]["agent_id"] is None
+        assert postings[1]["wallet_delta_units"] == 0
+        assert postings[1]["wallet_after_units"] is None
+        assert postings[1]["position_after_units"] is None
+        assert postings[1]["entry_notional_after_units"] is None
+        assert postings[1]["risk_pnl_delta_units"] == -cash(5000)
+
+    def test_exchange_risk_pnl_matches_table(self):
+        records, _ = self._scenario()
+        breached = next(
+            r
+            for r in records
+            if r.get("event_type") == "MARGIN_CALL" and r.get("verdict") == "BREACHED"
+        )
+        assert breached["postings"][1]["risk_pnl_delta_units"] == -cash(5000)
+
+    def test_c1_conserved_throughout(self):
+        """Σposition == 0 at every C/D trade step (write-off doesn't touch
+        position, only wallet/risk)."""
+        records, accts = self._scenario()
+        assert sum(a.position_units for a in accts.values()) == 0
 
 
 # --------------------------------------------------------------------------- #

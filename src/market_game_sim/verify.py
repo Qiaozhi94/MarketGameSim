@@ -3,11 +3,21 @@
 Reconstructs book + account state from an event log WITHOUT importing
 ``kernel/`` or ``ledger/`` — proving the log is self-contained.
 
-Termination discrimination (§5.2): structural first (TI-5), then
-semantic (TI-4).  Order must not be reversed.
+Termination discrimination: structural first (TI-5), then semantic (TI-4).
 
-Book reconstruction follows 事件 Schema §4.7:
-  remaining_qty = ORDER_ARRIVAL.qty − ΣTRADE_SETTLE.qty − ΣORDER_CANCELLED.qty
+0.1.2 extensions (T506 / KPI-006):
+- WRITE_OFF_POSTING handling (was skipped)
+- MARGIN_CALL field validation
+- exchange_risk_pnl in C2
+- Causal chain coverage check (AGENT + LIQUIDATION)
+
+0.1.2 extension (T503 / KPI-009):
+- PnL bridge residual check (metrics.bridge.bridge_trade is a pure function
+  of posting/valuation-mark data, not a kernel/ledger reconstruction, so
+  importing it does not compromise the "self-contained" property above).
+  Asserted in the SAME verification pass as KPI-006/C1/C2, per the
+  acceptance-vectors.md contract requirement that KPI-009 not be a separate,
+  in-process-only code path.
 """
 
 from __future__ import annotations
@@ -17,8 +27,10 @@ import pathlib
 from collections import defaultdict
 from typing import Any
 
+from market_game_sim.metrics.bridge import bridge_trade
 
-def verify_log(path: str | pathlib.Path) -> dict[str, Any]:
+
+def verify_log(path: str | pathlib.Path, mult: int = 1000) -> dict[str, Any]:
     p = pathlib.Path(path)
     try:
         text = p.read_text(encoding="utf-8")
@@ -30,25 +42,25 @@ def verify_log(path: str | pathlib.Path) -> dict[str, Any]:
         return {"success": False, "error": "TI-5", "detail": "fewer than 2 lines"}
 
     records: list[dict[str, Any]] = []
-    rc_header: int | None = None
     for i, line in enumerate(lines):
         try:
             r = json.loads(line)
         except json.JSONDecodeError as exc:
             return {"success": False, "error": "TI-5", "detail": f"line {i + 1}: {exc}"}
         records.append(r)
-        if r.get("record_kind") == "RUN_HEADER":
-            rc_header = r.get("record_count")
 
     if records[0].get("record_kind") != "RUN_HEADER":
         return {"success": False, "error": "TI-5", "detail": "first is not RUN_HEADER"}
     if records[-1].get("record_kind") != "RUN_TRAILER":
         return {"success": False, "error": "TI-5", "detail": "last is not RUN_TRAILER"}
-    if rc_header is not None and rc_header != len(lines):
+
+    # record_count lives in RUN_TRAILER (§6.2), not RUN_HEADER
+    rc_trailer = records[-1].get("record_count")
+    if rc_trailer is not None and rc_trailer != len(lines):
         return {
             "success": False,
             "error": "TI-5",
-            "detail": f"record_count {rc_header} != {len(lines)}",
+            "detail": f"record_count {rc_trailer} != {len(lines)}",
         }
 
     trailer = records[-1]
@@ -60,7 +72,7 @@ def verify_log(path: str | pathlib.Path) -> dict[str, Any]:
         }
 
     events = [r for r in records if r.get("record_kind") == "EVENT"]
-    acc_state, book_state, causal_err = _rebuild(events)
+    acc_state, risk_pnl, book_state, causal_err = _rebuild(events)
     if causal_err:
         return {"success": False, "error": "TI-5", "detail": f"causal: {causal_err}"}
 
@@ -68,9 +80,17 @@ def verify_log(path: str | pathlib.Path) -> dict[str, Any]:
     if c1 != 0:
         return {"success": False, "error": "TI-5", "detail": f"C1 breach: Σ={c1}"}
 
-    c2_err = _check_c2(acc_state, events)
+    c2_err = _check_c2(acc_state, events, risk_pnl)
     if c2_err:
         return {"success": False, "error": "TI-5", "detail": f"C2: {c2_err}"}
+
+    kpi006 = _check_kpi006(events)
+    if kpi006:
+        return {"success": False, "error": "TI-5", "detail": f"KPI-006: {kpi006}"}
+
+    kpi009 = _check_kpi009_bridge(events, mult)
+    if kpi009:
+        return {"success": False, "error": "TI-5", "detail": f"KPI-009: {kpi009}"}
 
     by_txn: dict[int, list[int]] = defaultdict(list)
     for e in events:
@@ -89,17 +109,24 @@ def verify_log(path: str | pathlib.Path) -> dict[str, Any]:
         "account_count": len(acc_state),
         "c1_pass": c1 == 0,
         "causal_chain_pass": causal_err is None,
+        "kpi006_agent_covered": _origin_covered(events, "AGENT"),
+        "kpi006_liquidation_covered": _origin_covered(events, "LIQUIDATION"),
+        "kpi009_bridge_ok": True,
     }
 
 
-def _rebuild(
-    events: list[dict],
-) -> tuple[dict[str, dict], dict[str, dict], str | None]:
-    accounts: dict[str, dict[str, int]] = {}
-    book_orders: dict[str, dict] = {}
-    event_ids: dict[str, tuple[int, int, int]] = {}
-    causal_err: str | None = None
+def _origin_covered(events: list[dict], origin: str) -> bool:
+    return any(e.get("event_type") == "ORDER_ARRIVAL" and e.get("origin") == origin for e in events)
 
+
+def check_causal_references(events: list[dict]) -> str | None:
+    """Verify every ``caused_by_event_id`` resolves to a strictly earlier
+    event in the log (causal chain integrity, TI-1).  Returns ``None`` when
+    OK, else an error detail string.  Pure function of ``events`` -- no file
+    I/O -- so callers with an in-memory event list (e.g. the experiment
+    runner) can reuse it without going through :func:`verify_log`.
+    """
+    event_ids: dict[str, tuple[int, int, int]] = {}
     for e in events:
         eid = e.get("event_id", "")
         if eid:
@@ -109,12 +136,22 @@ def _rebuild(
         if caused_by:
             ref = event_ids.get(caused_by)
             if ref is None:
-                causal_err = f"dangling caused_by_event_id={caused_by}"
-            else:
-                rlk = (e["timestamp"], e["transaction_seq"], e["record_index"])
-                if rlk <= ref:
-                    causal_err = f"log_key {rlk} <= ref {ref}"
+                return f"dangling caused_by_event_id={caused_by}"
+            rlk = (e["timestamp"], e["transaction_seq"], e["record_index"])
+            if rlk <= ref:
+                return f"log_key {rlk} <= ref {ref}"
+    return None
 
+
+def _rebuild(
+    events: list[dict],
+) -> tuple[dict[str, dict], int, dict[str, dict], str | None]:
+    accounts: dict[str, dict[str, int]] = {}
+    book_orders: dict[str, dict] = {}
+    risk_pnl = 0
+    causal_err = check_causal_references(events)
+
+    for e in events:
         et = e.get("event_type", "")
 
         if et == "SNAPSHOT" and e.get("snapshot_type") == "ACCOUNT":
@@ -148,6 +185,15 @@ def _rebuild(
             if maker_id in book_orders:
                 book_orders[maker_id]["filled"] += fill_qty
 
+        elif et == "MARGIN_CALL":
+            for p in e.get("postings", []):
+                if p.get("posting_type") == "WRITE_OFF_POSTING":
+                    risk_pnl += p.get("risk_pnl_delta_units", 0)
+                    if p.get("role") == "ACCOUNT":
+                        aid = p.get("agent_id", "")
+                        if aid and aid in accounts:
+                            accounts[aid]["wallet_units"] += p.get("wallet_delta_units", 0)
+
         elif et == "ORDER_ARRIVAL" and e.get("action") == "SUBMIT":
             oid = e.get("order_id", "")
             otype = e.get("order_type", "")
@@ -167,7 +213,7 @@ def _rebuild(
                 book_orders[oid]["cancelled"] = cq
 
     if causal_err:
-        return accounts, {}, causal_err
+        return accounts, risk_pnl, {}, causal_err
 
     book: dict[str, dict[int, int]] = {"bids": defaultdict(int), "asks": defaultdict(int)}
     for o in book_orders.values():
@@ -180,10 +226,14 @@ def _rebuild(
         "asks": dict(sorted(book["asks"].items())),
     }
 
-    return accounts, book_plain, None
+    return accounts, risk_pnl, book_plain, None
 
 
-def _check_c2(accounts: dict[str, dict], events: list[dict]) -> str | None:
+def _check_c2(
+    accounts: dict[str, dict],
+    events: list[dict],
+    risk_pnl: int,
+) -> str | None:
     wallet_sum_0: int | None = None
     fees = 0
     for e in events:
@@ -196,8 +246,152 @@ def _check_c2(accounts: dict[str, dict], events: list[dict]) -> str | None:
     if wallet_sum_0 is None:
         return None
     wme = sum(a["wallet_units"] - a["entry_notional_units"] for a in accounts.values())
-    if wme + fees != wallet_sum_0:
-        return f"Σ={wme} + fees={fees} ≠ {wallet_sum_0}"
+    if wme + fees + risk_pnl != wallet_sum_0:
+        return f"Σ={wme} + fees={fees} + risk={risk_pnl} ≠ {wallet_sum_0}"
+    return None
+
+
+def _check_kpi009_bridge(events: list[dict], mult: int) -> str | None:
+    """Verify KPI-009: PnL bridge residual is exactly 0 for every
+    TRADE_POSTING (T503, metrics-dictionary §5.2).  Returns the first
+    non-zero-residual detail found, else None.
+    """
+    for e in events:
+        if e.get("event_type") != "TRADE_SETTLE":
+            continue
+        vm_before_h = e.get("valuation_mark_before_half_ticks", 0)
+        vm_after_h = e.get("valuation_mark_after_half_ticks", 0)
+        for p in e.get("postings", []):
+            if p.get("posting_type") != "TRADE_POSTING":
+                continue
+            result = bridge_trade(
+                posting=p,
+                vm_before_half=vm_before_h,
+                vm_after_half=vm_after_h,
+                trade_price_ticks=e.get("price_ticks", 0),
+                position_before_units=p.get("position_after_units", 0)
+                - p.get("position_delta_units", 0),
+                mult=mult,
+            )
+            if result["residual"] != 0:
+                return (
+                    f"trade {e.get('trade_id')} agent {p.get('agent_id')}: "
+                    f"residual {result['residual']} != 0"
+                )
+    return None
+
+
+def _log_key(e: dict) -> tuple:
+    return (e.get("timestamp", 0), e.get("transaction_seq", 0), e.get("record_index", 0))
+
+
+def _check_kpi006(events: list[dict]) -> str | None:
+    """Verify KPI-006: every AGENT/LIQUIDATION order links to a valid,
+    causally-ordered decision chain (event-schema.md §5.1/§5.2).
+
+    ``origin=AGENT``: ORDER_ARRIVAL.decision_event_id -> AGENT_DECIDE ->
+    (.observation_event_id) -> AGENT_OBSERVE -> (.market_data_event_id) ->
+    some earlier event (the very first observation of a run legitimately
+    points at the bootstrap ACCOUNT SNAPSHOT rather than a
+    MARKET_DATA_PUBLISH -- see agent/scheduler.py -- so this hop is not
+    type-checked, only existence/uniqueness/ordering).
+
+    ``origin=LIQUIDATION``: ORDER_ARRIVAL.decision_event_id -> MARGIN_CALL
+    -> (.caused_by_event_id) must resolve within the SAME transaction_seq
+    as the MARGIN_CALL, and (.risk_mark_event_id) likewise -- per
+    event-schema.md §5.2.  Not type-checked because a margin scan that
+    re-flags an already-PENDING_LIQUIDATION account on a transaction with
+    zero new trades legitimately sets risk_mark_event_id to that
+    transaction's own ORDER_ARRIVAL (record_index 0), not a TRADE_SETTLE
+    (book/matching.py::_run_post_batch_risk_check).
+
+    Every hop requires the target event_id to resolve to EXACTLY one event
+    (dangling or duplicate-matched references both fail) with a strictly
+    smaller log_key (timestamp, transaction_seq, record_index) than the
+    referencing event, per SC-006.
+    """
+    by_id: dict[str, dict] = {}
+    dup_ids: set[str] = set()
+    for e in events:
+        eid = e.get("event_id", "")
+        if not eid:
+            continue
+        if eid in by_id:
+            dup_ids.add(eid)
+        else:
+            by_id[eid] = e
+
+    def resolve(eid: str) -> tuple[dict | None, str | None]:
+        if not eid:
+            return None, "empty/missing reference"
+        if eid in dup_ids:
+            return None, f"{eid} matches multiple events"
+        target = by_id.get(eid)
+        if target is None:
+            return None, f"dangling reference {eid}"
+        return target, None
+
+    decision_ids = {e.get("event_id", "") for e in events if e.get("event_type") == "AGENT_DECIDE"}
+    mc_ids = {e.get("event_id", "") for e in events if e.get("event_type") == "MARGIN_CALL"}
+
+    for e in events:
+        if e.get("event_type") != "ORDER_ARRIVAL":
+            continue
+        origin = e.get("origin", "")
+        dec = e.get("decision_event_id", "")
+        oid = e.get("order_id")
+
+        if origin == "AGENT":
+            if not decision_ids:
+                return "AGENT orders exist but no AGENT_DECIDE in log"
+            if dec not in decision_ids:
+                return f"AGENT order {oid} missing decision {dec}"
+            decide, err = resolve(dec)
+            if err:
+                return f"AGENT order {oid}: decision_event_id {err}"
+            if _log_key(decide) >= _log_key(e):
+                return f"AGENT order {oid}: AGENT_DECIDE {dec} not strictly earlier"
+            obs_id = decide.get("observation_event_id", "")
+            observe, err = resolve(obs_id)
+            if err:
+                return f"AGENT_DECIDE {dec}: observation_event_id {err}"
+            if _log_key(observe) >= _log_key(decide):
+                return f"AGENT_DECIDE {dec}: AGENT_OBSERVE {obs_id} not strictly earlier"
+            md_id = observe.get("market_data_event_id", "")
+            publish, err = resolve(md_id)
+            if err:
+                return f"AGENT_OBSERVE {obs_id}: market_data_event_id {err}"
+            if _log_key(publish) >= _log_key(observe):
+                return f"AGENT_OBSERVE {obs_id}: market_data_event_id {md_id} not strictly earlier"
+
+        if origin == "LIQUIDATION":
+            if not mc_ids:
+                return "LIQUIDATION orders exist but no MARGIN_CALL in log"
+            if dec not in mc_ids:
+                return f"LIQUIDATION order {oid} missing MC {dec}"
+            mc, err = resolve(dec)
+            if err:
+                return f"LIQUIDATION order {oid}: decision_event_id {err}"
+            if _log_key(mc) >= _log_key(e):
+                return f"LIQUIDATION order {oid}: MARGIN_CALL {dec} not strictly earlier"
+            parent_id = mc.get("caused_by_event_id", "")
+            parent, err = resolve(parent_id)
+            if err:
+                return f"MARGIN_CALL {dec}: caused_by_event_id {err}"
+            if parent.get("transaction_seq") != mc.get("transaction_seq"):
+                return (
+                    f"MARGIN_CALL {dec}: caused_by_event_id {parent_id} not in same transaction_seq"
+                )
+            if _log_key(parent) >= _log_key(mc):
+                return f"MARGIN_CALL {dec}: caused_by_event_id {parent_id} not strictly earlier"
+            rm_id = mc.get("risk_mark_event_id", "")
+            risk_mark, err = resolve(rm_id)
+            if err:
+                return f"MARGIN_CALL {dec}: risk_mark_event_id {err}"
+            if risk_mark.get("transaction_seq") != mc.get("transaction_seq"):
+                return f"MARGIN_CALL {dec}: risk_mark_event_id {rm_id} not in same transaction_seq"
+            if _log_key(risk_mark) >= _log_key(mc):
+                return f"MARGIN_CALL {dec}: risk_mark_event_id {rm_id} not strictly earlier"
     return None
 
 

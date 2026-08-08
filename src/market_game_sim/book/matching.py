@@ -32,7 +32,18 @@ from market_game_sim.ledger.account import (
     risk_equity,
 )
 from market_game_sim.ledger.fees import compute_notional_and_fees
-from market_game_sim.ledger.reserved import ActiveOrder, compute_reserved_after, fee_bps_cap
+from market_game_sim.ledger.reserved import (
+    ActiveOrder,
+    PreMatchResult,
+    compute_reserved_after,
+    compute_reserved_with_prematch,
+    fee_bps_cap,
+)
+from market_game_sim.ledger.risk import (
+    MarginCallRecord,
+    run_phase1_breaches,
+    run_phase2_margin_scan,
+)
 
 _INITIAL_MARGIN_BP_011 = 10000
 _DEFAULT_MULT = 1000
@@ -64,22 +75,42 @@ def match_order(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
     if event["action"] == "CANCEL":
         return _handle_cancel(event, book, world, kernel)
 
-    # ── 撮合 §5 step 3: initial margin check (stub in 0.1.1) ──────
+    # ── 0.1.2 T202b: LIQUIDATION_STALE check for expired liquidation orders ──
+    if event.get("origin") == "LIQUIDATION":
+        agent_id = event.get("agent_id")
+        acct = world["accounts"].get(agent_id)
+        order_gen = event.get("liquidation_generation")
+        if acct is None or acct.state.value != "PENDING_LIQUIDATION" or order_gen is None:
+            event["accepted"] = False
+            event["reject_reason"] = "LIQUIDATION_STALE"
+            event["reserved_delta_units"] = 0
+            return []
+        if order_gen != acct.liquidation_generation:
+            event["accepted"] = False
+            event["reject_reason"] = "LIQUIDATION_STALE"
+            event["reserved_delta_units"] = 0
+            return []
+
+    # ── 撮合 §5 step 3: initial margin check (0.1.2 real gate) ──
     agent_id = event.get("agent_id")
     acct = world["accounts"].get(agent_id)
     if acct is not None:
-        reserved_after = event.get("reserved_delta_units", 0)
-        ok, reject = regime.margin_rule(
-            acct,
-            event.get("quantity_units", 0),
-            event.get("price_ticks", 0),
-            world.get("config"),
-            reserved_after,
-        )
-        if not ok:
-            event["accepted"] = False
-            event["reject_reason"] = reject
-            return []
+        reserved_delta = event.get("reserved_delta_units", 0)
+        qty = event.get("quantity_units", 0)
+        is_position_reducing = False
+        if qty > 0 and acct.position_units != 0:
+            side = event.get("side", "BUY")
+            new_pos = acct.position_units + (qty if side == "BUY" else -qty)
+            is_position_reducing = abs(new_pos) < abs(acct.position_units)
+        if is_position_reducing:
+            pass
+        else:
+            re = risk_equity(acct, book.last_ticks or initial_price, world["_cfg"]["mult"])
+            if acct.reserved_units + reserved_delta > re:
+                event["accepted"] = False
+                event["reject_reason"] = "INSUFFICIENT_MARGIN"
+                event["reserved_delta_units"] = 0
+                return []
 
     caused_by = f"e{kernel.current_transaction_seq}_0"
     records: list[dict] = []
@@ -139,6 +170,7 @@ def match_order(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
             fill_qty=fill_qty,
             maker_consumed=maker_consumed,
             world=world,
+            parent_ts=event["timestamp"],
         )
 
         records.append(
@@ -195,6 +227,9 @@ def match_order(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
     # ── 撮合 §5 step 6: price bounds (stub in 0.1.1) ────────────
     # settlement_rule is INSTANT (inline — no delayed clearing needed).
     regime.price_bound(book.last_ticks or initial_price, world.get("config"))
+
+    # ── 0.1.2 T201: two-phase risk check after batch settlement ────
+    records.extend(_run_post_batch_risk_check(event, book, world, kernel, records))
 
     if book.dirty:
         records.append(_build_market_data_publish(book))
@@ -309,6 +344,7 @@ def _settle_fill(
     fill_qty: int,
     maker_consumed: bool,
     world: dict,
+    parent_ts: int = 0,
 ) -> list[dict[str, Any]]:
     cfg = world["_cfg"]
     mult = cfg["mult"]
@@ -337,6 +373,10 @@ def _settle_fill(
     taker_reserved_after = _reserved_for(world, taker_acct, taker_agent_id, risk_mark)
     maker_acct.reserved_units = maker_reserved_after
     taker_acct.reserved_units = taker_reserved_after
+
+    _record_trade_history(world, maker.agent_id, price, fill_qty, parent_ts)
+    if taker_agent_id != maker.agent_id:
+        _record_trade_history(world, taker_agent_id, price, fill_qty, parent_ts)
 
     maker_posting = _build_trade_posting(
         agent_id=maker.agent_id,
@@ -398,6 +438,47 @@ def _crosses(taker_side: str, limit_price: int | None, maker_price: int) -> bool
     if taker_side == "BUY":
         return maker_price <= limit_price
     return maker_price >= limit_price
+
+
+def _pre_match(event: dict, book: Book, mult: int) -> PreMatchResult:
+    """T102/T103 (§2.18): non-mutating dry-run walk of the opposite side of
+    the book, at the REAL per-level maker prices, to split a candidate
+    LIMIT order's admission-check fee estimate into the immediately-filled
+    portion (exact notional, known prices) vs. the resting remainder
+    (unknown future fill price -- estimated at the candidate's own limit
+    price, the worst case for a resting order per 账户合同 §3.3).
+
+    Does not account for self-trade-prevention skips (matching.py's real
+    loop cancels a resting order that shares the taker's agent_id instead
+    of filling it) -- reserved_units is a worst-case margin estimate, and
+    treating a would-be-skipped level as fillable only makes the estimate
+    more conservative, never under-reserves.
+    """
+    taker_side = event.get("side", "BUY")
+    opposite_side = "SELL" if taker_side == "BUY" else "BUY"
+    limit_price = event.get("price_ticks")
+    remaining = event.get("quantity_units", 0)
+    levels = book.ask_levels() if opposite_side == "SELL" else book.bid_levels()
+
+    immediate_qty = 0
+    immediate_notional = 0
+    for level_price, level_qty in levels:
+        if remaining <= 0:
+            break
+        if not _crosses(taker_side, limit_price, level_price):
+            break
+        take = min(remaining, level_qty)
+        immediate_qty += take
+        immediate_notional += take * level_price * mult
+        remaining -= take
+
+    resting_qty = max(event.get("quantity_units", 0) - immediate_qty, 0)
+    return PreMatchResult(
+        immediate_qty_units=immediate_qty,
+        immediate_notional=immediate_notional,
+        resting_qty_units=resting_qty,
+        reservation_mark_ticks=limit_price or 0,
+    )
 
 
 # --------------------------------------------------------------------------- #
@@ -491,27 +572,26 @@ def _populate_r0_defaults(event: dict, book: Book, initial_price: int, world: di
         return
 
     risk_mark = book.last_ticks or initial_price
+    cfg = world["_cfg"]
+    active_orders = _active_orders(world, agent_id)
     old_reserved = _reserved_for(world, account, agent_id, risk_mark)
 
-    new_order = ActiveOrder(
+    candidate = ActiveOrder(
         side=event.get("side", "BUY"),
         price_ticks=event.get("price_ticks") or risk_mark,
         quantity_units=event.get("quantity_units", 0),
     )
-    _add_active_order(
-        world,
-        RestingOrder(
-            order_id=event.get("order_id", "_r0_tmp"),
-            agent_id=agent_id,
-            side=new_order.side,
-            order_type="LIMIT",
-            price_ticks=new_order.price_ticks,
-            quantity_units=new_order.quantity_units,
-            transaction_seq=0,
-        ),
+    pre_match = _pre_match(event, book, cfg["mult"])
+    new_reserved, _fee_immediate, _fee_resting = compute_reserved_with_prematch(
+        position_units=account.position_units,
+        active_orders=active_orders,
+        candidate=candidate,
+        pre_match=pre_match,
+        risk_mark_ticks=risk_mark,
+        initial_bp=_initial_bp(world, agent_id),
+        fee_bps=cfg["fee_bps_cap"],
+        mult=cfg["mult"],
     )
-    new_reserved = _reserved_for(world, account, agent_id, risk_mark)
-    _remove_active_order(world, event.get("order_id", "_r0_tmp"), agent_id)
 
     event["reserved_delta_units"] = new_reserved - old_reserved
 
@@ -605,3 +685,127 @@ def _build_market_data_publish(book: Book) -> dict[str, Any]:
         "ask_depth_k": book.ask_depth_k(),
         "last": book.last_ticks,
     }
+
+
+def _record_trade_history(world: dict, agent_id: str, price: int, qty: int, ts: int) -> None:
+    """Record a trade in world["trade_history"] for factor computation (§1.5)."""
+    hist = world.setdefault("trade_history", {})
+    hist.setdefault(agent_id, []).append(
+        {"price_ticks": price, "quantity_units": qty, "timestamp": ts}
+    )
+
+
+def _run_post_batch_risk_check(
+    event: dict,
+    book: Book,
+    world: dict,
+    kernel: EventKernel,
+    trade_records: list[dict],
+) -> list[dict]:
+    """T201: Two-phase risk check after batch settlement.
+
+    Called once per ORDER_ARRIVAL after all fills are settled, before
+    MARKET_DATA_PUBLISH.  Returns MARGIN_CALL records.  Enqueues
+    LIQUIDATION orders for actionable verdicts.
+
+    When the required config (maint_bp, target_bp) is absent from
+    ``world``, returns an empty list (no-op in 0.1.1-style tests).
+    """
+    maint_bp = world.get("maint_bp")
+    if maint_bp is None:
+        return []
+    target_bp = world.get("target_bp", 1000)
+    taker_bps = world.get("taker_bps", 5)
+    mult = world.get("mult", 1000)
+
+    accounts = world.get("accounts", {})
+    risk_mark_ticks = book.last_ticks or world.get("initial_price_ticks", 10000)
+    touched_agent_ids = set()
+    for tr in trade_records:
+        if tr.get("event_type") != "TRADE_SETTLE":
+            continue
+        for p in tr.get("postings") or []:
+            aid = p.get("agent_id")
+            if aid:
+                touched_agent_ids.add(aid)
+
+    caused_by = f"e{kernel.current_transaction_seq}_0"
+    last_trade_idx = len(trade_records)
+    risk_mark_event_id = (
+        f"e{kernel.current_transaction_seq}_{last_trade_idx}"
+        if last_trade_idx > 0
+        else f"e{kernel.current_transaction_seq}_0"
+    )
+
+    risk_pnl = world.get("exchange_risk_pnl_units", 0)
+    breach_records, risk_pnl = run_phase1_breaches(
+        accounts=accounts,
+        exchange_risk_pnl_units=risk_pnl,
+        touched_agent_ids=list(touched_agent_ids),
+        caused_by_event_id=caused_by,
+        risk_mark_event_id=risk_mark_event_id,
+    )
+    world["exchange_risk_pnl_units"] = risk_pnl
+
+    margin_records = run_phase2_margin_scan(
+        accounts=accounts,
+        risk_mark_ticks=risk_mark_ticks,
+        maint_bp=maint_bp,
+        target_bp=target_bp,
+        taker_bps=taker_bps,
+        mult=mult,
+        caused_by_event_id=caused_by,
+        risk_mark_event_id=risk_mark_event_id,
+        parent_chain_id=None,
+        parent_chain_depth=None,
+        parent_agent_id=None,
+        this_event_id=f"mc{kernel.current_transaction_seq:06d}",
+    )
+
+    all_mc: list[MarginCallRecord] = sorted(
+        breach_records + margin_records, key=lambda r: r.agent_id
+    )
+
+    out: list[dict[str, Any]] = []
+    liquidation_latency = world.get("liquidation_latency_ns", 1_000_000)
+    mc_base_index = 1 + len(trade_records)
+    for mc_idx, mc in enumerate(all_mc):
+        out.append(
+            {
+                "event_type": "MARGIN_CALL",
+                "agent_id": mc.agent_id,
+                "caused_by_event_id": mc.caused_by_event_id,
+                "risk_mark_event_id": mc.risk_mark_event_id,
+                "margin_ratio_bp": mc.margin_ratio_bp,
+                "maintenance_bp": mc.maintenance_bp,
+                "verdict": mc.verdict,
+                "required_quantity_units": mc.required_quantity_units,
+                "chain_id": mc.chain_id,
+                "chain_depth": mc.chain_depth,
+                "liquidation_generation_after": mc.liquidation_generation_after,
+                "postings": mc.postings,
+            }
+        )
+        mc_event_id = f"e{kernel.current_transaction_seq}_{mc_base_index + mc_idx}"
+        if mc.verdict == "PENDING_LIQUIDATION" and mc.required_quantity_units > 0:
+            acct = accounts.get(mc.agent_id)
+            gen = acct.liquidation_generation if acct else 0
+            order_ts = event["timestamp"] + liquidation_latency
+            kernel.enqueue(
+                {
+                    "event_type": "ORDER_ARRIVAL",
+                    "timestamp": order_ts,
+                    "agent_id": mc.agent_id,
+                    "order_id": f"liq-{mc.agent_id}-{kernel.current_transaction_seq}",
+                    "action": "SUBMIT",
+                    "side": "SELL" if (acct and acct.position_units > 0) else "BUY",
+                    "order_type": "MARKET",
+                    "price_ticks": None,
+                    "quantity_units": mc.required_quantity_units,
+                    "origin": "LIQUIDATION",
+                    "decision_event_id": mc_event_id,
+                    "trigger_ratio_bp": mc.trigger_ratio_bp,
+                    "liquidation_generation": gen,
+                }
+            )
+    return out
