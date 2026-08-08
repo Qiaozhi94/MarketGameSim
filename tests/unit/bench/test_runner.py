@@ -9,8 +9,12 @@ docs/reviews/2026-08-08j-... and the bench/calib.py module docstring).
 
 from __future__ import annotations
 
+from pathlib import Path
+
 from market_game_sim.bench.runner import build_experiment_config, run_benchmark_config
-from market_game_sim.config.parser import parse_config_dict
+from market_game_sim.config.parser import parse_config, parse_config_dict
+
+BENCH_001_PATH = Path(__file__).resolve().parents[3] / "benchmarks" / "BENCH-001.yaml"
 
 _MARKET = {
     "symbol": "SYNTH",
@@ -142,3 +146,42 @@ class TestRunBenchmarkConfig:
             "cancels",
             "one_sided_book_events",
         }
+
+
+class TestCalibratedFullScale:
+    """E5 (0.1.2 退出条件): the real BENCH-001.yaml population (190 agents,
+    100k transactions) with ``calibrated=True``, confirming all five README
+    §1.1 coverage assertions actually pass -- not just that the calibration
+    mechanism exists. Runs the real full-scale config (~6s), unlike the
+    other tests in this file (small hand-built configs, seconds faster) --
+    the shock/leverage-seed parameters were tuned specifically against this
+    population's real depth/dynamics, so a scaled-down substitute wouldn't
+    prove anything about the actual calibration.
+
+    Negative half is `_small_config_dict`-based tests above already
+    covering `calibrated=False` (the default): no extra positions/events,
+    behavior unchanged.
+    """
+
+    def test_calibrated_run_passes_all_five_coverage_assertions(self):
+        parsed = parse_config(BENCH_001_PATH)
+        result = run_benchmark_config(parsed, calibrated=True)
+        assert result.terminated == "COMPLETED"
+        assert result.coverage_valid, result.coverage_failures
+        assert result.coverage.liquidations >= 1
+        assert result.coverage.chained_liquidations >= 1
+        assert result.coverage.partial_fills >= 1
+        assert result.coverage.cancels >= 1
+        assert result.coverage.one_sided_book_events >= 1
+
+    def test_uncalibrated_run_of_the_same_config_fails_coverage(self):
+        """Negative case using the SAME real population: without
+        ``calibrated=True``, the market settles into the static equilibrium
+        documented in the E5 evidence-index entry and coverage stays
+        invalid -- proves the calibration, not the population alone, is
+        what makes the difference."""
+        parsed = parse_config(BENCH_001_PATH)
+        result = run_benchmark_config(parsed, calibrated=False)
+        assert result.terminated == "COMPLETED"
+        assert not result.coverage_valid
+        assert result.coverage.liquidations == 0

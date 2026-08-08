@@ -284,6 +284,13 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
         accounts[spec.agent_id] = Account(agent_id=spec.agent_id, wallet_units=10**14)
     for agent_id, wallet_units in config.extra_accounts.items():
         accounts[agent_id] = Account(agent_id=agent_id, wallet_units=wallet_units)
+    for agent_id, state in config.extra_positions.items():
+        accounts[agent_id] = Account(
+            agent_id=agent_id,
+            wallet_units=state.get("wallet_units", 0),
+            position_units=state.get("position_units", 0),
+            entry_notional_units=state.get("entry_notional_units", 0),
+        )
     initial_wallet_sum = sum(a.wallet_units for a in accounts.values())
 
     kernel = EventKernel(run_id=f"exp-s{config.seed}")

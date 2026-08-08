@@ -3,8 +3,9 @@
     "purpose": "T705: 0.1.2 退出检查清单（E1-E7 + 附加门槛）的机器可读证据索引",
     "spec": "specs/v0.1-belief-testing-laboratory/0.1.2-leverage-and-first-experiment/tasks.md",
     "generated": "2026-08-08",
-    "generated_by": "第17轮修复报告 docs/reviews/2026-08-08j-v0.1.2-fix-verification-round17.md 之后的核查",
-    "note": "status=met 表示已有可重复运行的测试/机制证据；status=not_met 表示机制可能存在但尚无真实研究运行的达标结果；本索引只记录已验证事实，不预判未做的工作"
+    "last_updated": "2026-08-09",
+    "generated_by": "第17轮修复报告 docs/reviews/2026-08-08j-v0.1.2-fix-verification-round17.md 之后的核查；第18/19轮补充E5标定",
+    "note": "status=met 表示已有可重复运行的测试/机制证据；status=not_met 表示机制可能存在但尚无真实运行的达标结果；status=partially_met 表示复合条件中部分子项已达标、部分仍未（见该条目notes的具体拆分）；本索引只记录已验证事实，不预判未做的工作"
   },
   "items": [
     {
@@ -69,12 +70,14 @@
       "id": "E5",
       "description": "BENCH-001 性能和覆盖断言全部通过",
       "tasks": ["T701", "T702", "T703"],
-      "status": "not_met",
+      "status": "partially_met",
       "evidence": [
-        "src/market_game_sim/bench/ (population.py, calib.py, coverage.py, runner.py, shock.py)",
-        "tests/unit/bench/"
+        "src/market_game_sim/bench/ (population.py, calib.py, coverage.py, runner.py, shock.py, leverage_seed.py)",
+        "tests/unit/bench/test_runner.py::TestCalibratedFullScale",
+        "tests/unit/book/test_chain_cascade.py",
+        "src/market_game_sim/book/matching.py::_run_post_batch_risk_check (chain_depth wiring fix)"
       ],
-      "notes": "机制已实现并测试，但『通过』要求的是一次真实BENCH-001运行满足§1.1五项覆盖断言。§6.2（全撤重报）修复前100k事务实测0强平/0部分成交/0撤单、耗时198秒；修复后重跑：耗时降至6.03秒（陈旧挂单堆积曾是撮合性能的主要拖累，副作用式验证了§6.2修复的必要性）、撤单28482笔（min_cancels通过）、单边簿事件1次（通过），但强平/连锁强平/部分成交三项仍为0，未达标。深入标定尝试（同一轮内）：(1) 单纯增大max_transactions至1M仍0强平——价格在~99笔成交后就停在6-tick窄幅区间，说明不是『时间不够』；(2) 一次性大单冲击（10万~1500万单位、多种时机）价格几乎不动——180个代理每决策周期全撤重报，一个冲击不到一个决策周期就被填回去；(3) 改为持续冲击（每50-200ms推一次）确实能把价格推动约5%，但没有代理持有足够大的仓位去感受这个跌幅（max_order_qty=50人类单位/决策周期严重限制建仓速度）；(4) 用静态agent_signals强制部分代理满仓做多信号+调高其max_order_qty和aggressiveness_bp试图快速建仓再冲击，结果触发了真实的正反馈环——买盘推高价格→推高权益→推高目标仓位→更多买盘——完全压过冲击方向，价格反而涨到10716、仓位失控膨胀到145,950手（对100,000手钱包）。结论：这不是简单调参能解决的，需要更审慎地把『建仓』和『冲击』彻底分阶段设计（或先冻结强制代理的目标仓位再冲击），留待后续专门排期。bench/shock.py::build_shock_series（持续冲击机制本身）已验证有效并保留、有结构性单测，但未接入bench/runner.py，不构成『已解决』。reference-machine.md要求的正式性能标定（CPU亲和性锁P核+高性能电源计划+5次中位数）也未执行，book_operations_golden和CALIB-001参考耗时均未冻结。"
+      "notes": "覆盖断言五项现已真实达标：`python -m market_game_sim.bench --config benchmarks/BENCH-001.yaml --calibrated-coverage`（或 run_benchmark_config(parsed, calibrated=True)）对真实190代理/100k事务运行产出 liquidations=42, chained_liquidations=1, partial_fills=76, cancels=27402, one_sided_book_events=76，coverage_valid=True，重复运行结果逐字节一致（确定性）。标定过程：(1)(2)(3)(4) 见本条目历史记录的四轮失败尝试（一次性冲击不移动价格、持续冲击移动价格但代理仓位太小、强制建仓触发正反馈环失控）；最终改用bench/leverage_seed.py直接把账户预置成已开仓的杠杆仓位（跳过决策循环建仓阶段，复用acceptance-vectors.md案例7已验证的账户数学），配合bench/shock.py的持续冲击推动价格，20个预置账户用stagger_position_step错开强平阈值。过程中额外发现并修复一个真实bug：`_run_post_batch_risk_check`（book/matching.py）从未把`parent_chain_id`传给`run_phase2_margin_scan`——链式深度递增逻辑本身（`ledger/risk.py::_chain_attrs_for`）早就实现且有直接单测，但唯一调用点硬编码传`None`，导致任何真实运行里`chain_depth`都不可能超过0，是与§6.2同一模式的『组件已实现测试、从未接入真实链路』。已修复+故障注入验证。**性能一侧仍未达标**：T703要求的『参考口径归一化耗时』依赖reference-machine.md的CALIB-001正式标定（锁CPU亲和性到P核+高性能电源计划+5次中位数），本环境判断不出P核编号，做不到——不过§6.2修复后全量100k事务未归一化实测6.3秒，远低于10秒门槛，正式标定大概率会通过，只是流程本身没走。book_operations_golden和CALIB-001参考耗时仍未冻结。calibrated=True的shock/leverage_seed参数是针对BENCH-001.yaml当前190代理构成手工调校的，population明显变化需要重新标定，不是通用算法。"
     },
     {
       "id": "E6",

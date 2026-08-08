@@ -757,6 +757,25 @@ def _run_post_batch_risk_check(
     )
     world["exchange_risk_pnl_units"] = risk_pnl
 
+    # 事件 Schema §4.2.2: if THIS batch was triggered by a liquidation
+    # order's own trade (origin=LIQUIDATION), any account newly flagged in
+    # this scan was caused by that liquidation's price impact -- it must
+    # extend the same chain (parent's chain_id, depth+1), not start a fresh
+    # chain at depth 0. Without this, chain_depth can never exceed 0 in a
+    # real run: run_phase2_margin_scan/_chain_attrs_for already implement
+    # the increment (unit-tested directly), but this was the only call site
+    # and it always passed parent_chain_id=None, so genuine cascades were
+    # never actually observable end-to-end.
+    parent_chain_id: str | None = None
+    parent_chain_depth: int | None = None
+    parent_agent_id: str | None = None
+    if event.get("origin") == "LIQUIDATION":
+        liquidator = accounts.get(event.get("agent_id"))
+        if liquidator is not None and liquidator.chain_id is not None:
+            parent_chain_id = liquidator.chain_id
+            parent_chain_depth = liquidator.chain_depth
+            parent_agent_id = event.get("agent_id")
+
     margin_records = run_phase2_margin_scan(
         accounts=accounts,
         risk_mark_ticks=risk_mark_ticks,
@@ -766,9 +785,9 @@ def _run_post_batch_risk_check(
         mult=mult,
         caused_by_event_id=caused_by,
         risk_mark_event_id=risk_mark_event_id,
-        parent_chain_id=None,
-        parent_chain_depth=None,
-        parent_agent_id=None,
+        parent_chain_id=parent_chain_id,
+        parent_chain_depth=parent_chain_depth,
+        parent_agent_id=parent_agent_id,
         this_event_id=f"mc{kernel.current_transaction_seq:06d}",
     )
 

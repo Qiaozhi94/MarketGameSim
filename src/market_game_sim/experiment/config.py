@@ -35,6 +35,16 @@ class ExperimentConfig:
     # configs simply never set these and see no behavior change.
     extra_accounts: dict[str, int] = field(default_factory=dict)  # agent_id -> wallet_units
     extra_events: list[dict] = field(default_factory=list)
+    # Bootstrap accounts directly into an already-open position (wallet_units/
+    # position_units/entry_notional_units), bypassing the normal decision loop
+    # entirely. bench/shock.py's calibration found that building a leveraged
+    # position *through* AGENT_DECIDE and then shocking it fights itself (the
+    # forced buying pressure feeds back into the position size before the
+    # shock can land) -- pre-positioning sidesteps that by never running a
+    # buildup phase at all. These accounts get no AgentSpec and never decide;
+    # they are pure static risk to be tested against, like the "A" account in
+    # acceptance-vectors.md 案例7/8.
+    extra_positions: dict[str, dict[str, int]] = field(default_factory=dict)
 
 
 def compute_config_hash(config: ExperimentConfig) -> str:

@@ -26,6 +26,15 @@ def main(argv: list[str] | None = None) -> int:
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument("--config", help="path to a BENCH-001-shaped YAML config")
     group.add_argument("--calibrate", action="store_true", help="run CALIB-001 (5x, report median)")
+    parser.add_argument(
+        "--calibrated-coverage",
+        action="store_true",
+        help=(
+            "inject the pre-positioned leveraged accounts + sustained shock "
+            "needed for the coverage assertions to pass (see bench/runner.py's "
+            "_CALIBRATED_VICTIM_KW/_CALIBRATED_SHOCK_KW); only meaningful with --config"
+        ),
+    )
     args = parser.parse_args(argv)
 
     if args.calibrate:
@@ -39,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps(report, indent=2))
         return 0
 
-    result = run_benchmark(args.config)
+    result = run_benchmark(args.config, calibrated=args.calibrated_coverage)
     print(json.dumps(result.as_dict(), indent=2))
     return 0 if result.coverage_valid else 1
 
