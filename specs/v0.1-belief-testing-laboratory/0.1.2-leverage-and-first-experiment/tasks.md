@@ -283,8 +283,15 @@
       P核物理编号，锁定对应逻辑处理器0-11），CALIB-001参考耗时0.195秒、BENCH-001
       归一化耗时6.11秒（均5次中位数），远低于10秒门槛，`book_operations_golden`
       已冻结（29310）
-- [ ] E6 KPI-005、KPI-007、KPI-010、KPI-011 达标（T605、T606）——产出机制已实现，
-      尚无一次正式研究运行 declare 达标
+- [x] E6 KPI-005、KPI-007、KPI-010、KPI-011 达标（T605、T606）——排查发现
+      KPI-011（零和恒等式显式声明）此前全仓库零实现，T605历史标记`[x]`时的
+      声称与实际代码不符，已补齐`metrics/report.py::build_zero_sum_declaration`
+      并接入`build_study_report`；随后跑一次真实配对研究运行（2做市商+20散户，
+      leverage_tier 3x/10x单维度对照，5个随机种子，非BENCH-001基准/非人工预置
+      杠杆账户）联合验证四项KPI：KPI-007条件性结论正确生成、KPI-010用5个种子
+      非单路径、KPI-005六项逐一声明（本次规模下诚实declare为NOT_APPLICABLE，
+      是KPI-005认可的三种声明之一）、KPI-011零和恒等式在10次真实运行上残差
+      全部为0。详见`docs/experiments/0.1.2-e6-demonstration-run.md`
 - [x] **E7** KPI-006 完整因果链机器验证，KPI-009 在真实研究运行下逐事件成立（T503、T506）
 - [x] 附加门槛：保证金/强平覆盖 ≥ 90%，完整运行可确定重现（T209、T704—T705）
 

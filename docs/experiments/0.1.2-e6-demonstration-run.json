@@ -1,0 +1,1053 @@
+{
+  "comparison": {
+    "n_seeds": 5,
+    "treatment_field": "leverage_tier",
+    "control_config_hash": "e5ab228148b22e77c3aef04888a3c34d",
+    "treatment_config_hash": "778cb78363bd1b94945fc45dff162007",
+    "control": {
+      "n_completed": 5,
+      "n_endpoint": 0
+    },
+    "treatment": {
+      "n_completed": 5,
+      "n_endpoint": 0
+    },
+    "endpoint_rate_effect": {
+      "control_rate": 0.0,
+      "treatment_rate": 0.0,
+      "diff": 0.0,
+      "ci_low": 0.0,
+      "ci_high": 0.0,
+      "ci_level": 0.95,
+      "n_control": 5,
+      "n_treatment": 5,
+      "n_resamples": 2000,
+      "seed": 0
+    },
+    "conditional_conclusion": "在参与者结构 2x做市商+20x散户、参数区间 leverage_tier 3x(control) vs 10x(treatment) 与 5 个随机种子（control）/5 个随机种子（treatment）下，处理对经济终点率的效应量为 +0.0000（95% CI：[+0.0000, +0.0000]，不显著（置信区间跨零））。失效条件未声明——本结论只在预注册的参数区间内成立，不得外推。"
+  },
+  "control_report": {
+    "endpoint": {
+      "rate": 0.0,
+      "by_code": {},
+      "breach_count": 0,
+      "n_endpoint_samples": 0,
+      "mean_margin_ratio_bp": 0.0,
+      "mean_leverage_bp": 0.0
+    },
+    "continuous": {
+      "n_samples": 16610,
+      "mean_margin_ratio_bp": -2.662846523153167
+    },
+    "impact": {
+      "n_taker_orders": 55,
+      "mean_impact_bp": 0.9090909090909091
+    },
+    "technical_invalid_rate": 0.0,
+    "n_runs": 5,
+    "n_completed": 5,
+    "market_validation": {
+      "per_seed": {
+        "1": {
+          "fill_ratio": 0.9801324503311258,
+          "fill_ratio_ok": false,
+          "alpha": 0.05,
+          "items": {
+            "fat_tails": {
+              "name": "fat_tails",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.0%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9801324503311258
+              }
+            },
+            "return_autocorrelation": {
+              "name": "return_autocorrelation",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.0%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9801324503311258
+              }
+            },
+            "volatility_clustering": {
+              "name": "volatility_clustering",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.0%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9801324503311258
+              }
+            },
+            "price_impact_nonlinearity": {
+              "name": "price_impact_nonlinearity",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": ">= 40 笔有效taker订单",
+              "evidence": {
+                "n_orders": 6
+              }
+            },
+            "spread_depth_regime": {
+              "name": "spread_depth_regime",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.0%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9801324503311258
+              }
+            },
+            "liquidation_chain": {
+              "name": "liquidation_chain",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "本运行无强平触发（未加杠杆或全程未触及维持保证金）",
+              "evidence": {
+                "total_liquidations": 0
+              }
+            }
+          }
+        },
+        "2": {
+          "fill_ratio": 0.9735099337748344,
+          "fill_ratio_ok": false,
+          "alpha": 0.05,
+          "items": {
+            "fat_tails": {
+              "name": "fat_tails",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例97.4%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9735099337748344
+              }
+            },
+            "return_autocorrelation": {
+              "name": "return_autocorrelation",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例97.4%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9735099337748344
+              }
+            },
+            "volatility_clustering": {
+              "name": "volatility_clustering",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例97.4%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9735099337748344
+              }
+            },
+            "price_impact_nonlinearity": {
+              "name": "price_impact_nonlinearity",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": ">= 40 笔有效taker订单",
+              "evidence": {
+                "n_orders": 11
+              }
+            },
+            "spread_depth_regime": {
+              "name": "spread_depth_regime",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例97.4%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9735099337748344
+              }
+            },
+            "liquidation_chain": {
+              "name": "liquidation_chain",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "本运行无强平触发（未加杠杆或全程未触及维持保证金）",
+              "evidence": {
+                "total_liquidations": 0
+              }
+            }
+          }
+        },
+        "3": {
+          "fill_ratio": 0.9867549668874173,
+          "fill_ratio_ok": false,
+          "alpha": 0.05,
+          "items": {
+            "fat_tails": {
+              "name": "fat_tails",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "return_autocorrelation": {
+              "name": "return_autocorrelation",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "volatility_clustering": {
+              "name": "volatility_clustering",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "price_impact_nonlinearity": {
+              "name": "price_impact_nonlinearity",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": ">= 40 笔有效taker订单",
+              "evidence": {
+                "n_orders": 6
+              }
+            },
+            "spread_depth_regime": {
+              "name": "spread_depth_regime",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "liquidation_chain": {
+              "name": "liquidation_chain",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "本运行无强平触发（未加杠杆或全程未触及维持保证金）",
+              "evidence": {
+                "total_liquidations": 0
+              }
+            }
+          }
+        },
+        "4": {
+          "fill_ratio": 0.9867549668874173,
+          "fill_ratio_ok": false,
+          "alpha": 0.05,
+          "items": {
+            "fat_tails": {
+              "name": "fat_tails",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "return_autocorrelation": {
+              "name": "return_autocorrelation",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "volatility_clustering": {
+              "name": "volatility_clustering",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "price_impact_nonlinearity": {
+              "name": "price_impact_nonlinearity",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": ">= 40 笔有效taker订单",
+              "evidence": {
+                "n_orders": 4
+              }
+            },
+            "spread_depth_regime": {
+              "name": "spread_depth_regime",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "liquidation_chain": {
+              "name": "liquidation_chain",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "本运行无强平触发（未加杠杆或全程未触及维持保证金）",
+              "evidence": {
+                "total_liquidations": 0
+              }
+            }
+          }
+        },
+        "5": {
+          "fill_ratio": 0.9867549668874173,
+          "fill_ratio_ok": false,
+          "alpha": 0.05,
+          "items": {
+            "fat_tails": {
+              "name": "fat_tails",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "return_autocorrelation": {
+              "name": "return_autocorrelation",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "volatility_clustering": {
+              "name": "volatility_clustering",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "price_impact_nonlinearity": {
+              "name": "price_impact_nonlinearity",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": ">= 40 笔有效taker订单",
+              "evidence": {
+                "n_orders": 8
+              }
+            },
+            "spread_depth_regime": {
+              "name": "spread_depth_regime",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "liquidation_chain": {
+              "name": "liquidation_chain",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "本运行无强平触发（未加杠杆或全程未触及维持保证金）",
+              "evidence": {
+                "total_liquidations": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "zero_sum": {
+      "1": {
+        "total_pnl_units": -2400140000,
+        "expected_negative_fees_units": -2400140000,
+        "residual_units": 0,
+        "per_agent_pnl_units": {
+          "mm-0": 0,
+          "mm-1": 0,
+          "retail-0": 0,
+          "retail-1": 0,
+          "retail-2": 0,
+          "retail-3": 0,
+          "retail-4": 500150010000,
+          "retail-5": 300000000,
+          "retail-6": -999850005000,
+          "retail-7": 150005000,
+          "retail-8": 50005000,
+          "retail-9": -500499995000,
+          "retail-10": -550025000,
+          "retail-11": -500250010000,
+          "retail-12": 1499449900000,
+          "retail-13": -650025000,
+          "retail-14": -700000000,
+          "retail-15": 0,
+          "retail-16": 0,
+          "retail-17": 0,
+          "retail-18": 0,
+          "retail-19": 0
+        },
+        "declaration_text": "封闭市场零和恒等式（PRD §13.4）：22 个代理扣除手续费/穿仓核销后的权益变动之和为 -2400140000（最小单位），恰等于交易所收取费用与穿仓核销之和的负值 -2400140000（残差 0，验证一致时应为 0）——这是会计恒等式，不是研究发现。有内容的问题是分布：6 个代理净亏损、5 个代理净盈利，具体到每个代理的金额见 per_agent_pnl_units。"
+      },
+      "2": {
+        "total_pnl_units": -3000100000,
+        "expected_negative_fees_units": -3000100000,
+        "residual_units": 0,
+        "per_agent_pnl_units": {
+          "mm-0": 0,
+          "mm-1": 0,
+          "retail-0": 0,
+          "retail-1": 0,
+          "retail-2": 0,
+          "retail-3": 500200015000,
+          "retail-4": -499900005000,
+          "retail-5": -999850005000,
+          "retail-6": 1500300015000,
+          "retail-7": -999850005000,
+          "retail-8": 500150000000,
+          "retail-9": -1000550025000,
+          "retail-10": -500249990000,
+          "retail-11": 999099950000,
+          "retail-12": 499349950000,
+          "retail-13": -500800025000,
+          "retail-14": 499100025000,
+          "retail-15": 0,
+          "retail-16": 0,
+          "retail-17": 0,
+          "retail-18": 0,
+          "retail-19": 0
+        },
+        "declaration_text": "封闭市场零和恒等式（PRD §13.4）：22 个代理扣除手续费/穿仓核销后的权益变动之和为 -3000100000（最小单位），恰等于交易所收取费用与穿仓核销之和的负值 -3000100000（残差 0，验证一致时应为 0）——这是会计恒等式，不是研究发现。有内容的问题是分布：6 个代理净亏损、6 个代理净盈利，具体到每个代理的金额见 per_agent_pnl_units。"
+      },
+      "3": {
+        "total_pnl_units": -1600200000,
+        "expected_negative_fees_units": -1600200000,
+        "residual_units": 0,
+        "per_agent_pnl_units": {
+          "mm-0": 0,
+          "mm-1": 0,
+          "retail-0": 0,
+          "retail-1": 0,
+          "retail-2": 500250020000,
+          "retail-3": 500200015000,
+          "retail-4": 0,
+          "retail-5": 500100005000,
+          "retail-6": -999850005000,
+          "retail-7": 0,
+          "retail-8": 500050000000,
+          "retail-9": -500250000000,
+          "retail-10": -600000000,
+          "retail-11": -1000049985000,
+          "retail-12": 999649925000,
+          "retail-13": -650075000,
+          "retail-14": -500450100000,
+          "retail-15": 0,
+          "retail-16": 0,
+          "retail-17": 0,
+          "retail-18": 0,
+          "retail-19": 0
+        },
+        "declaration_text": "封闭市场零和恒等式（PRD §13.4）：22 个代理扣除手续费/穿仓核销后的权益变动之和为 -1600200000（最小单位），恰等于交易所收取费用与穿仓核销之和的负值 -1600200000（残差 0，验证一致时应为 0）——这是会计恒等式，不是研究发现。有内容的问题是分布：6 个代理净亏损、5 个代理净盈利，具体到每个代理的金额见 per_agent_pnl_units。"
+      },
+      "4": {
+        "total_pnl_units": -2000500000,
+        "expected_negative_fees_units": -2000500000,
+        "residual_units": 0,
+        "per_agent_pnl_units": {
+          "mm-0": 0,
+          "mm-1": 0,
+          "retail-0": 0,
+          "retail-1": 0,
+          "retail-2": 0,
+          "retail-3": 0,
+          "retail-4": 500200015000,
+          "retail-5": 150015000,
+          "retail-6": 500100005000,
+          "retail-7": 0,
+          "retail-8": 200010000,
+          "retail-9": -600050000,
+          "retail-10": -500050000,
+          "retail-11": -500350050000,
+          "retail-12": -1000550055000,
+          "retail-13": -200080000,
+          "retail-14": -1000299960000,
+          "retail-15": 0,
+          "retail-16": 499949900000,
+          "retail-17": 0,
+          "retail-18": 499949900000,
+          "retail-19": 499949900000
+        },
+        "declaration_text": "封闭市场零和恒等式（PRD §13.4）：22 个代理扣除手续费/穿仓核销后的权益变动之和为 -2000500000（最小单位），恰等于交易所收取费用与穿仓核销之和的负值 -2000500000（残差 0，验证一致时应为 0）——这是会计恒等式，不是研究发现。有内容的问题是分布：6 个代理净亏损、7 个代理净盈利，具体到每个代理的金额见 per_agent_pnl_units。"
+      },
+      "5": {
+        "total_pnl_units": -1999700000,
+        "expected_negative_fees_units": -1999700000,
+        "residual_units": 0,
+        "per_agent_pnl_units": {
+          "mm-0": 0,
+          "mm-1": 0,
+          "retail-0": 0,
+          "retail-1": 0,
+          "retail-2": -499750020000,
+          "retail-3": 0,
+          "retail-4": 0,
+          "retail-5": -499850010000,
+          "retail-6": -499900005000,
+          "retail-7": 99990000,
+          "retail-8": 199990000,
+          "retail-9": -499950000,
+          "retail-10": -1000150005000,
+          "retail-11": 999400050000,
+          "retail-12": 999300100000,
+          "retail-13": -449895000,
+          "retail-14": 499849980000,
+          "retail-15": 0,
+          "retail-16": -500049900000,
+          "retail-17": 0,
+          "retail-18": 0,
+          "retail-19": 499799975000
+        },
+        "declaration_text": "封闭市场零和恒等式（PRD §13.4）：22 个代理扣除手续费/穿仓核销后的权益变动之和为 -1999700000（最小单位），恰等于交易所收取费用与穿仓核销之和的负值 -1999700000（残差 0，验证一致时应为 0）——这是会计恒等式，不是研究发现。有内容的问题是分布：7 个代理净亏损、6 个代理净盈利，具体到每个代理的金额见 per_agent_pnl_units。"
+      }
+    }
+  },
+  "treatment_report": {
+    "endpoint": {
+      "rate": 0.0,
+      "by_code": {},
+      "breach_count": 0,
+      "n_endpoint_samples": 0,
+      "mean_margin_ratio_bp": 0.0,
+      "mean_leverage_bp": 0.0
+    },
+    "continuous": {
+      "n_samples": 16610,
+      "mean_margin_ratio_bp": -2.662846523153167
+    },
+    "impact": {
+      "n_taker_orders": 55,
+      "mean_impact_bp": 0.9090909090909091
+    },
+    "technical_invalid_rate": 0.0,
+    "n_runs": 5,
+    "n_completed": 5,
+    "market_validation": {
+      "per_seed": {
+        "1": {
+          "fill_ratio": 0.9801324503311258,
+          "fill_ratio_ok": false,
+          "alpha": 0.05,
+          "items": {
+            "fat_tails": {
+              "name": "fat_tails",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.0%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9801324503311258
+              }
+            },
+            "return_autocorrelation": {
+              "name": "return_autocorrelation",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.0%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9801324503311258
+              }
+            },
+            "volatility_clustering": {
+              "name": "volatility_clustering",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.0%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9801324503311258
+              }
+            },
+            "price_impact_nonlinearity": {
+              "name": "price_impact_nonlinearity",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": ">= 40 笔有效taker订单",
+              "evidence": {
+                "n_orders": 6
+              }
+            },
+            "spread_depth_regime": {
+              "name": "spread_depth_regime",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.0%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9801324503311258
+              }
+            },
+            "liquidation_chain": {
+              "name": "liquidation_chain",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "本运行无强平触发（未加杠杆或全程未触及维持保证金）",
+              "evidence": {
+                "total_liquidations": 0
+              }
+            }
+          }
+        },
+        "2": {
+          "fill_ratio": 0.9735099337748344,
+          "fill_ratio_ok": false,
+          "alpha": 0.05,
+          "items": {
+            "fat_tails": {
+              "name": "fat_tails",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例97.4%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9735099337748344
+              }
+            },
+            "return_autocorrelation": {
+              "name": "return_autocorrelation",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例97.4%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9735099337748344
+              }
+            },
+            "volatility_clustering": {
+              "name": "volatility_clustering",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例97.4%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9735099337748344
+              }
+            },
+            "price_impact_nonlinearity": {
+              "name": "price_impact_nonlinearity",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": ">= 40 笔有效taker订单",
+              "evidence": {
+                "n_orders": 11
+              }
+            },
+            "spread_depth_regime": {
+              "name": "spread_depth_regime",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例97.4%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9735099337748344
+              }
+            },
+            "liquidation_chain": {
+              "name": "liquidation_chain",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "本运行无强平触发（未加杠杆或全程未触及维持保证金）",
+              "evidence": {
+                "total_liquidations": 0
+              }
+            }
+          }
+        },
+        "3": {
+          "fill_ratio": 0.9867549668874173,
+          "fill_ratio_ok": false,
+          "alpha": 0.05,
+          "items": {
+            "fat_tails": {
+              "name": "fat_tails",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "return_autocorrelation": {
+              "name": "return_autocorrelation",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "volatility_clustering": {
+              "name": "volatility_clustering",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "price_impact_nonlinearity": {
+              "name": "price_impact_nonlinearity",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": ">= 40 笔有效taker订单",
+              "evidence": {
+                "n_orders": 6
+              }
+            },
+            "spread_depth_regime": {
+              "name": "spread_depth_regime",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "liquidation_chain": {
+              "name": "liquidation_chain",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "本运行无强平触发（未加杠杆或全程未触及维持保证金）",
+              "evidence": {
+                "total_liquidations": 0
+              }
+            }
+          }
+        },
+        "4": {
+          "fill_ratio": 0.9867549668874173,
+          "fill_ratio_ok": false,
+          "alpha": 0.05,
+          "items": {
+            "fat_tails": {
+              "name": "fat_tails",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "return_autocorrelation": {
+              "name": "return_autocorrelation",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "volatility_clustering": {
+              "name": "volatility_clustering",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "price_impact_nonlinearity": {
+              "name": "price_impact_nonlinearity",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": ">= 40 笔有效taker订单",
+              "evidence": {
+                "n_orders": 4
+              }
+            },
+            "spread_depth_regime": {
+              "name": "spread_depth_regime",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "liquidation_chain": {
+              "name": "liquidation_chain",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "本运行无强平触发（未加杠杆或全程未触及维持保证金）",
+              "evidence": {
+                "total_liquidations": 0
+              }
+            }
+          }
+        },
+        "5": {
+          "fill_ratio": 0.9867549668874173,
+          "fill_ratio_ok": false,
+          "alpha": 0.05,
+          "items": {
+            "fat_tails": {
+              "name": "fat_tails",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "return_autocorrelation": {
+              "name": "return_autocorrelation",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "volatility_clustering": {
+              "name": "volatility_clustering",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "price_impact_nonlinearity": {
+              "name": "price_impact_nonlinearity",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": ">= 40 笔有效taker订单",
+              "evidence": {
+                "n_orders": 8
+              }
+            },
+            "spread_depth_regime": {
+              "name": "spread_depth_regime",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "前值填充比例98.7%超过30%，统计检验不可采信（协议§2）",
+              "evidence": {
+                "fill_ratio": 0.9867549668874173
+              }
+            },
+            "liquidation_chain": {
+              "name": "liquidation_chain",
+              "verdict": "NOT_APPLICABLE",
+              "statistic": null,
+              "p_value": null,
+              "threshold_desc": "本运行无强平触发（未加杠杆或全程未触及维持保证金）",
+              "evidence": {
+                "total_liquidations": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    "zero_sum": {
+      "1": {
+        "total_pnl_units": -2400140000,
+        "expected_negative_fees_units": -2400140000,
+        "residual_units": 0,
+        "per_agent_pnl_units": {
+          "mm-0": 0,
+          "mm-1": 0,
+          "retail-0": 0,
+          "retail-1": 0,
+          "retail-2": 0,
+          "retail-3": 0,
+          "retail-4": 500150010000,
+          "retail-5": 300000000,
+          "retail-6": -999850005000,
+          "retail-7": 150005000,
+          "retail-8": 50005000,
+          "retail-9": -500499995000,
+          "retail-10": -550025000,
+          "retail-11": -500250010000,
+          "retail-12": 1499449900000,
+          "retail-13": -650025000,
+          "retail-14": -700000000,
+          "retail-15": 0,
+          "retail-16": 0,
+          "retail-17": 0,
+          "retail-18": 0,
+          "retail-19": 0
+        },
+        "declaration_text": "封闭市场零和恒等式（PRD §13.4）：22 个代理扣除手续费/穿仓核销后的权益变动之和为 -2400140000（最小单位），恰等于交易所收取费用与穿仓核销之和的负值 -2400140000（残差 0，验证一致时应为 0）——这是会计恒等式，不是研究发现。有内容的问题是分布：6 个代理净亏损、5 个代理净盈利，具体到每个代理的金额见 per_agent_pnl_units。"
+      },
+      "2": {
+        "total_pnl_units": -3000100000,
+        "expected_negative_fees_units": -3000100000,
+        "residual_units": 0,
+        "per_agent_pnl_units": {
+          "mm-0": 0,
+          "mm-1": 0,
+          "retail-0": 0,
+          "retail-1": 0,
+          "retail-2": 0,
+          "retail-3": 500200015000,
+          "retail-4": -499900005000,
+          "retail-5": -999850005000,
+          "retail-6": 1500300015000,
+          "retail-7": -999850005000,
+          "retail-8": 500150000000,
+          "retail-9": -1000550025000,
+          "retail-10": -500249990000,
+          "retail-11": 999099950000,
+          "retail-12": 499349950000,
+          "retail-13": -500800025000,
+          "retail-14": 499100025000,
+          "retail-15": 0,
+          "retail-16": 0,
+          "retail-17": 0,
+          "retail-18": 0,
+          "retail-19": 0
+        },
+        "declaration_text": "封闭市场零和恒等式（PRD §13.4）：22 个代理扣除手续费/穿仓核销后的权益变动之和为 -3000100000（最小单位），恰等于交易所收取费用与穿仓核销之和的负值 -3000100000（残差 0，验证一致时应为 0）——这是会计恒等式，不是研究发现。有内容的问题是分布：6 个代理净亏损、6 个代理净盈利，具体到每个代理的金额见 per_agent_pnl_units。"
+      },
+      "3": {
+        "total_pnl_units": -1600200000,
+        "expected_negative_fees_units": -1600200000,
+        "residual_units": 0,
+        "per_agent_pnl_units": {
+          "mm-0": 0,
+          "mm-1": 0,
+          "retail-0": 0,
+          "retail-1": 0,
+          "retail-2": 500250020000,
+          "retail-3": 500200015000,
+          "retail-4": 0,
+          "retail-5": 500100005000,
+          "retail-6": -999850005000,
+          "retail-7": 0,
+          "retail-8": 500050000000,
+          "retail-9": -500250000000,
+          "retail-10": -600000000,
+          "retail-11": -1000049985000,
+          "retail-12": 999649925000,
+          "retail-13": -650075000,
+          "retail-14": -500450100000,
+          "retail-15": 0,
+          "retail-16": 0,
+          "retail-17": 0,
+          "retail-18": 0,
+          "retail-19": 0
+        },
+        "declaration_text": "封闭市场零和恒等式（PRD §13.4）：22 个代理扣除手续费/穿仓核销后的权益变动之和为 -1600200000（最小单位），恰等于交易所收取费用与穿仓核销之和的负值 -1600200000（残差 0，验证一致时应为 0）——这是会计恒等式，不是研究发现。有内容的问题是分布：6 个代理净亏损、5 个代理净盈利，具体到每个代理的金额见 per_agent_pnl_units。"
+      },
+      "4": {
+        "total_pnl_units": -2000500000,
+        "expected_negative_fees_units": -2000500000,
+        "residual_units": 0,
+        "per_agent_pnl_units": {
+          "mm-0": 0,
+          "mm-1": 0,
+          "retail-0": 0,
+          "retail-1": 0,
+          "retail-2": 0,
+          "retail-3": 0,
+          "retail-4": 500200015000,
+          "retail-5": 150015000,
+          "retail-6": 500100005000,
+          "retail-7": 0,
+          "retail-8": 200010000,
+          "retail-9": -600050000,
+          "retail-10": -500050000,
+          "retail-11": -500350050000,
+          "retail-12": -1000550055000,
+          "retail-13": -200080000,
+          "retail-14": -1000299960000,
+          "retail-15": 0,
+          "retail-16": 499949900000,
+          "retail-17": 0,
+          "retail-18": 499949900000,
+          "retail-19": 499949900000
+        },
+        "declaration_text": "封闭市场零和恒等式（PRD §13.4）：22 个代理扣除手续费/穿仓核销后的权益变动之和为 -2000500000（最小单位），恰等于交易所收取费用与穿仓核销之和的负值 -2000500000（残差 0，验证一致时应为 0）——这是会计恒等式，不是研究发现。有内容的问题是分布：6 个代理净亏损、7 个代理净盈利，具体到每个代理的金额见 per_agent_pnl_units。"
+      },
+      "5": {
+        "total_pnl_units": -1999700000,
+        "expected_negative_fees_units": -1999700000,
+        "residual_units": 0,
+        "per_agent_pnl_units": {
+          "mm-0": 0,
+          "mm-1": 0,
+          "retail-0": 0,
+          "retail-1": 0,
+          "retail-2": -499750020000,
+          "retail-3": 0,
+          "retail-4": 0,
+          "retail-5": -499850010000,
+          "retail-6": -499900005000,
+          "retail-7": 99990000,
+          "retail-8": 199990000,
+          "retail-9": -499950000,
+          "retail-10": -1000150005000,
+          "retail-11": 999400050000,
+          "retail-12": 999300100000,
+          "retail-13": -449895000,
+          "retail-14": 499849980000,
+          "retail-15": 0,
+          "retail-16": -500049900000,
+          "retail-17": 0,
+          "retail-18": 0,
+          "retail-19": 499799975000
+        },
+        "declaration_text": "封闭市场零和恒等式（PRD §13.4）：22 个代理扣除手续费/穿仓核销后的权益变动之和为 -1999700000（最小单位），恰等于交易所收取费用与穿仓核销之和的负值 -1999700000（残差 0，验证一致时应为 0）——这是会计恒等式，不是研究发现。有内容的问题是分布：7 个代理净亏损、6 个代理净盈利，具体到每个代理的金额见 per_agent_pnl_units。"
+      }
+    }
+  }
+}

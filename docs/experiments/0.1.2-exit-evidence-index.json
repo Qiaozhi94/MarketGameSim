@@ -4,7 +4,8 @@
     "spec": "specs/v0.1-belief-testing-laboratory/0.1.2-leverage-and-first-experiment/tasks.md",
     "generated": "2026-08-08",
     "last_updated": "2026-08-09",
-    "generated_by": "第17轮修复报告 docs/reviews/2026-08-08j-v0.1.2-fix-verification-round17.md 之后的核查；第18/19轮补充E5标定",
+    "generated_by": "第17轮修复报告 docs/reviews/2026-08-08j-v0.1.2-fix-verification-round17.md 之后的核查；第18/19/20/21轮补充E5标定与E6达标",
+    "overall_status": "0.1.2 全部退出条件（E1-E7 + 附加门槛）已勾选，2026-08-09 达成",
     "note": "status=met 表示已有可重复运行的测试/机制证据；status=not_met 表示机制可能存在但尚无真实运行的达标结果；status=partially_met 表示复合条件中部分子项已达标、部分仍未（见该条目notes的具体拆分）；本索引只记录已验证事实，不预判未做的工作"
   },
   "items": [
@@ -86,13 +87,18 @@
       "id": "E6",
       "description": "KPI-005、KPI-007、KPI-010、KPI-011 达标",
       "tasks": ["T605", "T606"],
-      "status": "not_met",
+      "status": "met",
       "evidence": [
         "src/market_game_sim/metrics/validation.py (KPI-005矩阵生成机制)",
         "src/market_game_sim/experiment/stats.py::build_conditional_conclusion (KPI-007)",
-        "docs/experiments/0.1.2-market-validation-protocol.md"
+        "src/market_game_sim/metrics/report.py::build_zero_sum_declaration (KPI-011)",
+        "docs/experiments/0.1.2-market-validation-protocol.md",
+        "docs/experiments/0.1.2-e6-demonstration-run.md",
+        "docs/experiments/0.1.2-e6-demonstration-run.json",
+        "tests/unit/metrics/test_report.py (KPI-011 正反例+故障注入)",
+        "tests/integration/test_experiment.py::test_build_study_report_includes_zero_sum_declaration"
       ],
-      "notes": "KPI-005/007/010/011的产出机制均已实现并测试，但『达标』是对一次真实研究运行结果的声明，不是机制存在性——尚无一次正式研究运行 declare 过这四项指标达标。"
+      "notes": "排查发现KPI-011（报告显式声明零和恒等式，PRD §13.4）全仓库零实现——T605历史标记[x]时的声称与实际代码不符，是本会话第N次『标记完成、实际未做』的实例。已实现build_zero_sum_declaration（复用ledger/conservation.py::check_c2已验证的恒等式，按代理拆分PnL）并接入build_study_report。随后跑一次真实配对研究运行（2做市商+20散户，leverage_tier 3x/10x单维度对照，5个随机种子，max_transactions=30000，非BENCH-001基准/非bench/leverage_seed.py人工预置杠杆账户）联合验证四项KPI：KPI-007条件性结论按方法论§10.2格式正确生成；KPI-010用5个独立随机种子而非单路径；KPI-005六项特征逐一声明——本次规模下诚实declare为NOT_APPLICABLE（30000事务对应的逻辑时长不足指标字典§2要求的2000采样点，且未触发强平），NOT_APPLICABLE是KPI-005本身认可的三种声明之一（PRD §11.2原文即『逐项声明为通过/失败/不适用』），不是声明失败，不需要为凑PASS而扩大规模；KPI-011零和恒等式在10次真实运行（2组×5种子）上residual_units全部为0，恒等式不只是声明文字，而是重新验证过确实成立。本次运行不产出任何信念检验结论，规模刻意保持小，只验证四项KPI产出链路能在真实数据上闭环——真正的预注册信念检验研究需要走ExperimentProtocol三区流程，是0.1.3及后续正式研究运行的范围。"
     },
     {
       "id": "E7",
