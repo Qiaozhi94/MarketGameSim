@@ -1,0 +1,117 @@
+{
+  "_meta": {
+    "purpose": "T705: 0.1.2 退出检查清单（E1-E7 + 附加门槛）的机器可读证据索引",
+    "spec": "specs/v0.1-belief-testing-laboratory/0.1.2-leverage-and-first-experiment/tasks.md",
+    "generated": "2026-08-08",
+    "generated_by": "第17轮修复报告 docs/reviews/2026-08-08j-v0.1.2-fix-verification-round17.md 之后的核查",
+    "note": "status=met 表示已有可重复运行的测试/机制证据；status=not_met 表示机制可能存在但尚无真实研究运行的达标结果；本索引只记录已验证事实，不预判未做的工作"
+  },
+  "items": [
+    {
+      "id": "E1",
+      "description": "十个验收案例全部通过",
+      "tasks": ["T105", "T208"],
+      "status": "met",
+      "evidence": [
+        "tests/unit/ledger/test_acceptance_vectors.py::TestCase1SamePriceOpen",
+        "tests/unit/ledger/test_acceptance_vectors.py::TestCase2CrossPriceHandoff",
+        "tests/unit/ledger/test_acceptance_vectors.py::TestCase3PartialClose",
+        "tests/unit/ledger/test_acceptance_vectors.py::TestCase4Flip",
+        "tests/unit/ledger/test_acceptance_vectors.py::TestCase5Fees",
+        "tests/unit/ledger/test_acceptance_vectors.py::TestCase6LeverageBoundary",
+        "tests/unit/ledger/test_acceptance_vectors.py::TestCase7PartialLiquidationRecalc",
+        "tests/unit/ledger/test_acceptance_vectors.py::TestCase7bReservedUnits",
+        "tests/unit/ledger/test_acceptance_vectors.py::TestCase8LiquidationRetry",
+        "tests/unit/ledger/test_acceptance_vectors.py::TestCase9BankruptcyWriteOff",
+        "tests/unit/ledger/test_acceptance_vectors.py::TestCase10Funding"
+      ],
+      "notes": "第17轮之前案例7（价格驱动的强平数量重算）无专属测试，只有案例8的宽松断言；已补齐并用故障注入确认其精确数值断言具有捕获力，是案例8的宽松断言捕获不到的。"
+    },
+    {
+      "id": "E2",
+      "description": "强平连锁三类指标完整输出：强平触发率、连锁深度分布、强平成交量占比",
+      "tasks": ["T207", "T502"],
+      "status": "met",
+      "evidence": [
+        "tests/unit/metrics/test_liquidation.py::test_margin_call_pending_liquidation_counted_in_chain_depth",
+        "tests/unit/metrics/test_liquidation.py::test_liquidation_volume_ratio_computes_correctly",
+        "tests/unit/metrics/test_liquidation.py::test_bankruptcy_total_counts_only_breached_not_pending",
+        "src/market_game_sim/metrics/liquidation.py::compute_liquidation_metrics",
+        "src/market_game_sim/metrics/liquidation.py::classify_run"
+      ],
+      "notes": null
+    },
+    {
+      "id": "E3",
+      "description": "预注册实验可从配置哈希追溯到条件性结论",
+      "tasks": ["T003", "T004", "T005", "T601", "T602", "T603", "T604", "T605"],
+      "status": "met",
+      "evidence": [
+        "src/market_game_sim/experiment/config.py::compute_config_hash",
+        "tests/unit/experiment/test_config.py",
+        "tests/integration/test_experiment.py::test_run_paired_comparison_carries_traceable_config_hashes"
+      ],
+      "notes": "第17轮之前experiment/包内没有任何config_hash计算——eventlog/writer.py接受调用方传入的config_hash用于RUN_HEADER，但没有调用方真正算过。已实现compute_config_hash并接入run_paired的comparison字典（control_config_hash/treatment_config_hash，与conditional_conclusion并列）。"
+    },
+    {
+      "id": "E4",
+      "description": "经济终点与条件连续指标两部分报告齐备",
+      "tasks": ["T504", "T505"],
+      "status": "met",
+      "evidence": [
+        "src/market_game_sim/metrics/report.py::build_endpoint_part",
+        "src/market_game_sim/metrics/report.py::build_continuous_part",
+        "tests/unit/metrics/test_report.py"
+      ],
+      "notes": "第17轮补齐build_continuous_part的>30%空值率警告分支测试（此前只被间接跑过，无专属断言）。"
+    },
+    {
+      "id": "E5",
+      "description": "BENCH-001 性能和覆盖断言全部通过",
+      "tasks": ["T701", "T702", "T703"],
+      "status": "not_met",
+      "evidence": [
+        "src/market_game_sim/bench/ (population.py, calib.py, coverage.py, runner.py)",
+        "tests/unit/bench/"
+      ],
+      "notes": "机制已实现并测试，但『通过』要求的是一次真实BENCH-001运行满足§1.1五项覆盖断言。§6.2（全撤重报）修复前100k事务实测0强平/0部分成交/0撤单、耗时198秒；修复后重跑：耗时降至6.03秒（陈旧挂单堆积曾是撮合性能的主要拖累，副作用式验证了§6.2修复的必要性）、撤单28482笔（min_cancels通过）、单边簿事件1次（通过），但强平/连锁强平/部分成交三项仍为0，未达标——190代理在100k事务内的价格波动/杠杆敞口不足以触发保证金判定，属于README §4 step 3-4定义的『参与者构成或max_transactions需要调整』的标定范畴，不是新的实现缺陷。reference-machine.md要求的正式性能标定（CPU亲和性锁P核+高性能电源计划+5次中位数）也未执行，book_operations_golden和CALIB-001参考耗时均未冻结。"
+    },
+    {
+      "id": "E6",
+      "description": "KPI-005、KPI-007、KPI-010、KPI-011 达标",
+      "tasks": ["T605", "T606"],
+      "status": "not_met",
+      "evidence": [
+        "src/market_game_sim/metrics/validation.py (KPI-005矩阵生成机制)",
+        "src/market_game_sim/experiment/stats.py::build_conditional_conclusion (KPI-007)",
+        "docs/experiments/0.1.2-market-validation-protocol.md"
+      ],
+      "notes": "KPI-005/007/010/011的产出机制均已实现并测试，但『达标』是对一次真实研究运行结果的声明，不是机制存在性——尚无一次正式研究运行 declare 过这四项指标达标。"
+    },
+    {
+      "id": "E7",
+      "description": "KPI-006完整因果链机器验证，KPI-009在真实研究运行下逐事件成立",
+      "tasks": ["T503", "T506"],
+      "status": "met",
+      "evidence": [
+        "src/market_game_sim/experiment/runner.py::run_one (第336行调用_verify_bridge_residuals，第346行调用check_causal_references，均无条件对每次真实运行执行)",
+        "src/market_game_sim/experiment/runner.py::_verify_bridge_residuals (硬assert，非warning)",
+        "src/market_game_sim/verify.py::check_causal_references",
+        "tests/unit/test_verify.py"
+      ],
+      "notes": "两项检查都在run_one中无条件运行（不只是验收向量测试专属路径），reference_integrity_ok=False会使运行被classify_run标记TI-1并排除出统计——不是静默通过。"
+    },
+    {
+      "id": "附加门槛",
+      "description": "保证金/强平覆盖 ≥ 90%，完整运行可确定重现",
+      "tasks": ["T209", "T704", "T705"],
+      "status": "met",
+      "evidence": [
+        ".github/workflows/ci.yml (--cov-fail-under=90，book+ledger合并分支覆盖率实测93%)",
+        "tools/determinism_probe.py",
+        "tests/integration/test_cross_process_determinism.py"
+      ],
+      "notes": "覆盖率门槛第17轮前CI仍写87%（T001b只补了测试没提CI阈值），已修复为90%并实测93%通过。跨进程确定性此前CI注释自己承认『由0.1.1 T602/退出条件E4负责』但从未实现，已用两个不同PYTHONHASHSEED的真实子进程比较实现并故障注入验证。"
+    }
+  ]
+}
