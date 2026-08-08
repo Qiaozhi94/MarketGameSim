@@ -11,6 +11,7 @@ from market_game_sim.experiment.protocol import ExperimentProtocol, ProtocolViol
 from market_game_sim.experiment.runner import (
     ExperimentConfig,
     RunResult,
+    build_market_validation_report,
     build_study_report,
     check_paired_parity,
     check_shared_randomness_parity,
@@ -521,3 +522,55 @@ def test_build_study_report_endpoint_stats_reflect_real_endpoint_samples():
     report = build_study_report([result])
     assert report["endpoint"]["n_endpoint_samples"] > 0
     assert report["endpoint"]["mean_margin_ratio_bp"] != 0.0
+
+
+def test_build_study_report_includes_market_validation_matrix():
+    """T606 (KPI-005): build_study_report must surface a per-seed market
+    validation matrix, not just the endpoint/continuous/impact parts."""
+    mm = _mm_spec()
+    b = _belief_spec("agent-0")
+    cfg = ExperimentConfig(
+        seed=1,
+        max_transactions=60,
+        agent_specs=[mm, b],
+        agent_signals={"agent-0": 10_000},
+    )
+    results = run_multi_seed(cfg, [1, 2])
+    report = build_study_report(results)
+    assert "market_validation" in report
+    per_seed = report["market_validation"]["per_seed"]
+    assert set(per_seed) == {1, 2}
+    for matrix in per_seed.values():
+        assert set(matrix["items"]) == {
+            "fat_tails",
+            "return_autocorrelation",
+            "volatility_clustering",
+            "price_impact_nonlinearity",
+            "spread_depth_regime",
+            "liquidation_chain",
+        }
+        # a 60-transaction toy run is far below the >=2000-sample-point
+        # protocol floor, so every item must honestly declare itself
+        # inapplicable rather than fabricate a verdict on a starved sample.
+        for item in matrix["items"].values():
+            assert item["verdict"] == "NOT_APPLICABLE"
+
+
+def test_build_market_validation_report_skips_technical_invalid_runs():
+    """A run whose classification is_technical_invalid must not contribute
+    a matrix entry: its event log already failed integrity/conservation
+    checks, so any market-quality statistic computed on it would be
+    meaningless (协议 §1's scope presumes a valid log)."""
+    account = Account(agent_id="A", wallet_units=10**11)
+    ti_result = RunResult(
+        seed=99,
+        terminated="ABORTED",
+        abort_code="SOME_ABORT",
+        events=[],
+        book_last_ticks=None,
+        accounts={"A": account},
+        liquidation_metrics=LiquidationMetrics(),
+        classification=RunClassification(is_technical_invalid=True, technical_invalid_code="TI-4"),
+    )
+    report = build_market_validation_report([ti_result])
+    assert report["per_seed"] == {}

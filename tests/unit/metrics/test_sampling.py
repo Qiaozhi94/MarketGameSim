@@ -10,7 +10,7 @@ deterministic).
 
 from __future__ import annotations
 
-from market_game_sim.metrics.sampling import compute_price_impact
+from market_game_sim.metrics.sampling import compute_price_impact, sample_market_series
 
 MULT = 1000
 
@@ -125,3 +125,91 @@ def test_events_without_taker_order_id_ignored():
         }
     ]
     assert compute_price_impact(events, mult=MULT) == []
+
+
+# ---------------------------------------------------------------------------
+# sample_market_series -- 指标字典 §2 equal-interval sampling.
+#
+# T606 (KPI-005) is the first caller wiring this into the production report
+# path (experiment/runner.py::build_market_validation_report); until now it
+# had zero direct test coverage despite being declared implemented (T501/
+# T500b), so add regression tests before relying on it.
+# ---------------------------------------------------------------------------
+
+
+def _mdp(ts: int, best_bid: int, best_ask: int, tx: int, bid_depth=3, ask_depth=3) -> dict:
+    return {
+        "event_type": "MARKET_DATA_PUBLISH",
+        "timestamp": ts,
+        "transaction_seq": tx,
+        "best_bid": best_bid,
+        "best_ask": best_ask,
+        "bid_depth_k": bid_depth,
+        "ask_depth_k": ask_depth,
+    }
+
+
+def _settle(ts: int, price: int, qty: int, tx: int) -> dict:
+    return {
+        "event_type": "TRADE_SETTLE",
+        "timestamp": ts,
+        "transaction_seq": tx,
+        "price_ticks": price,
+        "quantity_units": qty,
+    }
+
+
+def test_sample_market_series_forward_fills_price_between_trades():
+    events = [_settle(ts=0, price=100, qty=5, tx=1)]
+    samples = sample_market_series(events, sample_interval_ns=1000, end_ns=2000)
+    assert [s.timestamp for s in samples] == [0, 1000, 2000]
+    assert [s.last_ticks for s in samples] == [100, 100, 100]
+    # only the first sample's interval actually contained the trade
+    assert [s.trade_count_since_last for s in samples] == [1, 0, 0]
+    assert [s.volume_since_last for s in samples] == [5, 0, 0]
+
+
+def test_sample_market_series_price_undefined_before_first_trade():
+    events = [_settle(ts=1500, price=100, qty=1, tx=1)]
+    samples = sample_market_series(events, sample_interval_ns=1000, end_ns=2000)
+    assert [s.last_ticks for s in samples] == [None, None, 100]
+    assert [s.trade_count_since_last for s in samples] == [0, 0, 1]
+
+
+def test_sample_market_series_counts_multiple_trades_within_one_interval_and_resets():
+    events = [
+        _settle(ts=100, price=100, qty=1, tx=1),
+        _settle(ts=200, price=101, qty=2, tx=2),
+        _settle(ts=1500, price=102, qty=9, tx=3),
+    ]
+    samples = sample_market_series(events, sample_interval_ns=1000, end_ns=2000)
+    # sample at t=0 sees nothing yet (both trades are at t=100/200 > 0);
+    # sample at t=1000 picks up both trades in one window; t=2000 picks up
+    # the third trade in its own window.
+    assert [s.trade_count_since_last for s in samples] == [0, 2, 1]
+    assert [s.volume_since_last for s in samples] == [0, 3, 9]
+    assert [s.last_ticks for s in samples] == [None, 101, 102]
+
+
+def test_sample_market_series_spread_from_market_data_publish():
+    events = [_mdp(ts=0, best_bid=98, best_ask=102, tx=1)]
+    samples = sample_market_series(events, sample_interval_ns=1000, end_ns=1000)
+    assert samples[0].spread_ticks == 4
+    assert samples[0].mid_ticks == 100
+    assert samples[0].bid_depth_k == 3
+    assert samples[0].ask_depth_k == 3
+
+
+def test_sample_market_series_spread_undefined_when_no_market_data_yet():
+    events = [_settle(ts=0, price=100, qty=1, tx=1)]
+    samples = sample_market_series(events, sample_interval_ns=1000, end_ns=1000)
+    assert all(s.spread_ticks is None for s in samples)
+
+
+def test_sample_market_series_cancel_count_resets_each_interval():
+    events = [
+        {"event_type": "ORDER_CANCELLED", "timestamp": 100, "transaction_seq": 1},
+        {"event_type": "ORDER_CANCELLED", "timestamp": 200, "transaction_seq": 2},
+    ]
+    samples = sample_market_series(events, sample_interval_ns=1000, end_ns=2000)
+    assert [s.cancel_count_since_last for s in samples] == [0, 2, 0]

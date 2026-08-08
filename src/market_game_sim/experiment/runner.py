@@ -31,7 +31,12 @@ from market_game_sim.metrics.liquidation import (
     compute_liquidation_metrics,
 )
 from market_game_sim.metrics.report import build_report
-from market_game_sim.metrics.sampling import compute_price_impact, sample_agent_series
+from market_game_sim.metrics.sampling import (
+    compute_price_impact,
+    sample_agent_series,
+    sample_market_series,
+)
+from market_game_sim.metrics.validation import build_market_validation_matrix
 from market_game_sim.verify import check_causal_references
 
 
@@ -390,6 +395,32 @@ def run_multi_seed(
     return results
 
 
+def build_market_validation_report(
+    results: list[RunResult], sample_interval_ns: int = 1_000_000_000
+) -> dict:
+    """T606 (KPI-005): per-run market validation matrix
+    (docs/experiments/0.1.2-market-validation-protocol.md).
+
+    Computed **per run**, not pooled across seeds -- concatenating
+    independent runs' price series would fabricate autocorrelation at the
+    run boundaries and break the equal-interval sampling assumption
+    (指标字典 §2) the statistical tests rely on. Technical-invalid runs are
+    skipped: their event logs failed integrity/conservation checks and
+    cannot support a market-quality judgement.
+    """
+    per_seed: dict[int, dict] = {}
+    for r in results:
+        if r.classification.is_technical_invalid:
+            continue
+        market_samples = sample_market_series(r.events, sample_interval_ns)
+        impact_samples = compute_price_impact(r.events, mult=1000)
+        matrix = build_market_validation_matrix(
+            market_samples, impact_samples, r.liquidation_metrics
+        )
+        per_seed[r.seed] = matrix.as_dict()
+    return {"per_seed": per_seed}
+
+
 def build_study_report(results: list[RunResult]) -> dict:
     """Build a structured study report from multi-seed results.
 
@@ -415,6 +446,7 @@ def build_study_report(results: list[RunResult]) -> dict:
         if not r.classification.is_technical_invalid:
             impact_bps.extend(s.impact_bp for s in compute_price_impact(r.events, mult=1000))
     report = build_report(classifications, metrics_list, continuous_samples, endpoint_samples)
+    market_validation = build_market_validation_report(results)
     return {
         "endpoint": {
             "rate": report.endpoint.rate,
@@ -435,6 +467,7 @@ def build_study_report(results: list[RunResult]) -> dict:
         "technical_invalid_rate": report.technical_invalid_rate,
         "n_runs": len(results),
         "n_completed": sum(1 for r in results if r.terminated == "COMPLETED"),
+        "market_validation": market_validation,
     }
 
 
