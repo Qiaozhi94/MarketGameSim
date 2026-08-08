@@ -70,14 +70,17 @@
       "id": "E5",
       "description": "BENCH-001 性能和覆盖断言全部通过",
       "tasks": ["T701", "T702", "T703"],
-      "status": "partially_met",
+      "status": "met",
       "evidence": [
         "src/market_game_sim/bench/ (population.py, calib.py, coverage.py, runner.py, shock.py, leverage_seed.py)",
         "tests/unit/bench/test_runner.py::TestCalibratedFullScale",
         "tests/unit/book/test_chain_cascade.py",
-        "src/market_game_sim/book/matching.py::_run_post_batch_risk_check (chain_depth wiring fix)"
+        "src/market_game_sim/book/matching.py::_run_post_batch_risk_check (chain_depth wiring fix)",
+        "benchmarks/reference-machine.md §1 (CALIB-001/BENCH-001 正式标定结果)",
+        "benchmarks/BENCH-001.yaml thresholds.book_operations_golden = 29310",
+        "tools/formal_calibration.py"
       ],
-      "notes": "覆盖断言五项现已真实达标：`python -m market_game_sim.bench --config benchmarks/BENCH-001.yaml --calibrated-coverage`（或 run_benchmark_config(parsed, calibrated=True)）对真实190代理/100k事务运行产出 liquidations=42, chained_liquidations=1, partial_fills=76, cancels=27402, one_sided_book_events=76，coverage_valid=True，重复运行结果逐字节一致（确定性）。标定过程：(1)(2)(3)(4) 见本条目历史记录的四轮失败尝试（一次性冲击不移动价格、持续冲击移动价格但代理仓位太小、强制建仓触发正反馈环失控）；最终改用bench/leverage_seed.py直接把账户预置成已开仓的杠杆仓位（跳过决策循环建仓阶段，复用acceptance-vectors.md案例7已验证的账户数学），配合bench/shock.py的持续冲击推动价格，20个预置账户用stagger_position_step错开强平阈值。过程中额外发现并修复一个真实bug：`_run_post_batch_risk_check`（book/matching.py）从未把`parent_chain_id`传给`run_phase2_margin_scan`——链式深度递增逻辑本身（`ledger/risk.py::_chain_attrs_for`）早就实现且有直接单测，但唯一调用点硬编码传`None`，导致任何真实运行里`chain_depth`都不可能超过0，是与§6.2同一模式的『组件已实现测试、从未接入真实链路』。已修复+故障注入验证。**性能一侧仍未达标**：T703要求的『参考口径归一化耗时』依赖reference-machine.md的CALIB-001正式标定（锁CPU亲和性到P核+高性能电源计划+5次中位数），本环境判断不出P核编号，做不到——不过§6.2修复后全量100k事务未归一化实测6.3秒，远低于10秒门槛，正式标定大概率会通过，只是流程本身没走。book_operations_golden和CALIB-001参考耗时仍未冻结。calibrated=True的shock/leverage_seed参数是针对BENCH-001.yaml当前190代理构成手工调校的，population明显变化需要重新标定，不是通用算法。"
+      "notes": "覆盖断言五项真实达标：`python -m market_game_sim.bench --config benchmarks/BENCH-001.yaml --calibrated-coverage`（或 run_benchmark_config(parsed, calibrated=True)）对真实190代理/100k事务运行产出 liquidations=42, chained_liquidations=1, partial_fills=76, cancels=27402, one_sided_book_events=76，coverage_valid=True，重复运行结果逐字节一致（确定性）。标定过程：(1)(2)(3)(4) 见本条目历史记录的四轮失败尝试（一次性冲击不移动价格、持续冲击移动价格但代理仓位太小、强制建仓触发正反馈环失控）；最终改用bench/leverage_seed.py直接把账户预置成已开仓的杠杆仓位（跳过决策循环建仓阶段，复用acceptance-vectors.md案例7已验证的账户数学），配合bench/shock.py的持续冲击推动价格，20个预置账户用stagger_position_step错开强平阈值。过程中额外发现并修复一个真实bug：`_run_post_batch_risk_check`（book/matching.py）从未把`parent_chain_id`传给`run_phase2_margin_scan`——链式深度递增逻辑本身（`ledger/risk.py::_chain_attrs_for`）早就实现且有直接单测，但唯一调用点硬编码传`None`，导致任何真实运行里`chain_depth`都不可能超过0，是与§6.2同一模式的『组件已实现测试、从未接入真实链路』。已修复+故障注入验证。**性能一侧第19轮完成正式标定**：用户用CPU-Z查得P核物理核心编号0-5，`tools/formal_calibration.py`用`ctypes.SetProcessAffinityMask`锁定对应逻辑处理器0-11（掩码0xFFF，进程内自锁，避免外部设置亲和性的竞态）跑5次CALIB-001+5次BENCH-001。首次尝试在后台程序（浏览器/IDE）占用同批P核线程时测得BENCH-001中位数24.9秒的异常值（远超10秒门槛）；关闭无关程序、机器空闲后重跑，结果回落到CALIB-001中位数0.195秒、BENCH-001中位数6.11秒——与不锁核时的6.5秒量级一致，确认异常是线程竞争而非核心映射错误，锁核本身对这个单线程负载影响很小，真正决定测量可信度的是『机器空闲』这个前提。两个数字已写入reference-machine.md，`book_operations_golden=29310`（5次运行一致）已写入BENCH-001.yaml并冻结。calibrated=True的shock/leverage_seed参数是针对BENCH-001.yaml当前190代理构成手工调校的，population明显变化需要重新标定，不是通用算法。"
     },
     {
       "id": "E6",

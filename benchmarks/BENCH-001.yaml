@@ -164,12 +164,23 @@ metrics:
   impact_bucket_percentiles: [20, 40, 60, 80, 95]   # MD-004
 
 # --- 性能门槛 -------------------------------------------------------------
-# 判定见 README.md。thresholds 在首次实现后校准。
+# 判定见 README.md。2026-08-09 首次正式标定（锁核 0xFFF = 物理核 0-5 / 逻辑
+# 处理器 0-11，机器空闲，见 reference-machine.md §1）：
+#   CALIB-001 参考耗时 0.195 秒（中位数，5 次）
+#   本基准归一化耗时 6.11 秒（中位数，5 次）—— 远低于下方 10 秒门槛
+# 两个数字都用 `python -m market_game_sim.bench --config benchmarks/BENCH-001.yaml
+# --calibrated-coverage` 跑出的结果测定——本配置文件本身描述的参与者构成不足以
+# 在 100k 事务内触发覆盖断言要求的强平路径（见 docs/experiments/
+# 0.1.2-exit-evidence-index.json 的 E5 条目标定过程），`--calibrated-coverage`
+# 注入的预置杠杆账户 + 持续冲击（bench/runner.py::_CALIBRATED_VICTIM_KW /
+# _CALIBRATED_SHOCK_KW）不改变本文件的参与者构成契约，只是让覆盖断言要求的
+# 强平/连锁强平/部分成交路径真正被走到——不加这个开关跑出的 book_operations
+# 计数不满足下方 coverage_assertions，本身就不是一次有效基准（README §1.1）。
 thresholds:
   # 墙钟阈值是性能测量值，不参与领域运算，故不适用 ADR-001 的整数/Decimal 约定。
   normalized_wall_seconds_max: 10.0
   # 硬件无关的算法回归断言：给定配置与种子，该计数完全确定。
-  book_operations_golden: null                # 首次实现后写入
+  book_operations_golden: 29310                # 2026-08-09 标定：5 次运行全部一致
 
 # --- 覆盖断言（README §1.1）-----------------------------------------------
 # 基准必须真的走过要测的路径，否则门槛达标无意义。任一不满足即判定基准无效。
