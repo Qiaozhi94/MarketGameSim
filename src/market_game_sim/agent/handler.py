@@ -223,6 +223,62 @@ def _bars_from_history(trades: list[dict], bar_ns: int) -> list:
     return out
 
 
+def _cancel_stale_orders(
+    spec: AgentSpec,
+    world: dict,
+    kernel: EventKernel,
+    decide_event_id: str,
+    decision_index: int,
+    arrival_ts: int,
+    submitted_at: int,
+) -> list[dict]:
+    """代理策略 §6.2 全撤重报: cancel every currently-resting order this
+    agent owns, before this decision's new orders are enqueued.  Reads
+    ``world["active_orders_by_agent"]`` (maintained by book/matching.py on
+    insert/fill/cancel) rather than re-deriving it, so it stays consistent
+    with whatever matching.py currently considers "resting".
+
+    Must run *before* enqueueing the new-order intents below: cancels and
+    submits are both class-0 ORDER_ARRIVAL at the same ``arrival_ts``, and
+    the kernel breaks same-timestamp/class ties by enqueue order (FIFO) --
+    enqueueing cancels first also means the freed-up reserved margin is
+    already released by the time the new order's initial-margin check runs
+    (each ORDER_ARRIVAL is processed as its own kernel transaction).
+
+    Returns AGENT_DECIDE.intents[]-shaped summaries for the audit trail.
+    """
+    active = world.get("active_orders_by_agent", {}).get(spec.agent_id, {})
+    summaries: list[dict] = []
+    for i, order_id in enumerate(list(active.keys())):
+        cancel_event = {
+            "event_type": "ORDER_ARRIVAL",
+            "timestamp": arrival_ts,
+            "agent_id": spec.agent_id,
+            "order_id": order_id,
+            "action": "CANCEL",
+            "target_order_id": order_id,
+            "side": None,
+            "order_type": None,
+            "price_ticks": None,
+            "quantity_units": None,
+            "intent_id": f"{spec.agent_id}-dec{decision_index}-cancel-{i}",
+            "decision_event_id": decide_event_id,
+            "submitted_at": submitted_at,
+        }
+        kernel.enqueue(cancel_event)
+        summaries.append(
+            {
+                "intent_id": cancel_event["intent_id"],
+                "action": "CANCEL",
+                "side": None,
+                "order_type": None,
+                "price_ticks": None,
+                "quantity_units": None,
+            }
+        )
+    return summaries
+
+
 def handle_agent_decide(
     event: dict,
     world: dict,
@@ -257,11 +313,15 @@ def handle_agent_decide(
         internal_state = {"signal_bp": signal_bp}
 
     decide_event_id = f"e{kernel.current_transaction_seq}_0"
+    arrival_ts = event["timestamp"] + spec.latency_ns
+    cancel_summaries = _cancel_stale_orders(
+        spec, world, kernel, decide_event_id, decision_index, arrival_ts, event["timestamp"]
+    )
     for order_seq, intent in enumerate(intents):
         order_id = f"o-{agent_id}-{decide_event_id}-{order_seq}"
         order_arrival = {
             "event_type": "ORDER_ARRIVAL",
-            "timestamp": event["timestamp"] + spec.latency_ns,
+            "timestamp": arrival_ts,
             "agent_id": agent_id,
             "order_id": order_id,
             "action": intent.action,
@@ -275,7 +335,7 @@ def handle_agent_decide(
         }
         kernel.enqueue(order_arrival)
 
-    event["intents"] = [
+    event["intents"] = cancel_summaries + [
         {
             "intent_id": i.intent_id,
             "action": i.action,

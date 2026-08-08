@@ -557,6 +557,16 @@ def _populate_r0_defaults(event: dict, book: Book, initial_price: int, world: di
     event.setdefault("decision_event_id", "e0_0")
     event.setdefault("submitted_at", event["timestamp"])
 
+    if event.get("action") == "CANCEL":
+        # CANCEL carries no quantity/price (event-schema §4.1: both null) --
+        # the SUBMIT-only pre-match/reserved-margin estimate below assumes a
+        # real candidate order and would crash on the null quantity.  The
+        # actual reserved-units release for a cancel is computed by
+        # _handle_cancel itself (on the resulting r1 ORDER_CANCELLED, after
+        # the order is actually removed), not here on r0.
+        event["reserved_delta_units"] = 0
+        return
+
     agent_id = event.get("agent_id", "")
     if not agent_id:
         event["reserved_delta_units"] = 0
