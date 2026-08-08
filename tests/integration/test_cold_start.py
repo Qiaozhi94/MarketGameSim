@@ -123,8 +123,23 @@ def test_market_maker_first_observation_quotes_both_sides():
     assert book.best_ask() == 10005
 
 
-def test_cold_start_full_pipeline_first_trade_flips_risk_mark():
-    """MM quotes, belief agent crosses, first trade -> risk_mark = last."""
+def _run_cold_start_pipeline(enqueue_order: tuple[str, str]):
+    """§2.17: shared driver for the cold-start pipeline test, parameterized
+    on AGENT_OBSERVE enqueue order so the outcome can be checked for
+    order-independence rather than relying on one hardcoded sequence.
+
+    Only ONE round of AGENT_OBSERVE is pre-scheduled (per agent) -- the
+    previous version manually pre-enqueued a second round "so the belief
+    agent can react to MM quotes", but that is unnecessary: handle_agent_
+    decide (agent/handler.py) rebuilds its information set from the LIVE
+    book at the moment it actually runs, not from a snapshot frozen at
+    observe time.  Because the market maker's latency_ns (5ms) is far
+    below the belief agent's (50ms), the MM's ORDER_ARRIVAL lands (t=10ms)
+    well before the belief agent's own AGENT_DECIDE fires (t=50ms) even
+    within a single observe round, so the belief agent already sees the
+    MM's quotes by the time it decides.  Confirmed by fault injection:
+    removing the second round left every assertion below still passing.
+    """
     mm = _mm_spec()
     agent = _belief_spec("agent-0", signal_bp=10_000)  # max long
     spec_by_id = {mm.agent_id: mm, agent.agent_id: agent}
@@ -140,8 +155,8 @@ def test_cold_start_full_pipeline_first_trade_flips_risk_mark():
         build_book_payload(last_ticks=None),
     )
 
-    # Schedule both agents' first observe at t=0
-    for aid in ("mm-0", "agent-0"):
+    # Schedule both agents' first (and only) observe at t=0, in the given order.
+    for aid in enqueue_order:
         kernel.enqueue(
             {
                 "event_type": "AGENT_OBSERVE",
@@ -152,28 +167,49 @@ def test_cold_start_full_pipeline_first_trade_flips_risk_mark():
                 "information_set": {},
             }
         )
-    # Schedule a second-round observe so the belief agent can react to MM quotes.
-    for aid, spec in spec_by_id.items():
-        kernel.enqueue(
-            {
-                "event_type": "AGENT_OBSERVE",
-                "timestamp": spec.observe_interval_ns,
-                "agent_id": aid,
-                "observed_at": spec.observe_interval_ns,
-                "market_data_event_id": "e1_0",
-                "information_set": {},
-            }
-        )
 
     kernel.run(_dispatch, world, max_transactions=80)
     assert kernel.terminated == "COMPLETED", (
         f"aborted: code={kernel.abort_code!r} detail={kernel.abort_detail!r}"
     )
+    return kernel, world
+
+
+def test_cold_start_full_pipeline_first_trade_flips_risk_mark():
+    """MM quotes, belief agent crosses, first trade -> risk_mark = last."""
+    kernel, world = _run_cold_start_pipeline(("mm-0", "agent-0"))
 
     book = world["book"]
     assert book.last_ticks is not None, "expected at least one trade to flip risk_mark"
     # The first trade should be near the market maker's quotes; the spread
     # may cause it to differ when the agent's order crosses both sides.
+    assert abs(book.last_ticks - 10000) <= 50, f"unexpected last_ticks {book.last_ticks}"
+
+    # §2.17: check the actual event-TYPE sequence, not just final state --
+    # a real trade requires the pipeline to have gone
+    # AGENT_OBSERVE -> AGENT_DECIDE -> ORDER_ARRIVAL -> TRADE_SETTLE in that
+    # relative order (each stage causally produces the next).
+    seq = [r["event_type"] for r in kernel.committed_records]
+    assert "TRADE_SETTLE" in seq, f"no TRADE_SETTLE in event sequence: {seq}"
+    idx_decide = seq.index("AGENT_DECIDE")
+    idx_order = seq.index("ORDER_ARRIVAL", idx_decide)
+    idx_trade = seq.index("TRADE_SETTLE", idx_order)
+    assert idx_decide < idx_order < idx_trade, f"pipeline stages out of causal order: {seq}"
+
+
+def test_cold_start_full_pipeline_order_independent_of_enqueue_sequence():
+    """§2.17 regression: the ORIGINAL test hardcoded
+    ``for aid in ("mm-0", "agent-0")`` -- so it only ever verified one
+    specific enqueue order, not that the pipeline reaches the same outcome
+    (market opens, a trade happens) regardless of which agent's first
+    AGENT_OBSERVE happens to be enqueued first.  Runs the reversed order
+    and asserts the same qualitative outcome."""
+    _kernel, world = _run_cold_start_pipeline(("agent-0", "mm-0"))
+    book = world["book"]
+    assert book.last_ticks is not None, (
+        "market must still open (a trade must still happen) when the belief "
+        "agent's first AGENT_OBSERVE is enqueued before the market maker's"
+    )
     assert abs(book.last_ticks - 10000) <= 50, f"unexpected last_ticks {book.last_ticks}"
 
 
