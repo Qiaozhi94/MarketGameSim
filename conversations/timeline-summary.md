@@ -1,0 +1,60 @@
+# 会话时间线（编排级摘要）
+
+> 仅保留会话起止与子代理派发/收集等编排级事件，供快速复盘协作穿插。
+
+- `2026-07-29T11:04:31Z` **session-start** claude/11c9fb59-bc29-46b4-ba43-50c5f09c6ee1
+- `2026-07-31T15:08:05Z` **session-start** codex/rollout-2026-07-31T23-06-52-019fb8b6-c0c0-7610-ba2d-63b369371975
+- `2026-07-31T15:21:00Z` **session-start** codex/rollout-2026-07-31T23-20-55-019fb8c3-9c76-75e3-a21d-3e6101ee8102
+- `2026-08-01T09:42:19Z` **session-end** codex/rollout-2026-07-31T23-20-55-019fb8c3-9c76-75e3-a21d-3e6101ee8102
+- `2026-08-01T14:24:32Z` **session-start** codex/rollout-2026-08-01T22-24-27-019fbdb6-45fc-70a1-a7bd-817d17294b0c
+- `2026-08-02T08:37:34Z` **session-end** codex/rollout-2026-08-01T22-24-27-019fbdb6-45fc-70a1-a7bd-817d17294b0c
+- `2026-08-02T08:37:57Z` **session-end** codex/rollout-2026-07-31T23-06-52-019fb8b6-c0c0-7610-ba2d-63b369371975
+- `2026-08-02T09:01:26Z` **session-start** opencode/v0.1需求开发与验证
+- `2026-08-02T09:04:40Z` **session-start** opencode/Phase 1: Numeric values, config parsing, serialization (@Sisyphus-Junior subagent)
+- `2026-08-02T09:24:09Z` **session-end** opencode/Phase 1: Numeric values, config parsing, serialization (@Sisyphus-Junior subagent)
+- `2026-08-02T09:24:10Z` **background_output** opencode/v0.1需求开发与验证: background_output({"task_id": "bg_70ea7d7f"})
+- `2026-08-02T09:26:17Z` **session-start** opencode/Phase 2A: Core event kernel (@Sisyphus-Junior subagent)
+- `2026-08-02T09:26:53Z` **session-start** opencode/Phase 2B: Schema, registry, serialization, hashing (@Sisyphus-Junior subagent)
+- `2026-08-02T09:27:15Z` **session-end** opencode/Phase 2A: Core event kernel (@Sisyphus-Junior subagent)
+- `2026-08-02T09:28:32Z` **session-end** opencode/Phase 2B: Schema, registry, serialization, hashing (@Sisyphus-Junior subagent)
+- `2026-08-02T09:29:13Z` **session-end** opencode/v0.1需求开发与验证
+- `2026-08-02T10:57:17Z` **session-start** opencode/v0.1 开发与验证
+- `2026-08-02T11:08:46Z` **session-end** opencode/v0.1 开发与验证
+- `2026-08-02T11:21:50Z` **session-start** opencode/继续v0.1代码开发
+- `2026-08-02T11:25:04Z` **session-start** opencode/Phase 2 事件内核完整实现 (@Sisyphus-Junior subagent)
+- `2026-08-02T11:53:26Z` **session-end** opencode/Phase 2 事件内核完整实现 (@Sisyphus-Junior subagent)
+- `2026-08-02T11:53:26Z` **background_output** opencode/继续v0.1代码开发: background_output({"task_id": "bg_b1d5ed86", "timeout": 600000})
+- `2026-08-02T11:55:18Z` **session-start** opencode/Phase 3 订单簿与撮合实现 (@Sisyphus-Junior subagent)
+- `2026-08-02T12:07:57Z` **session-end** opencode/Phase 3 订单簿与撮合实现 (@Sisyphus-Junior subagent)
+- `2026-08-02T12:07:57Z` **background_output** opencode/继续v0.1代码开发: background_output({"task_id": "bg_6bbb7d4d", "timeout": 600000})
+- `2026-08-02T12:09:33Z` **session-start** opencode/Phase 4 账户与记账实现 (@Sisyphus-Junior subagent)
+- `2026-08-02T12:11:18Z` **session-end** opencode/Phase 4 账户与记账实现 (@Sisyphus-Junior subagent)
+- `2026-08-02T12:16:31Z` **background_output** opencode/继续v0.1代码开发: background_output({"task_id": "bg_353a03bd", "timeout": 600000})
+- `2026-08-02T12:17:51Z` **session-start** opencode/Phase 4 账户与记账实现（重做） (@Sisyphus-Junior subagent)
+- `2026-08-02T12:37:23Z` **session-end** opencode/Phase 4 账户与记账实现（重做） (@Sisyphus-Junior subagent)
+- `2026-08-02T12:38:41Z` **background_output** opencode/继续v0.1代码开发: background_output({"task_id": "bg_f0929dcf"})
+- `2026-08-02T12:44:49Z` **background_output** opencode/继续v0.1代码开发: background_output({"task_id": "bg_f0929dcf"})
+- `2026-08-02T12:52:26Z` **session-start** opencode/Phase 6 确定性与验收 (@Sisyphus-Junior subagent)
+- `2026-08-02T12:52:27Z` **session-end** opencode/Phase 6 确定性与验收 (@Sisyphus-Junior subagent)
+- `2026-08-02T12:54:00Z` **background_output** opencode/继续v0.1代码开发: background_output({"task_id": "bg_434936a4"})
+- `2026-08-02T12:54:10Z` **background_cancel** opencode/继续v0.1代码开发: background_cancel({"taskId": "bg_434936a4"})
+- `2026-08-02T13:03:15Z` **session-end** claude/11c9fb59-bc29-46b4-ba43-50c5f09c6ee1
+- `2026-08-02T13:03:20Z` **session-start** claude/47539df4-2013-44c0-abc2-f5336e7770d6
+- `2026-08-02T14:12:46Z` **session-end** opencode/继续v0.1代码开发
+- `2026-08-02T14:33:03Z` **session-start** codex/rollout-2026-08-02T22-31-35-019fc2e3-29f4-7e03-8038-adb43b9318f1
+- `2026-08-02T14:40:31Z` **session-end** codex/rollout-2026-08-02T22-31-35-019fc2e3-29f4-7e03-8038-adb43b9318f1
+- `2026-08-02T14:50:38Z` **session-end** claude/47539df4-2013-44c0-abc2-f5336e7770d6
+- `2026-08-02T14:52:53Z` **session-start** claude/1ab8ee6f-080c-40c1-bd3f-98d8570f639c
+- `2026-08-02T15:03:34Z` **ToolSearch** claude/1ab8ee6f-080c-40c1-bd3f-98d8570f639c: ToolSearch({"query": "select:TaskCreate,TaskUpdate"})
+- `2026-08-02T15:14:51Z` **session-end** claude/1ab8ee6f-080c-40c1-bd3f-98d8570f639c
+- `2026-08-02T15:15:53Z` **session-start** opencode/v0.1.2 需求开发与进展标记
+- `2026-08-02T15:50:39Z` **session-start** claude/3e6858a6-3cd1-4d5c-9c94-05ab5f20dcca
+- `2026-08-02T15:52:02Z` **ToolSearch** claude/3e6858a6-3cd1-4d5c-9c94-05ab5f20dcca: ToolSearch({"query": "TaskCreate TaskUpdate"})
+- `2026-08-02T15:56:42Z` **ToolSearch** claude/3e6858a6-3cd1-4d5c-9c94-05ab5f20dcca: ToolSearch({"query": "select:SendMessage"})
+- `2026-08-05T13:06:37Z` **Agent** claude/3e6858a6-3cd1-4d5c-9c94-05ab5f20dcca: Agent({"description": "五次复核指标报告与实验运行器修复状态", "prompt": "你在第五轮复核一个市场模拟器项目（D:\\Projects\\market-game-sim）0.1.2 里程碑代码的修复情况。用户第四次声称\"所有问题都修复完成\"。主检视文档已合并整理在\n`docs/reviews/2026-08-03-v0.1.2-implementation-review.md`（含状态标注和历史记录）。\n\n该文档里指标/实验层相关条目第四轮复核后的状态：\n- §1.6（报告数据语义错位）：部分修复，`runner.py` 仍把 `(entry_notional_units,\n  position_units)` 错误贴标签当 `(margin_ratio_bp, leverage_bp)`，`metrics/sampling.py`\n  仍是孤儿模块；\n- §1.7（配对处理组/对照组）：装饰性代码——第四轮新增 `run_paired`/`group_label`，但\n  `run_multi_seed` 没有拷贝 `group_label
+- `2026-08-06T13:27:28Z` **Agent** claude/3e6858a6-3cd1-4d5c-9c94-05ab5f20dcca: Agent({"description": "六次复核tasks.md与整体一致性", "prompt": "你在第六轮复核一个市场模拟器项目（D:\\Projects\\market-game-sim）0.1.2 里程碑代码的修复情况。用户第五次声称\"所有问题都修复完成\"。主检视文档已合并整理在\n`docs/reviews/2026-08-03-v0.1.2-implementation-review.md`（含状态标注和历史记录，请先完整\n读取这份文档，它是当前最新的权威状态记录）。\n\n## 重要背景：本轮出现了此前五轮从未有过的重大变化\n我已确认本轮 `src/market_game_sim/book/matching.py` 新增了 `LIQUIDATION_STALE` 世代校验\n逻辑（对应主文档 §1.9），`src/market_game_sim/experiment/runner.py` 新增了\n`agent_initial_bp` 字段（对应主文档 §1.10），`src/market_game_sim/verify.py` 的\n`_check_kpi006
+- `2026-08-07T14:09:38Z` **session-end** opencode/v0.1.2 需求开发与进展标记
+- `2026-08-07T16:03:30Z` **session-start** opencode/对话记录整合推送仓库用于AI复盘
+- `2026-08-07T16:05:25Z` **skill** opencode/对话记录整合推送仓库用于AI复盘: skill({"name": "cli-token-usage"})
+- `2026-08-07T16:36:44Z` **session-end** claude/3e6858a6-3cd1-4d5c-9c94-05ab5f20dcca
+- `2026-08-07T16:37:18Z` **session-end** opencode/对话记录整合推送仓库用于AI复盘
