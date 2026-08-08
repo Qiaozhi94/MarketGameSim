@@ -547,6 +547,107 @@ class TestCase6LeverageBoundary:
         assert im > 100_000_000_000  # reject
 
 
+class TestCase7PartialLiquidationRecalc:
+    """Case 7: 部分强平后按账户合同 §4.3 重新计算最小数量
+    (acceptance-vectors.md §3 案例7).
+
+    E1 regression: nine of the ten documented acceptance cases had direct
+    tests (1-6, 7b, 8, 9, 10); case 7 itself -- the specific numeric
+    recalculation scenario (288.678 -> 193.271 driven by risk_mark moving
+    94 -> 92 mid-liquidation, not by the partial fill itself) -- had none.
+    ``required_quantity_units`` is a two-way binary search result with no
+    closed form simple enough to hand-verify independently, so this drives
+    the real kernel/matching/risk-scan pipeline end-to-end rather than
+    calling ledger.risk functions in isolation, and asserts against the
+    exact integers acceptance-vectors.md §3 documents.
+
+    A: wallet=5000, tier=10 (initial_bp=1000), long 500 @ entry 100.
+    M/X trade at 94 drops A's margin_ratio to 425bp (<500) -> first
+    MARGIN_CALL, required_quantity_units = 288678 (288.678 lots).  A's
+    auto-scheduled SELL MARKET liquidation order finds only V's resting
+    BUY 200 @ 92 as a counterparty -> fills 200 lots at 92 (risk_mark
+    94->92), IOC-cancels the 88678-lot remainder.  The fill itself moves
+    risk_mark, triggering a second phase-2 scan: recomputed
+    required_quantity_units = 193271 -- not 88678 (the naive "original
+    remainder"), because the *price* moved, not just the position size
+    (账户合同 §4.3's point exactly).
+    """
+
+    def _scenario(self):
+        accts = {
+            "M": Account("M", 10**16),
+            "A": Account(
+                "A",
+                wallet_units=5000 * CASH,
+                position_units=500_000,
+                entry_notional_units=50000 * CASH,
+            ),
+            "S": Account(
+                "S",
+                wallet_units=50000 * CASH,
+                position_units=-500_000,
+                entry_notional_units=-50000 * CASH,
+            ),
+            "X": Account("X", 10**16),
+            "V": Account("V", 10**16),
+        }
+        events = [
+            _limit("m1", "M", "SELL", 9400, 500_000, t=100),
+            _limit("v1", "V", "BUY", 9200, 200_000, t=100),
+            {
+                "event_type": "ORDER_ARRIVAL",
+                "timestamp": 200,
+                "agent_id": "X",
+                "order_id": "x1",
+                "action": "SUBMIT",
+                "side": "BUY",
+                "order_type": "MARKET",
+                "price_ticks": None,
+                "quantity_units": 100_000,
+            },
+        ]
+        for e in events:
+            e.setdefault("origin", "")
+        records, accts = _run(events, accts, maker_bps=0, taker_bps=5, maint_bp=500, target_bp=1000)
+        return records, accts
+
+    def test_first_required_quantity_matches_documented_value(self):
+        records, _ = self._scenario()
+        mcs = [r for r in records if r.get("event_type") == "MARGIN_CALL"]
+        assert mcs[0]["agent_id"] == "A"
+        assert mcs[0]["required_quantity_units"] == 288_678
+
+    def test_liquidation_order_partially_fills_at_92_then_ioc_cancels_remainder(self):
+        records, _ = self._scenario()
+        trades = [r for r in records if r.get("event_type") == "TRADE_SETTLE"]
+        liq_fill = next(t for t in trades if t["price_ticks"] == 9200)
+        assert liq_fill["quantity_units"] == 200_000
+
+        cancels = [r for r in records if r.get("event_type") == "ORDER_CANCELLED"]
+        remainder_cancel = next(c for c in cancels if c["agent_id"] == "A")
+        assert remainder_cancel["reason"] == "IOC_REMAINDER"
+        assert remainder_cancel["cancelled_qty_units"] == 88_678  # 288678 - 200000
+
+    def test_second_required_quantity_matches_documented_value_not_naive_remainder(self):
+        """The doc's key point: q2=193271, *not* 88678 (288678-200000) --
+        the recalculation is price-driven, not just "remaining position"."""
+        records, _ = self._scenario()
+        mcs = [r for r in records if r.get("event_type") == "MARGIN_CALL"]
+        assert len(mcs) >= 2
+        assert mcs[1]["required_quantity_units"] == 193_271
+        assert mcs[1]["required_quantity_units"] != 288_678 - 200_000
+
+    def test_account_state_after_partial_fill_matches_documented_projection(self):
+        """acceptance-vectors.md §3 案例7: wallet=3390.8, position=300,
+        entry=30000, realized=-1600 (cash_unit=1e-8 integer projection)."""
+        _, accts = self._scenario()
+        a = accts["A"]
+        assert a.wallet_units == cash(3390.8)
+        assert a.position_units == units(300)
+        assert a.entry_notional_units == cash(30000)
+        assert a.realized_pnl_units == cash(-1600)
+
+
 class TestCase7bReservedUnits:
     """Case 7b: reserved_units -- total-occupancy (position + worst-case orders)."""
 
