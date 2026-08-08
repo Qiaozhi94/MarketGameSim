@@ -13,6 +13,7 @@ from __future__ import annotations
 from market_game_sim.metrics.liquidation import RunClassification
 from market_game_sim.metrics.report import (
     _sample_stats,
+    build_continuous_part,
     build_endpoint_part,
     build_report,
 )
@@ -74,3 +75,43 @@ def test_build_report_wires_endpoint_samples_through():
     assert report.endpoint.n_samples == 1
     assert report.endpoint.mean_margin_ratio_bp == 100.0
     assert report.endpoint.mean_leverage_bp == 9000.0
+
+
+def test_build_continuous_part_no_samples_gives_the_no_valid_samples_note():
+    part = build_continuous_part([])
+    assert part.n_samples == 0
+    assert part.valid_sample_note == "no valid samples"
+
+
+def test_build_continuous_part_low_null_ratio_gives_no_warning_note():
+    """Positive case: well-populated samples (null ratio <= 30%) must not
+    trigger either warning clause."""
+    samples = [(100, 8000), (200, 7000), (300, 6000), (400, 5000)]
+    part = build_continuous_part(samples)
+    assert part.null_ratio_margin_ratio == 0.0
+    assert part.null_ratio_leverage == 0.0
+    assert part.valid_sample_note == ""
+
+
+def test_build_continuous_part_high_margin_null_ratio_warns():
+    """Negative/contrast case: >30% of margin_ratio_bp entries null must
+    surface in valid_sample_note so a downstream reader doesn't trust a
+    mean computed from a starved sample."""
+    samples = [(None, 8000), (None, 7000), (None, 6000), (100, 5000)]
+    part = build_continuous_part(samples)
+    assert part.null_ratio_margin_ratio == 0.75
+    assert "margin_ratio null > 30%" in part.valid_sample_note
+
+
+def test_build_continuous_part_high_leverage_null_ratio_warns():
+    samples = [(100, None), (200, None), (300, None), (400, 5000)]
+    part = build_continuous_part(samples)
+    assert part.null_ratio_leverage == 0.75
+    assert "leverage null > 30%" in part.valid_sample_note
+
+
+def test_build_continuous_part_both_null_ratios_high_warns_for_both():
+    samples = [(None, None), (None, None), (None, None), (100, 5000)]
+    part = build_continuous_part(samples)
+    assert "margin_ratio null > 30%" in part.valid_sample_note
+    assert "leverage null > 30%" in part.valid_sample_note
