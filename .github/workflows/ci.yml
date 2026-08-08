@@ -64,7 +64,7 @@ jobs:
       # 真正的确定性门必须【跨两个不同 seed 的独立进程】比较同一运行的事件摘要，
       # 两者不等即失败。它需要哈希实现存在才能建立，由 0.1.1 T602 / 退出条件 E4 负责。
       #
-      # 覆盖率门槛：语句覆盖率 ≥90%，分支覆盖率 ≥87%（90% 目标跟踪至 0.1.2）。
+      # 覆盖率门槛：语句+分支合并覆盖率 ≥90%（T001b：87% 提升至 90% 后实测 91%）。
       - env:
           PYTHONHASHSEED: "0"
-        run: pytest --cov=src/market_game_sim/book --cov=src/market_game_sim/ledger --cov-branch --cov-fail-under=87
+        run: pytest --cov=src/market_game_sim/book --cov=src/market_game_sim/ledger --cov-branch --cov-fail-under=90
