@@ -7,6 +7,7 @@ from dataclasses import replace
 import pytest
 
 from market_game_sim.agent.scheduler import AgentSpec
+from market_game_sim.experiment.protocol import ExperimentProtocol, ProtocolViolation
 from market_game_sim.experiment.runner import (
     ExperimentConfig,
     RunResult,
@@ -45,6 +46,52 @@ def _belief_spec(aid: str) -> AgentSpec:
         aggressiveness_bp=5_000,
         max_order_qty=5_000,
     )
+
+
+def test_run_one_with_protocol_records_calibration_trial(tmp_path):
+    """§T603 wiring: run_one(config, protocol=...) in CALIBRATION stage
+    must record the trial via the real protocol object, not just have the
+    method available and unused -- verified by a subsequent
+    enter_belief_experiment overlap check that only works if the trial was
+    actually recorded."""
+    mm = _mm_spec()
+    b = replace(_belief_spec("agent-0"), leverage_tier=10)
+    cfg = ExperimentConfig(
+        seed=1,
+        max_transactions=60,
+        agent_specs=[mm, b],
+        agent_signals={"agent-0": 10_000},
+    )
+    protocol = ExperimentProtocol(audit_log_path=tmp_path / "audit.jsonl")
+    run_one(cfg, protocol=protocol)
+    protocol.freeze_calibration(cfg)
+    with pytest.raises(ProtocolViolation, match="10"):
+        protocol.enter_belief_experiment([10, 50])
+
+
+def test_run_one_with_protocol_enforces_frozen_config_in_validation_stage(tmp_path):
+    """§T603 wiring: run_one must actually call protocol.check_config once
+    out of CALIBRATION and propagate ProtocolViolation, not silently run a
+    config that drifted from the frozen baseline."""
+    mm = _mm_spec()
+    b = _belief_spec("agent-0")
+    frozen_cfg = ExperimentConfig(
+        seed=1,
+        max_transactions=60,
+        agent_specs=[mm, b],
+        agent_signals={"agent-0": 10_000},
+        taker_bps=5,
+    )
+    protocol = ExperimentProtocol(audit_log_path=tmp_path / "audit.jsonl")
+    protocol.freeze_calibration(frozen_cfg)
+
+    drifted_cfg = replace(frozen_cfg, taker_bps=8)
+    with pytest.raises(ProtocolViolation, match="taker_bps"):
+        run_one(drifted_cfg, protocol=protocol)
+
+    # the unmodified frozen config must still run fine post-freeze
+    result = run_one(frozen_cfg, protocol=protocol)
+    assert result.terminated == "COMPLETED"
 
 
 def test_run_one_completes():

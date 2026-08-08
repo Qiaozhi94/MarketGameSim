@@ -7,7 +7,7 @@ and classification for a configurable number of seeds.
 from __future__ import annotations
 
 import dataclasses
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from market_game_sim.agent.handler import handle_agent_decide, handle_agent_observe
 from market_game_sim.agent.scheduler import AgentSpec
@@ -17,6 +17,8 @@ from market_game_sim.eventlog.bootstrap import (
     build_account_payload_from_accounts,
     build_book_payload,
 )
+from market_game_sim.experiment.config import ExperimentConfig
+from market_game_sim.experiment.protocol import ExperimentProtocol, ProtocolStage
 from market_game_sim.experiment.stats import bootstrap_proportion_diff, build_conditional_conclusion
 from market_game_sim.kernel.runner import EventKernel
 from market_game_sim.ledger.account import Account
@@ -31,24 +33,6 @@ from market_game_sim.metrics.liquidation import (
 from market_game_sim.metrics.report import build_report
 from market_game_sim.metrics.sampling import compute_price_impact, sample_agent_series
 from market_game_sim.verify import check_causal_references
-
-
-@dataclass
-class ExperimentConfig:
-    """Runtime configuration for one experiment run."""
-
-    seed: int
-    max_transactions: int
-    initial_price_ticks: int = 10000
-    mult: int = 1000
-    maker_bps: int = -1
-    taker_bps: int = 5
-    maint_bp: int = 500
-    target_bp: int = 1000
-    liquidation_latency_ns: int = 1_000_000
-    agent_specs: list[AgentSpec] = field(default_factory=list)
-    agent_signals: dict[str, int] = field(default_factory=dict)
-    group_label: str = "control"  # "control" | "treatment" for paired experiments
 
 
 def check_paired_parity(
@@ -265,8 +249,25 @@ def _reschedule_next_observe(event: dict, world: dict, kernel: EventKernel) -> N
     )
 
 
-def run_one(config: ExperimentConfig) -> RunResult:
-    """Run a single experiment seed."""
+def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None) -> RunResult:
+    """Run a single experiment seed.
+
+    ``protocol`` (T603, 方法论 §10.1/§10.3): when given, wires the
+    three-zone protocol guard in automatically -- during
+    ``ProtocolStage.CALIBRATION`` this records the trial (so a later
+    ``enter_belief_experiment`` can check for overlap); in
+    ``FROZEN_VALIDATION``/``BELIEF_EXPERIMENT`` this checks ``config``
+    against the frozen snapshot / pre-registered treatment range before
+    running anything, raising ``ProtocolViolation`` (with an audit-log
+    entry) rather than silently producing a result that would violate
+    单维度对照/不得数据窥探.
+    """
+    if protocol is not None:
+        if protocol.stage is ProtocolStage.CALIBRATION:
+            protocol.record_calibration_trial(config)
+        else:
+            protocol.check_config(config)
+
     accounts: dict[str, Account] = {}
     for spec in config.agent_specs:
         accounts[spec.agent_id] = Account(agent_id=spec.agent_id, wallet_units=10**14)
@@ -366,6 +367,7 @@ def run_one(config: ExperimentConfig) -> RunResult:
 def run_multi_seed(
     base_config: ExperimentConfig,
     seeds: list[int],
+    protocol: ExperimentProtocol | None = None,
 ) -> list[RunResult]:
     """Run the same config across multiple seeds."""
     results: list[RunResult] = []
@@ -384,7 +386,7 @@ def run_multi_seed(
             agent_signals=dict(base_config.agent_signals),
             group_label=base_config.group_label,
         )
-        results.append(run_one(cfg))
+        results.append(run_one(cfg, protocol=protocol))
     return results
 
 
