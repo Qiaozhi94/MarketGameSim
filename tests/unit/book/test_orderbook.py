@@ -194,3 +194,43 @@ class TestDegenerateStates:
         book.insert(_resting("b1", "A", "BUY", 9900, 100))
         book.insert(_resting("s1", "A", "SELL", 10100, 100))
         assert book.valuation_mark_half_ticks() == 9900 + 10100
+
+
+class TestOperationCount:
+    """benchmarks/README.md §2 第二层: book_operations_golden 依赖的计数器
+    只在结构性变更（insert/pop_best_maker）上累加，查询类方法（best_bid/
+    peek_best_maker/bid_levels/...）不应改变它。"""
+
+    def test_starts_at_zero(self):
+        assert Book().operation_count == 0
+
+    def test_insert_increments(self):
+        book = Book()
+        book.insert(_resting("b1", "A", "BUY", 10000, 100))
+        assert book.operation_count == 1
+        book.insert(_resting("b2", "A", "BUY", 10100, 100))
+        assert book.operation_count == 2
+
+    def test_pop_best_maker_increments(self):
+        book = Book()
+        book.insert(_resting("b1", "A", "BUY", 10000, 100))
+        book.pop_best_maker("BUY")
+        assert book.operation_count == 2  # 1 insert + 1 pop
+
+    def test_pop_best_maker_on_empty_side_does_not_increment(self):
+        book = Book()
+        assert book.pop_best_maker("BUY") is None
+        assert book.operation_count == 0
+
+    def test_queries_do_not_increment(self):
+        book = Book()
+        book.insert(_resting("b1", "A", "BUY", 10000, 100))
+        before = book.operation_count
+        book.best_bid()
+        book.best_ask()
+        book.peek_best_maker("BUY")
+        book.bid_levels()
+        book.ask_levels()
+        book.bid_depth_k()
+        book.ask_depth_k()
+        assert book.operation_count == before

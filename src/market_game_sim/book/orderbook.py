@@ -48,6 +48,12 @@ class Book:
         self.last_ticks: int | None = None
         self._initial_price_ticks: int = initial_price_ticks
         self._dirty: bool = False
+        # benchmarks/README.md §2 第二层：硬件无关的算法回归断言
+        # ("book_operations_golden") -- counts structural mutations (insert/
+        # pop), not queries; a call-count regression here would flag a
+        # matching-loop change that calls the book a different number of
+        # times for the same config+seed, independent of wall-clock noise.
+        self.operation_count: int = 0
 
     # ------------------------------------------------------------------ #
     # Insertion
@@ -61,6 +67,7 @@ class Book:
             bisect.insort(prices, price)
         book[price].append(order)
         self._dirty = True
+        self.operation_count += 1
 
     # ------------------------------------------------------------------ #
     # Best-price queries
@@ -93,6 +100,7 @@ class Book:
             del book[best_price]
             prices.remove(best_price)
         self._dirty = True
+        self.operation_count += 1
         return order
 
     # ------------------------------------------------------------------ #

@@ -202,6 +202,7 @@ class RunResult:
     liquidation_metrics: LiquidationMetrics
     classification: RunClassification
     group_label: str = "control"
+    book_operation_count: int = 0
 
 
 def _dispatch_agents(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
@@ -366,6 +367,7 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
         liquidation_metrics=liq_metrics,
         classification=classification,
         group_label=config.group_label,
+        book_operation_count=world["book"].operation_count,
     )
 
 
