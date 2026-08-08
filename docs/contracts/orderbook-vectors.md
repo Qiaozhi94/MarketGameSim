@@ -206,42 +206,302 @@ T 买 **限价 102 × 5**：
    `record_index=2` 而 `fill_index=0`。这是两个序号必须分开记录的直接证据
    （撮合合同 §2.2）。
 
-### OB-8：整批成交后才做风险检查
+### OB-8：整批成交后才做风险检查（0.1.2 验收）
 
-**本向量属 0.1.2**（需要杠杆账户与保证金判定），0.1.1 不验收。
+**本向量覆盖 0.1.2 退出条件 E1**——含 6 种账户与 4 条补充向量。
 
-**完整整数黄金值由 `0.1.2 T007` 在编码前冻结**，此处只给结构骨架。T007 须覆盖
-安全 / 首次跌破 / 已 pending 且数量不变 / 已 pending 且**数量重算** /
-恢复 / 穿仓**六种账户**。
-
-前置：簿上卖 100×2、101×2、102×2；若干杠杆账户持有多头。T 买 102 × 5 跨三档。
-
-期望的记录顺序：
+**统一配置**：
 
 ```text
-r0        ORDER_ARRIVAL
-r1..r3    TRADE_SETTLE × 3         ← 逐笔更新账户，但不做风险判定
-r4..r(3+m) MARGIN_CALL × m (m ≥ 0)  ← 整批结算后一轮扫描，按 agent_id 升序
-r(4+m)    MARKET_DATA_PUBLISH
+tick_size = 0.01, min_quantity = 0.001, cash_unit = 1e-8, MULT = 1000
+maker_bps = -1, taker_bps = 5, fee_bps_cap = 5
+initial_price_ticks = 10000, maint_bp = 500, target_bp = 1000
+liquidation_latency_ns = 1000000  (1 毫秒)
+```
+
+#### OB-8 主向量：6 账户整批扫描
+
+前置簿：`M 挂卖 10000×2000, 10100×2000, 10200×2000`（三档）。
+6 个账户初始状态（按 `agent_id` 字典序升序）：
+
+| agent_id | wallet_units | position | entry | leverage_tier | initial_bp | 状态 |
+|---|---|---|---|---|---|---|
+| `A_safe` | 10000000000000 | 0 | 0 | 10 | 1000 | ACTIVE（始终安全） |
+| `B_first` | 500000000000 | 500000 | 5000000000000 | 10 | 1000 | 满杠杆，触发后首次进 PENDING |
+| `C_stable` | 500000000000 | 500000 | 5000000000000 | 10 | 1000 | 已 PENDING，数量稳定 |
+| `D_recount` | 500000000000 | 500000 | 5000000000000 | 10 | 1000 | 已 PENDING，价格变化数量重算 |
+| `E_recover` | 500000000000 | 500000 | 5000000000000 | 10 | 1000 | 已 PENDING，本次恢复至 ACTIVE |
+| `F_breach` | 500000000000 | 0 | 0 | 10 | 1000 | 已被前一笔强平归零且 wallet<0 |
+
+`T 买 LIMIT 10200×5000`（taker）。跨三档成交于 10000/10100/10200（与 OB-4 同样的价格，但数量更大）。
+
+**关键风控计算**（risk_mark = 10200，三档最后一笔）：
+
+| 账户 | risk_equity | notional | margin_ratio_bp | 结论 |
+|---|---|---|---|---|
+| A_safe | wallet=10000 | 0 | null | 安全（无仓位） |
+| B_first | 5000+500×102−50000 = 600 | 500×102 = 51000 | 117 | **触发** → PENDING |
+| C_stable | 5000+500×102−50000 = 600 | 51000 | 117 | **触发**，但假定本事务前已 pending 且 required_quantity 恰为刚算出的同一值 |
+| D_recount | 600 | 51000 | 117 | **触发**，required_quantity 与 C 不同（模拟已 pending 状态下的计算偏差） |
+| E_recover | 假设本事务前 margin_ratio = 600（≥500） | — | ≥500 | **OK**（恢复转移） |
+| F_breach | 0 + 0 − 0 = 0，但 wallet = -1（核销前瞬间） | 0 | null | **BREACHED**（阶段 1） |
+
+**`m` 的判定**（事件 Schema §4.2.2 "可行动风险决定" 判据）：
+
+| 账户 | 扫描前 | 扫描后 | 决定 | 记入？ | verdict |
+|---|---|---|---|---|---|
+| A_safe | ACTIVE | ACTIVE | 无 | **否** | — |
+| B_first | ACTIVE | PENDING | 首次进 pending，新调度强平单 | **是** | PENDING_LIQUIDATION |
+| C_stable | PENDING | PENDING | 仍不足，但 required_quantity 不变 | **否** | — |
+| D_recount | PENDING | PENDING | 仍不足，required_quantity **变化** | **是** | PENDING_LIQUIDATION |
+| E_recover | PENDING | ACTIVE | 恢复至维持线以上 | **是** | OK |
+| F_breach | ACTIVE | LIQUIDATED | position=0 且 wallet<0 | **是** | BREACHED |
+
+故 `m = 4`（B_first、D_recount、E_recover、F_breach）。`MARKET_DATA_PUBLISH` 的
+`record_index = 4 + 4 = 8`。
+
+**记录顺序**（按 `agent_id` 升序，r0 父 `ORDER_ARRIVAL`，r1..r3 三笔 `TRADE_SETTLE`，
+r4..r7 四条 `MARGIN_CALL`，r8 `MARKET_DATA_PUBLISH`）：
+
+```text
+r0   ORDER_ARRIVAL          T BUY LIMIT 10200×5000 (caused_by self = e_tx_0)
+r1   TRADE_SETTLE           10000×2000  maker=M1  fill_index=0  fill_count=3
+r2   TRADE_SETTLE           10100×2000  maker=M2  fill_index=1  fill_count=3
+r3   TRADE_SETTLE           10200×1000  maker=M3  fill_index=2  fill_count=3
+r4   MARGIN_CALL            B_first  verdict=PENDING_LIQUIDATION
+                             required_quantity_units=288678  (案例 7 一致)
+                             margin_ratio_bp=117  liquidation_generation_after=1
+                             chain_id=<B_first的event_id>  chain_depth=0
+r5   MARGIN_CALL            D_recount verdict=PENDING_LIQUIDATION
+                             required_quantity_units=193271  (案例 7 一致)
+                             margin_ratio_bp=117  liquidation_generation_after=2
+                             chain_id=<D_recount上一代event_id>  chain_depth=<继承>
+r6   MARGIN_CALL            E_recover verdict=OK
+                             required_quantity_units=0  liquidation_generation_after=<+1>
+                             chain_id=null  chain_depth=null
+r7   MARGIN_CALL            F_breach  verdict=BREACHED
+                             required_quantity_units=0  liquidation_generation_after=1
+                             chain_id=null  chain_depth=null
+                             postings=[ACCOUNT, EXCHANGE_RISK]
+r8   MARKET_DATA_PUBLISH    best_bid=10000  best_ask=null  last=10200
 ```
 
 **三条断言**：
 
-1. 风险扫描**只执行一轮**，但该轮可能产生 **m 条** `MARGIN_CALL`——事件 Schema
-   §4.2.2 要求对所有非零仓位账户 O(N) 扫描，按 `agent_id` 升序记录。
-   **`m` = 产生「可行动风险决定」的账户数，不是被扫描的账户数**：保持 `ACTIVE` 且
-   充足、或保持 `PENDING_LIQUIDATION` 且 `required_quantity_units` **不变**的账户
-   不产生记录；但 `PENDING → PENDING` 且**数量重算**时**必须**产生记录。
-   **「一轮」不等于「至多一条」**，验收须构造 `m ≥ 2`；
-2. 全部 m 条的 `caused_by_event_id` **相同**，都指向 `r0` 的 `ORDER_ARRIVAL`；
-3. 全部 m 条的 `risk_mark_event_id` **相同**，都指向 `r3`（本批最后一笔
-   `TRADE_SETTLE`），且判定用的价格等于该笔的 `risk_mark_ticks`。
+1. **`m = 4` 不是 6**：`A_safe`（无仓位安全）和 `C_stable`（PENDING→PENDING 数量不变）
+   不产生 `MARGIN_CALL`；其余 4 账户每个都"产生可行动风险决定"；
+2. **r4..r7 的 `caused_by_event_id` 全部相同** = `e_tx_0`（本事务的父 `ORDER_ARRIVAL`）；
+3. **r4..r7 的 `risk_mark_event_id` 全部相同** = `e_tx_3`（本批最后一笔 `TRADE_SETTLE`）。
+   `risk_mark_ticks = 10200`（该笔的成交价）。
 
-第 2、3 条是 P1-L03 的裁判：被判定的账户多数并未参与本次成交，若实现试图为每条判定
-找「自己的那笔成交」，在这个向量上就会给出 m 个不同的外键或干脆写 null。
+**核销分录**（F_breach 的 r7.postings）：
 
-若实现逐笔检查，会在跨档的中间价位上触发他人强平，而那个价位从未作为 `last` 稳定
-存在过（撮合合同 §2.3）。
+```text
+postings[0]  WRITE_OFF_POSTING  role=ACCOUNT       agent_id=F_breach
+             wallet_delta=+1  wallet_after=0  position_after=0
+             entry_notional_after=0  risk_pnl_delta=0
+postings[1]  WRITE_OFF_POSTING  role=EXCHANGE_RISK agent_id=null
+             wallet_delta=0    wallet_after=null  position_after=null
+             entry_notional_after=null  risk_pnl_delta=-1
+```
+
+注意交易所侧三 `*_after` 字段为 `null`（不是 0），与 §4.2.3 一致。
+
+#### OB-8 补充向量 1：部分强平后 required_quantity 重算（PENDING→PENDING）
+
+前置：单代理 `X`，`wallet=5000×10⁸`，`tier=10`，建仓 500×100，`risk_mark=94`（同案例 7）。
+
+**事件序列**（含两事务，第二事务是强平单的自身事务）：
+
+```text
+# === 第一事务：本批成交触发 X 首次进入 PENDING ===
+t=0   tx=K    r0  ORDER_ARRIVAL     Y BUY 94×1000 (推动 risk_mark=94)
+t=0   tx=K    r1  TRADE_SETTLE      94×500  fill_index=0  fill_count=1
+                                       caused_by_event_id = eK_0
+t=0   tx=K    r2  MARGIN_CALL       X  verdict=PENDING_LIQUIDATION
+                                       required_quantity_units=288678
+                                       margin_ratio_bp=425
+                                       liquidation_generation_after=1
+                                       chain_id=<event_id of r2>  chain_depth=0
+                                       caused_by_event_id=eK_0
+                                       risk_mark_event_id=eK_1
+t=0   tx=K    r3  MARKET_DATA_PUBLISH
+
+# === 跨越 liquidation_latency_ns 1ms，调度强平单 ===
+# === 第二事务：强平单（origin=LIQUIDATION）到达交易所 ===
+# 此处假设：X 仍在 PENDING，部分强平 200 手后价格跌至 92（跨档）
+# 强平单市价 IOC，触发重算 required_quantity=193271
+# 由于是"重算"，liquidation_generation 必须 +1，调度替代单
+
+t=1ms  tx=K+1  r0  ORDER_ARRIVAL     强平单  SELL MARKET 288678
+                                        origin=LIQUIDATION
+                                        decision_event_id=eK_2  (指向触发它的 MARGIN_CALL)
+                                        trigger_ratio_bp=425
+                                        liquidation_generation=1
+                                        accepted=true  reject_reason=null
+t=1ms  tx=K+1  r1  TRADE_SETTLE      94×200  fill_index=0  fill_count=1
+t=1ms  tx=K+1  r2  MARGIN_CALL       X  verdict=PENDING_LIQUIDATION
+                                        required_quantity_units=193271  # 重算
+                                        margin_ratio_bp=359
+                                        liquidation_generation_after=2  # +1
+                                        chain_id=<继承自 r2 of tx K>
+                                        chain_depth=<继承，不 +1>
+                                        caused_by_event_id=e(K+1)_0
+                                        risk_mark_event_id=e(K+1)_1
+t=1ms  tx=K+1  r3  MARKET_DATA_PUBLISH
+```
+
+**关键断言**：
+1. 第二事务的 r2 与第一事务的 r2 **都是 PENDING_LIQUIDATION**（状态没变），但
+   `liquidation_generation_after` 从 1 → 2（换代），**必须**记一条 `MARGIN_CALL`；
+2. 第二事务的 r2 不计入 OB-8 的 `m`（它有自己的 `transaction_seq`）；
+3. **替代单尚未到达**——它由这次重算在后续事务中调度，本向量到此结束。
+
+#### OB-8 补充向量 2：延迟窗口内恢复（LIQUIDATION_STALE 拒单）
+
+前置：单代理 `X` 已 PENDING，`liquidation_generation=1`（强平单已入队但未到达）。
+
+```text
+# === 第一事务：进入 PENDING，调度强平单（generation=1）===
+# ... (同补充向量 1 第一事务) ...
+
+# === 第二事务：他人成交使 X 恢复至 ACTIVE ===
+# 此时强平单还在队列里携带 generation=1
+t=ε   tx=K+1  r0  ORDER_ARRIVAL     Z BUY 105×100  (反向拉升 X 的 risk_mark)
+t=ε   tx=K+1  r1  TRADE_SETTLE      105×100
+t=ε   tx=K+1  r2  MARGIN_CALL       X  verdict=OK
+                                        required_quantity_units=0
+                                        liquidation_generation_after=2  # +1（恢复也换代）
+                                        chain_id=null  chain_depth=null
+t=ε   tx=K+1  r3  MARKET_DATA_PUBLISH
+
+# === 第三事务：原强平单到达交易所，账户已为 ACTIVE、generation=2 ===
+t=1ms  tx=K+2  r0  ORDER_ARRIVAL     强平单  SELL MARKET
+                                        origin=LIQUIDATION
+                                        liquidation_generation=1   # 旧代次
+                                        accepted=false
+                                        reject_reason=LIQUIDATION_STALE
+                                        reserved_delta_units=0
+t=1ms  tx=K+2  (无后续记录 — 只有 r0)
+```
+
+**关键断言**：
+1. 强平单到达时被拒（`accepted=false, reject_reason=LIQUIDATION_STALE`），**事务只有 r0**；
+2. 拒绝原因是：账户当前 `liquidation_generation=2`，订单携带 `=1`，不等即拒；
+3. **恢复也换代**（v0.1 spec `liquidation_generation_after=2`），让旧强平单失效。
+
+#### OB-8 补充向量 3：乱序到达，仅最新代次通过
+
+前置：X 已 PENDING 且发生两次数量重算，`liquidation_generation=1`。
+**重算 #1**（假设）→ 调度强平单 A（gen=2）；
+**重算 #2** → 调度强平单 B（gen=3）；A 仍在队列里。
+
+**乱序到达**：B 先于 A 到达交易所。
+
+```text
+# === 事务 1：强平单 B (gen=3) 先到 ===
+t   tx=M    r0  ORDER_ARRIVAL  强平单 B
+                                  origin=LIQUIDATION
+                                  liquidation_generation=3
+                                  accepted=true  (账户仍 PENDING 且 gen=3)
+                                  reject_reason=null
+t   tx=M    r1  TRADE_SETTLE  ...
+
+# === 事务 2：强平单 A (gen=2) 随后到 ===
+t'  tx=M+1  r0  ORDER_ARRIVAL  强平单 A
+                                  origin=LIQUIDATION
+                                  liquidation_generation=2
+                                  accepted=false
+                                  reject_reason=LIQUIDATION_STALE  (gen 不等)
+                                  reserved_delta_units=0
+t'  tx=M+1  (无后续)
+```
+
+**关键断言**：
+1. 代次只增不减，乱序到达时只有最新代次通过；
+2. 旧强平单 A 一定被拒，账户不被过量强平。
+
+#### OB-8 补充向量 4：三账户同批，三种 chain 归属
+
+前置：单时间戳上 Y 强平成交 100 手推动价格。
+三个账户同时被扫描：
+
+| 账户 | 扫描前 | 扫描后 | 角色 | chain_id | chain_depth |
+|---|---|---|---|---|---|
+| `Y` | PENDING (gen=k) | PENDING 续单重算 | **续单重算** | 继承父判定 | 继承，不+1 |
+| `Z_new` | ACTIVE | PENDING | **新拖入** | 继承父判定 | 父 +1 |
+| `W_other` | PENDING (其他链) | PENDING 数量重算 | **他链重算** | **保留自身** | **保留自身** |
+
+其中 `W_other` 已属于另一条链（不是由 Y 的强平触发的），本次仅因价格变化而数量重算。
+
+**事件序列**：
+
+```text
+t   tx=L    r0  ORDER_ARRIVAL  (Y 的强平单)  ...
+t   tx=L    r1  TRADE_SETTLE   (跨档成交 Y 的强平)
+t   tx=L    r2  MARGIN_CALL    Y     chain_id=<gen of eL_0's decision_event_id>
+                                          chain_depth=<父判定深度>
+t   tx=L    r3  MARGIN_CALL    Z_new chain_id=<同上>  chain_depth=<父+1>
+t   tx=L    r4  MARGIN_CALL    W_other chain_id=<W_other已有>
+                                           chain_depth=<W_other已有>
+t   tx=L    r5  MARKET_DATA_PUBLISH
+```
+
+**关键断言**：
+1. **W_other 的 chain_id 和 chain_depth 完全保留**（既不继承 Y 的链，也不是父+1）；
+2. 仅 `chain_id` 分组时，W_other 不与 Y/Z_new 划为同一组——每条链的规模按 `chain_id`
+   分组，不能只用 `chain_depth`（深度可能相同）；
+3. 三条 `MARGIN_CALL` 的 `agent_id` 升序产生：`W_other < Y < Z_new`（按字符串排序）。
+
+### OB-9b：同时间戳双订单的保证金拒单（0.1.2 验收）
+
+同 OB-9a 的时序结构，但第一张成交后耗尽保证金，第二张因
+`reserved_after > risk_equity` 被拒：事务只有 `record_index=0`，
+`accepted=false`、`reject_reason=INSUFFICIENT_MARGIN`。
+
+**统一配置**：
+
+```text
+tick_size = 0.01, min_quantity = 0.001, cash_unit = 1e-8, MULT = 1000
+maker_bps = -1, taker_bps = 5
+initial_price_ticks = 10000, maint_bp = 500, target_bp = 1000
+leverage_tier = 1  (initial_bp = 10000)
+A 和 B 的 wallet_units = 1000000000000  (10000 human)
+```
+
+**OB-9b 完整记录**：
+
+```text
+(t, 1, 0)  ORDER_ARRIVAL  A BUY 10100×2000  (从 B 接手)
+            accepted=true  reserved_delta_units=<正向>
+(t, 1, 1)  TRADE_SETTLE   10000×2000  maker=M_s1
+                              fill_index=0  fill_count=1
+                              vm_before=20000  vm_after=20000  risk_mark=10000
+                              A.reserved_after = IM(买 2000 @ 100) = 200×100×1 = 20000
+                              A.risk_equity   = wallet − taker_fee
+                                              = 10000×10⁸ − 2000×10000×1000×5/10⁴
+                                              = 1000000000000 − 1000000000
+                                              = 999000000000
+                              10000 ≤ 999000000000  ✓ 通过
+(t, 1, 2)  MARKET_DATA_PUBLISH  best_bid=null  best_ask=10100
+
+(t, 2, 0)  ORDER_ARRIVAL  B BUY 10100×2000
+            accepted=false
+            reject_reason=INSUFFICIENT_MARGIN
+            reserved_delta_units=0
+            (B 的 reserved_after > B 的 risk_equity)
+(t, 2, *)  (无后续记录 — 只有 r0)
+```
+
+**关键断言**：
+1. **B 的事务只有 `record_index=0`**，与 §1.4 一致；
+2. `M_s1`（挂在卖 100 的 maker）已被 A 的成交吃光，B 撮合时簿上无对应挂单，但
+   **B 在准入阶段就被拒**，因此根本没有进入撮合循环；
+3. 与 OB-9a 对比：OB-9a 中 B 成交于 10100（因为 s1 已被 A 吃光），本向量 B 根本
+   没成交——**保证金耗尽是准入阶段的事，不是撮合阶段**。
+
+**「没钱了」≠「吃光了」**：OB-9a 检验撮合的时序可见性；OB-9b 检验准入的时序可见性。
+两者并列才能把"两张同时间戳订单"的所有退化场景锁死。
 
 ### OB-9a：同时间戳双订单看到已提交状态（0.1.1 验收）
 
@@ -272,15 +532,14 @@ A 买 `10100 × 2000`，B 买 `10100 × 2000`。
 **这是队列事件/事务记录分野的核心验收**（事件 Schema §1.4），且**不依赖任何账户
 或保证金逻辑**——0.1.1 无杠杆也能完整执行。
 
-### OB-9b：同时间戳双订单的保证金拒单（**0.1.2 验收**）
+### OB-9b：同时间戳双订单的保证金拒单（0.1.2 验收）
+
+**完整期望值见上文 OB-9b 章节（含 0.1.2 账户初态、reserve 与保证金判定的完整整数）**。
+本节只保留向后兼容的骨架描述：
 
 同 OB-9a 的时序结构，但第一张成交后耗尽保证金，第二张因
 `reserved_after > risk_equity` 被拒：事务只有 `record_index=0`，
 `accepted=false`、`reject_reason=INSUFFICIENT_MARGIN`。
-
-**0.1.1 不验收本向量**：其前置需要杠杆账户、维持保证金率与费率，而 0.1.1 的准入
-检查是恒通过的桩（撮合合同 §5）。完整的账户初态、费率与 `reserved` 整数期望值随
-0.1.2 的账户验收向量一并给出，届时须与本表的 `log_key` 结构对齐。
 
 ## 3. 实现须复现的断言
 
@@ -318,11 +577,9 @@ A 买 `10100 × 2000`，B 买 `10100 × 2000`。
 
 ## 5. 已知界限
 
-- **OB-1—OB-7、OB-9a 不含账户、手续费与保证金**，只验簿与成交生成，账户数值由
+- OB-1—OB-7、OB-9a 不含账户、手续费与保证金，只验簿与成交生成，账户数值由
   [账户验收向量](acceptance-vectors.md)覆盖；
-- **OB-8、OB-9b 是例外**：`0.1.2 T007` 会把它们的完整账户初态、费率与 `postings`
-  整数值补入本文档，届时**须删除本行对它们的「不含账户」限制**——那时本表对这两条
-  向量同时是簿与账户的裁判；
+- **OB-8、OB-9b 含完整账户初态与保证金期望**（0.1.2 T007 冻结）；
 - 全部向量都在**单一时间戳**内；只有 OB-9a/OB-9b 在该时间戳内含**多个订单事务**，
   其余各向量的每个事务独占一个时间戳。跨时间戳的定序由事件 Schema §1.1 的
   KR-006 断言覆盖，不由本表覆盖；
