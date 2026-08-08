@@ -14,7 +14,11 @@ dependencies = ["pyyaml>=6"]
 dev = [
   "pytest>=8",
   "pytest-cov>=5",
-  "ruff>=0.6",
+  # 固定到 minor 版本：CI 用 `pip install -e ".[dev]"` 每次拉最新，2026-08-09
+  # 就因为0.15->0.16的默认行为变化（markdown内嵌代码块格式化默认启用）在没有
+  # 任何本仓库代码变更的情况下把CI的ruff job搞红——linter版本漂移不该成为
+  # CI失败的来源，锁定范围换取可重复性。
+  "ruff>=0.16,<0.17",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -27,6 +31,10 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+# docs/、conversations/ 下的 .md 文件里大量引用/粘贴的代码片段仅供阅读，不是
+# 维护中的源码——用ruff format重排它们既无意义，又会破坏对话存档/复盘报告的
+# 历史原样性。ruff check（lint）本身不处理markdown，这条只影响 format。
+extend-exclude = ["*.md"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
