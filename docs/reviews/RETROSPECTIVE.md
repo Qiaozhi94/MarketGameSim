@@ -73,3 +73,30 @@ open"而非"忘了关",`status` 上和真正的遗留 bug 要区分开。
 未做"这类问题如果配合 blast-radius/tests_for 图谱查询会更早暴露(它们的共同
 特征——测试覆盖存在但未接入真实路径——正是 `query_graph_tool(pattern="tests_for")`
 配合执行路径追踪能直接检测的模式)。
+
+---
+
+## 循环 2: 0.1.3-robustness 规格/任务清单检视
+
+- **report_type**: doc-review
+- **周期**: 2026-08-08 → 2026-08-09,5轮(同一文件覆盖演进)
+- **状态**: 已闭环。本地门禁(`pytest` 1135项/`ruff check .`/`ruff format --check .`/
+  任务ID唯一性/`git diff --check`)全绿,提交`a8b8c5b`(docs: 完成0.1.3开发前规格收敛)
+  推送后CI四个job(真源自校验/ruff/pytest×2 python版本)全部`success`
+- **结论**: 0.1.3需求设计文档达到本地Go,可从T001正式开工
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0.1.2-gate-not-satisfied | 0.1.3 spec/tasks要求0.1.2全部退出条件先通过,但0.1.2机器真源当时仍未满足 | Critical | correctness | root-cause | spec-drift | fixed | 待0.1.2循环1真正退出后,T001准入门才允许通过 | `docs/experiments/0.1.2-exit-evidence-index.json` | 1 | 1 | — |
+| holdout-failure-blocks-exit | E4"结论在留出验证区复核通过"的措辞会反向激励选择性报告,负结果应该也是有效产出 | High | correctness | root-cause | original-coding | fixed | E4措辞改为"冻结留出区已按预注册计划一次性执行;复核结果如实报告" | — | 1 | 1 | — |
+| behaviormapping-dual-output | `BehaviorMapping`同时允许输出目标仓位和订单意图,破坏单变量对照 | High | maintainability | root-cause | original-coding | fixed | 接口收窄为只返回量化后的目标仓位 | — | 1 | 1 | — |
+| cell-id-seed-pairing-collision | `cell_id+seed`无法同时标识参数单元与跨处理配对 | High | maintainability | root-cause | original-coding | fixed | 拆分`cell_id`/`pair_id`/`arm_id`三种身份 | — | 1 | 1 | — |
+| kpi-008-no-owner | KPI-008有验证器任务但没有产生能力对照证据的任务owner | High | test-coverage | root-cause | original-coding | fixed | 明确KPI-008验收范围与owner | — | 1 | 1 | — |
+| paired-bootstrap-loses-pairing | 配对键已定义,但效应量与置信区间未要求使用配对估计,bootstrap会丢失配对结构 | High | correctness | root-cause | original-coding | fixed | T601改为按`pair_id`整对重采样 | — | 2 | 2 | — |
+| cell-id-dual-identity | `cell_id`同时被定义为参数单元和具体运行,身份冲突 | Medium | maintainability | root-cause | original-coding | fixed | `cell_id`只含参数,`run_id`另外标识具体运行 | — | 2 | 2 | — |
+| min-pair-sample-unfrozen | 最低有效配对样本量及技术失败补位规则未冻结 | Medium | correctness | root-cause | original-coding | fixed | T005预注册最低有效pair数与补位规则 | — | 2 | 2 | — |
+| model-family-undefined | "不依赖单一模型族"没有对应的模型族定义、扫描任务或退出证据 | High | maintainability | root-cause | original-coding | fixed | 新增T106定义`model_family_id/version`,预注册至少两个模型族 | — | 2 | 2 | — |
+| four-region-conflicts-three-zone | 四个互斥参数区与既有三区协议冲突,"最终报告区"没有数据语义 | High | maintainability | root-cause | spec-drift | fixed | 保持方法论三区,信念实验区再拆exploration/conclusion_holdout子区 | — | 2 | 2 | — |
+| e1-behavior-mapping-family-cross-matrix | E1没有要求行为映射×模型族交叉,两个稳健性维度仍可能相互混淆 | High | correctness | root-cause | original-coding | fixed | T105建立`model_family_id×behavior_mapping_id`交叉对照矩阵 | T105/T207/T604/E1文档闭合 | 3 | 3 | — |
+| lifecycle-metadata-stale | 0.1.2已完成,但0.1.3生命周期元数据仍显示"待0.1.2退出" | Medium | maintainability | symptom-patch | spec-drift | fixed | spec/tasks/README状态改为`Ready`并同步 | spec/tasks/README状态一致 | 3 | 3 | marked-done-not-implemented |
+| model-family-config-diff-unvalidated | 模型族比较缺少对实际差分的校验,可能把非受控改动当作模型族变化 | High | correctness | root-cause | fix-regression | fixed | T403新增合法差分通过/额外字段拒绝/仅改ID拒绝三类TDD文档合同 | T403三类正反TDD文档合同 | 4 | 4 | — |
