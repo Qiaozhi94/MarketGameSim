@@ -1,8 +1,9 @@
 # MarketGameSim 目录结构改造方案
 
-> 状态：**Approved v1.4（模板结构已定稿，尚未实施）**  
+> 状态：**Implemented（2026-08-10，M001—M024、M026—M029 已勾选；M025 待全部里程碑
+> done 后生成 releases/0.1.md；M030 待推送确认 CI）**  
 > 基线日期：2026-08-09  
-> 实施时机：另行安排；实施前必须确认工作树状态并按本方案执行  
+> 实施状态：见 §13 实施任务清单（执行进度真相源）  
 > 参考：PersonaHub `structure-improvement-plan.md`、`docs/features/README.md`，以及
 > GitHub spec-kit / OpenSpec 的模板与变更收口思想  
 > 原则：**两个项目采用相同的 docs 骨架与 Feature 生命周期；保留 MarketGameSim
