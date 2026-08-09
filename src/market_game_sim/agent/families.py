@@ -59,7 +59,13 @@ def signal_family_signal(
     ablation the list is shortened (e.g. removing book leaves
     momentum/reversion/herding/noise); selecting by original index would
     silently consume the WRONG factor.  ``factor_names`` must be the names of
-    ``factor_values`` in order; missing names fail-closed.
+    ``factor_values`` in order.
+
+    v013 round-2 (high): leave-one-out on the family's own required factors
+    (momentum / book) must NOT fail -- T301 removes one factor and
+    renormalizes; T303 runs all five leave-one-outs.  The family renormalizes
+    over the REMAINING enabled factors (its own weights subset), failing only
+    when no family factor survives the ablation.
     """
     if len(factor_names) != len(factor_values):
         raise ModelFamilyError(
@@ -67,11 +73,14 @@ def signal_family_signal(
             "length mismatch"
         )
     by_name = dict(zip(factor_names, factor_values, strict=True))
-    missing = [f for f in SIGNAL_FAMILY_FACTORS if f not in by_name]
-    if missing:
-        raise ModelFamilyError(f"signal_family factors missing after ablation: {missing}")
-    kept = [by_name[f] for f in SIGNAL_FAMILY_FACTORS]
-    return belief_signal(_normalize(list(SIGNAL_FAMILY_WEIGHTS)), kept)
+    present = [f for f in SIGNAL_FAMILY_FACTORS if f in by_name]
+    if not present:
+        raise ModelFamilyError(
+            f"signal_family has no enabled factors after ablation: {SIGNAL_FAMILY_FACTORS}"
+        )
+    kept = [by_name[f] for f in present]
+    family_weights = [SIGNAL_FAMILY_WEIGHTS[SIGNAL_FAMILY_FACTORS.index(f)] for f in present]
+    return belief_signal(_normalize(family_weights), kept)
 
 
 FAMILY_IMPLS = {
@@ -113,24 +122,33 @@ def apply_ablation_named(
     factor_values: list[Decimal],
     weights: list[Decimal],
     disabled: str | None,
+    factor_names: tuple[str, ...] = FACTOR_ORDER,
 ) -> tuple[list[Decimal], list[Decimal], tuple[str, ...]]:
     """v013 (high) fix: like :func:`apply_ablation` but also returns the
     retained factor NAMES in order, so a downstream family can select factors
-    by name instead of by position on a shortened list."""
-    if len(factor_values) != len(FACTOR_ORDER) or len(weights) != len(FACTOR_ORDER):
+    by name instead of by position on a shortened list.
+
+    ``factor_names`` names ``factor_values`` in order (default: the full
+    FACTOR_ORDER prefix); chained ablation must pass the previous call's
+    names back in, otherwise the names would be re-inferred wrongly from the
+    shortened list (T303's leave-one-out chain).
+    """
+    n = len(factor_values)
+    if n != len(weights):
+        raise ModelFamilyError(f"factor_values ({n}) / weights ({len(weights)}) length mismatch")
+    if len(factor_names) != n:
         raise ModelFamilyError(
-            f"expected {len(FACTOR_ORDER)} factor values and weights, "
-            f"got {len(factor_values)}/{len(weights)}"
+            f"factor_names ({len(factor_names)}) / factor_values ({n}) length mismatch"
         )
     if disabled is None:
-        return list(factor_values), list(weights), FACTOR_ORDER
-    if disabled not in FACTOR_ORDER:
-        raise ModelFamilyError(f"unknown factor {disabled!r}")
-    drop = FACTOR_ORDER.index(disabled)
-    kept_idx = [i for i in range(len(factor_values)) if i != drop]
+        return list(factor_values), list(weights), factor_names
+    if disabled not in factor_names:
+        raise ModelFamilyError(f"unknown factor {disabled!r} in {factor_names}")
+    drop = factor_names.index(disabled)
+    kept_idx = [i for i in range(n) if i != drop]
     kept_values = [factor_values[i] for i in kept_idx]
     kept_weights = [weights[i] for i in kept_idx]
-    kept_names = tuple(FACTOR_ORDER[i] for i in kept_idx)
+    kept_names = tuple(factor_names[i] for i in kept_idx)
     total = sum(kept_weights)
     if total == 0:
         raise ModelFamilyError("renormalization denominator is zero")
