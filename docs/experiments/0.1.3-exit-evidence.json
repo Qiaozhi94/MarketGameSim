@@ -8,7 +8,7 @@
     4,
     5
   ],
-  "max_transactions": 30000,
+  "max_transactions": 100000,
   "E1_cross_matrix": {
     "report": {
       "complete": true,
@@ -28,44 +28,41 @@
       "family_direction_counts": {
         "belief_family": [
           1
-        ],
-        "signal_family": [
-          1
         ]
       },
       "conclusion": "同向成立"
     },
     "family_effect": {
-      "belief_family": 220.0,
-      "signal_family": 220.0
+      "belief_family": 32.1,
+      "signal_family": 10.0
     },
     "mapping_effect": {
-      "linear": 220.0,
-      "threshold": 220.0
+      "linear": 20.4,
+      "threshold": 21.7
     },
     "cells": [
       {
         "family": "belief_family",
         "mapping": "linear",
-        "effect_size": 220.0,
+        "effect_size": 30.8,
         "significant": true
       },
       {
         "family": "belief_family",
         "mapping": "threshold",
-        "effect_size": 220.0,
+        "effect_size": 33.4,
         "significant": true
       },
       {
         "family": "signal_family",
         "mapping": "linear",
-        "effect_size": 220.0,
+        "effect_size": 10.0,
         "significant": true
       },
       {
         "family": "signal_family",
         "mapping": "threshold",
-        "effect_size": 220.0,
+        "effect_size": 10.0,
         "significant": true
       }
     ]
@@ -74,26 +71,26 @@
     "cells": [
       {
         "maint_bp": 300,
-        "effect": 94.0,
+        "effect": 0.0,
         "category": "COMPLETED"
       },
       {
         "maint_bp": 500,
-        "effect": 220.0,
+        "effect": 30.8,
         "category": "COMPLETED"
       },
       {
         "maint_bp": 700,
-        "effect": 220.0,
+        "effect": 804.8,
         "category": "COMPLETED"
       }
     ],
     "boundary": {
-      "axis": "500",
-      "crossing_index": 1,
+      "axis": "700",
+      "crossing_index": 2,
       "crossing_interval": [
-        300,
-        500
+        500,
+        700
       ],
       "resolution": 200,
       "threshold_crossed": true,
@@ -101,32 +98,32 @@
     }
   },
   "E3_ablation": {
-    "baseline_effect": 220.0,
+    "baseline_effect": 30.8,
     "factors": [
       {
         "factor": "momentum",
         "verdict": "INSUFFICIENT_EVIDENCE",
-        "effect": 220.0
+        "effect": 30.8
       },
       {
         "factor": "reversion",
         "verdict": "INSUFFICIENT_EVIDENCE",
-        "effect": 220.0
+        "effect": 94.8
       },
       {
         "factor": "herding",
         "verdict": "INSUFFICIENT_EVIDENCE",
-        "effect": 220.0
+        "effect": 83.6
       },
       {
         "factor": "book",
         "verdict": "INSUFFICIENT_EVIDENCE",
-        "effect": 220.0
+        "effect": 30.8
       },
       {
         "factor": "noise",
         "verdict": "INSUFFICIENT_EVIDENCE",
-        "effect": 220.0
+        "effect": 10.0
       }
     ]
   },
@@ -134,7 +131,7 @@
     "contamination": [],
     "comparison": {
       "direction_consistent": true,
-      "effect_size_diff": 220.0,
+      "effect_size_diff": 353.0,
       "interval_overlap": true,
       "replication_passed": false,
       "note": "replication criterion not met; reported as-is"

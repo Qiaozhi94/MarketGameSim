@@ -17,9 +17,8 @@ from __future__ import annotations
 import json
 import pathlib
 
-from market_game_sim.agent.scheduler import AgentSpec
-from market_game_sim.bench.leverage_seed import build_leveraged_victims
-from market_game_sim.bench.shock import build_shock_series
+from market_game_sim.bench.runner import build_experiment_config
+from market_game_sim.config.parser import parse_config
 from market_game_sim.experiment.config import ExperimentConfig
 from market_game_sim.experiment.runner import RunResult, run_multi_seed
 from market_game_sim.robustness.ablation import leave_one_out_disabled
@@ -41,78 +40,37 @@ OUT_JSON = ROOT / "docs" / "experiments" / "0.1.3-exit-evidence.json"
 OUT_MD = ROOT / "docs" / "experiments" / "0.1.3-exit-evidence.md"
 
 SEEDS = [1, 2, 3, 4, 5]
-MAX_TX = 30_000
+MAX_TX = 100_000
 FAMILIES = ["belief_family", "signal_family"]
 MAPPINGS = ["linear", "threshold"]
 SCAN_MAINT_BPS = [300, 500, 700]
 HOLDOUT_CELL = {"maint_bp": 600}
-
-
-def _mm_spec(aid: str) -> AgentSpec:
-    return AgentSpec(
-        agent_id=aid,
-        role="inventory_market_maker",
-        observe_interval_ns=100_000_000,
-        latency_ns=5_000_000,
-        is_market_maker=True,
-        half_spread_ticks=5,
-        quote_size=10_000,
-        max_inventory=100_000,
-        inventory_skew_k_bp=10_000,
-    )
-
-
-def _belief_spec(aid: str) -> AgentSpec:
-    return AgentSpec(
-        agent_id=aid,
-        role="retail",
-        observe_interval_ns=1_000_000_000,
-        latency_ns=50_000_000,
-        leverage_tier=10,
-        aggressiveness_bp=5_000,
-        max_order_qty=5_000,
-    )
+BENCH_YAML = ROOT / "benchmarks" / "BENCH-001.yaml"
 
 
 def _base_config(*, maint_bp: int = 500, **kw) -> ExperimentConfig:
-    specs = [_mm_spec(f"mm-{i}") for i in range(2)] + [_belief_spec(f"r{i}") for i in range(20)]
-    # Pre-positioned leveraged victims + sustained sell pressure, so the
-    # economic-endpoint path is actually exercised within 30k transactions
-    # (0.1.2 E5's calibration lesson: 30k with plain belief agents stays
-    # flat; benchmark-style forced victims are required to move margin_ratio
-    # below maint_bp).  The wallet/position values here are tuned for the
-    # demo's thin 2-MM population so a ~1% price move triggers liquidation
-    # (220 MARGIN_CALLs observed at -0.7% with wallet=3000/position=800).
-    extra_accounts, shock_events = build_shock_series(
-        side="SELL",
-        quantity_units_per_shock=1_500_000,
-        count=150,
-        interval_ns=50_000_000,
-        start_ns=200_000_000,
-    )
-    defaults = dict(
+    """Full-scale (BENCH-001: 180 retail + 10 MM, 100k tx) calibrated config.
+
+    Uses the 0.1.2 E5-calibrated pre-positioned leveraged victims + sustained
+    shock, so liquidation incidence is the live effect proxy (旗舰终点率 stays
+    0 at this scale -- EV needs a 90%+ price collapse that the calibrated
+    market does not produce; the demo honestly reports that).
+    """
+    from dataclasses import replace
+
+    parsed = parse_config(str(BENCH_YAML))
+    cfg = build_experiment_config(parsed, calibrated=True)
+    base = replace(
+        cfg,
         seed=1,
         max_transactions=MAX_TX,
         maint_bp=maint_bp,
         target_bp=1000,
-        agent_specs=specs,
-        extra_positions=build_leveraged_victims(
-            count=20,
-            wallet_human=3_000,
-            position_human=800,
-            entry_price_human=100,
-            stagger_position_step=10,
-        ),
-        extra_accounts=extra_accounts,
-        extra_events=shock_events,
+        model_family=kw.pop("model_family", "belief_family"),
+        behavior_mapping=kw.pop("behavior_mapping", "linear"),
+        disabled_factor=kw.pop("disabled_factor", None),
     )
-    defaults.update(kw)
-    return ExperimentConfig(**defaults)
-
-
-def _endpoint_rate(results: list[RunResult]) -> float:
-    n = len(results)
-    return sum(1 for r in results if r.classification.is_economic_endpoint) / n if n else 0.0
+    return replace(base, **kw) if kw else base
 
 
 def _cell_effect(results: list[RunResult]) -> float:
@@ -268,9 +226,10 @@ def _render_md(e: dict) -> str:
     lines = [
         "# 0.1.3 退出检查清单示范运行",
         "",
-        "**性质**：小规模示范（2 做市商 + 20 散户 + 20 预置杠杆受害者 + 持续冲击，"
-        "5 种子，30000 事务），验证 E1-E5 机制在真实运行上闭环，不产出可外推结论"
-        "（旗舰终点率在此规模为 0，效应代理为强平发生率）。",
+        "**性质**：完整规模示范（BENCH-001 构成：180 散户 + 10 做市商 + 20 预置杠杆受害者"
+        " + 持续冲击，5 种子，100000 事务），验证 E1-E5 机制在真实运行上闭环。"
+        "旗舰终点率在此设定为 0（EV 需 90%+ 价格崩溃，校准市场不产生），"
+        "效应代理为强平发生率——不产出可外推结论。",
         "",
         "## E1 交叉矩阵（2 行为映射 × 2 模型族）",
         f"结论：**{e1['report']['conclusion']}**（整矩阵同向={e1['report']['same_direction']}）",
