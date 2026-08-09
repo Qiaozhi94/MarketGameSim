@@ -1,9 +1,17 @@
+---
+kind: version-spec
+id: v0.1-belief-testing-laboratory
+version: "0.1"
+status: in-progress
+created: 2026-07-31
+updated: 2026-08-09
+---
+
 # Feature Specification: Belief Testing Laboratory
 
 **规格编号**：v0.1-belief-testing-laboratory  
-**状态**：Draft——**不阻断实现**。根规格的 Draft 表示「后续里程碑可能补充需求」，
-开工与否由各里程碑自己的状态与前置退出门决定（0.1.1 = Ready，可开工）。
-根规格转 Stable 的条件是 **0.1.4** 退出（完整 v0.1 签收）。  
+**状态**：见 frontmatter（唯一状态真源）。当前里程碑 0.1.3 在研，0.1.1—0.1.2 已
+达成退出。根规格转 Stable 的条件是 **0.1.4** 退出（完整 v0.1 签收）。  
 **创建日期**：2026-07-31　**更新日期**：2026-08-02  
 **关联 PRD**：[`../../market-game-sim-prd.md`](../../market-game-sim-prd.md) v0.4.0  
 **架构**：[`design.md`](design.md)　**里程碑**：[`0.1.1`](0.1.1-minimal-kernel/spec.md) · [`0.1.2`](0.1.2-leverage-and-first-experiment/spec.md) · [`0.1.3`](0.1.3-robustness/spec.md) · [`0.1.4`](0.1.4-replay-and-report/spec.md)  

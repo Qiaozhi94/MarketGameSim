@@ -30,26 +30,20 @@ import pathlib
 import re
 import sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+
+import spec_validation
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCHEMA = ROOT / "src" / "market_game_sim" / "schema" / "event_fields.json"
 ARTIFACT_SCHEMAS = ROOT / "src" / "market_game_sim" / "schema" / "report_artifacts.json"
 TRACE = ROOT / "docs" / "features" / "0.1" / "traceability.json"
 SPEC = ROOT / "docs" / "features" / "0.1" / "spec.md"
 EVENT_SCHEMA_DOC = ROOT / "docs" / "contracts" / "event-schema.md"
-REPORT_SPEC = (
-    ROOT / "docs" / "features" / "0.1" / "0.1.4-replay-and-report" / "spec.md"
-)
+REPORT_SPEC = ROOT / "docs" / "features" / "0.1" / "0.1.4-replay-and-report" / "spec.md"
 
 ARTIFACT_FIELD_TYPES = {"string", "integer", "number", "boolean", "object", "array"}
 ARTIFACT_SCALAR_TYPES = {"string", "integer", "number", "boolean"}
-
-# 需求 ID 的声明形态在 spec 中是固定的机械模式。提取规则由 `tracked_id_families`
-# 动态生成（不再硬编码前缀），编号位数不设上限——`US-\d` 那种写法会在 US-10 静默漏检。
-FR_LIKE_TEMPLATE = r"^- \*\*((?:{families})-\d+)\*\*"
-US_LIKE_TEMPLATE = r"^### ((?:{families})-\d+)："
-
-# `- **FR-001**：` 这类条目用第一种模式；`### US-1：` 这类标题用第二种。
-HEADING_FAMILIES = {"US"}
 
 
 def _fail(errors: list[str], msg: str) -> None:
@@ -389,73 +383,12 @@ def validate_artifact_schemas_against_spec(d: dict, spec_text: str, errors: list
 # --------------------------------------------------------------------------- #
 
 
-def _declared_ids(spec_text: str, families: list[str]) -> set[str]:
-    heading = [f for f in families if f in HEADING_FAMILIES]
-    inline = [f for f in families if f not in HEADING_FAMILIES]
-    found: set[str] = set()
-    if inline:
-        found |= set(
-            re.findall(FR_LIKE_TEMPLATE.format(families="|".join(inline)), spec_text, re.M)
-        )
-    if heading:
-        found |= set(
-            re.findall(US_LIKE_TEMPLATE.format(families="|".join(heading)), spec_text, re.M)
-        )
-    return found
-
-
 def validate_trace_data(d: dict, spec_text: str, errors: list[str], root: pathlib.Path) -> None:
-    milestones = d["milestones"]
-    statuses = set(d["statuses"])
-    families = d["tracked_id_families"]
-
-    declared = _declared_ids(spec_text, families)
-    tracked = set(d["requirements"])
-    if missing := declared - tracked:
-        _fail(errors, f"traceability 遗漏 spec 已声明的 ID：{sorted(missing)}")
-    if extra := tracked - declared:
-        _fail(errors, f"traceability 含 spec 未声明的 ID：{sorted(extra)}")
-
-    for rid, r in d["requirements"].items():
-        if r["status"] not in statuses:
-            _fail(errors, f"{rid}: status={r['status']!r} 非法")
-        if r["status"] == "owned":
-            _validate_owners(rid, r, milestones, errors, root)
-        elif r["status"] == "deferred" and not r.get("defer_to"):
-            _fail(errors, f"{rid}: status=deferred 但缺 defer_to")
+    """复用 spec_validation 的 owner/path/exit 判据，并补充渲染矩阵与预注册对照。"""
+    spec_validation.validate_trace_data(d, spec_text, errors, root)
 
     _validate_rendered_matrix(d, spec_text, errors)
     _validate_preregistration(d, spec_text, errors)
-
-
-def _validate_owners(rid: str, r: dict, milestones: dict, errors: list[str], root) -> None:
-    owners = r["owners"]
-    if not owners:
-        _fail(errors, f"{rid}: status=owned 但 owners 为空")
-        return
-
-    scopes = [o.get("scope") for o in owners]
-    if len(owners) > 1:
-        if any(not s for s in scopes):
-            _fail(errors, f"{rid}: 多 owner 必须逐个声明 scope")
-        elif len(set(scopes)) != len(scopes):
-            # 两个 owner 写同一个 scope 字符串 = 责任切片重叠，这是可机器检出的那部分。
-            # 语义上的互斥与完整覆盖仍由评审保证（见 T607 的承诺边界）。
-            _fail(errors, f"{rid}: 多个 owner 的 scope 重复 {scopes}，责任切片重叠")
-
-    for o in owners:
-        m = o["milestone"]
-        if m not in milestones:
-            _fail(errors, f"{rid}: 未知里程碑 {m}")
-            continue
-        spec_path = root / milestones[m] / "spec.md"
-        if not spec_path.exists():
-            _fail(errors, f"{rid}: 里程碑 spec 不存在 {spec_path}")
-            continue
-        text = spec_path.read_text(encoding="utf-8")
-        for e in o["exits"]:
-            if not re.search(rf"^\|\s*{re.escape(e)}\s*\|", text, re.M):
-                _fail(errors, f"{rid}: {m} 的退出条件表中找不到 {e}")
 
 
 _MATRIX_ROW = re.compile(r"^\| \*{0,2}((?:US|FR|KR|NFR|SC)-\d+)[^|]*\| ([^|]+) \|", re.M)

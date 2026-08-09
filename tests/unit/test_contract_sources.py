@@ -270,7 +270,7 @@ def test_artifact_schema_producer_drift_from_spec_is_rejected(validator, artifac
 
 def test_duplicate_artifact_row_in_spec_is_rejected(validator, artifact_schemas):
     spec_text = validator.REPORT_SPEC.read_text(encoding="utf-8")
-    row = "| `effect_sizes` | 0.1.2 T604 | 效应量、置信区间、多重比较校正 |"
+    row = "| `effect_sizes` | 0.1.2 T604 |"
     broken = spec_text.replace(row, f"{row}\n{row}", 1)
     assert broken != spec_text, "变异未生效：effect_sizes 表格行已改写，请同步本测试"
     errors: list[str] = []
@@ -352,4 +352,4 @@ def test_multi_digit_requirement_ids_are_extracted(validator):
     """提取规则必须支持多位编号——`US-\\d` 那种写法会在 US-10 静默漏检。"""
     families = ["US", "FR"]
     text = "### US-10：某个场景\n\n- **FR-021**：某条需求\n"
-    assert validator._declared_ids(text, families) == {"US-10", "FR-021"}
+    assert validator.spec_validation.declared_ids(text, families) == {"US-10", "FR-021"}

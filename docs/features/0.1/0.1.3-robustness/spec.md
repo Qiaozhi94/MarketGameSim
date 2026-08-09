@@ -1,9 +1,20 @@
+---
+kind: milestone
+id: 0.1.3
+parent: v0.1-belief-testing-laboratory
+version: "0.1"
+status: in-progress
+gate_version: 0
+created: 2026-08-01
+updated: 2026-08-09
+prerequisites:
+  - 0.1.2
+---
+
 # 0.1.3：模型稳健性
 
 **父规格**：[`../spec.md`](../spec.md)　**架构**：[`../design.md`](../design.md)  
-**前置**：0.1.2 全部退出条件达成  
 **任务清单**：[`0.1.3 tasks`](../0.1.3-robustness/tasks.md)
-**状态**：Ready（0.1.2 退出证据已达成；实现从 T001 自动复核准入证据开始）
 
 ## 1. 目标
 

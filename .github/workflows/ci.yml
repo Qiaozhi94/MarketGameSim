@@ -15,10 +15,11 @@ permissions:
   contents: read
 
 jobs:
-  # 真源自校验放在最前，且【不安装任何依赖】——它只用标准库。
-  # 两份机器真源自相矛盾时，后面的 lint 与测试都没有意义，因此这一步失败即中止。
+  # 真源与规格生命周期校验放在最前，且【不安装任何依赖】——它只用标准库。
+  # 两份机器真源自相矛盾、或规格生命周期不合法时，后面的 lint 与测试都没有意义，
+  # 因此这一步失败即中止。
   contract-sources:
-    name: 真源自校验
+    name: 真源与生命周期校验
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -27,6 +28,8 @@ jobs:
           python-version: "3.11"
       - name: 校验 event_fields.json 与 traceability.json
         run: python tools/validate_contract_sources.py
+      - name: 校验规格生命周期（frontmatter/状态/前置/链接/gate）
+        run: python tools/validate_spec_lifecycle.py
 
   lint:
     name: ruff

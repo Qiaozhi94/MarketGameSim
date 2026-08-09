@@ -1,9 +1,20 @@
+---
+kind: milestone
+id: 0.1.2
+parent: v0.1-belief-testing-laboratory
+version: "0.1"
+status: done
+gate_version: 0
+created: 2026-08-01
+updated: 2026-08-09
+prerequisites:
+  - 0.1.1
+---
+
 # 0.1.2：杠杆与第一个实验闭环
 
 **父规格**：[`../spec.md`](../spec.md)　**架构**：[`../design.md`](../design.md)  
-**前置**：0.1.1 全部退出条件达成  
 **任务清单**：[`0.1.2 tasks`](../0.1.2-leverage-and-first-experiment/tasks.md)
-**状态**：Ready after 0.1.1（任务已拆解；实现仍受 0.1.1 退出门约束）
 
 ## 1. 目标
 

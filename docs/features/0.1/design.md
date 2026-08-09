@@ -1,7 +1,6 @@
 # Implementation Plan: Belief Testing Laboratory
 
-**对应规格**：[`spec.md`](spec.md)  
-**状态**：Draft  
+**对应规格**：[`spec.md`](spec.md)（状态见其 frontmatter）  
 **创建日期**：2026-08-01
 
 本文是**架构层**：组件边界、依赖方向、数据模型、测试策略。**算法层在实现合同中**

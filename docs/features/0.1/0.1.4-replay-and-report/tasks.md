@@ -1,97 +1,100 @@
-# 0.1.4：回放与报告 · 任务拆解
+---
+kind: milestone
+id: 0.1.4
+parent: v0.1-belief-testing-laboratory
+version: "0.1"
+related_features: []
+topics: [replay, report]
+doc_kind: tasks
+gate_version: 1
+created: 2026-08-01
+updated: 2026-08-09
+prerequisites:
+  - 0.1.3
+---
 
-**对应里程碑**：[`spec.md`](spec.md)  
-**状态**：Ready after 0.1.3（仅当 0.1.3 全部退出条件通过后开始实现）
+# 0.1.4：回放与报告 - 任务
 
-## 约定
+> Spec: `spec.md` | Design: `design.md`
 
-- 每个任务标注 `[合同引用]`；实现前先读对应章节，实现后以合同为裁判；
-- 带 `[TDD]` 的任务先写失败测试；同一 Phase 内可并行项标 `[P]`；
-- **任务编号只在本文件内唯一**。引用其他里程碑的任务时必须带里程碑前缀
+## 0. 来源与执行规则
+
+- 行为与验收真相源：`spec.md`（FR-019/FR-020/SC-008，退出条件 E1—E5）。
+- 技术方案与边界：`design.md`。
+- 每个任务标注 `[合同引用]`，实现前先读对应章节，实现后以合同为裁判。
+- 带 `[TDD]` 的任务先写失败测试；同一 Phase 内可并行项标 `[P]`。
+- **任务编号只在本文件内唯一**；引用其他里程碑任务时必须带里程碑前缀
   （写 `0.1.1 T603`，不写 `T603`）。
+- 完成且验证后立即把 `[ ]` 改为 `[x]`。
 
----
+## 1. 前置条件
 
-## Phase 0：实现准入合同（不代表 0.1.4 主体开工）
+- [ ] T001 (`DQ-001`): 关闭所有阻塞性 spec/design 问题 — verify: `spec.md`、`design.md`
+- [ ] T002 (`0.1.3`): 验证 0.1.3 退出证据与上游 artifact 可用 — verify: `0.1.3` 实验产物
 
-- [x] **T001** `[0.1.4 spec §4.1]` `[TDD]` 冻结 10 类报告输入的机器可读最小 Schema：
-      `src/market_game_sim/schema/report_artifacts.json` 是唯一真源，逐 artifact 固定
-      producer、format、`schema_version`、shape 与递归 `required_fields`；
-      `tools/validate_contract_sources.py` 与 spec 展示表双向校验，负向变异覆盖缺 artifact、
-      非法类型、缺内容版本、未冻结嵌套对象及 producer 漂移。
+## 2. 实现任务
 
-## Phase 1：日志读取与状态重建
+### Phase 1：日志读取与状态重建
 
-- [ ] **T101** `[事件 Schema §6]` `[TDD]` 独立日志读取器：解析
-      `RUN_HEADER + EVENT* + RUN_TRAILER` 三种顶层记录，**不导入 `kernel/`**。
-      拒绝 TI-4/TI-5 日志（§1.5 的先结构后语义判别）。
-- [ ] **T102** `[0.1.1 T603]` `[TDD]` 复用并扩展独立验证器的状态重建：账户与
-      **订单簿**两类终态。0.1.1 已实现的部分不重写，只增加逐帧快照能力。
-- [ ] **T103** `[事件 Schema §4.6.3]` `[TDD]` **逐帧状态序列**：
-      **第 0 帧由 `transaction_seq=1`（ACCOUNT）与 `2`（BOOK）两条初态快照构成**，
-      含全部账户与初始簿；第 k 帧为 `transaction_seq=k+2` 提交后的完整状态。
-      帧边界取**事务边界**，不取单条记录边界——事务内的中间态本就不该被观察到。
-      这是 E1 的输入。没有初态快照则第一帧无从构造，且从未成交的账户永远不会出现。
+- [ ] T101 (`FR-019`, `事件 Schema §6`): 独立日志读取器——解析 `RUN_HEADER + EVENT* +
+      RUN_TRAILER` 三种顶层记录，**不导入 `kernel/`**；拒绝 TI-4/TI-5 日志（§1.5）—
+      verify: `tests/unit/replay/test_log_reader.py`
+- [ ] T102 (`FR-019`, `0.1.1 T603`): 复用并扩展独立验证器的状态重建，账户与**订单簿**
+      两类终态；0.1.1 已实现部分不重写，只增加逐帧快照能力 — verify:
+      `tests/unit/replay/test_state_rebuild.py`
+- [ ] T103 (`事件 Schema §4.6.3`): **逐帧状态序列**——第 0 帧由 `transaction_seq=1`
+      （ACCOUNT）与 `2`（BOOK）两条初态快照构成，第 k 帧为 `transaction_seq=k+2` 提交后
+      的完整状态；帧边界取事务边界。这是 E1 的输入 — verify:
+      `tests/unit/replay/test_frame_sequence.py`
 
-## Phase 2：单文件回放器
+### Phase 2：单文件回放器
 
-- [ ] **T201** `[0.1.4 spec §3.1]` `[TDD]` 单文件 HTML 产物：数据内联，
-      **无 `fetch`、无 CDN、无外部字体**。构建后用**断网环境**打开验收（退出条件 E2）。
-- [ ] **T202** `[FR-019]` 逐帧呈现：价格曲线、订单簿深度、账户权益与仓位、
-      强平事件标注。时间轴以 `timestamp` 为准，可按事务或按逻辑时间步进。
-- [ ] **T203** `[FR-020]` `[指标字典 §1.9]` K 线视图：周期取指标字典定义，
-      **只画已完成的 K 线**——与代理可见性同一口径，避免读者看到代理看不到的信息。
-- [ ] **T204** `[0.1.4 spec §3.3]` 降采样：允许，但比例与规则**必须在页面上可见**。
-      降采样后的产物不得用于 E1 验收。
+- [ ] T201 (`spec §3.1`): 单文件 HTML 产物，数据内联，**无 `fetch`、无 CDN、无外部
+      字体**；构建后用断网环境打开验收（E2）— verify: `tests/integration/test_replay_offline_single_file.py`
+- [ ] T202 (`FR-019`): 逐帧呈现价格曲线、订单簿深度、账户权益与仓位、强平事件标注；
+      时间轴以 `timestamp` 为准，可按事务或逻辑时间步进 — verify:
+      `tests/unit/replay/test_frame_presentation.py`
+- [ ] T203 (`FR-020`, `指标字典 §1.9`): K 线视图，周期取指标字典定义，**只画已完成的
+      K 线** — verify: `tests/unit/replay/test_kline.py`
+- [ ] T204 (`spec §3.3`): 降采样——允许，但比例与规则必须在页面上可见；降采样产物
+      不得用于 E1 验收 — verify: `tests/unit/replay/test_downsampling.py`
 
-## Phase 3：总结报告
+### Phase 3：总结报告
 
-- [ ] **T301** `[PR-019]` `[0.1.4 spec §4.1]` `[P]` 报告生成，两组内容缺一不可：
-      ① 指标汇总、PnL 桥接五项、经济终点发生率、技术无效率与排除率（来自 `metrics/`）；
-      ② **条件性结论、效应量、置信区间与失效边界**（来自 `analysis/` 与 `conclusion/`）。
-      **第 ② 组是 PR-019 的核心**——只做第 ① 组会让 E4 在漏掉它的情况下自称通过。
-- [ ] **T302** `[0.1.4 spec §4.1、E4]` `[TDD]` **artifact manifest 与不重算断言**：
-      manifest 按 0.1.4 spec §4.1 的**七项封闭清单**逐 artifact 声明
-      （`artifact_id`/`path`/`producer` 精确 task/`schema_version`/`format`/
-      `required`/`blake2b-256`），并加载 `report_artifacts.json` 校验 producer、format、
-      版本及实际文件的递归最小字段/类型；不得在实现里复制 Schema。
-      断言 ① 改动任一上游产物后报告随之变化；② 报告层**不执行任何统计检验或重新
-      聚合**（导入检查 + 无 scipy/statsmodels 调用）。
-      **五类负向夹具**：必备件缺失 / 哈希不符 / `schema_version` 错版 /
-      必备字段缺失或类型错误 / **出现 manifest 未声明的额外件**——五种都必须使报告生成失败。
-      **规则是「不重算」而非「只读 metrics」**：效应量与置信区间本就不是指标。
+- [ ] T301 (`PR-019`): 报告生成，两组内容缺一不可：① 指标汇总、PnL 桥接、经济终点
+      发生率、技术无效率与排除率（`metrics/`）；② 条件性结论、效应量、置信区间与失效
+      边界（`analysis/` + `conclusion/`）。第 ② 组是 PR-019 核心 — verify:
+      `tests/integration/test_report_artifacts.py`
+- [ ] T302 (`spec §4.1`, `E4`): **artifact manifest 与不重算断言**——manifest 按七项封闭
+      清单逐 artifact 声明，加载 `report_artifacts.json` 校验 producer/format/版本/字段，
+      不得复制 Schema；断言 ① 改任一上游产物报告随之变化；② 报告层不执行任何统计检验
+      或重新聚合。五类负向夹具：必备件缺失 / 哈希不符 / schema_version 错版 / 必备字段
+      缺失或类型错误 / 出现未声明额外件——五种都必须使报告生成失败 — verify:
+      `tests/unit/report/test_manifest.py`
 
-## Phase 4：验收
+## 3. 验证与验收任务
 
-- [ ] **T401** `[SC-008/KPI-012]` `[TDD]` **逐帧一致性**（退出条件 E1）：
-      在**未降采样**的日志上，断言回放重建的每一帧与 oracle 逐字段相等。
-      **oracle 必须是测试专用的独立 observer**（0.1.4 spec §4.2）：每个事务提交后
-      直接从内核对象读快照，**绝不喂给回放器**。
-      **先断言帧数与帧键集合相等**，再逐帧比字段——长度不等时逐帧比较会在错位处
-      给出误导性的「第 N 帧不符」。字段投影为账户 11 项 + 交易所 2 项。
-      **不得拿日志里的 SNAPSHOT 当 oracle**——那是用日志验证日志，循环自证，
-      回放器把撮合重实现错了也能通过。
-      **这是本里程碑唯一不可妥协的门**：回放器读日志、oracle 读内核，两条独立路径
-      的结果必须相等。
-- [ ] **T402** `[0.1.4 spec §3.2]` `[TDD]` 导入检查：`replay/`、`report/` 不导入
-      `kernel/`、`ledger/`、`book/`（退出条件 E5）。复用 `0.1.1 T604` 的检查机制。
-- [ ] **T403** `[0.1.4 spec E2]` 离线可用性验收：断网环境打开产物，
-      功能完整、无控制台报错。
+- [ ] T401 (`SC-008`, `KPI-012`): **逐帧一致性**（E1）——在未降采样日志上，断言回放
+      重建的每一帧与 oracle 逐字段相等；oracle 是测试专用独立 observer，每事务提交后
+      直接从内核对象读快照，**绝不喂给回放器**；先断言帧数与帧键集合相等再逐帧比字段；
+      不得拿日志里的 SNAPSHOT 当 oracle — verify:
+      `tests/integration/test_replay_frame_consistency.py`
+- [ ] T402 (`spec §3.2`): 导入检查——`replay/`、`report/` 不导入 `kernel/`、`ledger/`、
+      `book/`（E5）；复用 `0.1.1 T604` 机制 — verify: `tests/unit/replay/test_no_kernel_import.py`
+- [ ] T403 (`spec E2`): 离线可用性验收——断网环境打开产物，功能完整、无控制台报错 —
+      verify: 断网手动验收
+- [ ] T404 (`AC-001`—`AC-005`): 运行项目统一质量门 — verify: `python tools/verify.py`
+- [ ] T405: 回写 spec 验收证据、活跃索引和状态 — verify: `python tools/validate_spec_lifecycle.py`
 
----
+## 4. 依赖与并行关系
 
-## 退出检查清单
+- `T001 -> T101`：前置条件确认后可开始 Phase 1。
+- `T101 -> T102 -> T103`：状态重建按依赖顺序。
+- `T201 -> T202`：单文件产物先于逐帧呈现。
+- `T301 [P]`：与 T302 修改不同文件（报告生成 vs manifest 校验），可并行。
+- `T401 -> T402`：逐帧一致性先于导入检查完成（无顺序依赖，但 E1 是核心门）。
 
-全部勾选后 0.1.4 完成，**完整 v0.1 方可签收**：
+## 5. 明确后移
 
-- [ ] E1 逐帧一致性（T401）
-- [ ] E2 单文件、离线可用、无外部请求（T201、T403）
-- [ ] E3 K 线周期与指标字典一致，只用已完成 K 线（T203）
-- [ ] E4 报告含条件性结论/效应量/置信区间，且消费 `metrics/`+`analysis/`+`conclusion/`
-      的冻结产物、不自行重算（T301、T302）
-- [ ] E5 回放与报告层不导入内核（T402）
-
-## 明确后移
-
-- 在线实时渲染：**v0.1 / D-7 已排除**，离散事件仿真中「实时」无物理意义；
-- 人在环交互、多运行对比看板：v0.2+。
+- 在线实时渲染 → v0.1 / D-7 已排除，离散事件仿真中「实时」无物理意义。
+- 人在环交互、多运行对比看板 → v0.2+。
