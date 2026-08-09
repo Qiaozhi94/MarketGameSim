@@ -70,7 +70,7 @@ class PairRecord:
 @dataclass
 class PairingReport:
     valid_pairs: list[tuple[PairRecord, PairRecord]] = field(default_factory=list)
-    single_side_missing: list[PairRecord] = field(default_factory=list)
+    single_side_missing: list[tuple[str, PairRecord]] = field(default_factory=list)
     missing_pairs: list[tuple[str, str]] = field(default_factory=list)  # (pair_id, missing arm_id)
     duplicates_rejected: list[tuple[str, str]] = field(default_factory=list)
     unknown_arm_rejected: list[str] = field(default_factory=list)
@@ -115,11 +115,11 @@ def aggregate_pairs(
 
     for pid, arms in by_pair.items():
         if len(arms) != 2:
-            # missing one arm -> missing pair; if one arm alone is invalid, it's
-            # single-side-missing too
+            # missing one arm -> missing pair; every present record must be
+            # explicitly accounted for (never silently dropped): invalid ones
+            # go to single_side_missing, the pair id to missing_pairs.
             for rec in arms.values():
-                if not rec.is_valid:
-                    report.single_side_missing.append(rec)
+                report.single_side_missing.append((pid, rec))
             missing_arm = ""
             if len(arms) == 1:
                 missing_arm = next(iter(arms))
@@ -130,8 +130,9 @@ def aggregate_pairs(
         if first.is_valid and second.is_valid:
             report.valid_pairs.append((first, second))
         else:
+            # both arms are accounted for explicitly: the invalid arm(s) plus
+            # the valid arm of the broken pair -- no silent drop of either
             for rec in ordered:
-                if not rec.is_valid:
-                    report.single_side_missing.append(rec)
+                report.single_side_missing.append((pid, rec))
 
     return report

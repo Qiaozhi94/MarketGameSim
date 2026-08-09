@@ -83,6 +83,8 @@ class TestAggregatePairs:
         assert len(r.unknown_arm_rejected) == 1
 
     def test_single_side_technical_invalid(self):
+        # both arms explicitly accounted for: valid + invalid both recorded,
+        # never silently dropped
         r = aggregate_pairs(
             [
                 _rec("lev", {"n": 22}, 1, CTRL),
@@ -91,10 +93,15 @@ class TestAggregatePairs:
             registered_arm_ids=REG,
         )
         assert len(r.valid_pairs) == 0
-        assert len(r.single_side_missing) == 1
+        assert len(r.single_side_missing) == 2  # both arms accounted
+        assert {rec.category for _, rec in r.single_side_missing} == {
+            RunCategory.COMPLETED,
+            RunCategory.TECHNICAL_INVALID,
+        }
 
     def test_missing_pair_reported(self):
-        # only control arm present for seed 2
+        # only control arm present for seed 2 -> missing pair, and the present
+        # record is explicitly accounted for
         r = aggregate_pairs(
             [
                 _rec("lev", {"n": 22}, 1, CTRL),
@@ -105,6 +112,7 @@ class TestAggregatePairs:
         )
         assert len(r.valid_pairs) == 1
         assert len(r.missing_pairs) == 1
+        assert len(r.single_side_missing) == 1  # the lone present arm
 
     def test_endpoint_pair_not_dropped(self):
         # endpoint vs non-endpoint: both valid categories -> still a valid pair
