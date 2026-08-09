@@ -3,7 +3,7 @@
 **文档版本**：0.1.0  
 **状态**：Stable（跨规格口径合同；变更须记 ADR 并评估既有实验可比性）  
 **创建日期**：2026-07-29  
-**关联 PRD**：[`prd.md`](prd.md)　**关联方法论**：[`methodology.md`](methodology.md)  
+**关联 PRD**：[`../market-game-sim-prd.md`](../market-game-sim-prd.md)　**关联方法论**：[`methodology.md`](methodology.md)  
 **支撑需求**：PRD / PR-014—PR-016、KPI-004、KPI-009
 
 ## 0. 本文的作用

@@ -4,16 +4,16 @@
 **状态**：Draft  
 **创建日期**：2026-07-28　**更新日期**：2026-07-31  
 **产品阶段**：实验性 MVP  
-**项目原则**：[`docs/SOP.md`](../SOP.md)（唯一入口，含安全与合规边界 §4）  
-**当前交付规格**：[`docs/features/0.1/spec.md`](../features/0.1/spec.md)  
-**方法论说明**：[`docs/research/methodology.md`](../research/methodology.md)　
-**指标字典**：[`docs/research/metrics-dictionary.md`](../research/metrics-dictionary.md)
+**项目原则**：[`docs/SOP.md`](SOP.md)（唯一入口，含安全与合规边界 §4）  
+**当前交付规格**：[`docs/features/0.1/spec.md`](features/0.1/spec.md)  
+**方法论说明**：[`docs/research/methodology.md`](research/methodology.md)　
+**指标字典**：[`docs/research/metrics-dictionary.md`](research/metrics-dictionary.md)
 
-**已生效 ADR**：[ADR-001](../decisions/001-numeric-and-serialization-contract.md)
+**已生效 ADR**：[ADR-001](decisions/001-numeric-and-serialization-contract.md)
 （数值与序列化口径）、
-[ADR-002](../decisions/002-same-timestamp-event-scheduling.md)（事件调度与因果链）  
+[ADR-002](decisions/002-same-timestamp-event-scheduling.md)（事件调度与因果链）  
 **其余设计决策**：见
-[v0.1 规格 §设计决策与理由](../features/0.1/spec.md)（D-1—D-7）
+[v0.1 规格 §设计决策与理由](features/0.1/spec.md)（D-1—D-7）
 
 ## 0. 关于本版
 
@@ -197,7 +197,7 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 
 账户模型为**线性永续合约**而非杠杆现货：每笔成交产生一多一空，**净持仓恒为 0**，
 由此全局权益守恒精确成立，且做空与做多天然对称、无需债务与借贷分录
-（v0.1 / D-2、[账户合同](../contracts/margin-and-account.md)）。
+（v0.1 / D-2、[账户合同](contracts/margin-and-account.md)）。
 
 第一版即包含杠杆。理由：
 强平订单是**不计价格的市价单**，它对订单簿的冲击与普通卖单完全不同，是理解暴跌
@@ -368,7 +368,7 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 ### 13.5 问题的提法必须可证伪
 
 写下研究问题后先问：**什么样的结果会否定它？** 答不出来，说明答案已藏在代理规则里，
-必须重新提法。正反例见 [`methodology.md`](methodology.md) §11.1。
+必须重新提法。正反例见 [`research/methodology.md`](research/methodology.md) §11.1。
 
 ## 14. 风险与缓解
 
@@ -389,13 +389,13 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 不允许「先把功能做全再说」。
 
 ### 0.1.1：最小确定性内核（**无杠杆**）
-→ [`specs/v0.1-.../0.1.1-minimal-kernel/spec.md`](../features/0.1/0.1.1-minimal-kernel/spec.md)
+→ [`specs/v0.1-.../0.1.1-minimal-kernel/spec.md`](features/0.1/0.1.1-minimal-kernel/spec.md)
 
 订单簿、账户、事件调度与日志、确定性哈希、因果链。**账户结构须一次留好保证金字段**，
 但本阶段不开启杠杆。
 
 **退出条件**：见
-[0.1.1 spec §3](../features/0.1/0.1.1-minimal-kernel/spec.md)
+[0.1.1 spec §3](features/0.1/0.1.1-minimal-kernel/spec.md)
 的退出条件表。**该表是唯一真源；本节不复述数量，也不复述 ID 列表。**
 
 性质上的要点（非枚举）：守恒等式逐事件整数精确成立；账户与订单簿验收向量通过；
@@ -409,8 +409,8 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 和确定性钉死。带着杠杆调试账本会让两类缺陷混在一起。
 
 ### 0.1.2：杠杆与第一个实验闭环
-→ [`0.1.2-leverage-and-first-experiment.md`](../features/0.1/0.1.2-leverage-and-first-experiment/spec.md)
-→ [`0.1.2-tasks.md`](../features/0.1/0.1.2-leverage-and-first-experiment/tasks.md)
+→ [`0.1.2-leverage-and-first-experiment.md`](features/0.1/0.1.2-leverage-and-first-experiment/spec.md)
+→ [`0.1.2-tasks.md`](features/0.1/0.1.2-leverage-and-first-experiment/tasks.md)
 
 杠杆、保证金、强平、穿仓、连锁；最小代理策略合同；**无杠杆 vs 有杠杆的配对对照**。
 
@@ -418,16 +418,16 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 经济终点与连续指标两部分报告齐备；KPI-005、KPI-007、KPI-010、KPI-011 达标。
 
 ### 0.1.3：模型稳健性
-→ [`0.1.3-robustness.md`](../features/0.1/0.1.3-robustness/spec.md)
-→ [`0.1.3-tasks.md`](../features/0.1/0.1.3-robustness/tasks.md)
+→ [`0.1.3-robustness.md`](features/0.1/0.1.3-robustness/spec.md)
+→ [`0.1.3-tasks.md`](features/0.1/0.1.3-robustness/tasks.md)
 
 替代代理规则、参数空间与模型族扫描、因子消融、共同随机输入、留出验证区。
 
 **退出条件**：旗舰结论不依赖单一行为映射或单一狭窄参数点。
 
 ### 0.1.4：回放与报告
-→ [`0.1.4-replay-and-report/spec.md`](../features/0.1/0.1.4-replay-and-report/spec.md)
-→ [`0.1.4-replay-and-report/tasks.md`](../features/0.1/0.1.4-replay-and-report/tasks.md)
+→ [`0.1.4-replay-and-report/spec.md`](features/0.1/0.1.4-replay-and-report/spec.md)
+→ [`0.1.4-replay-and-report/tasks.md`](features/0.1/0.1.4-replay-and-report/tasks.md)
 
 单文件 HTML 回放器（**PR-018**）、总结报告（**PR-019**）、K 线视图（**PR-020**）。
 回放器是事件日志的消费者，不导入内核（v0.1 / D-7）。
@@ -441,7 +441,7 @@ PR-020 = K 线视图。以 §9.5 为准。）
 **为什么单独成里程碑**：FR-019/FR-020/SC-008 是 v0.1 必选需求，却曾在 0.1.1 →
 0.1.2 → 0.1.3 之间互相推诿（「0.1.2」→「0.1.3 或按需」→「后续展示阶段」），三个
 里程碑可以全部签收而它们仍未交付。归属见
-[v0.1 spec §需求追踪矩阵](../features/0.1/spec.md)。
+[v0.1 spec §需求追踪矩阵](features/0.1/spec.md)。
 
 **完整 v0.1 签收 = 0.1.1—0.1.4 全部退出条件通过。**
 
@@ -465,7 +465,7 @@ PR-020 = K 线视图。以 §9.5 为准。）
 | PR-018—PR-020 | v0.1 / FR-019—FR-020 |
 | KPI-001—KPI-004 | v0.1 / SC-001—SC-004、NFR-001—NFR-003 |
 | KPI-005—KPI-006 | v0.1 / SC-005—SC-006 |
-| KPI-007—KPI-011 | `methodology.md` §9—§11；v0.1 / SC-007 |
+| KPI-007—KPI-011 | `research/methodology.md` §9—§11；v0.1 / SC-007 |
 | KPI-012 | v0.1 / SC-008 |
 
 ## 17. 决策记录与待确认
@@ -502,9 +502,9 @@ PR-020 = K 线视图。以 §9.5 为准。）
 
 | 项 | 落点 |
 |---|---|
-| 撮合合同 | [`docs/contracts/matching.md`](../contracts/matching.md)：订单簿定序、成交价取 maker 价、跨档拆分、剩余处理、自成交阻止、准入与撮合的顺序 |
-| 代理策略合同 | [`docs/contracts/agent-strategy.md`](../contracts/agent-strategy.md)：信息集边界、因子缺失与冷启动、固定尺度标准化、目标仓位映射、挂单激进度、全撤重报、准入对齐、做市商例外 |
-| 账户验收向量 | [`docs/contracts/acceptance-vectors.md`](../contracts/acceptance-vectors.md)：十个案例的整数期望值表 |
+| 撮合合同 | [`docs/contracts/matching.md`](contracts/matching.md)：订单簿定序、成交价取 maker 价、跨档拆分、剩余处理、自成交阻止、准入与撮合的顺序 |
+| 代理策略合同 | [`docs/contracts/agent-strategy.md`](contracts/agent-strategy.md)：信息集边界、因子缺失与冷启动、固定尺度标准化、目标仓位映射、挂单激进度、全撤重报、准入对齐、做市商例外 |
+| 账户验收向量 | [`docs/contracts/acceptance-vectors.md`](contracts/acceptance-vectors.md)：十个案例的整数期望值表 |
 | PnL 会计桥接 | 指标字典 §5.2：五项代数恒等分解，残差恒为 0，含两个手工验算示例 |
 
 **C. 预注册研究设计**：**正式实验前必须确定**，可与 0.1.1 并行准备：
