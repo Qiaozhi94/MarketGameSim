@@ -10,6 +10,7 @@ import dataclasses
 from dataclasses import dataclass, field
 
 from market_game_sim.agent.handler import handle_agent_decide, handle_agent_observe
+from market_game_sim.agent.mapping import get_mapping
 from market_game_sim.agent.scheduler import AgentSpec
 from market_game_sim.agent.strategy import target_position
 from market_game_sim.book.matching import match_order
@@ -335,6 +336,11 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
         "agent_initial_bp": {
             s.agent_id: _compute_initial_bp(s.leverage_tier) for s in config.agent_specs
         },
+        # 0.1.3 E1/E3 treatment knobs: threaded from the config so a robustness
+        # run varies model family / behavior mapping / ablated factor.
+        "model_family": config.model_family,
+        "behavior_mapping": get_mapping(config.behavior_mapping).target_position,
+        "disabled_factor": config.disabled_factor,
     }
 
     for spec in config.agent_specs:
@@ -428,6 +434,9 @@ def run_multi_seed(
             agent_specs=list(base_config.agent_specs),
             agent_signals=dict(base_config.agent_signals),
             group_label=base_config.group_label,
+            model_family=base_config.model_family,
+            behavior_mapping=base_config.behavior_mapping,
+            disabled_factor=base_config.disabled_factor,
         )
         results.append(run_one(cfg, protocol=protocol))
     return results

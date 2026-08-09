@@ -45,6 +45,13 @@ class ExperimentConfig:
     # they are pure static risk to be tested against, like the "A" account in
     # acceptance-vectors.md 案例7/8.
     extra_positions: dict[str, dict[str, int]] = field(default_factory=dict)
+    # 0.1.3 E1/E3: robustness treatment knobs, threaded into the world so the
+    # decision pipeline varies family / mapping / ablation without code change.
+    # Included in compute_config_hash, so every robustness cell traces back to
+    # a distinct config hash (E3).
+    model_family: str = "belief_family"  # T006: belief_family | signal_family
+    behavior_mapping: str = "linear"  # T102: linear | threshold
+    disabled_factor: str | None = None  # T301: leave-one-out ablation switch
 
 
 def compute_config_hash(config: ExperimentConfig) -> str:

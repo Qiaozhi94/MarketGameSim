@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from market_game_sim.agent.factors import belief_signal
 from market_game_sim.agent.factors import book as book_factor
 from market_game_sim.agent.factors import herding as herding_factor
 from market_game_sim.agent.factors import momentum as momentum_factor
 from market_game_sim.agent.factors import noise as noise_factor
 from market_game_sim.agent.factors import reversion as reversion_factor
+from market_game_sim.agent.families import apply_ablation, family_signal
 from market_game_sim.agent.observation import Bar, InformationSet
 from market_game_sim.agent.scheduler import AgentSpec
 from market_game_sim.agent.strategy import (
@@ -202,7 +202,17 @@ def _compute_belief_signal(
     rf = reversion_factor(info.last_ticks, iset.get("initial_price_ticks", 10000))
     hf = herding_factor(bars)
     weights = _belief_weights(spec, world)
-    return belief_signal(weights, [mf, rf, hf, bf, nf])
+
+    # 0.1.3 E1/E3 wiring: the model family (which factors and how they combine)
+    # and the ablated factor (leave-one-out switch) come from the world, so a
+    # robustness run can vary them without touching this pipeline.  Same
+    # semantic-key random draws either way (KR-004).
+    family_id = world.get("model_family", "belief_family")
+    disabled = world.get("disabled_factor")
+    factor_values = [mf, rf, hf, bf, nf]
+    if disabled is not None:
+        factor_values, weights = apply_ablation(factor_values, weights, disabled)
+    return family_signal(family_id, factor_values, weights)
 
 
 def _bars_from_history(trades: list[dict], bar_ns: int) -> list:
