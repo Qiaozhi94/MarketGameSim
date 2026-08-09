@@ -81,13 +81,33 @@ class TestSignalFamilyAblationNameBinding:
         )
         assert s == expected
 
-    def test_ablate_book_fails_closed(self):
-        # book removed -> signal_family's required factor is missing -> reject,
-        # never silently substitute another factor at the old index
+    def test_ablate_book_renormalizes_to_momentum(self):
+        # v013 round-2 regression (high): leave-one-out on the family's own
+        # required factor (book) must NOT fail -- T301 removes one factor and
+        # renormalizes; signal_family falls back to the remaining momentum.
         from market_game_sim.agent.families import apply_ablation_named
 
         values, w, names = apply_ablation_named(_factors(), _weights(), "book")
-        with pytest.raises(ModelFamilyError, match="missing after ablation"):
+        s = signal_family_signal(values, w, names)
+        # equals a pure-momentum signal (single factor, weight normalized to 1)
+        expected = signal_family_signal([_factors()[0]], _weights(), ("momentum",))
+        assert s == expected
+
+    def test_ablate_momentum_renormalizes_to_book(self):
+        from market_game_sim.agent.families import apply_ablation_named
+
+        values, w, names = apply_ablation_named(_factors(), _weights(), "momentum")
+        s = signal_family_signal(values, w, names)
+        expected = signal_family_signal([_factors()[3]], _weights(), ("book",))
+        assert s == expected
+
+    def test_no_family_factor_left_fails_closed(self):
+        # removing BOTH momentum and book leaves no family factor -> fail
+        from market_game_sim.agent.families import apply_ablation_named
+
+        values, w, names = apply_ablation_named(_factors(), _weights(), "momentum")
+        values, w, names = apply_ablation_named(values, w, "book", names)
+        with pytest.raises(ModelFamilyError, match="no enabled factors"):
             signal_family_signal(values, w, names)
 
     def test_name_value_length_mismatch_fails(self):

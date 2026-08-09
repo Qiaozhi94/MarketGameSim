@@ -114,6 +114,15 @@ def check_shared_randomness_parity(
                 f"seed={c_run.seed} semantic-key sets differ: "
                 f"only-in-control={only_c[:5]} only-in-treatment={only_t[:5]}"
             )
+        # v013 round-2 (high): an EMPTY semantic-key set on both arms is NOT
+        # "path consistent" -- there is no random path to audit, so the pair
+        # cannot support any shared-randomness-based attribution claim.
+        if not c_signals:
+            return (
+                f"seed={c_run.seed} no auditable random path "
+                "(no belief-agent decisions with signal_bp); "
+                "cannot claim shared random path"
+            )
         for key, c_val in c_signals.items():
             if c_val != t_signals[key]:
                 return (

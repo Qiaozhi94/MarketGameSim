@@ -101,3 +101,21 @@ class TestOtherContrasts:
         changed = {"model_family_id": "f2", "maint_bp": 500}  # defining field deleted
         with pytest.raises(DiffValidationError, match="deleted defining field"):
             validate_contrast(base, changed, rule)
+
+    def test_deleted_treatment_field_rejected(self):
+        """v013 round-2 regression (high): deleting the pre-registered
+        treatment field ITSELF (maint_bp / behavior_mapping) must be rejected
+        -- the treatment must still exist; a deletion is not a legal contrast
+        (the old code treated a deleted allowed field as an allowed change)."""
+        rule = ContrastRule(kind="scan_axis", allowed_fields=["maint_bp"])
+        base = {"maint_bp": 500, "mm_thickness": 10}
+        changed = {"mm_thickness": 10}  # maint_bp deleted entirely
+        with pytest.raises(DiffValidationError, match="deleted treatment field"):
+            validate_contrast(base, changed, rule)
+
+    def test_deleted_behavior_mapping_rejected(self):
+        rule = ContrastRule(kind="behavior_mapping", allowed_fields=["behavior_mapping", "version"])
+        base = {"behavior_mapping": "linear", "version": "1.0", "taker_bps": 5}
+        changed = {"version": "1.0", "taker_bps": 5}  # behavior_mapping deleted
+        with pytest.raises(DiffValidationError, match="deleted treatment field"):
+            validate_contrast(base, changed, rule)

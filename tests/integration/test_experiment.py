@@ -786,3 +786,25 @@ def test_verify_bridge_residuals_raises_on_nonzero_under_opt(monkeypatch):
     clean = dict(event)
     clean["price_ticks"] = 9990
     runner_mod._verify_bridge_residuals([clean], mult=1000)
+
+
+def test_check_shared_randomness_parity_rejects_empty_path():
+    """v013 round-2 regression (high): two runs with NO auditable random path
+    (no belief-agent decisions) must fail-closed -- an empty semantic-key set
+    on both arms is NOT "path consistent", it is "no path to audit"."""
+
+    def _run() -> RunResult:
+        return RunResult(
+            seed=1,
+            terminated="COMPLETED",
+            abort_code=None,
+            events=[],  # no AGENT_DECIDE with signal_bp
+            book_last_ticks=None,
+            accounts={},
+            liquidation_metrics=LiquidationMetrics(),
+            classification=RunClassification(),
+        )
+
+    err = check_shared_randomness_parity([_run()], [_run()])
+    assert err is not None
+    assert "no auditable random path" in err

@@ -92,4 +92,12 @@ def validate_contrast(
         raise DiffValidationError(
             f"{rule.kind} contrast changed fields outside allowed set: {sorted(disallowed)}"
         )
+    # v013 round-2 (high): DELETING a pre-registered treatment field itself
+    # (diff value None) is not a legal contrast -- the treatment must still
+    # exist; removing it silently changes the contrast's meaning.
+    deleted_allowed = [k for k, v in diff.items() if v is None]
+    if deleted_allowed:
+        raise DiffValidationError(
+            f"{rule.kind} contrast deleted treatment field(s): {deleted_allowed}"
+        )
     return diff
