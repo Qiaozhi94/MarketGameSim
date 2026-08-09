@@ -436,9 +436,7 @@ def run_multi_seed(
             group_label=base_config.group_label,
             extra_accounts=dict(base_config.extra_accounts),
             extra_events=list(base_config.extra_events),
-            extra_positions={
-                k: dict(v) for k, v in base_config.extra_positions.items()
-            },
+            extra_positions={k: dict(v) for k, v in base_config.extra_positions.items()},
             model_family=base_config.model_family,
             behavior_mapping=base_config.behavior_mapping,
             disabled_factor=base_config.disabled_factor,
