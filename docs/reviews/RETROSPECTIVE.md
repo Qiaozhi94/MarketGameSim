@@ -128,3 +128,30 @@ open"而非"忘了关",`status` 上和真正的遗留 bug 要区分开。
 人类展示表只做双向派生核对，validator 不得持有第三份业务映射。来源分布为
 `original-coding` 2、`spec-drift` 1、`process-gap` 2、`fix-regression` 1；最长存活的是
 `artifact-minimum-schema-unfrozen`，从第 1 轮到第 2 轮关闭，其余均在发现轮关闭。
+
+---
+
+## 循环 4: 0.1.3「模型稳健性」代码实现检视
+
+- **report_type**: fix-verification
+- **周期**: 2026-08-09，4 轮（首轮全量 + 3 次针对性修复复核）
+- **状态**: 已闭环。HEAD `d052c98`；本地 1524 tests、`ruff check .`、
+  `ruff format --check .` 全绿；CI `31319759708` 的真源自校验、ruff、pytest 3.11、
+  pytest 3.13 全部 `success`
+- **结论**: 1 个 Critical、5 个 High 全部关闭；E1 从错误的“同向成立”修正为如实报告
+  “依赖边界”
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| v013-cross-matrix-zero-direction | 交叉矩阵忽略零方向单元并错误宣告整矩阵同向成立 | Critical | correctness | root-cause | original-coding | fixed | 全部单元显著、非零且方向一致才允许“同向成立” | `tests/unit/robustness/test_cross_matrix.py::TestReport::test_zero_direction_cells_break_same_direction`; `::test_all_zero_direction_insufficient`; `::test_one_non_significant_cell_insufficient` | 1 | 2 | test-simulates-itself |
+| v013-random-path-intersection-only | 共同随机路径只比较键交集，完全错位或空交集仍通过 | High | correctness | root-cause | original-coding | fixed | 比较完整键集并拒绝空路径 | `tests/integration/test_experiment.py::test_check_shared_randomness_parity_detects_key_set_mismatch`; `::test_check_shared_randomness_parity_rejects_empty_path` | 1 | 3 | partial-symmetric-fix |
+| v013-signal-family-ablation-index-shift | `signal_family` 消融后仍按原始位置取因子 | High | correctness | root-cause | original-coding | fixed | 因子值携带名称，家族按名称选择 | `tests/unit/agent/test_families.py::TestSignalFamilyAblationNameBinding::test_ablate_other_factor_keeps_momentum_book` | 1 | 2 | index-shift-after-filter |
+| v013-bridge-assert-optimized-away | KPI-009 生产门使用 `assert`，`python -O` 下非零残差被接受 | High | correctness | root-cause | original-coding | fixed | 改为显式 `BridgeResidualError` | `tests/integration/test_experiment.py::test_verify_bridge_residuals_raises_on_nonzero_under_opt` | 1 | 2 | safety-check-assert |
+| v013-integrity-guards-fail-open | 预注册、配置差分与留出状态机接受合同禁止状态 | High | correctness | root-cause | original-coding | fixed | 对称差分检测删除；`_MISSING` 区分合法 None；零差分拒绝；补齐预注册与留出状态门 | `tests/unit/robustness/test_diff_validator.py::TestOtherContrasts::test_nullable_value_change_is_not_deletion`; `::test_zero_diff_contrast_rejected`; `::test_zero_diff_ablation_rejected`; `::test_deleted_treatment_field_rejected` | 1 | 4 | partial-symmetric-fix |
+| v013-signal-family-required-factor-ablation | `signal_family` 对 momentum/book 的 leave-one-out 被修复代码改成直接报错 | High | correctness | symptom-patch | fix-regression | fixed | 对剩余家族因子重归一，仅无家族因子存活时拒绝 | `tests/unit/agent/test_families.py::TestSignalFamilyAblationNameBinding::test_ablate_book_renormalizes_to_momentum`; `::test_ablate_momentum_renormalizes_to_book`; `::test_no_family_factor_left_fails_closed` | 2 | 3 | partial-symmetric-fix |
+
+**模式性教训**: `partial-symmetric-fix` 出现 3 次，是本周期最集中的模式：只检查集合交集、
+只检测删除的一种方向、或用症状性 fail-closed 代替正确语义，都会让修复在相邻反例上再次
+失效。来源分布为 `original-coding` 5、`fix-regression` 1；最长存活的是
+`v013-integrity-guards-fail-open`，从第 1 轮到第 4 轮关闭。后续验证器应优先使用结构化
+状态（显式 missing sentinel、完整键集、非空实际差分），并为正反两个方向同时建测试。
