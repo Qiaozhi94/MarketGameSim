@@ -35,8 +35,8 @@ frontmatter**；本文只做入口与收口提示，不复制状态或需求正�
 ## 收口提示
 
 **完整 v0.1 签收 = 0.1.1—0.1.4 全部退出条件通过**，且版本根 `spec.md` 状态转为
-`done`。收口时在 [`docs/features/releases/`](../releases/) 下新增 `0.1.md` 记录不可变
-签收信息；本目录路径保持不变，不做物理 archive。
+`done`。收口时在 [`docs/features/releases/`](../releases/README.md) 下新增 `0.1.md`
+记录不可变签收信息；本目录路径保持不变，不做物理 archive。
 
 ## 相关入口
 

@@ -1,7 +1,7 @@
 # MarketGameSim 目录结构改造方案
 
-> 状态：**Implemented（2026-08-10，M001—M024、M026—M029 已勾选；M025 待全部里程碑
-> done 后生成 releases/0.1.md；M030 待推送确认 CI）**  
+> 状态：**Implemented（2026-08-10，M001—M024、M026—M030 已勾选；M025 待全部里程碑
+> done 后生成 releases/0.1.md）**  
 > 基线日期：2026-08-09  
 > 实施状态：见 §13 实施任务清单（执行进度真相源）  
 > 参考：PersonaHub `structure-improvement-plan.md`、`docs/features/README.md`，以及

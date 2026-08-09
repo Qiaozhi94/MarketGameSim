@@ -195,17 +195,22 @@ def discover_milestones(version_dir: pathlib.Path) -> list[pathlib.Path]:
 def collect_all_milestones(
     features_dir: pathlib.Path,
 ) -> dict[str, tuple[pathlib.Path, dict]]:
-    """收集全仓里程碑：id -> (milestone_dir, frontmatter)。"""
+    """收集全仓里程碑：id -> (milestone_dir, frontmatter)。
+
+    重复 ID 时保留首个条目，并把重复的目录追加到 `__dups__` 列表。
+    """
     out: dict[str, tuple[pathlib.Path, dict]] = {}
     for vdir in discover_versions(features_dir):
         for mdir in discover_milestones(vdir):
             front = parse_frontmatter((mdir / "spec.md").read_text(encoding="utf-8"))
             mid = front.get("id")
-            if mid:
-                if mid in out:
-                    out[mid] = (mdir, {"__dup__": True})  # type: ignore[misc]
-                else:
-                    out[mid] = (mdir, front)
+            if not mid:
+                continue
+            if mid in out:
+                dups = out[mid][1].setdefault("__dups__", [])
+                dups.append(mdir)
+            else:
+                out[mid] = (mdir, front)
     return out
 
 
@@ -213,9 +218,8 @@ def validate_ids_unique(all_ids: dict[str, tuple[pathlib.Path, dict]], errors: l
     """同类 ID 全仓唯一。"""
     seen: dict[str, pathlib.Path] = {}
     for mid, (mdir, front) in all_ids.items():
-        if "__dup__" in front:
-            fail(errors, f"里程碑 ID {mid} 重复")
-            continue
+        for dup in front.get("__dups__", []):
+            fail(errors, f"里程碑 ID {mid} 重复（{mdir} 与 {dup}）")
         if mid in seen:
             fail(errors, f"里程碑 ID {mid} 在全仓重复（{seen[mid]} 与 {mdir}）")
         else:
@@ -232,8 +236,6 @@ def validate_prerequisites(
 ) -> None:
     """prerequisite 引用存在且无循环；结构化 ID 而非自由文本。"""
     for mid, (_dir, front) in all_ids.items():
-        if "__dup__" in front:
-            continue
         for pre in front.get("prerequisites", []) or []:
             if not isinstance(pre, str) or not pre:
                 fail(errors, f"{mid}: prerequisite 必须是结构化 ID")
@@ -244,22 +246,27 @@ def validate_prerequisites(
             if pre not in all_ids:
                 fail(errors, f"{mid}: prerequisite {pre!r} 引用不存在的里程碑")
 
-    # 环检测
-    graph = {
-        mid: set(front.get("prerequisites", []) or [])
-        for mid, (_d, front) in all_ids.items()
-        if "__dup__" not in front
-    }
-    for start in graph:
-        seen = {start}
-        stack = list(graph[start])
-        while stack:
-            n = stack.pop()
-            if n in seen:
-                fail(errors, f"里程碑依赖环：{start} 经过 {n}")
-                break
-            seen.add(n)
-            stack.extend(graph.get(n, []))
+    # 环检测：三色 DFS，只判当前路径上的回边（不误报菱形依赖）。
+    graph = {mid: set(front.get("prerequisites", []) or []) for mid, (_d, front) in all_ids.items()}
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color = {mid: WHITE for mid in graph}
+
+    def visit(node: str) -> bool:
+        color[node] = GRAY
+        for nxt in graph.get(node, ()):
+            if nxt not in color:
+                continue
+            if color[nxt] == GRAY:
+                fail(errors, f"里程碑依赖环：{node} -> {nxt}")
+                return True
+            if color[nxt] == WHITE and visit(nxt):
+                return True
+        color[node] = BLACK
+        return False
+
+    for start in list(graph):
+        if color[start] == WHITE and visit(start):
+            break
 
 
 # --------------------------------------------------------------------------- #
@@ -381,7 +388,7 @@ def validate_owners(rid: str, r: dict, milestones: dict, errors: list[str], root
 
 def _check_sections(md_text: str, expected: list[str], errors: list[str], where: str) -> None:
     actual = _top_level_sections(md_text)
-    missing = [s for s in expected if not any(s in a for a in actual)]
+    missing = [s for s in expected if s not in actual]
     if missing:
         fail(errors, f"{where}: 缺固定顶层章节 {missing}")
 
@@ -450,6 +457,77 @@ def validate_gate1(
 # --------------------------------------------------------------------------- #
 
 
+def validate_versions(
+    features_dir: pathlib.Path,
+    root: pathlib.Path,
+    errors: list[str],
+) -> None:
+    """校验每个 version-spec 的元数据与状态转换（§3.1/§4.3）。"""
+    for vdir in discover_versions(features_dir):
+        spec_path = vdir / "spec.md"
+        where = f"version {vdir.name}"
+        front = parse_frontmatter(spec_path.read_text(encoding="utf-8"))
+        validate_frontmatter_meta(front, errors, where)
+        if front.get("kind") != "version-spec":
+            fail(errors, f"{where}: kind 必须为 version-spec")
+        if front.get("gate_version") not in (None, 0):
+            fail(errors, f"{where}: version-spec 不应有 gate_version")
+        if front.get("status") == "done":
+            # 版本 done 必须关联 release、closed_at 与全部里程碑完成证据（§5）。
+            rel = root / "docs" / "features" / "releases" / f"{front.get('version')}.md"
+            if not rel.is_file():
+                fail(errors, f"{where}: status=done 但缺 release {rel.name}")
+                continue
+            release_text = rel.read_text(encoding="utf-8")
+            if "closed_at" not in release_text:
+                fail(errors, f"{where}: release 缺 closed_at")
+            for mdir in discover_milestones(vdir):
+                mfront = parse_frontmatter((mdir / "spec.md").read_text(encoding="utf-8"))
+                if mfront.get("status") != "done":
+                    fail(errors, f"{where}: status=done 但里程碑 {mfront.get('id')} 未 done")
+
+
+def check_ownership_index(
+    features_dir: pathlib.Path,
+    root: pathlib.Path,
+    errors: list[str],
+) -> None:
+    """校验 docs/README.md 所有权索引链接存在且指向真实文件（§4.3 item 6）。"""
+    readme = root / "docs" / "README.md"
+    if not readme.is_file():
+        fail(errors, "缺 docs/README.md 所有权索引")
+        return
+    check_markdown_links(readme.read_text(encoding="utf-8"), readme.parent, errors, "docs/README")
+    check_links_out_of_repo(
+        readme.read_text(encoding="utf-8"), readme.parent, root, errors, "docs/README"
+    )
+
+
+def check_docs_links(
+    root: pathlib.Path,
+    errors: list[str],
+) -> None:
+    """遍历维护中文档，校验相对链接存在且留在仓库边界内。"""
+    skip = {
+        "conversations",
+        ".git",
+        "__pycache__",
+        ".claude",
+        ".code-review-graph",
+        ".sisyphus",
+        ".pytest_cache",
+        ".ruff_cache",
+        "data",
+    }
+    for p in root.rglob("*.md"):
+        rel = p.relative_to(root)
+        if any(part in skip for part in rel.parts):
+            continue
+        text = p.read_text(encoding="utf-8")
+        check_markdown_links(text, p.parent, errors, str(rel))
+        check_links_out_of_repo(text, p.parent, root, errors, str(rel))
+
+
 def validate_spec_lifecycle(
     features_dir: pathlib.Path,
     root: pathlib.Path,
@@ -462,10 +540,11 @@ def validate_spec_lifecycle(
     all_ids = collect_all_milestones(features_dir)
     validate_ids_unique(all_ids, errors)
     validate_prerequisites(all_ids, errors)
+    validate_versions(features_dir, root, errors)
+    check_ownership_index(features_dir, root, errors)
+    check_docs_links(root, errors)
 
     for mid, (mdir, front) in all_ids.items():
-        if "__dup__" in front:
-            continue
         where = f"milestone {mid}"
         validate_frontmatter_meta(front, errors, where)
         spec_path = mdir / "spec.md"
@@ -487,6 +566,5 @@ def validate_spec_lifecycle(
                 spec_text, design_text, tasks_text, errors, where, front.get("status", "")
             )
 
-        # 状态唯一性：design/tasks 不得声明独立 status
-        if design_path.is_file():
-            check_status_uniqueness(design_text, tasks_text, errors, where)
+        # 状态唯一性：design/tasks 独立检查，不依赖 design 存在
+        check_status_uniqueness(design_text, tasks_text, errors, where)
