@@ -210,15 +210,11 @@ def collect_all_milestones(
 
 
 def validate_ids_unique(all_ids: dict[str, tuple[pathlib.Path, dict]], errors: list[str]) -> None:
-    """同类 ID 全仓唯一；里程碑 ID 与目录名一致。"""
-    for mid, (_dir, front) in all_ids.items():
-        if "__dup__" in front:
-            fail(errors, f"里程碑 ID {mid} 重复")
-        elif front.get("id") != _dir.name.split("-")[0] and not str(mid).startswith(_dir.name):
-            pass  # id 与目录名不必字符串相等，但须有对应关系
+    """同类 ID 全仓唯一。"""
     seen: dict[str, pathlib.Path] = {}
     for mid, (mdir, front) in all_ids.items():
         if "__dup__" in front:
+            fail(errors, f"里程碑 ID {mid} 重复")
             continue
         if mid in seen:
             fail(errors, f"里程碑 ID {mid} 在全仓重复（{seen[mid]} 与 {mdir}）")
