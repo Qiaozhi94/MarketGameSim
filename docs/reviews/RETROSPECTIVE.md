@@ -155,3 +155,33 @@ open"而非"忘了关",`status` 上和真正的遗留 bug 要区分开。
 失效。来源分布为 `original-coding` 5、`fix-regression` 1；最长存活的是
 `v013-integrity-guards-fail-open`，从第 1 轮到第 4 轮关闭。后续验证器应优先使用结构化
 状态（显式 missing sentinel、完整键集、非空实际差分），并为正反两个方向同时建测试。
+
+---
+
+## 循环 5: 目录结构改造代码/文档检视
+
+- **report_type**: code-review（含 doc-review 并行通道）
+- **周期**: 2026-08-10，2 轮（首轮全量 + 一轮 diff-only 复核）
+- **状态**: 已闭环。HEAD `26dfa00`；本地 1562 tests、`validate_spec_lifecycle`、
+  `verify.py` 全绿
+- **结论**: 2 个 High（链接/所有权门禁未接线、版本收口规则未执行）+ 4 个 Medium/Low
+  原始缺陷 + 1 条 round-1 修复引入的死代码，全部关闭
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| STRUCT-C001 | 链接与文档所有权门禁未接入生产校验入口 | High | correctness | root-cause | process-gap | fixed | validate_spec_lifecycle 调用 check_docs_links 与 check_ownership_index | `tests/unit/test_spec_lifecycle.py::test_entry_level_dead_link_rejected`; `::test_entry_level_dir_as_file_rejected`; `::test_ownership_index_missing_fails`; `::test_ownership_index_broken_link_fails` | 1 | 1 | test-simulates-itself |
+| STRUCT-C002 | 版本级生命周期与 release 收口规则未执行 | High | correctness | root-cause | process-gap | fixed | 新增 validate_versions：版本 done 强制关联 release/closed_at/全部里程碑 done | `tests/unit/test_spec_lifecycle.py::test_version_done_without_release_fails`; `::test_version_done_release_without_closed_at_fails`; `::test_version_done_with_pending_milestone_fails`; `::test_version_done_valid_closes_clean` | 1 | 1 | marked-done-not-implemented |
+| prereq-cycle-false-positive | 环检测对菱形依赖误报 | Medium | correctness | root-cause | original-coding | fixed | 三色 DFS 只判当前路径回边 | `tests/unit/test_spec_lifecycle.py::test_prereq_diamond_not_flagged_as_cycle` | 1 | 1 | — |
+| tasks-status-uniqueness-skipped | gate-0 里程碑 tasks 状态不被检查 | Medium | correctness | root-cause | original-coding | fixed | 独立检查 design 与 tasks，不以 design 存在为前置 | `tests/unit/test_spec_lifecycle.py::test_tasks_status_uniqueness_without_design` | 1 | 1 | — |
+| dup-id-info-lost | 重复 ID 覆盖丢失首个信息 | Low | quality | root-cause | original-coding | fixed | 保留首个条目，重复追加 __dups__ | `tests/unit/test_spec_lifecycle.py::test_dup_id_preserves_dups` | 1 | 1 | — |
+| section-substring-match | 章节子串匹配误匹配 | Low | quality | root-cause | original-coding | fixed | 精确匹配顶层标题 | `tests/unit/test_spec_lifecycle.py` test_gate1_* | 1 | 1 | — |
+| STRUCT-D001 | releases 目录未纳入 Git 且链接指向目录 | Medium | correctness | root-cause | process-gap | fixed | 新增 releases/README.md 索引，链接改到该文件 | `tests/unit/test_spec_lifecycle.py::test_entry_level_dir_as_file_rejected` | 1 | 1 | marked-done-not-implemented |
+| STRUCT-D002 | 改造方案顶部仍称 M030 待确认 | Low | quality | root-cause | spec-drift | fixed | 顶部状态同步为 M030 已完成 | — | 1 | 1 | cross-feature-contract-drift |
+| STRUCT-C003 | round-1 修复遗留死代码（seen dict 永不触发） | Low | quality | symptom | fix-regression | fixed | 移除永不触发的 seen 逻辑 | `tests/unit/test_spec_lifecycle.py::test_dup_id_preserves_dups` | 2 | 2 | — |
+
+**模式性教训**: 两个 High 都属于 `marked-done-not-implemented`/`test-simulates-itself`——
+把校验函数"写出来"却"没接进生产入口"，CLI 还输出"链接校验通过"，绿灯成了假阳性。
+这类缺陷只有"入口级接线测试"能抓住（只测孤立纯函数永远发现不了函数从未被调用）。
+来源分布为 `process-gap` 4、`original-coding` 4、`fix-regression` 1、`spec-drift` 1；
+round-1 修复自身引入 1 条死代码（STRUCT-C003），被第 2 轮 diff-only 复核发现，印证了
+"修复自伤率每轮 20-30%"——1 轮就宣布闭环是假闭环。
