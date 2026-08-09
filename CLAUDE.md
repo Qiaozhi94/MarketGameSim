@@ -9,15 +9,13 @@
 
 ## 提交前必须本地跑通
 
+唯一公开验证入口（真源、生命周期、链接、所有权、pytest、ruff 全部覆盖）：
+
 ```bash
 python tools/verify.py
 ```
 
-```bash
-pytest
-ruff check .
-ruff format --check .
-```
+`verify.py` 失败即返回非零。各底层命令仍可单独用于定位，但不再各自维护完整命令清单。
 
 CI 的 `lint` job 与 `test` job 是独立的两步，`pytest` 全绿不代表 `ruff` 也会通过——
 0.1.1 首次提交时就因为没跑 lint，被 CI 的 `ruff check .` 挡下 105 处违规（多数是
@@ -26,7 +24,7 @@ CI 的 `lint` job 与 `test` job 是独立的两步，`pytest` 全绿不代表 `
 
 `ruff format .` 与 `ruff check . --fix` 能自动处理大部分问题（超长行、未排序/未使用
 的 import 等）；剩下的（未使用变量、过宽的异常断言、废弃写法等）需要手工看一眼再改，
-改完重新跑一遍上面三条确认全绿。
+改完重新跑一遍 `python tools/verify.py` 确认全绿。
 
 ## 推送到远程后必须确认 CI 真的通过，不能推完就当结束
 
@@ -34,7 +32,7 @@ CI 的 `lint` job 与 `test` job 是独立的两步，`pytest` 全绿不代表 `
 全绿（见下一节的工具版本漂移问题，以及 CI 环境本身和本地终究不是同一个
 环境）。每次 `push` 之后用 `gh run watch <run-id> --exit-status`（或先
 `gh run list --limit 1` 拿到本次的 run id）等它跑完，确认全部 job（目前是
-真源自校验、`ruff`、`pytest` 3.11、`pytest` 3.13，共 4 个）都是绿的，再把
+真源与生命周期校验、`ruff`、`pytest` 3.11、`pytest` 3.13，共 4 个）都是绿的，再把
 这次任务当作完成。如果红了，当场排查修复、重新提交推送、再等一轮 CI，
 不能先汇报"已完成"再回头补救。
 

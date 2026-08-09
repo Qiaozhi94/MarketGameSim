@@ -1,7 +1,18 @@
+---
+kind: milestone
+id: 0.1.1
+parent: v0.1-belief-testing-laboratory
+version: "0.1"
+status: done
+gate_version: 0
+created: 2026-08-01
+updated: 2026-08-09
+prerequisites: []
+---
+
 # 0.1.1：最小确定性内核（无杠杆）
 
 **父规格**：[`../spec.md`](../spec.md)　**架构**：[`../design.md`](../design.md)  
-**状态**：Ready（实现合同已闭合；P0-I01/I02、P0-K01—K03、P0-L01/L02 均已关闭）  
 **任务拆解**：[`tasks.md`](tasks.md)  
 **创建日期**：2026-08-01　**更新日期**：2026-08-02
 

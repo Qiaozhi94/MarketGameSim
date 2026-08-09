@@ -676,30 +676,30 @@ constitution 完成职责分解后再确认整个 `.specify/` 已删除。
 
 ### Phase C：状态元数据、共享校验与测试
 
-- [ ] M015：迁移 version/milestone spec frontmatter，写入 canonical status、prerequisites
+- [x] M015：迁移 version/milestone spec frontmatter，写入 canonical status、prerequisites
   与 gate_version，移除 design/tasks 的重复 Status。
-- [ ] M016：为 0.1.4 补正式 design 并对齐三份新模板；不补写 0.1.1—0.1.3 的历史 design。
-- [ ] M017：抽取 `tools/spec_validation.py`，复用现有 owner/path/exit 判据。
-- [ ] M018 [P]：实现 `validate_spec_lifecycle.py` 薄 CLI 和链接/文档所有权校验。
-- [ ] M019：保留现有 23 个真源测试，并补 gate v0/v1、三件套结构、Q/DQ、AC/tests、
+- [x] M016：为 0.1.4 补正式 design 并对齐三份新模板；不补写 0.1.1—0.1.3 的历史 design。
+- [x] M017：抽取 `tools/spec_validation.py`，复用现有 owner/path/exit 判据。
+- [x] M018 [P]：实现 `validate_spec_lifecycle.py` 薄 CLI 和链接/文档所有权校验。
+- [x] M019：保留现有 23 个真源测试，并补 gate v0/v1、三件套结构、Q/DQ、AC/tests、
   prerequisite、owner/exit 和批量场景测试。
-- [ ] M020：实现 `tools/verify.py`，统一运行真源、生命周期、链接、所有权、pytest 和 ruff。
-- [ ] M021：更新 SOP、CLAUDE、README 与工具说明，公开验证入口统一为
+- [x] M020：实现 `tools/verify.py`，统一运行真源、生命周期、链接、所有权、pytest 和 ruff。
+- [x] M021：更新 SOP、CLAUDE、README 与工具说明，公开验证入口统一为
   `python tools/verify.py`。
 
 ### Phase D：入口与版本逻辑收口
 
-- [ ] M022：新增 `docs/README.md` 所有权地图，验证两次点击内可到达全部权威文档。
-- [ ] M023：更新根 README、CLAUDE 和 `tools/README.md`，删除重复状态与完整命令清单。
-- [ ] M024：新增 `docs/features/0.1/README.md`，保留稳定路径并说明 legacy design 规则。
+- [x] M022：新增 `docs/README.md` 所有权地图，验证两次点击内可到达全部权威文档。
+- [x] M023：更新根 README、CLAUDE 和 `tools/README.md`，删除重复状态与完整命令清单。
+- [x] M024：新增 `docs/features/0.1/README.md`，保留稳定路径并说明 legacy design 规则。
 - [ ] M025：仅在全部里程碑 done 后生成 `docs/features/releases/0.1.md`、写入
   `closed_at`；条件未满足时保持未勾。
 - [x] M026：把本方案迁入 `docs/reviews/`，按 review 协议处置根 `code-review-report.md`。
 
 ### Phase E：工具版本、CI 与最终验收
 
-- [ ] M027：为 pytest、ruff 等开发工具锁定有上界的版本范围，并用该版本本地验证。
-- [ ] M028：更新 CI 使用 `python tools/verify.py`，保持真源、ruff、pytest 3.11/3.13
+- [x] M027：为 pytest、ruff 等开发工具锁定有上界的版本范围，并用该版本本地验证。
+- [x] M028：更新 CI 使用 `python tools/verify.py`，保持真源、ruff、pytest 3.11/3.13
   四个必需 job 的职责清楚且无重复执行。
 - [ ] M029：运行 `python tools/verify.py`，逐项核对第 12 节五项验收标准并记录结果。
 - [ ] M030：提交并推送，使用 `gh run watch <run-id> --exit-status` 确认当前 HEAD 的全部
