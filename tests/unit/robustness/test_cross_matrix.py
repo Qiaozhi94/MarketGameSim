@@ -84,6 +84,31 @@ class TestReport:
         # per-mapping: linear has {+1,-1} -> not all same; matrix not same
         assert r["same_direction"] is False
 
+    def test_zero_direction_cells_break_same_direction(self):
+        # v013 regression (critical): two +1 and two 0-direction cells must
+        # NOT yield "同向成立" -- the zero cells show no effect, so the claim
+        # does not hold across the whole matrix (dependency boundary).
+        m = _full_matrix(+1)
+        m.cells[2].effect_direction = 0
+        m.cells[3].effect_direction = 0
+        r = m.report(FAMILIES, MAPPINGS)
+        assert r["same_direction"] is False
+        assert r["conclusion"] == "依赖边界"
+
+    def test_all_zero_direction_insufficient(self):
+        m = _full_matrix(+1)
+        for c in m.cells:
+            c.effect_direction = 0
+        r = m.report(FAMILIES, MAPPINGS)
+        assert r["conclusion"] == "证据不足"
+
+    def test_one_non_significant_cell_insufficient(self):
+        m = _full_matrix(+1)
+        m.cells[3].significant = False
+        r = m.report(FAMILIES, MAPPINGS)
+        assert r["same_direction"] is False
+        assert r["conclusion"] == "依赖边界"
+
 
 class TestCellLookup:
     def test_lookup(self):

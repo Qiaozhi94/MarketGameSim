@@ -62,3 +62,34 @@ class TestFamilies:
     def test_unknown_family_fails(self):
         with pytest.raises(ModelFamilyError, match="unknown model family"):
             family_signal("nope", _factors(), _weights())
+
+
+class TestSignalFamilyAblationNameBinding:
+    """v013 regression (high): after ablation the list is shortened; signal
+    family must select factors BY NAME, never by original position (which
+    would silently consume the wrong factor)."""
+
+    def test_ablate_other_factor_keeps_momentum_book(self):
+        # remove noise: momentum+book remain, order preserved
+        from market_game_sim.agent.families import apply_ablation_named
+
+        values, w, names = apply_ablation_named(_factors(), _weights(), "noise")
+        s = signal_family_signal(values, w, names)
+        # must equal signal computed from original momentum+book directly
+        expected = signal_family_signal(
+            [_factors()[0], _factors()[3]], _weights(), ("momentum", "book")
+        )
+        assert s == expected
+
+    def test_ablate_book_fails_closed(self):
+        # book removed -> signal_family's required factor is missing -> reject,
+        # never silently substitute another factor at the old index
+        from market_game_sim.agent.families import apply_ablation_named
+
+        values, w, names = apply_ablation_named(_factors(), _weights(), "book")
+        with pytest.raises(ModelFamilyError, match="missing after ablation"):
+            signal_family_signal(values, w, names)
+
+    def test_name_value_length_mismatch_fails(self):
+        with pytest.raises(ModelFamilyError, match="length mismatch"):
+            signal_family_signal([_factors()[0]], _weights(), ("momentum", "book"))

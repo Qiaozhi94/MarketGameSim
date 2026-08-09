@@ -36,7 +36,16 @@ class HoldoutRunTracker:
 
     def request_rerun(self, run_id: str, reason: str) -> None:
         """Record a failed holdout attempt; allowed only for technical
-        failures.  Every failed attempt is retained with its run id."""
+        failures BEFORE completion.  Every failed attempt is retained with its
+        run id.
+
+        v013: after the holdout run completed, no re-run may be requested --
+        the holdout runs exactly once with a frozen plan."""
+        if self.completed_run_id is not None:
+            raise HoldoutRunError(
+                f"holdout already completed ({self.completed_run_id}); "
+                "no re-run allowed after completion"
+            )
         if reason not in TECHNICAL_RETRY_REASONS:
             raise HoldoutRunError(
                 f"holdout re-run reason {reason!r} is not a technical failure; "
@@ -45,6 +54,13 @@ class HoldoutRunTracker:
         self.attempts.append(FailedAttempt(run_id=run_id, reason=reason))
 
     def mark_completed(self, run_id: str) -> None:
+        """v013: the completed id may be set exactly once; overwriting it (or
+        completing after a previous completion) is rejected."""
+        if self.completed_run_id is not None:
+            raise HoldoutRunError(
+                f"holdout already completed with {self.completed_run_id}; "
+                f"refusing to overwrite with {run_id}"
+            )
         self.completed_run_id = run_id
 
 

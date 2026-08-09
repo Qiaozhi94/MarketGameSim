@@ -42,6 +42,12 @@ from market_game_sim.metrics.validation import build_market_validation_matrix
 from market_game_sim.verify import check_causal_references
 
 
+class BridgeResidualError(RuntimeError):
+    """KPI-009 hard gate: a run whose PnL bridge residual is non-zero is
+    rejected (v013: explicit exception, never ``assert`` which ``python -O``
+    strips)."""
+
+
 def check_paired_parity(
     control: ExperimentConfig,
     treatment: ExperimentConfig,
@@ -97,11 +103,22 @@ def check_shared_randomness_parity(
             return f"paired seed mismatch: control={c_run.seed} treatment={t_run.seed}"
         c_signals = _signal_bp_by_agent_decision(c_run.events)
         t_signals = _signal_bp_by_agent_decision(t_run.events)
-        for key in c_signals.keys() & t_signals.keys():
-            if c_signals[key] != t_signals[key]:
+        # v013 (high): compare the FULL semantic-key sets, not just the
+        # intersection.  A key present in only one arm means the two runs did
+        # not consume the same random path (misaligned draw consumption) --
+        # that must fail-closed, never be silently ignored.
+        if set(c_signals) != set(t_signals):
+            only_c = sorted(set(c_signals) - set(t_signals))
+            only_t = sorted(set(t_signals) - set(c_signals))
+            return (
+                f"seed={c_run.seed} semantic-key sets differ: "
+                f"only-in-control={only_c[:5]} only-in-treatment={only_t[:5]}"
+            )
+        for key, c_val in c_signals.items():
+            if c_val != t_signals[key]:
                 return (
                     f"seed={c_run.seed} agent/decision={key}: signal_bp differs "
-                    f"control={c_signals[key]} treatment={t_signals[key]}"
+                    f"control={c_val} treatment={t_signals[key]}"
                 )
     return None
 
@@ -570,6 +587,10 @@ def _verify_bridge_residuals(events: list[dict], mult: int) -> None:
     ``mult`` must match the run's cash-unit scaling factor
     (``ExperimentConfig.mult``) so bridge_trade's tick-domain components
     are denominated consistently with ``wallet_delta_units``.
+
+    v013 (high) fix: raises BridgeResidualError instead of ``assert`` --
+    ``python -O`` strips asserts, which would silently accept a non-zero
+    residual in optimized runs (KPI-009 is a hard production gate).
     """
     for e in events:
         if e.get("event_type") != "TRADE_SETTLE":
@@ -588,6 +609,7 @@ def _verify_bridge_residuals(events: list[dict], mult: int) -> None:
                 - p.get("position_delta_units", 0),
                 mult=mult,
             )
-            assert result["residual"] == 0, (
-                f"PnL bridge residual {result['residual']} != 0 for {e.get('trade_id')}"
-            )
+            if result["residual"] != 0:
+                raise BridgeResidualError(
+                    f"PnL bridge residual {result['residual']} != 0 for {e.get('trade_id')}"
+                )

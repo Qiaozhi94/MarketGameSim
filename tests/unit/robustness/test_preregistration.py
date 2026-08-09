@@ -68,6 +68,14 @@ class TestValidate:
         p.alternative_behavior_mappings = []
         assert "no alternative behavior mappings preregistered" in p.validate()
 
+    def test_linear_only_is_not_an_alternative(self):
+        """v013 regression (high): a preregistration whose only mapping is
+        ``linear`` must fail -- T003 requires at least one ALTERNATIVE mapping
+        (the old condition only fired on an empty list)."""
+        p = _complete()
+        p.alternative_behavior_mappings = ["linear"]
+        assert "no alternative behavior mappings preregistered" in p.validate()
+
     def test_fewer_than_two_families_fails(self):
         p = _complete()
         p.model_families = p.model_families[:1]

@@ -9,7 +9,11 @@ from market_game_sim.agent.factors import herding as herding_factor
 from market_game_sim.agent.factors import momentum as momentum_factor
 from market_game_sim.agent.factors import noise as noise_factor
 from market_game_sim.agent.factors import reversion as reversion_factor
-from market_game_sim.agent.families import apply_ablation, family_signal
+from market_game_sim.agent.families import (
+    FACTOR_ORDER,
+    apply_ablation_named,
+    family_signal,
+)
 from market_game_sim.agent.observation import Bar, InformationSet
 from market_game_sim.agent.scheduler import AgentSpec
 from market_game_sim.agent.strategy import (
@@ -211,8 +215,15 @@ def _compute_belief_signal(
     disabled = world.get("disabled_factor")
     factor_values = [mf, rf, hf, bf, nf]
     if disabled is not None:
-        factor_values, weights = apply_ablation(factor_values, weights, disabled)
-    return family_signal(family_id, factor_values, weights)
+        # v013 (high) fix: carry the retained factor NAMES through ablation so
+        # the family selects by name -- selecting by original index on the
+        # shortened list would consume the wrong factor.
+        factor_values, weights, factor_names = apply_ablation_named(
+            factor_values, weights, disabled
+        )
+    else:
+        factor_names = FACTOR_ORDER
+    return family_signal(family_id, factor_values, weights, factor_names)
 
 
 def _bars_from_history(trades: list[dict], bar_ns: int) -> list:
