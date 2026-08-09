@@ -216,14 +216,9 @@ def collect_all_milestones(
 
 def validate_ids_unique(all_ids: dict[str, tuple[pathlib.Path, dict]], errors: list[str]) -> None:
     """同类 ID 全仓唯一。"""
-    seen: dict[str, pathlib.Path] = {}
     for mid, (mdir, front) in all_ids.items():
         for dup in front.get("__dups__", []):
             fail(errors, f"里程碑 ID {mid} 重复（{mdir} 与 {dup}）")
-        if mid in seen:
-            fail(errors, f"里程碑 ID {mid} 在全仓重复（{seen[mid]} 与 {mdir}）")
-        else:
-            seen[mid] = mdir
 
 
 # --------------------------------------------------------------------------- #
