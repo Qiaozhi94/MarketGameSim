@@ -52,9 +52,7 @@ def validate_capability_attributions(
         # legitimate evidence values, not missing evidence
         missing = [e for e in REQUIRED_EVIDENCE if attr.evidence.get(e) is None]
         if missing:
-            violations.append(
-                f"{attr.dimension} attribution missing evidence: {missing}"
-            )
+            violations.append(f"{attr.dimension} attribution missing evidence: {missing}")
     return violations
 
 
