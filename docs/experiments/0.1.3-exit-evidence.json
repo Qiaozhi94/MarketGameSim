@@ -1,0 +1,148 @@
+{
+  "milestone": "0.1.3",
+  "run": "exit-checklist demonstration",
+  "seeds": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "max_transactions": 30000,
+  "E1_cross_matrix": {
+    "report": {
+      "complete": true,
+      "missing": [],
+      "same_direction": true,
+      "directions": [
+        1
+      ],
+      "mapping_direction_counts": {
+        "linear": [
+          1
+        ],
+        "threshold": [
+          1
+        ]
+      },
+      "family_direction_counts": {
+        "belief_family": [
+          1
+        ],
+        "signal_family": [
+          1
+        ]
+      },
+      "conclusion": "同向成立"
+    },
+    "family_effect": {
+      "belief_family": 220.0,
+      "signal_family": 220.0
+    },
+    "mapping_effect": {
+      "linear": 220.0,
+      "threshold": 220.0
+    },
+    "cells": [
+      {
+        "family": "belief_family",
+        "mapping": "linear",
+        "effect_size": 220.0,
+        "significant": true
+      },
+      {
+        "family": "belief_family",
+        "mapping": "threshold",
+        "effect_size": 220.0,
+        "significant": true
+      },
+      {
+        "family": "signal_family",
+        "mapping": "linear",
+        "effect_size": 220.0,
+        "significant": true
+      },
+      {
+        "family": "signal_family",
+        "mapping": "threshold",
+        "effect_size": 220.0,
+        "significant": true
+      }
+    ]
+  },
+  "E2_parameter_scan": {
+    "cells": [
+      {
+        "maint_bp": 300,
+        "effect": 94.0,
+        "category": "COMPLETED"
+      },
+      {
+        "maint_bp": 500,
+        "effect": 220.0,
+        "category": "COMPLETED"
+      },
+      {
+        "maint_bp": 700,
+        "effect": 220.0,
+        "category": "COMPLETED"
+      }
+    ],
+    "boundary": {
+      "axis": "500",
+      "crossing_index": 1,
+      "crossing_interval": [
+        300,
+        500
+      ],
+      "resolution": 200,
+      "threshold_crossed": true,
+      "monotonic_axis_ordered": true
+    }
+  },
+  "E3_ablation": {
+    "baseline_effect": 220.0,
+    "factors": [
+      {
+        "factor": "momentum",
+        "verdict": "INSUFFICIENT_EVIDENCE",
+        "effect": 220.0
+      },
+      {
+        "factor": "reversion",
+        "verdict": "INSUFFICIENT_EVIDENCE",
+        "effect": 220.0
+      },
+      {
+        "factor": "herding",
+        "verdict": "INSUFFICIENT_EVIDENCE",
+        "effect": 220.0
+      },
+      {
+        "factor": "book",
+        "verdict": "INSUFFICIENT_EVIDENCE",
+        "effect": 220.0
+      },
+      {
+        "factor": "noise",
+        "verdict": "INSUFFICIENT_EVIDENCE",
+        "effect": 220.0
+      }
+    ]
+  },
+  "E4_holdout": {
+    "contamination": [],
+    "comparison": {
+      "direction_consistent": true,
+      "effect_size_diff": 220.0,
+      "interval_overlap": true,
+      "replication_passed": false,
+      "note": "replication criterion not met; reported as-is"
+    }
+  },
+  "E5_checks": {
+    "bridge_all_zero": true,
+    "runs_checked": 5,
+    "capability_attributions_empty": true
+  }
+}

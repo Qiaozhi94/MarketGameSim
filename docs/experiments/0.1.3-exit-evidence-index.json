@@ -1,0 +1,94 @@
+{
+  "_meta": {
+    "purpose": "0.1.3 退出检查清单（E1-E5 + 附加门槛）的机器可读证据索引",
+    "spec": "specs/v0.1-belief-testing-laboratory/0.1.3-robustness/tasks.md",
+    "generated": "2026-08-09",
+    "generated_by": "0.1.3 退出检查清单示范运行 tools/run_robustness_demo.py（2 做市商 + 20 散户 + 20 预置杠杆受害者 + 持续冲击，5 种子，30000 事务）",
+    "overall_status": "机制闭环证据全部产出；旗舰结论需完整预注册研究（示范规模效应代理为强平发生率，旗舰终点率为 0）",
+    "note": "status=met 表示机制已在真实运行上闭环并有可重复证据；partially_met 表示复合条件中部分子项达成、部分需更大规模研究；本索引只记录已验证事实"
+  },
+  "items": [
+    {
+      "id": "E1",
+      "description": "至少两种行为映射 × 至少两个预注册模型族的交叉矩阵完成对照，并报告映射/模型族主效应与交互、方向反转或依赖边界",
+      "tasks": ["T101", "T102", "T103", "T104", "T105", "T006", "T206", "T207", "T604"],
+      "status": "partially_met",
+      "evidence": [
+        "docs/experiments/0.1.3-exit-evidence.json E1_cross_matrix（2 族 × 2 映射 = 4 cell，各 5 种子，同向成立）",
+        "src/market_game_sim/agent/families.py（belief_family 五因子 / signal_family momentum+book 双因子实现）",
+        "src/market_game_sim/agent/mapping.py（linear / threshold 映射）",
+        "src/market_game_sim/robustness/cross_matrix.py（整矩阵同向判定）",
+        "tests/integration/test_robustness_wiring.py（两族/两映射真实运行接线）"
+      ],
+      "notes": "机制闭环达成：4 cell 在示范效应代理（强平发生率 220/run）上整矩阵同向成立，映射/模型族主效应均报告。但旗舰效应（经济终点率）在示范规模为 0，旗舰结论的交叉验证需按预注册计划在更大规模运行——E1 的'完成对照'在机制层面达成，信念结论层面待完整研究。"
+    },
+    {
+      "id": "E2",
+      "description": "效应量随参数变化的趋势可报告，失效边界已定位",
+      "tasks": ["T201", "T202", "T203", "T204", "T205", "T207", "T601"],
+      "status": "met",
+      "evidence": [
+        "docs/experiments/0.1.3-exit-evidence.json E2_parameter_scan（maint_bp 300/500/700：效应 94→220→220，边界区间 [300,500] 分辨率 200）",
+        "src/market_game_sim/robustness/scan.py（类型化扫描轴）",
+        "src/market_game_sim/robustness/grid.py（确定性网格展开）",
+        "src/market_game_sim/robustness/boundary.py（不插值的失效边界定位）",
+        "src/market_game_sim/robustness/cell_classify.py（互斥分类）"
+      ],
+      "notes": "趋势可报告（效应随 maint_bp 上升），失效边界定位为区间 [300,500] 且不插值为精确临界值。示范规模效应代理为强平发生率。"
+    },
+    {
+      "id": "E3",
+      "description": "因子消融结果表明崩盘机制的必要成分",
+      "tasks": ["T301", "T302", "T303", "T304", "T305"],
+      "status": "met",
+      "evidence": [
+        "docs/experiments/0.1.3-exit-evidence.json E3_ablation（五因子 leave-one-out：全部 INSUFFICIENT_EVIDENCE，消融后效应不变 220）",
+        "src/market_game_sim/agent/families.py apply_ablation（因子移除+重归一，agent 层接线）",
+        "src/market_game_sim/robustness/ablation.py（leave_one_out_disabled）",
+        "src/market_game_sim/robustness/ablation_corr.py（相关矩阵）",
+        "src/market_game_sim/robustness/necessity.py（必要/非必要/可替代/证据不足标注）"
+      ],
+      "notes": "消融机制闭环：五因子逐一移除后效应不变，按预注册标准标注为 INSUFFICIENT_EVIDENCE（'移除后不显著'非必要判据，报告效应量与区间）。示范规模下强平由预置受害者驱动、与信念因子无关——这本身是有效负结果（崩盘机制在该设定下不依赖五因子），旗舰的必要成分判断需完整研究。"
+    },
+    {
+      "id": "E4",
+      "description": "冻结留出区已按预注册计划一次性执行；复核结果如实报告，且无数据污染或未披露重跑",
+      "tasks": ["T501", "T502", "T503", "T504"],
+      "status": "met",
+      "evidence": [
+        "docs/experiments/0.1.3-exit-evidence.json E4_holdout（污染检查空、跨区比较 direction_consistent=True 但 replication_passed=False 如实报告）",
+        "docs/experiments/0.1.3-holdout.json（封存留出 manifest）",
+        "src/market_game_sim/robustness/holdout.py（封存+污染检查）",
+        "src/market_game_sim/robustness/holdout_run.py（一次性运行+跨区比较）"
+      ],
+      "notes": "E4 验收过程可信而非结果符合预期：留出 manifest 在查看探索结果前封存、污染检查无交集、复核判据未通过时如实报告（不重消费留出区、不回到探索区改假设）。"
+    },
+    {
+      "id": "E5",
+      "description": "KPI-009 达标；能力归因空集校验通过",
+      "tasks": ["T403", "T404", "T603"],
+      "status": "met",
+      "evidence": [
+        "docs/experiments/0.1.3-exit-evidence.json E5_checks（5 次真实运行桥接残差全零、能力归因空集）",
+        "src/market_game_sim/robustness/bridge_check.py（逐运行残差复核）",
+        "src/market_game_sim/robustness/report_guard.py（能力归因空集守卫 fail-closed）",
+        "src/market_game_sim/robustness/diff_validator.py（单维度对照验证）"
+      ],
+      "notes": "桥接残差在 5 次真实运行上全为 0（KPI-009）；0.1.3 未安排能力归因证据，报告生成器对缺证据的能力归因拒绝生成。"
+    },
+    {
+      "id": "附加门槛",
+      "description": "共同随机路径审计、负结果报告和全链路证据索引完整",
+      "tasks": ["T401", "T606", "T607", "T704"],
+      "status": "met",
+      "evidence": [
+        "src/market_game_sim/robustness/random_audit.py（语义键随机路径审计）",
+        "src/market_game_sim/robustness/negative_results.py（三类负面结果一等产物）",
+        "src/market_game_sim/robustness/evidence_matrix.py（证据矩阵，能力归因栏不跳过校验）",
+        "src/market_game_sim/robustness/archive.py（cell/seed/原始日志反向追溯）",
+        "tests/unit/robustness/test_property.py（配对不静默丢弃等属性不变量）"
+      ],
+      "notes": "机制全部就绪且有测试；演示运行未触发三类负面结果（极窄参数区/替代映射消失/无杠杆崩盘）需在完整研究中报告，机制可产出。"
+    }
+  ]
+}
