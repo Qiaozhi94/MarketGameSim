@@ -100,3 +100,31 @@ open"而非"忘了关",`status` 上和真正的遗留 bug 要区分开。
 | e1-behavior-mapping-family-cross-matrix | E1没有要求行为映射×模型族交叉,两个稳健性维度仍可能相互混淆 | High | correctness | root-cause | original-coding | fixed | T105建立`model_family_id×behavior_mapping_id`交叉对照矩阵 | T105/T207/T604/E1文档闭合 | 3 | 3 | — |
 | lifecycle-metadata-stale | 0.1.2已完成,但0.1.3生命周期元数据仍显示"待0.1.2退出" | Medium | maintainability | symptom-patch | spec-drift | fixed | spec/tasks/README状态改为`Ready`并同步 | spec/tasks/README状态一致 | 3 | 3 | marked-done-not-implemented |
 | model-family-config-diff-unvalidated | 模型族比较缺少对实际差分的校验,可能把非受控改动当作模型族变化 | High | correctness | root-cause | fix-regression | fixed | T403新增合法差分通过/额外字段拒绝/仅改ID拒绝三类TDD文档合同 | T403三类正反TDD文档合同 | 4 | 4 | — |
+
+---
+
+## 循环 3: 真源校验与 0.1.4 Artifact Schema 遗留闭环
+
+- **report_type**: fix-verification
+- **周期**: 2026-08-02 → 2026-08-09；遗留项修复后完成 2 轮复核
+- **状态**: 已闭环。提交 `f675f73`；本地 1503 tests、`ruff check .`、
+  `ruff format --check .`、`git diff --check` 全绿；CI `31316360078` 的真源校验、
+  Ruff、pytest 3.11 与 pytest 3.13 全部 `success`
+- **范围**: 原根目录 `code-review-report.md` 的 5 项 finding，加第 2 轮发现的 1 项
+  fix-regression。循环 0 的 P1-U01 行记录的是当时“不阻断 0.1.1/0.1.2”的历史分级；
+  本表按原检视报告的 High 严重度闭环并取代其 open 状态。
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| schema-validator-source-consistency | Schema validator 未覆盖字段 grammar、E-002 与文档字段表的一致性 | High | correctness | root-cause | original-coding | fixed | 增加字段 grammar、结构引用、封闭计数及 JSON↔Markdown/E-002 双向校验 | `tests/unit/test_contract_sources.py::test_schema_mutations_are_rejected`; `::test_new_field_missing_from_doc_is_rejected`; `::test_e002_missing_hash_field_is_rejected` | 1 | 1 | cross-source-contract-drift |
+| trace-validator-display-scope | Trace validator 未消费动态 ID family，且不校验 owner scope 与展示表 | High | correctness | root-cause | original-coding | fixed | 从 `tracked_id_families` 生成提取规则，校验 scope、owner、退出条件及展示矩阵 | `tests/unit/test_contract_sources.py::test_trace_mutations_are_rejected`; `::test_rendered_matrix_drift_is_rejected`; `::test_multi_digit_requirement_ids_are_extracted` | 1 | 1 | partial-symmetric-fix |
+| artifact-minimum-schema-unfrozen | 10 类上游 artifact 只有版本要求，没有实际最小列/键 Schema | High | correctness | root-cause | spec-drift | fixed | 新增 `report_artifacts.json`，冻结 producer、format、版本、shape 与递归字段类型，并由 spec/T001/T302 引用 | `tests/unit/test_contract_sources.py::test_artifact_schema_mutations_are_rejected`; `::test_artifact_schema_producer_drift_from_spec_is_rejected`; `::test_duplicate_artifact_row_in_spec_is_rejected` | 1 | 2 | schema-version-without-schema |
+| validator-tests-happy-path-only | 真源校验测试只有当前仓库 happy path，删除 guard 后仍可全绿 | Medium | test-coverage | root-cause | process-gap | fixed | 校验函数接收可变异 data/text，并为每类 guard 建立仓库内负向测试 | `tests/unit/test_contract_sources.py`（31 tests，含 27 个负向/漂移场景） | 1 | 1 | happy-path-only-gate |
+| fixed-pythonhashseed-masks-nondeterminism | 固定 `PYTHONHASHSEED=0` 无法发现误用内置 `hash()` 的跨进程差异 | Medium | test-coverage | root-cause | process-gap | fixed | 保留普通测试固定 seed，同时新增不同 seed 的独立进程输出比较 | `tests/integration/test_cross_process_determinism.py::test_output_is_byte_identical_across_different_hashseeds` | 1 | 1 | fixed-seed-hides-nondeterminism |
+| artifact-validator-third-truth-source | 首轮修复在 validator 中又手抄 artifact ID/producer 映射，形成第三真相源 | Medium | correctness | root-cause | fix-regression | fixed | 删除常量映射，完整性只由 registry↔spec 双向集合比较判定，并拒绝重复展示行 | `tests/unit/test_contract_sources.py::test_artifact_schema_mutations_are_rejected`; `::test_duplicate_artifact_row_in_spec_is_rejected` | 2 | 2 | cross-source-contract-drift |
+
+**模式性教训**: `cross-source-contract-drift` 在原始缺陷和首轮修复中各出现一次，说明
+“给真源加校验”本身也可能悄悄再造一份真相；正确结构是机器 registry 保存完整合同，
+人类展示表只做双向派生核对，validator 不得持有第三份业务映射。来源分布为
+`original-coding` 2、`spec-drift` 1、`process-gap` 2、`fix-regression` 1；最长存活的是
+`artifact-minimum-schema-unfrozen`，从第 1 轮到第 2 轮关闭，其余均在发现轮关闭。

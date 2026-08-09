@@ -1,15 +1,15 @@
 # AI 对话归档索引
 
-> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 21
+> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 52
 
 ## 工具统计
 
 | 工具 | 会话数 |
 |---|---|
 
-| OpenCode | 13 |
-| Claude Code | 4 |
-| Codex CLI | 4 |
+| OpenCode | 32 |
+| Claude Code | 9 |
+| Codex CLI | 11 |
 
 ## 会话血缘树
 
@@ -30,6 +30,30 @@
 - **v0.1.2 需求开发与进展标记** (`opencode` · 2026-08-02T15:15:53Z)
 - **3e6858a6-3cd1-4d5c-9c94-05ab5f20dcca** (`claude` · 2026-08-02T15:50:39Z)
 - **对话记录整合推送仓库用于AI复盘** (`opencode` · 2026-08-07T16:03:30Z)
+- **289bbd3f-d346-46b7-8982-19a469f8e37c** (`claude` · 2026-08-07T17:06:43Z)
+- **b0b5ecd1-97c9-4406-bfeb-aebd8ae80da1** (`claude` · 2026-08-09T02:56:17Z)
+- **5ce2e41d-b00a-4fe3-a342-b319b3b71ab9** (`claude` · 2026-08-09T03:13:12Z)
+- **0.1.3版本需求开发启动** (`opencode` · 2026-08-09T08:09:03Z)
+- **0.1.3版本需求代码开发** (`opencode` · 2026-08-09T08:10:09Z)
+  - Locate 0.1.2 evidence artifacts (@explore subagent) (`opencode` · 2026-08-09T08:22:10Z)
+  - Map experiment infrastructure APIs (@explore subagent) (`opencode` · 2026-08-09T08:22:19Z)
+  - Find TDD and exit-verification patterns (@explore subagent) (`opencode` · 2026-08-09T08:22:32Z)
+  - Map experiment run wiring for E1-E5 (@explore subagent) (`opencode` · 2026-08-09T11:58:20Z)
+  - Map experiment run wiring for E1-E5 (@explore subagent) (`opencode` · 2026-08-09T11:58:24Z)
+  - Map experiment run wiring for E1-E5 (@explore subagent) (`opencode` · 2026-08-09T11:58:24Z)
+  - Map experiment run wiring for E1-E5 (@explore subagent) (`opencode` · 2026-08-09T11:58:24Z)
+  - Map experiment run wiring for E1-E5 (@explore subagent) (`opencode` · 2026-08-09T11:58:24Z)
+  - Map experiment run wiring for E1-E5 (@explore subagent) (`opencode` · 2026-08-09T11:58:26Z)
+  - Assess exit-checklist evidence gaps (@explore subagent) (`opencode` · 2026-08-09T11:58:26Z)
+  - Map experiment run wiring for E1-E5 (@explore subagent) (`opencode` · 2026-08-09T11:58:27Z)
+  - Assess exit-checklist evidence gaps (@explore subagent) (`opencode` · 2026-08-09T11:58:31Z)
+  - Assess exit-checklist evidence gaps (@explore subagent) (`opencode` · 2026-08-09T11:58:31Z)
+  - Assess exit-checklist evidence gaps (@explore subagent) (`opencode` · 2026-08-09T11:58:32Z)
+  - Assess exit-checklist evidence gaps (@explore subagent) (`opencode` · 2026-08-09T11:58:32Z)
+  - Assess exit-checklist evidence gaps (@explore subagent) (`opencode` · 2026-08-09T11:58:34Z)
+  - Assess exit-checklist evidence gaps (@explore subagent) (`opencode` · 2026-08-09T11:58:34Z)
+- **3104e4f4-1477-4e53-8859-432885363307** (`claude` · 2026-08-09T08:37:14Z)
+- **af94eb8e-2e71-4606-a8a3-b656a49ce826** (`claude` · 2026-08-09T10:17:38Z)
 
 ## 原始会话清单
 
@@ -56,3 +80,34 @@
 | 2026-08-02T15:15:53Z | OpenCode | v0.1.2 需求开发与进展标记 | deepseek-v4-pro | `opencode/ses_03cf44642ffeB6KEElArd7w2mD.md` |
 | 2026-08-02T15:50:39Z | Claude Code | 3e6858a6-3cd1-4d5c-9c94-05ab5f20dcca | claude-sonnet-5 | `claude/3e6858a6-3cd1-4d5c-9c94-05ab5f20dcca.md` |
 | 2026-08-07T16:03:30Z | OpenCode | 对话记录整合推送仓库用于AI复盘 | deepseek-v4-flash | `opencode/ses_02308e02dffeBYl6HhuHiKP7RI.md` |
+| 2026-08-07T17:06:43Z | Claude Code | 289bbd3f-d346-46b7-8982-19a469f8e37c | claude-sonnet-5 | `claude/289bbd3f-d346-46b7-8982-19a469f8e37c.md` |
+| 2026-08-08T05:56:40Z | Codex CLI | rollout-2026-08-08T13-56-05-019fdff1-5e2c-7eb0-b362-d0a42383089f | openai | `codex/rollout-2026-08-08T13-56-05-019fdff1-5e2c-7eb0-b362-d0a42383089f.md` |
+| 2026-08-08T06:13:52Z | Codex CLI | rollout-2026-08-08T14-13-47-019fe001-9267-7862-b100-34c0fc781d15 | openai | `codex/rollout-2026-08-08T14-13-47-019fe001-9267-7862-b100-34c0fc781d15.md` |
+| 2026-08-09T02:54:59Z | Codex CLI | rollout-2026-08-09T10-54-42-019fe471-a894-70f0-aae0-1642e8a69583 | openai | `codex/rollout-2026-08-09T10-54-42-019fe471-a894-70f0-aae0-1642e8a69583.md` |
+| 2026-08-09T02:56:17Z | Claude Code | b0b5ecd1-97c9-4406-bfeb-aebd8ae80da1 | claude-sonnet-5 | `claude/b0b5ecd1-97c9-4406-bfeb-aebd8ae80da1.md` |
+| 2026-08-09T03:03:26Z | Codex CLI | rollout-2026-08-09T11-03-22-019fe479-98a7-7b91-bfa1-4139f99e23c3 | openai | `codex/rollout-2026-08-09T11-03-22-019fe479-98a7-7b91-bfa1-4139f99e23c3.md` |
+| 2026-08-09T03:13:12Z | Claude Code | 5ce2e41d-b00a-4fe3-a342-b319b3b71ab9 | claude-sonnet-5 | `claude/5ce2e41d-b00a-4fe3-a342-b319b3b71ab9.md` |
+| 2026-08-09T08:09:03Z | OpenCode | 0.1.3版本需求开发启动 | deepseek-v4-flash | `opencode/ses_01a6e87e2ffe7BNQeO4Db5vfG0.md` |
+| 2026-08-09T08:10:09Z | OpenCode | 0.1.3版本需求代码开发 | deepseek-v4-flash | `opencode/ses_01a6d8622ffei5cBRUTyC14Unq.md` |
+| 2026-08-09T08:22:10Z | OpenCode | Locate 0.1.2 evidence artifacts (@explore subagent) | deepseek-v4-flash | `opencode/ses_01a6285ecffeWF3pd43dDh3jnW.md` |
+| 2026-08-09T08:22:19Z | OpenCode | Map experiment infrastructure APIs (@explore subagent) | deepseek-v4-flash | `opencode/ses_01a626453ffeQ8N47efOj1kjjp.md` |
+| 2026-08-09T08:22:32Z | OpenCode | Find TDD and exit-verification patterns (@explore subagent) | deepseek-v4-flash | `opencode/ses_01a623178ffeq9eZqyPEOiKhP8.md` |
+| 2026-08-09T08:37:14Z | Claude Code | 3104e4f4-1477-4e53-8859-432885363307 |  | `claude/3104e4f4-1477-4e53-8859-432885363307.md` |
+| 2026-08-09T10:17:38Z | Claude Code | af94eb8e-2e71-4606-a8a3-b656a49ce826 | claude-sonnet-5 | `claude/af94eb8e-2e71-4606-a8a3-b656a49ce826.md` |
+| 2026-08-09T10:53:26Z | Codex CLI | rollout-2026-08-09T18-52-34-019fe627-2b08-7da3-8098-933ed451ca4e | openai | `codex/rollout-2026-08-09T18-52-34-019fe627-2b08-7da3-8098-933ed451ca4e.md` |
+| 2026-08-09T10:55:21Z | Codex CLI | rollout-2026-08-09T18-55-17-019fe629-a77b-71f2-ba02-86d66e6d6cc4 | openai | `codex/rollout-2026-08-09T18-55-17-019fe629-a77b-71f2-ba02-86d66e6d6cc4.md` |
+| 2026-08-09T11:58:20Z | OpenCode | Map experiment run wiring for E1-E5 (@explore subagent) | deepseek-v4-flash | `opencode/ses_0199c9d37ffei2OoA2IiMxc53g.md` |
+| 2026-08-09T11:58:24Z | OpenCode | Map experiment run wiring for E1-E5 (@explore subagent) | minimax-m2.7 | `opencode/ses_0199c8e6affeiTukkAuUta3w08.md` |
+| 2026-08-09T11:58:24Z | OpenCode | Map experiment run wiring for E1-E5 (@explore subagent) | minimax-m2.7-highspeed | `opencode/ses_0199c8edcffeGBcByZ8IW3iT45.md` |
+| 2026-08-09T11:58:24Z | OpenCode | Map experiment run wiring for E1-E5 (@explore subagent) | qwen3.5-plus | `opencode/ses_0199c8f4fffenDNoa6MSa5xlxY.md` |
+| 2026-08-09T11:58:24Z | OpenCode | Map experiment run wiring for E1-E5 (@explore subagent) | gpt-5.4-mini-fast | `opencode/ses_0199c8fa8ffeXHAZKJYLLp6Wvd.md` |
+| 2026-08-09T11:58:26Z | OpenCode | Map experiment run wiring for E1-E5 (@explore subagent) | claude-haiku-4-5 | `opencode/ses_0199c8561ffe6e9RFzYXEdf3VU.md` |
+| 2026-08-09T11:58:26Z | OpenCode | Assess exit-checklist evidence gaps (@explore subagent) | deepseek-v4-flash | `opencode/ses_0199c86aaffe9TXL2J7sEYPMCH.md` |
+| 2026-08-09T11:58:27Z | OpenCode | Map experiment run wiring for E1-E5 (@explore subagent) | gpt-5.4-nano | `opencode/ses_0199c852affeVr6YpXOoTiG2Cg.md` |
+| 2026-08-09T11:58:31Z | OpenCode | Assess exit-checklist evidence gaps (@explore subagent) | qwen3.5-plus | `opencode/ses_0199c71c5ffecVzRyKetviwobs.md` |
+| 2026-08-09T11:58:31Z | OpenCode | Assess exit-checklist evidence gaps (@explore subagent) | gpt-5.4-mini-fast | `opencode/ses_0199c7285ffeyz95sJ3xWovXiv.md` |
+| 2026-08-09T11:58:32Z | OpenCode | Assess exit-checklist evidence gaps (@explore subagent) | minimax-m2.7 | `opencode/ses_0199c7107ffemVh5t4cv4QQLaK.md` |
+| 2026-08-09T11:58:32Z | OpenCode | Assess exit-checklist evidence gaps (@explore subagent) | minimax-m2.7-highspeed | `opencode/ses_0199c716fffe3pCHPrKldazYsi.md` |
+| 2026-08-09T11:58:34Z | OpenCode | Assess exit-checklist evidence gaps (@explore subagent) | gpt-5.4-nano | `opencode/ses_0199c6938ffeX32LHXCJ1YDal7.md` |
+| 2026-08-09T11:58:34Z | OpenCode | Assess exit-checklist evidence gaps (@explore subagent) | claude-haiku-4-5 | `opencode/ses_0199c69a2ffeWjHVF56II1DR0n.md` |
+| 2026-08-09T13:46:31Z | Codex CLI | rollout-2026-08-09T21-46-04-019fe6c6-0106-79c3-88e5-22b3546c06d8 | openai | `codex/rollout-2026-08-09T21-46-04-019fe6c6-0106-79c3-88e5-22b3546c06d8.md` |
