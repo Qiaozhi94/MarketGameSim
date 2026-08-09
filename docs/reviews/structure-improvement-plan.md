@@ -703,5 +703,5 @@ constitution 完成职责分解后再确认整个 `.specify/` 已删除。
 - [x] M028：更新 CI 使用 `python tools/verify.py`，保持真源、ruff、pytest 3.11/3.13
   四个必需 job 的职责清楚且无重复执行。
 - [x] M029：运行 `python tools/verify.py`，逐项核对第 12 节五项验收标准并记录结果。
-- [ ] M030：提交并推送，使用 `gh run watch <run-id> --exit-status` 确认当前 HEAD 的全部
+- [x] M030：提交并推送，使用 `gh run watch <run-id> --exit-status` 确认当前 HEAD 的全部
   必需 CI job 全绿。
