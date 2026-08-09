@@ -20,6 +20,9 @@ build/
 # 编辑器本地历史（VS Code Local History 扩展）
 .history/
 
+# 本机代理运行续接状态
+.sisyphus/
+
 # 仿真产生的数据与输出
 data/raw/
 data/processed/
