@@ -119,3 +119,27 @@ class TestOtherContrasts:
         changed = {"version": "1.0", "taker_bps": 5}  # behavior_mapping deleted
         with pytest.raises(DiffValidationError, match="deleted treatment field"):
             validate_contrast(base, changed, rule)
+
+    def test_nullable_value_change_is_not_deletion(self):
+        """v013 round-3 regression (high): `disabled_factor: noise -> None` is
+        a LEGAL value change (the ablation is turned off), NOT a deletion --
+        the old diff marked both with None and rejected the legal case."""
+        rule = ContrastRule(kind="ablation", allowed_fields=["disabled_factor"])
+        base = {"disabled_factor": "noise", "taker_bps": 5}
+        changed = {"disabled_factor": None, "taker_bps": 5}  # value set to None
+        diff = validate_contrast(base, changed, rule)
+        assert diff == {"disabled_factor": None}
+
+    def test_zero_diff_contrast_rejected(self):
+        """v013 round-3 regression (high): two IDENTICAL configs are not a
+        valid contrast -- the target treatment must actually vary."""
+        rule = ContrastRule(kind="scan_axis", allowed_fields=["maint_bp"])
+        base = {"maint_bp": 500, "mm_thickness": 10}
+        with pytest.raises(DiffValidationError, match="no change"):
+            validate_contrast(base, dict(base), rule)
+
+    def test_zero_diff_ablation_rejected(self):
+        rule = ContrastRule(kind="ablation", allowed_fields=["disabled_factor"])
+        base = {"disabled_factor": None, "taker_bps": 5}
+        with pytest.raises(DiffValidationError, match="no change"):
+            validate_contrast(base, dict(base), rule)
