@@ -1,11 +1,11 @@
 ---
 report_type: code-review
-round: 1
+round: 2
 date: 2026-08-10
-prior_report: null
-scope: full-scan
+prior_report: 5041155
+scope: diff-only
 stop_condition_met: true
-severity_counts: {critical: 0, high: 0, medium: 0, low: 0}
+severity_counts: {critical: 0, high: 0, medium: 0, low: 1}
 issues:
   - id: STRUCT-C001
     title: 链接与文档所有权门禁未接入生产校验入口
@@ -30,7 +30,7 @@ issues:
     status: fixed
     fix_summary: 新增 validate_versions：校验 version-spec 元数据与状态转换；版本 done 强制关联 release/closed_at/全部里程碑 done
     regression_test: tests/unit/test_spec_lifecycle.py::test_version_done_without_release_fails / test_version_done_release_without_closed_at_fails / test_version_done_with_pending_milestone_fails / test_version_done_valid_closes_clean
-    location: tools/spec_validation.py:453
+    location: tools/spec_validation.py:460
     first_seen_round: 1
     resolved_round: 1
   - id: prereq-cycle-false-positive
@@ -42,7 +42,7 @@ issues:
     status: fixed
     fix_summary: 改用三色 DFS，只判当前路径回边
     regression_test: tests/unit/test_spec_lifecycle.py::test_prereq_diamond_not_flagged_as_cycle
-    location: tools/spec_validation.py:251
+    location: tools/spec_validation.py:249
     first_seen_round: 1
     resolved_round: 1
   - id: tasks-status-uniqueness-skipped
@@ -81,20 +81,33 @@ issues:
     location: tools/spec_validation.py:382
     first_seen_round: 1
     resolved_round: 1
+  - id: STRUCT-C003
+    title: round-1 修复遗留死代码（validate_ids_unique 的 seen dict 在 __dups__ 方案下永不触发）
+    severity: low
+    category: quality
+    root_cause: symptom-patch
+    origin: fix-regression
+    status: fixed
+    fix_summary: 移除永不触发的 seen 逻辑，只靠 __dups__ 报告重复
+    regression_test: tests/unit/test_spec_lifecycle.py::test_dup_id_preserves_dups（保持覆盖）
+    location: tools/spec_validation.py:217
+    first_seen_round: 2
+    resolved_round: 2
 ---
 
 # 目录结构改造代码检视
 
-结论：**未通过，两个 High 阻塞结构改造闭环。** 产品测试和现有 CI 全绿，但统一校验
-入口没有实际执行方案承诺的全部结构门禁，因此不能用当前绿灯证明链接、文档所有权和
-版本收口规则成立。
+结论：**第二轮（diff-only）复核通过。** round-1 修复后对修复 diff 及其相邻契约复核，
+发现并清理了一条 round-1 修复引入的死代码（STRUCT-C003）；原 2 个 High 与 4 个
+Medium/Low 均已修复并有回归测试锁定。本地 1562 测试全绿，`validate_spec_lifecycle`
+通过，`verify.py` 全绿。
 
 ## 有限检查清单
 
-- 生产入口是否实际调用已声明的链接与所有权规则；
-- 版本根和 milestone 是否都进入生命周期校验；
-- 版本 `done` 是否强制关联 release 文件与 `closed_at`；
-- 测试是否覆盖函数接线，而非只覆盖孤立纯函数；
+- 生产入口是否实际调用已声明的链接与所有权规则（已接线）；
+- 版本根和 milestone 是否都进入生命周期校验（已接线）；
+- 版本 `done` 是否强制关联 release 文件与 `closed_at`（已接线）；
+- 测试是否覆盖函数接线，而非只覆盖孤立纯函数（新增 11 个入口级用例）；
 - prerequisites 环检测是否只判真实环（不误报菱形依赖）；
 - design/tasks 状态唯一性是否对 gate-0（无 design）里程碑也生效。
 
@@ -108,10 +121,11 @@ issues:
 | tasks-status-uniqueness-skipped | gate-0 里程碑 tasks 状态不被检查 | 中 | 正确性 | 根因 | 原始编码 | 已修复 | 独立检查 design 与 tasks | test_tasks_status_uniqueness_without_design | 1 | 1 | — |
 | dup-id-info-lost | 重复 ID 覆盖丢失首个信息 | 低 | 质量 | 根因 | 原始编码 | 已修复 | 保留首个条目，重复追加 __dups__ | test_dup_id_preserves_dups | 1 | 1 | — |
 | section-substring-match | 章节子串匹配误匹配 | 低 | 质量 | 根因 | 原始编码 | 已修复 | 精确匹配顶层标题 | test_gate1_* | 1 | 1 | — |
+| STRUCT-C003 | round-1 修复遗留死代码（seen dict 永不触发） | 低 | 质量 | 症状 | 修改引入 | 已修复 | 移除永不触发的 seen 逻辑 | test_dup_id_preserves_dups | 2 | 2 | — |
 
 ## 证据与停止条件
 
 - 修复后 `validate_spec_lifecycle()` 遍历维护中文档执行链接/仓库边界/所有权索引校验，且只报告实际执行的门禁；
 - 新增 `validate_versions()` 校验版本根元数据与状态转换（done ↔ release/closed_at/里程碑完成）；
-- 全部 6 条发现已修复并有对应回归测试；本地 1562 测试全绿，`validate_spec_lifecycle` 通过。
-- 第二轮（diff-only）复核本修复 diff 与新增测试后关闭。
+- 第二轮 diff-only 复核清理 round-1 遗留死代码；
+- 本地 1562 测试全绿，`validate_spec_lifecycle` 与 `verify.py` 通过。
