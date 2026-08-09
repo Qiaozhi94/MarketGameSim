@@ -14,13 +14,13 @@
       "tasks": ["T101", "T102", "T103", "T104", "T105", "T006", "T206", "T207", "T604"],
       "status": "met",
       "evidence": [
-        "docs/experiments/0.1.3-exit-evidence.json E1_cross_matrix（完整规模 190 代理/100k 事务：2 族 × 2 映射 = 4 cell 各 5 种子，同向成立）",
+        "docs/experiments/0.1.3-exit-evidence.json E1_cross_matrix（完整规模 190 代理/100k 事务：2 族 × 2 映射 = 4 cell 各 5 种子，依赖边界——belief 族显著、signal 族零方向）",
         "src/market_game_sim/agent/families.py（belief_family 五因子 / signal_family momentum+book 双因子实现）",
         "src/market_game_sim/agent/mapping.py（linear / threshold 映射）",
-        "src/market_game_sim/robustness/cross_matrix.py（整矩阵同向判定）",
+        "src/market_game_sim/robustness/cross_matrix.py（整矩阵同向判定，v013 修复：零方向/不显著 cell 不再被忽略）",
         "tests/integration/test_robustness_wiring.py（两族/两映射真实运行接线）"
       ],
-      "notes": "完整规模交叉矩阵完成：4 cell 全部同向（整矩阵同向成立），并报告主效应——模型族主效应显著（belief_family 强平率 32.1 vs signal_family 10.0，结论依赖模型族），行为映射主效应弱（linear 20.4 vs threshold 21.7，映射稳健）。符合 E1 '明确报告映射/模型族主效应' 的措辞。旗舰终点率在此设定为 0（EV 需 90%+ 价格崩溃），效应代理为强平发生率，已在报告中如实声明。"
+      "notes": "完整规模交叉矩阵完成（v013 修复后判定更严格）：4 cell 中 belief_family 两格显著同向（30.8/33.4），signal_family 两格强平率 10.0 未达方向阈值（零方向）——整矩阵判定为'依赖边界'。模型族主效应显著（强平效应依赖模型族），行为映射主效应弱（映射稳健）。符合 E1 '明确报告映射/模型族主效应、交互或依赖边界' 的达成措辞。旗舰终点率在此设定为 0（EV 需 90%+ 价格崩溃），效应代理为强平发生率，已在报告中如实声明。"
     },
     {
       "id": "E2",

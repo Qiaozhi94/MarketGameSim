@@ -13,7 +13,7 @@
     "report": {
       "complete": true,
       "missing": [],
-      "same_direction": true,
+      "same_direction": false,
       "directions": [
         1
       ],
@@ -30,7 +30,7 @@
           1
         ]
       },
-      "conclusion": "同向成立"
+      "conclusion": "依赖边界"
     },
     "family_effect": {
       "belief_family": 32.1,
