@@ -12,6 +12,14 @@
 
 ---
 
+## Phase 0：实现准入合同（不代表 0.1.4 主体开工）
+
+- [x] **T001** `[0.1.4 spec §4.1]` `[TDD]` 冻结 10 类报告输入的机器可读最小 Schema：
+      `src/market_game_sim/schema/report_artifacts.json` 是唯一真源，逐 artifact 固定
+      producer、format、`schema_version`、shape 与递归 `required_fields`；
+      `tools/validate_contract_sources.py` 与 spec 展示表双向校验，负向变异覆盖缺 artifact、
+      非法类型、缺内容版本、未冻结嵌套对象及 producer 漂移。
+
 ## Phase 1：日志读取与状态重建
 
 - [ ] **T101** `[事件 Schema §6]` `[TDD]` 独立日志读取器：解析
@@ -45,11 +53,12 @@
 - [ ] **T302** `[0.1.4 spec §4.1、E4]` `[TDD]` **artifact manifest 与不重算断言**：
       manifest 按 0.1.4 spec §4.1 的**七项封闭清单**逐 artifact 声明
       （`artifact_id`/`path`/`producer` 精确 task/`schema_version`/`format`/
-      `required`/`blake2b-256`）。
+      `required`/`blake2b-256`），并加载 `report_artifacts.json` 校验 producer、format、
+      版本及实际文件的递归最小字段/类型；不得在实现里复制 Schema。
       断言 ① 改动任一上游产物后报告随之变化；② 报告层**不执行任何统计检验或重新
       聚合**（导入检查 + 无 scipy/statsmodels 调用）。
-      **四类负向夹具**：必备件缺失 / 哈希不符 / `schema_version` 错版 /
-      **出现 manifest 未声明的额外件**——四种都必须使报告生成失败。
+      **五类负向夹具**：必备件缺失 / 哈希不符 / `schema_version` 错版 /
+      必备字段缺失或类型错误 / **出现 manifest 未声明的额外件**——五种都必须使报告生成失败。
       **规则是「不重算」而非「只读 metrics」**：效应量与置信区间本就不是指标。
 
 ## Phase 4：验收

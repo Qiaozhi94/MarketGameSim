@@ -4,6 +4,8 @@
 `.github/workflows/ci.yml`，以及它们校验的两份 JSON/Markdown 合同
 **Language(s)**: Python, YAML, JSON, Markdown
 **Review Date**: 2026-08-02
+**Verification Update**: 2026-08-09；5 项问题均已在本地修复并完成第二轮 diff-only
+复核，删除仍等待本次改动提交后的 CI 全绿证据
 **Severity Legend**: 🔴 Critical | 🟠 High | 🟡 Medium | 🟢 Low | 🔵 Info
 
 ---
@@ -91,7 +93,7 @@ validate_rendered_matrix_matches_trace(d, spec_text)
 
 ---
 
-#### 【保持开放 · 检视报告 §37.4】🟠 Artifact 的最小 Schema 仍未实际冻结 — `specs/v0.1-belief-testing-laboratory/0.1.4-replay-and-report/spec.md`:114
+#### 【本地已修复 · 待 CI】🟠 Artifact 的最小 Schema 仍未实际冻结 — `specs/v0.1-belief-testing-laboratory/0.1.4-replay-and-report/spec.md`:114
 
 **Severity**: High
 
@@ -117,6 +119,13 @@ validate_rendered_matrix_matches_trace(d, spec_text)
 
 **Explanation**: `schema_version` 只有在被版本化对象真实存在时才有意义。可把 artifact
 Schema 放入单独 JSON 真源，并由 0.1.2/0.1.3 producer 与 0.1.4 consumer 共用。
+
+**Fix Verification**: 新增 `src/market_game_sim/schema/report_artifacts.json`，冻结 10 类
+artifact 的 producer、format、版本、shape 与递归最小字段/类型；规格和 T001/T302 已改为
+消费该唯一真源。`validate_contract_sources.py` 与规格展示表双向比较，31 项针对性测试覆盖
+缺 artifact、非法类型、缺内容版本、嵌套对象/数组未冻结、重复展示行和 producer 漂移。
+第二轮复核删除了验证器中重复的 ID/producer 映射。完整本地门禁为 1503 passed，
+`ruff check .` 与 `ruff format --check .` 全绿；尚缺提交后 CI 证据。
 
 ### Testing
 
@@ -197,3 +206,7 @@ run: pytest
 
 **Bottom Line**: 基础市场代码可以开始，但当前绿色 CI 还不足以支撑“机器真源已封板”；
 修复三项 High 后再启动 registry/hash、T607 与 0.1.4 artifact 消费实现。
+
+**Current Bottom Line (2026-08-09)**: 三项 High 已完成本地修复和二轮复核；本报告仅因
+改动尚未提交、无法取得对应 CI 结果而保留。CI 全绿并把完整 issue 表写入
+`docs/reviews/RETROSPECTIVE.md` 后，由 reviewer 删除本文件。

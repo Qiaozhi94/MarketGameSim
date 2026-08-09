@@ -78,6 +78,12 @@ E4 的「同源」不等于「一切都来自 `metrics/`」——**效应量、�
 
 报告的输入是一份 **artifact manifest**，列出被消费的冻结产物及其哈希：
 
+10 类 artifact 的字段 Schema 唯一真源是
+[`report_artifacts.json`](../../../src/market_game_sim/schema/report_artifacts.json)。该 registry
+固定每类 artifact 的 producer、格式、`schema_version`、顶层形状与递归最小字段/类型；
+本节表格只作为人类可读索引。两者由 `tools/validate_contract_sources.py` 双向核对，禁止
+在 producer、manifest 校验器或报告 consumer 中另抄一份字段清单。
+
 | `artifact_id` | 精确 producer | 内容 |
 |---|---|---|
 | `market_metrics` | 0.1.2 T501 | 市场层指标时间序列 |
@@ -111,9 +117,11 @@ manifest 是**封闭清单**，逐 artifact 冻结下列七项，不使用 `metr
 | `required` | 布尔；必备件缺失即失败 |
 | `digest` | `blake2b-256` 十六进制小写，长度 64 |
 
-每个 `artifact_id` 还须冻结**最小列/键 Schema**：Parquet 件给出必备列名与类型，
-JSON 件给出必备键与类型。没有它，`schema_version` 就是一个没有被版本化的对象——
-版本号变了也无从判断变了什么。
+每个 `artifact_id` 的**最小列/键 Schema 已在上述 registry 冻结**：Parquet 件列出必备
+列名与类型，JSON 件递归列出必备键与类型；开放映射也必须显式声明
+`additional_value_type`。每个实际 artifact 都携带 integer `schema_version` 字段/列，且必须
+与 manifest 和 registry 三方一致。任何一方改版都必须显式提升版本并同步 producer 与
+consumer，不能只改版本号而不定义被版本化的内容。
 
 **缺件行为**：任一 `required` 件缺失、哈希不符、`schema_version` 不匹配，或
 `artifact_root` 下出现 manifest 未声明的**数据件** → **报告生成失败**，不得降级为

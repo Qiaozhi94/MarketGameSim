@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """设计阶段真源自校验器（纯标准库）。
 
-两份机器真源在被任何实现消费之前，必须先通过对**自身**以及**与合同文档**的校验：
+三份机器真源在被任何实现消费之前，必须先通过对**自身**以及**与合同文档**的校验：
 
 - `src/market_game_sim/schema/event_fields.json`  —— 事件字段规范
+- `src/market_game_sim/schema/report_artifacts.json` —— 0.1.4 报告输入 artifact Schema
 - `specs/v0.1-belief-testing-laboratory/traceability.json` —— 需求追踪
 
 第 33 章总结过一条原则：**每引入一个「唯一真源」，必须同时引入检验它唯一性的手段**，
@@ -31,9 +32,16 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCHEMA = ROOT / "src" / "market_game_sim" / "schema" / "event_fields.json"
+ARTIFACT_SCHEMAS = ROOT / "src" / "market_game_sim" / "schema" / "report_artifacts.json"
 TRACE = ROOT / "specs" / "v0.1-belief-testing-laboratory" / "traceability.json"
 SPEC = ROOT / "specs" / "v0.1-belief-testing-laboratory" / "spec.md"
 EVENT_SCHEMA_DOC = ROOT / "docs" / "contracts" / "event-schema.md"
+REPORT_SPEC = (
+    ROOT / "specs" / "v0.1-belief-testing-laboratory" / "0.1.4-replay-and-report" / "spec.md"
+)
+
+ARTIFACT_FIELD_TYPES = {"string", "integer", "number", "boolean", "object", "array"}
+ARTIFACT_SCALAR_TYPES = {"string", "integer", "number", "boolean"}
 
 # 需求 ID 的声明形态在 spec 中是固定的机械模式。提取规则由 `tracked_id_families`
 # 动态生成（不再硬编码前缀），编号位数不设上限——`US-\d` 那种写法会在 US-10 静默漏检。
@@ -263,6 +271,120 @@ def _parse_closed_counts(doc: str) -> dict[str, int]:
 
 
 # --------------------------------------------------------------------------- #
+# report_artifacts.json 自身及与 0.1.4 spec 的一致性
+# --------------------------------------------------------------------------- #
+
+
+def validate_artifact_schema_data(d: dict, errors: list[str]) -> None:
+    """冻结全部报告输入的格式、版本和递归最小字段集合。"""
+    if not isinstance(d.get("registry_version"), int) or d["registry_version"] < 1:
+        _fail(errors, "report artifacts: registry_version 必须为正整数")
+    if not isinstance(d.get("schema_id"), str) or not d["schema_id"]:
+        _fail(errors, "report artifacts: schema_id 必须为非空字符串")
+
+    artifacts = d.get("artifacts")
+    if not isinstance(artifacts, dict):
+        _fail(errors, "report artifacts: artifacts 必须为对象")
+        return
+
+    for artifact_id, artifact in artifacts.items():
+        where = f"report artifacts.{artifact_id}"
+        if not re.fullmatch(r"[a-z][a-z0-9_]*", artifact_id):
+            _fail(errors, f"{where}: artifact_id 必须为 snake_case")
+        if not isinstance(artifact, dict):
+            _fail(errors, f"{where}: 定义必须为对象")
+            continue
+        if not re.fullmatch(r"0\.1\.[23] T\d+", artifact.get("producer", "")):
+            _fail(errors, f"{where}: producer 必须是精确的 0.1.2/0.1.3 task")
+        artifact_format = artifact.get("format")
+        if artifact_format not in {"json", "parquet"}:
+            _fail(errors, f"{where}: format 只能是 json/parquet")
+        expected_shape = "table" if artifact_format == "parquet" else "object"
+        if artifact.get("shape") != expected_shape:
+            _fail(errors, f"{where}: {artifact_format} 的 shape 必须为 {expected_shape}")
+        if not isinstance(artifact.get("schema_version"), int) or artifact["schema_version"] < 1:
+            _fail(errors, f"{where}: schema_version 必须为正整数")
+        fields = artifact.get("required_fields")
+        if not isinstance(fields, dict) or not fields:
+            _fail(errors, f"{where}: required_fields 必须为非空对象")
+            continue
+        if fields.get("schema_version") != {"type": "integer"}:
+            _fail(errors, f"{where}: 内容必须带 integer 类型的 schema_version")
+        _validate_artifact_fields(fields, where, errors)
+
+
+def _validate_artifact_fields(fields: dict, parent: str, errors: list[str]) -> None:
+    for field_name, field in fields.items():
+        where = f"{parent}.{field_name}"
+        if not re.fullmatch(r"[a-z][a-z0-9_]*", field_name):
+            _fail(errors, f"{where}: 字段名必须为 snake_case")
+        if not isinstance(field, dict):
+            _fail(errors, f"{where}: 字段定义必须为对象")
+            continue
+        allowed = {
+            "type",
+            "nullable",
+            "required_fields",
+            "additional_value_type",
+            "item_type",
+            "item_fields",
+        }
+        if extra := set(field) - allowed:
+            _fail(errors, f"{where}: 含未知 Schema 属性 {sorted(extra)}")
+        field_type = field.get("type")
+        if field_type not in ARTIFACT_FIELD_TYPES:
+            _fail(errors, f"{where}: type={field_type!r} 非法")
+        if "nullable" in field and not isinstance(field["nullable"], bool):
+            _fail(errors, f"{where}: nullable 必须为 bool")
+
+        if field_type == "object":
+            nested = field.get("required_fields")
+            additional = field.get("additional_value_type")
+            if nested is not None and additional is not None:
+                _fail(errors, f"{where}: required_fields 与 additional_value_type 只能选一个")
+            elif nested is not None:
+                if not isinstance(nested, dict) or not nested:
+                    _fail(errors, f"{where}: required_fields 必须为非空对象")
+                else:
+                    _validate_artifact_fields(nested, where, errors)
+            elif additional not in ARTIFACT_SCALAR_TYPES | {"json-value"}:
+                _fail(
+                    errors,
+                    f"{where}: object 必须冻结 required_fields 或 additional_value_type",
+                )
+        elif field_type == "array":
+            item_type = field.get("item_type")
+            if item_type not in ARTIFACT_SCALAR_TYPES | {"object"}:
+                _fail(errors, f"{where}: array.item_type={item_type!r} 非法")
+            elif item_type == "object":
+                item_fields = field.get("item_fields")
+                if not isinstance(item_fields, dict) or not item_fields:
+                    _fail(errors, f"{where}: object 数组必须冻结非空 item_fields")
+                else:
+                    _validate_artifact_fields(item_fields, f"{where}[]", errors)
+
+
+_REPORT_ARTIFACT_ROW = re.compile(
+    r"^\| `([a-z][a-z0-9_]*)` \| \*{0,2}(0\.1\.[23] T\d+)\*{0,2} \|", re.M
+)
+
+
+def validate_artifact_schemas_against_spec(d: dict, spec_text: str, errors: list[str]) -> None:
+    """机器 registry 的 artifact ID/producer 必须与 0.1.4 展示表双向一致。"""
+    rows = _REPORT_ARTIFACT_ROW.findall(spec_text)
+    shown = dict(rows)
+    if len(rows) != len(shown):
+        _fail(errors, "report artifacts: spec 展示表含重复 artifact_id")
+    actual = {
+        artifact_id: artifact.get("producer")
+        for artifact_id, artifact in d.get("artifacts", {}).items()
+        if isinstance(artifact, dict)
+    }
+    if shown != actual:
+        _fail(errors, f"report artifacts: spec 展示表 {shown} 与机器 Schema {actual} 不一致")
+
+
+# --------------------------------------------------------------------------- #
 # traceability.json
 # --------------------------------------------------------------------------- #
 
@@ -386,6 +508,12 @@ def validate_schema(errors: list[str]) -> None:
     validate_schema_against_doc(d, EVENT_SCHEMA_DOC.read_text(encoding="utf-8"), errors)
 
 
+def validate_artifact_schemas(errors: list[str]) -> None:
+    d = json.loads(ARTIFACT_SCHEMAS.read_text(encoding="utf-8"))
+    validate_artifact_schema_data(d, errors)
+    validate_artifact_schemas_against_spec(d, REPORT_SPEC.read_text(encoding="utf-8"), errors)
+
+
 def validate_trace(errors: list[str]) -> None:
     d = json.loads(TRACE.read_text(encoding="utf-8"))
     validate_trace_data(d, SPEC.read_text(encoding="utf-8"), errors, ROOT)
@@ -394,13 +522,17 @@ def validate_trace(errors: list[str]) -> None:
 def main() -> int:
     errors: list[str] = []
     validate_schema(errors)
+    validate_artifact_schemas(errors)
     validate_trace(errors)
     if errors:
         print(f"真源自校验失败（{len(errors)} 项）：")
         for e in errors:
             print(f"  - {e}")
         return 1
-    print("真源自校验通过：event_fields.json + traceability.json（含跨真源比较）")
+    print(
+        "真源自校验通过：event_fields.json + report_artifacts.json + "
+        "traceability.json（含跨真源比较）"
+    )
     return 0
 
 

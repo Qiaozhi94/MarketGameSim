@@ -48,6 +48,11 @@ def schema(validator) -> dict:
 
 
 @pytest.fixture(scope="module")
+def artifact_schemas(validator) -> dict:
+    return json.loads(validator.ARTIFACT_SCHEMAS.read_text(encoding="utf-8"))
+
+
+@pytest.fixture(scope="module")
 def trace(validator) -> dict:
     return json.loads(validator.TRACE.read_text(encoding="utf-8"))
 
@@ -193,6 +198,84 @@ def test_closed_table_count_drift_is_rejected(validator, schema, schema_doc):
     errors: list[str] = []
     validator.validate_schema_against_doc(schema, broken, errors)
     assert any("封闭" in e for e in errors), errors
+
+
+# --------------------------------------------------------------------------- #
+# 负向：0.1.4 report artifact Schema registry
+# --------------------------------------------------------------------------- #
+
+
+def _drop_report_artifact(d: dict) -> None:
+    d["artifacts"].pop("effect_sizes")
+
+
+def _set_invalid_artifact_field_type(d: dict) -> None:
+    d["artifacts"]["market_metrics"]["required_fields"]["timestamp"]["type"] = "int64"
+
+
+def _drop_artifact_content_version(d: dict) -> None:
+    d["artifacts"]["pnl_bridge"]["required_fields"].pop("schema_version")
+
+
+def _unfreeze_nested_artifact_object(d: dict) -> None:
+    d["artifacts"]["robustness_conclusion"]["required_fields"]["elements"].pop("required_fields")
+
+
+def _make_artifact_object_shape_ambiguous(d: dict) -> None:
+    d["artifacts"]["liquidation_metrics"]["required_fields"]["chain_depth_counts"][
+        "required_fields"
+    ] = {"depth": {"type": "integer"}}
+
+
+def _nest_artifact_array_without_item_schema(d: dict) -> None:
+    d["artifacts"]["sample_classification"]["required_fields"]["economic_endpoint_codes"][
+        "item_type"
+    ] = "array"
+
+
+ARTIFACT_SCHEMA_MUTATIONS = [
+    pytest.param(_drop_report_artifact, "不一致", id="缺 artifact"),
+    pytest.param(_set_invalid_artifact_field_type, "type='int64' 非法", id="非法字段类型"),
+    pytest.param(_drop_artifact_content_version, "内容必须带", id="缺内容版本"),
+    pytest.param(_unfreeze_nested_artifact_object, "必须冻结", id="嵌套对象未冻结"),
+    pytest.param(_make_artifact_object_shape_ambiguous, "只能选一个", id="对象形状双定义"),
+    pytest.param(
+        _nest_artifact_array_without_item_schema, "item_type='array' 非法", id="数组嵌套未冻结"
+    ),
+]
+
+
+@pytest.mark.parametrize("mutate, expected", ARTIFACT_SCHEMA_MUTATIONS)
+def test_artifact_schema_mutations_are_rejected(validator, artifact_schemas, mutate, expected):
+    mutated = copy.deepcopy(artifact_schemas)
+    mutate(mutated)
+    errors: list[str] = []
+    validator.validate_artifact_schema_data(mutated, errors)
+    validator.validate_artifact_schemas_against_spec(
+        mutated, validator.REPORT_SPEC.read_text(encoding="utf-8"), errors
+    )
+    assert any(expected in e for e in errors), f"变异未被拒绝，实际错误：{errors}"
+
+
+def test_artifact_schema_producer_drift_from_spec_is_rejected(validator, artifact_schemas):
+    spec_text = validator.REPORT_SPEC.read_text(encoding="utf-8")
+    broken = spec_text.replace(
+        "| `effect_sizes` | 0.1.2 T604 |", "| `effect_sizes` | 0.1.2 T999 |", 1
+    )
+    assert broken != spec_text, "变异未生效：effect_sizes producer 表格已改写，请同步本测试"
+    errors: list[str] = []
+    validator.validate_artifact_schemas_against_spec(artifact_schemas, broken, errors)
+    assert any("展示表" in e and "不一致" in e for e in errors), errors
+
+
+def test_duplicate_artifact_row_in_spec_is_rejected(validator, artifact_schemas):
+    spec_text = validator.REPORT_SPEC.read_text(encoding="utf-8")
+    row = "| `effect_sizes` | 0.1.2 T604 | 效应量、置信区间、多重比较校正 |"
+    broken = spec_text.replace(row, f"{row}\n{row}", 1)
+    assert broken != spec_text, "变异未生效：effect_sizes 表格行已改写，请同步本测试"
+    errors: list[str] = []
+    validator.validate_artifact_schemas_against_spec(artifact_schemas, broken, errors)
+    assert "report artifacts: spec 展示表含重复 artifact_id" in errors
 
 
 # --------------------------------------------------------------------------- #
