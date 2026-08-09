@@ -26,6 +26,12 @@ class DiffValidationError(RuntimeError):
     """Raised when a contrast changes more than the target treatment."""
 
 
+# Sentinel distinguishing "key absent (deleted)" from "key present with a
+# legitimately None value" (v013 round-3: disabled_factor: noise -> None is a
+# legal value change, NOT a deletion).
+_MISSING = object()
+
+
 @dataclass
 class ContrastRule:
     """Declares which fields a given contrast kind may change."""
@@ -38,16 +44,20 @@ class ContrastRule:
 
 def _diff(base: dict[str, Any], changed: dict[str, Any]) -> dict[str, Any]:
     """Symmetric diff: a field changed when its value differs OR when it was
-    DELETED from base (v013: the old implementation only iterated ``changed``,
-    so silently deleting a shared config field passed validation)."""
+    DELETED from base.  Deletion is marked with the ``_MISSING`` sentinel so a
+    legitimately-None value change is never confused with a deletion (v013)."""
     diff: dict[str, Any] = {}
     for k, v in changed.items():
         if base.get(k) != v:
             diff[k] = v
     for k in base:
         if k not in changed:
-            diff[k] = None  # deleted field = a change
+            diff[k] = _MISSING  # deleted field = a change
     return diff
+
+
+def _deleted_fields(diff: dict[str, Any]) -> list[str]:
+    return [k for k, v in diff.items() if v is _MISSING]
 
 
 def validate_contrast(
@@ -58,7 +68,9 @@ def validate_contrast(
     """Validate that ``changed_config`` only changes fields the ``rule`` allows.
 
     Returns the actual diff on success; raises ``DiffValidationError`` on any
-    disallowed change (fail-closed).
+    disallowed change (fail-closed).  A contrast with NO actual change in any
+    treatment field (zero diff) is rejected -- a pre-registered contrast must
+    actually vary the target treatment (v013 round-3).
     """
     diff = _diff(base_config, changed_config)
 
@@ -66,10 +78,9 @@ def validate_contrast(
         # composite treatment: must change family id AND at least one
         # family-defining structural field, and nothing outside defining set
         changed_structural = {k: v for k, v in diff.items() if k in rule.family_defining_fields}
-        # v013: a DELETED defining field (diff value None) is not a legal
-        # structural change -- it removes the very field the family identity
-        # rests on; only value changes are acceptable.
-        deleted_structural = [k for k, v in changed_structural.items() if v is None]
+        # a DELETED defining field is not a legal structural change -- it
+        # removes the very field the family identity rests on.
+        deleted_structural = _deleted_fields(changed_structural)
         if deleted_structural:
             raise DiffValidationError(
                 f"model-family contrast deleted defining field(s): {deleted_structural}"
@@ -92,12 +103,18 @@ def validate_contrast(
         raise DiffValidationError(
             f"{rule.kind} contrast changed fields outside allowed set: {sorted(disallowed)}"
         )
-    # v013 round-2 (high): DELETING a pre-registered treatment field itself
-    # (diff value None) is not a legal contrast -- the treatment must still
-    # exist; removing it silently changes the contrast's meaning.
-    deleted_allowed = [k for k, v in diff.items() if v is None]
+    # DELETING a pre-registered treatment field itself is not a legal contrast
+    # -- the treatment must still exist.
+    deleted_allowed = _deleted_fields(diff)
     if deleted_allowed:
         raise DiffValidationError(
             f"{rule.kind} contrast deleted treatment field(s): {deleted_allowed}"
+        )
+    # v013 round-3: a contrast with zero actual change is invalid -- the
+    # target treatment must actually vary.
+    if not diff:
+        raise DiffValidationError(
+            f"{rule.kind} contrast has no change in any allowed field "
+            f"(identical configs are not a valid contrast)"
         )
     return diff
