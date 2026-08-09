@@ -12,7 +12,12 @@ from market_game_sim.agent.factors import noise as noise_factor
 from market_game_sim.agent.factors import reversion as reversion_factor
 from market_game_sim.agent.observation import Bar, InformationSet
 from market_game_sim.agent.scheduler import AgentSpec
-from market_game_sim.agent.strategy import market_maker_intents, order_intent_from_signal
+from market_game_sim.agent.strategy import (
+    TargetFn,
+    market_maker_intents,
+    order_intent_from_signal,
+    target_position,
+)
 from market_game_sim.book.orderbook import Book
 from market_game_sim.kernel.runner import EventKernel
 from market_game_sim.ledger.account import Account, risk_equity
@@ -87,6 +92,7 @@ def _belief_intent(
     decision_index: int,
     signal_bp: int,
     min_qty: int,
+    target_fn: TargetFn = target_position,
 ) -> dict | None:
     if iset["best_bid"] is None or iset["best_ask"] is None:
         return None
@@ -107,6 +113,7 @@ def _belief_intent(
         best_ask=iset["best_ask"],
         max_order_qty=spec.max_order_qty,
         min_qty=min_qty,
+        target_fn=target_fn,
     )
     return intent
 
@@ -286,6 +293,7 @@ def handle_agent_decide(
     agent_specs: dict[str, AgentSpec],
     min_qty: int = 1,
     mult: int = 1000,
+    target_fn: TargetFn = target_position,
 ) -> list[dict]:
     agent_id = event["agent_id"]
     spec = agent_specs.get(agent_id)
@@ -308,7 +316,7 @@ def handle_agent_decide(
         }
     else:
         signal_bp = _compute_belief_signal(spec, iset, world, decision_index)
-        intent = _belief_intent(spec, iset, decision_index, signal_bp, min_qty)
+        intent = _belief_intent(spec, iset, decision_index, signal_bp, min_qty, target_fn)
         intents = [intent] if intent else []
         internal_state = {"signal_bp": signal_bp}
 

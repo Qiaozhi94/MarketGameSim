@@ -11,6 +11,7 @@ from dataclasses import dataclass, field
 
 from market_game_sim.agent.handler import handle_agent_decide, handle_agent_observe
 from market_game_sim.agent.scheduler import AgentSpec
+from market_game_sim.agent.strategy import target_position
 from market_game_sim.book.matching import match_order
 from market_game_sim.book.orderbook import Book
 from market_game_sim.eventlog.bootstrap import (
@@ -222,7 +223,13 @@ def _dispatch_agents(event: dict, world: dict, kernel: EventKernel) -> list[dict
         _reschedule_next_observe(event, world, kernel)
         return records
     if et == "AGENT_DECIDE":
-        return handle_agent_decide(event, world, kernel, world.get("agent_specs", {}))
+        return handle_agent_decide(
+            event,
+            world,
+            kernel,
+            world.get("agent_specs", {}),
+            target_fn=world.get("behavior_mapping", target_position),
+        )
     return []
 
 

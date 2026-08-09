@@ -2,10 +2,19 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from decimal import Decimal
 
 from market_game_sim.ledger.account import initial_margin_bp_for_tier
+
+# A target-position function has the BehaviorMapping contract (agent/mapping.py)
+# but strategy.py deliberately does NOT import mapping.py -- mapping.py imports
+# strategy.target_position as the linear baseline, so importing the other way
+# would create a cycle.  The shared execution pipeline (T103) calls the injected
+# callable instead of the module-level target_position, keeping the mapping
+# contrast a single-variable difference at the pipeline's *input*.
+TargetFn = Callable[[int, int, int, int, int], int]
 
 
 @dataclass
@@ -62,15 +71,22 @@ def order_intent_from_signal(
     best_ask: int | None,
     max_order_qty: int,
     min_qty: int,
+    target_fn: TargetFn = target_position,
 ) -> OrderIntent | None:
     """Compute one order intent from signal + state (代理策略 §6).
+
+    ``target_fn`` (T103 shared pipeline): injects the behavior mapping's
+    target-position function so the mapping contrast is a single-variable
+    difference at the pipeline's *input*; the rest of the pipeline (delta,
+    side, price, admission) is shared and identical across mappings.  Defaults
+    to the module-level linear ``target_position`` (0.1.2 baseline).
 
     Returns ``None`` if no actionable order.
     """
     if best_bid is None or best_ask is None:
         return None
     initial_bp = initial_margin_bp_for_tier(leverage_tier)
-    target = target_position(signal_bp, equity_units, valuation_mark_ticks, initial_bp, min_qty)
+    target = target_fn(signal_bp, equity_units, valuation_mark_ticks, initial_bp, min_qty)
     delta = target - current_position
     if abs(delta) < min_qty:
         return None
