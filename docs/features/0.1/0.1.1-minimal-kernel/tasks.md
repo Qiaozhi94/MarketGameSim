@@ -200,7 +200,7 @@
       **只做可见性原子性，不做失败回滚**--失败路径见 T204d。
       **验收用例**：一张大单跨三档 -> 三笔 `TRADE_SETTLE`（`fill_index` 0/1/2、
       `fill_count` 3）+ **仅一次**整批风险检查。期望值见
-      [订单簿向量](../../../docs/contracts/orderbook-vectors.md) OB-4。
+      [订单簿向量](../../../contracts/orderbook-vectors.md) OB-4。
 - [x] **T307** `[撮合 §6]`、`[退化 §1]` `[TDD]` 空簿与单边簿：市价单 IOC 撤销、
       `mid` 未定义时 `valuation_mark` 退化为 `last`、首笔成交前退化为
       `initial_price`。
@@ -280,7 +280,7 @@
       跨档）下 C1/C2 恒成立、`queue_key` / `log_key` 各自严格递增、状态机无非法转移。
 - [x] **T606** `[NFR-002]` 覆盖率：订单簿与账本分支覆盖 ≥ 87%（CI 强制，0.1.2 补至 ≥90%）。
 - [x] **T607** `[v0.1 spec §需求追踪矩阵]` `[TDD]` **矩阵校验器**（退出条件 E10）：
-      **只解析 `specs/v0.1-belief-testing-laboratory/traceability.json`**，不解析
+      **只解析 `docs/features/0.1/traceability.json`**，不解析
       Markdown——人类写法（范围、复合 owner、阶段切片）没有可判定 grammar。
       校验 ① JSON 的 ID 集合 == 需求章节声明的集合；② 归属里程碑目录与 `spec.md` 存在；
       ③ 引用的退出条件 ID 在该里程碑退出条件表中存在；④ `status=owned` 而 `owners`

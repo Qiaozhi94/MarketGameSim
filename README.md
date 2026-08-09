@@ -12,33 +12,28 @@
 
 系统能否定的是「信念在该模型族中无条件成立」，不是「信念在真实市场中成立」。
 
-项目采用规格驱动开发（Specification-Driven Development，SDD）：
-
-1. 在 `.specify/memory/constitution.md` 明确不可违背的工程与研究原则。
-2. 在 `specs/<编号>-<主题>/spec.md` 描述用户场景、需求和验收标准。
-3. 在同一规格目录的 `plan.md` 记录技术方案和边界。
-4. 在 `tasks.md` 将方案拆成可验证的实现任务。
-5. 实现、测试和实验输出必须能够追溯到对应需求。
+项目采用规格驱动开发（Specification-Driven Development，SDD），版本与里程碑三件套
+（spec/design/tasks）生命周期见 [`docs/features/README.md`](docs/features/README.md)。
 
 ## 当前规格
 
-- `specs/v0.1-belief-testing-laboratory/`：含杠杆与强制平仓的市场实验环境，用于把
-  交易信念改写成可证伪的条件性命题。
-  - `spec.md` 需求与验收　`plan.md` 架构与测试策略
-  - `0.1.1-minimal-kernel/` 最小确定性内核（**当前阶段，可开工**）
-  - `0.1.2-leverage-and-first-experiment/` 杠杆实验闭环（任务已拆，待 0.1.1 退出）
-  - `0.1.3-robustness/` 模型稳健性（任务已拆，可从 T001 开工）
-  - `0.1.4-replay-and-report/` 回放与报告（任务已拆，待 0.1.3 退出）
+- `docs/features/0.1/`：含杠杆与强制平仓的市场实验环境，用于把交易信念改写成可证伪
+  的条件性命题。
+  - `spec.md` 需求与验收　`design.md` 架构与测试策略
+  - `0.1.1-minimal-kernel/` 最小确定性内核
+  - `0.1.2-leverage-and-first-experiment/` 杠杆实验闭环
+  - `0.1.3-robustness/` 模型稳健性
+  - `0.1.4-replay-and-report/` 回放与报告
 
 每个里程碑目录下各有 `spec.md` 与 `tasks.md`。
-**完整 v0.1 签收 = 0.1.1—0.1.4 全部退出条件通过**；需求归属见根 `spec.md`
-的「需求追踪矩阵」。
+**完整 v0.1 签收 = 0.1.1—0.1.4 全部退出条件通过**；需求归属见版本根 `spec.md`
+与 `docs/features/0.1/traceability.json`。
 
-## 产品文档
+## 产品与研究文档
 
-- `docs/product/prd.md`：产品目标、MVP 范围、成功指标、风险和交付路线图。
-- `docs/product/methodology.md`：代理经济学、博弈分析、价格涌现和模型验证方法。
-- `docs/product/metrics-dictionary.md`：术语与指标的口径合同，含守恒不变量。
+- `docs/market-game-sim-prd.md`：产品目标、MVP 范围、成功指标、风险和交付路线图。
+- `docs/research/methodology.md`：代理经济学、博弈分析、价格涌现和模型验证方法。
+- `docs/research/metrics-dictionary.md`：术语与指标的口径合同，含守恒不变量。
 
 ## 实现契约
 
@@ -58,14 +53,14 @@
 
 | 前缀 | 含义 | 所属文档 |
 |---|---|---|
-| `PR-` `KPI-` `G-` `Q-` | 产品需求 / 指标 / 目标 / 决策 | `docs/product/prd.md` |
-| `FR-` `KR-` `NFR-` `SC-` `A-` | 功能 / 内核 / 非功能需求、成功指标、假设 | `specs/v0.1-belief-testing-laboratory/spec.md` |
+| `PR-` `KPI-` `G-` `Q-` | 产品需求 / 指标 / 目标 / 决策 | `docs/market-game-sim-prd.md` |
+| `FR-` `KR-` `NFR-` `SC-` `A-` | 功能 / 内核 / 非功能需求、成功指标、假设 | `docs/features/0.1/spec.md` |
 | `D-1`—`D-7` `P-1`—`P-3` | 设计决策 / 参数取值 | 同上 |
-| `MD-` | 指标参数（Δt、W、k、分桶） | `docs/product/metrics-dictionary.md` |
+| `MD-` | 指标参数（Δt、W、k、分桶） | `docs/research/metrics-dictionary.md` |
 | `DS-` `EV-` `TI-` | 退化参数 / 经济终点 / 技术无效 | `docs/contracts/degenerate-states.md` |
 | `E-` | 事件 Schema 参数 | `docs/contracts/event-schema.md` |
 | `OB-` | 订单簿验收向量 | `docs/contracts/orderbook-vectors.md` |
-| `T0xx`—`T7xx` | 实现任务，**每个里程碑文件内局部唯一**（0.1.1—0.1.4） | `specs/v0.1-.../0.1.x-*/tasks.md` |
+| `T0xx`—`T7xx` | 实现任务，**每个里程碑文件内局部唯一**（0.1.1—0.1.4） | `docs/features/0.1/0.1.x-*/tasks.md` |
 
 **任务编号只在单个里程碑内唯一。** 0.1.1 与 0.1.2 都有 `T104`、`T604`，含义完全不同。
 跨里程碑引用任务时必须带前缀：写 `0.1.1 T604`，不写 `T604`。
@@ -94,9 +89,9 @@ ADR-001—004、007—009，其决策要点并入 v0.1 规格的「设计决策�
 ADR 只记录**跨规格生效、且已被多轮检视验证**的工程合同。尚未被实现检验的设计意图
 写在规格的「设计决策与理由」章（v0.1 / D-1—D-7），不占用 ADR 编号。
 
-- `docs/adr/001-numeric-and-serialization-contract.md`：金额与数量以最小单位整数
+- `docs/decisions/001-numeric-and-serialization-contract.md`：金额与数量以最小单位整数
   承载，手续费为唯一舍入点，日志缺失值用 `null`。
-- `docs/adr/002-same-timestamp-event-scheduling.md`：新事件全序键严格递增
+- `docs/decisions/002-same-timestamp-event-scheduling.md`：新事件全序键严格递增
   （禁止零延迟），因果外键与账户分录写入事件 Schema。
 
 ## 建议工作流
@@ -104,7 +99,7 @@ ADR 只记录**跨规格生效、且已被多轮检视验证**的工程合同。
 ```text
 提出假设
   → 编写/评审 spec
-  → 编写 plan 与 ADR
+  → 编写 design 与 ADR
   → 拆分 tasks
   → 测试驱动实现
   → 运行批量实验
@@ -114,17 +109,19 @@ ADR 只记录**跨规格生效、且已被多轮检视验证**的工程合同。
 ## 目录
 
 ```text
-.specify/             SDD 宪章与通用模板
-specs/                按功能编号保存的规格、计划和任务
-docs/product/         PRD 与产品级路线图
-docs/adr/             架构决策记录
-docs/contracts/       跨规格实现合同（事件 Schema、退化状态）
-docs/experiments/     实验协议与结果索引
+docs/                 文档：decisions、features、contracts、experiments、research
 src/market_game_sim/  Python 源码
 tests/                单元、集成和仿真测试
+tools/                校验与统一验证入口
+benchmarks/           性能基准配置与判定协议
+conversations/        AI 对话存档与复盘
 ```
 
 ## 开始开发
 
-环境与依赖会在技术选型确认后加入。当前阶段先评审
-`specs/v0.1-belief-testing-laboratory/spec.md` 中的研究边界和验收指标。
+环境与依赖见 `pyproject.toml`。开发纪律与质量门见 [`docs/SOP.md`](docs/SOP.md)；
+唯一公开验证入口为：
+
+```bash
+python tools/verify.py
+```

@@ -7,10 +7,10 @@
     "removed"
   ],
   "milestones": {
-    "0.1.1": "specs/v0.1-belief-testing-laboratory/0.1.1-minimal-kernel",
-    "0.1.2": "specs/v0.1-belief-testing-laboratory/0.1.2-leverage-and-first-experiment",
-    "0.1.3": "specs/v0.1-belief-testing-laboratory/0.1.3-robustness",
-    "0.1.4": "specs/v0.1-belief-testing-laboratory/0.1.4-replay-and-report"
+    "0.1.1": "docs/features/0.1/0.1.1-minimal-kernel",
+    "0.1.2": "docs/features/0.1/0.1.2-leverage-and-first-experiment",
+    "0.1.3": "docs/features/0.1/0.1.3-robustness",
+    "0.1.4": "docs/features/0.1/0.1.4-replay-and-report"
   },
   "requirements": {
     "US-1": {

@@ -5,7 +5,7 @@
 **创建日期**：2026-08-01
 
 本文是**架构层**：组件边界、依赖方向、数据模型、测试策略。**算法层在实现合同中**
-（`docs/contracts/`），本文不重复它们的内容，只声明它们各自约束哪一层。
+（`contracts/`），本文不重复它们的内容，只声明它们各自约束哪一层。
 
 ## 1. 技术上下文
 
@@ -60,13 +60,13 @@ NFR-001 的逐事件一致性。
 | 模块 | 职责 | 受约束于 |
 |---|---|---|
 | `kernel/` | 事件队列、全序键、KR-006 单调性断言 | 事件 Schema §1、ADR-002 |
-| `book/` | 订单簿、撮合、自成交阻止 | [撮合合同](../../docs/contracts/matching.md) |
-| `ledger/` | 账户、保证金、强平、穿仓核销 | [账户与保证金](../../docs/contracts/margin-and-account.md) |
+| `book/` | 订单簿、撮合、自成交阻止 | [撮合合同](../../contracts/matching.md) |
+| `ledger/` | 账户、保证金、强平、穿仓核销 | [账户与保证金](../../contracts/margin-and-account.md) |
 | `eventlog/` | 事件写入、规范序列化、摘要哈希 | ADR-001 §7、事件 Schema §6—§9 |
 | `config/` | 解析、单位换算、校验 | ADR-001 §2 |
 | `rng/` | 语义键派生、分布变换 | 代理策略 §10 |
-| `agent/` | 因子、信念、意图生成 | [代理策略](../../docs/contracts/agent-strategy.md) |
-| `metrics/` | 指标计算、PnL 桥接 | [指标字典](../../docs/product/metrics-dictionary.md) |
+| `agent/` | 因子、信念、意图生成 | [代理策略](../../contracts/agent-strategy.md) |
+| `metrics/` | 指标计算、PnL 桥接 | [指标字典](../../research/metrics-dictionary.md) |
 | `experiment/` | 批量运行、对照、统计 | 方法论 §9—§11 |
 | `replay/`、`report/` | 回放与报告 | v0.1 / D-7 |
 
@@ -105,7 +105,7 @@ C2: Σ (wallet_units − entry_notional_units) + 交易所费用 + exchange_risk
 ```
 
 两式**整数精确相等**，不得写成浮点容差断言。期望值见
-[验收向量](../../docs/contracts/acceptance-vectors.md)。
+[验收向量](../../contracts/acceptance-vectors.md)。
 
 ### 3.4 账户状态机
 
@@ -139,7 +139,7 @@ ACTIVE ──保证金率 < maint_bp──▶ PENDING_LIQUIDATION
 
 | 层级 | 对象 | 判据来源 |
 |---|---|---|
-| **向量测试** | 账户引擎 | [验收向量](../../docs/contracts/acceptance-vectors.md) 十个案例的整数期望值 |
+| **向量测试** | 账户引擎 | [验收向量](../../contracts/acceptance-vectors.md) 十个案例的整数期望值 |
 | **单元测试** | 订单簿、事件队列、配置解析 | 订单簿向量 OB-1—OB-9b；KR-006 单调性 |
 | **属性测试** | 守恒、定序、舍入 | 随机订单流下 C1/C2 恒成立；`enqueue_seq`、`transaction_seq`、`record_index` 各自满足合同 |
 | **确定性测试** | 全链路 | 同种子两次运行的事件摘要哈希相等（SC-002） |

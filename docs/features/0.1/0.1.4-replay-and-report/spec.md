@@ -1,6 +1,6 @@
 # 0.1.4：回放与报告
 
-**父规格**：[`../spec.md`](../spec.md)　**架构**：[`../plan.md`](../plan.md)  
+**父规格**：[`../spec.md`](../spec.md)　**架构**：[`../design.md`](../design.md)  
 **前置**：0.1.3 全部退出条件达成  
 **任务清单**：[`tasks.md`](tasks.md)  
 **状态**：Ready after 0.1.3（任务已拆解；实现受 0.1.3 退出门约束）  
@@ -153,9 +153,9 @@ E1 断言「回放重建的每一帧 == 原运行的每一帧」，**右边那�
 
 | 领域 | 合同 |
 |---|---|
-| 日志结构、三种顶层记录、字段 | [`event-schema.md`](../../../docs/contracts/event-schema.md) |
-| 指标口径、K 线周期、PnL 桥接 | [`metrics-dictionary.md`](../../../docs/product/metrics-dictionary.md) |
-| 技术无效与经济终点的呈现 | [`degenerate-states.md`](../../../docs/contracts/degenerate-states.md) |
+| 日志结构、三种顶层记录、字段 | [`event-schema.md`](../../../contracts/event-schema.md) |
+| 指标口径、K 线周期、PnL 桥接 | [`metrics-dictionary.md`](../../../research/metrics-dictionary.md) |
+| 技术无效与经济终点的呈现 | [`degenerate-states.md`](../../../contracts/degenerate-states.md) |
 | 回放的架构定位 | v0.1 / D-7 |
 
 ## 6. 已知风险

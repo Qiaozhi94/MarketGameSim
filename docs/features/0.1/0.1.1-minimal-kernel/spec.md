@@ -1,6 +1,6 @@
 # 0.1.1：最小确定性内核（无杠杆）
 
-**父规格**：[`../spec.md`](../spec.md)　**架构**：[`../plan.md`](../plan.md)  
+**父规格**：[`../spec.md`](../spec.md)　**架构**：[`../design.md`](../design.md)  
 **状态**：Ready（实现合同已闭合；P0-I01/I02、P0-K01—K03、P0-L01/L02 均已关闭）  
 **任务拆解**：[`tasks.md`](tasks.md)  
 **创建日期**：2026-08-01　**更新日期**：2026-08-02
@@ -48,8 +48,8 @@
 | # | 条件 | 判据来源 |
 |---|---|---|
 | E1 | C1（`Σposition ≡ 0`）与 C2（价值守恒）在**每个事件后**整数精确成立 | 指标字典 §5 |
-| E2 | [验收向量](../../../docs/contracts/acceptance-vectors.md)案例 **1—5、10** 全部通过 | 案例 6—9 含保证金/强平，属 0.1.2 |
-| E3 | [订单簿向量](../../../docs/contracts/orderbook-vectors.md)集合 **{OB-1, OB-2, OB-3, OB-4, OB-5, OB-6, OB-7, OB-9a}** 全部通过 | 显式集合，不写数量。`{OB-8, OB-9b}` 依赖保证金，属 0.1.2；v0.1 合计十个 OB 向量 |
+| E2 | [验收向量](../../../contracts/acceptance-vectors.md)案例 **1—5、10** 全部通过 | 案例 6—9 含保证金/强平，属 0.1.2 |
+| E3 | [订单簿向量](../../../contracts/orderbook-vectors.md)集合 **{OB-1, OB-2, OB-3, OB-4, OB-5, OB-6, OB-7, OB-9a}** 全部通过 | 显式集合，不写数量。`{OB-8, OB-9b}` 依赖保证金，属 0.1.2；v0.1 合计十个 OB 向量 |
 | E4 | 同配置同种子两次运行的**事件摘要哈希相同** | SC-002 |
 | E5 | 队列按 `queue_key` 弹出，日志按 `log_key` 严格递增；KR-006 违反时抛异常并终止 | 事件 Schema §1.1 |
 | E5b | **队列事件与事务记录分野正确**：同时间戳第二张订单看到已更新的账户；跨档成交只做一次批次风险检查 | 事件 Schema §1.4、撮合 §1.2 |
@@ -71,14 +71,14 @@
 
 | 领域 | 合同 |
 |---|---|
-| 撮合、定序、成交价、跨档、自成交 | [`matching.md`](../../../docs/contracts/matching.md) |
-| 订单簿期望值 | [`orderbook-vectors.md`](../../../docs/contracts/orderbook-vectors.md) |
-| 事件类型、字段、因果外键、序列化 | [`event-schema.md`](../../../docs/contracts/event-schema.md) |
-| 账户字段、记账、`entry_notional` 更新 | [`margin-and-account.md`](../../../docs/contracts/margin-and-account.md) §1—§2 |
-| 期望值 | [`acceptance-vectors.md`](../../../docs/contracts/acceptance-vectors.md) |
-| 数值、舍入、序列化 | [ADR-001](../../../docs/adr/001-numeric-and-serialization-contract.md) |
-| 事件调度、KR-006 | [ADR-002](../../../docs/adr/002-same-timestamp-event-scheduling.md) |
-| 退化状态（空簿、单边簿、无成交） | [`degenerate-states.md`](../../../docs/contracts/degenerate-states.md) §1—§2 |
+| 撮合、定序、成交价、跨档、自成交 | [`matching.md`](../../../contracts/matching.md) |
+| 订单簿期望值 | [`orderbook-vectors.md`](../../../contracts/orderbook-vectors.md) |
+| 事件类型、字段、因果外键、序列化 | [`event-schema.md`](../../../contracts/event-schema.md) |
+| 账户字段、记账、`entry_notional` 更新 | [`margin-and-account.md`](../../../contracts/margin-and-account.md) §1—§2 |
+| 期望值 | [`acceptance-vectors.md`](../../../contracts/acceptance-vectors.md) |
+| 数值、舍入、序列化 | [ADR-001](../../../decisions/001-numeric-and-serialization-contract.md) |
+| 事件调度、KR-006 | [ADR-002](../../../decisions/002-same-timestamp-event-scheduling.md) |
+| 退化状态（空簿、单边簿、无成交） | [`degenerate-states.md`](../../../contracts/degenerate-states.md) §1—§2 |
 
 ## 5. 验收方式
 

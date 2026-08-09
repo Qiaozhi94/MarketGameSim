@@ -5,19 +5,19 @@
 开工与否由各里程碑自己的状态与前置退出门决定（0.1.1 = Ready，可开工）。
 根规格转 Stable 的条件是 **0.1.4** 退出（完整 v0.1 签收）。  
 **创建日期**：2026-07-31　**更新日期**：2026-08-02  
-**关联 PRD**：[`../../docs/product/prd.md`](../../docs/product/prd.md) v0.4.0  
-**架构**：[`plan.md`](plan.md)　**里程碑**：[`0.1.1`](0.1.1-minimal-kernel/spec.md) · [`0.1.2`](0.1.2-leverage-and-first-experiment/spec.md) · [`0.1.3`](0.1.3-robustness/spec.md) · [`0.1.4`](0.1.4-replay-and-report/spec.md)  
-**已生效决策**：[ADR-001](../../docs/adr/001-numeric-and-serialization-contract.md)
+**关联 PRD**：[`../../market-game-sim-prd.md`](../../market-game-sim-prd.md) v0.4.0  
+**架构**：[`design.md`](design.md)　**里程碑**：[`0.1.1`](0.1.1-minimal-kernel/spec.md) · [`0.1.2`](0.1.2-leverage-and-first-experiment/spec.md) · [`0.1.3`](0.1.3-robustness/spec.md) · [`0.1.4`](0.1.4-replay-and-report/spec.md)  
+**已生效决策**：[ADR-001](../../decisions/001-numeric-and-serialization-contract.md)
 （数值与序列化口径）、
-[ADR-002](../../docs/adr/002-same-timestamp-event-scheduling.md)（事件调度与因果链）；
+[ADR-002](../../decisions/002-same-timestamp-event-scheduling.md)（事件调度与因果链）；
 其余设计决策见本文 §「设计决策与理由」  
-**实现合同**：[撮合](../../docs/contracts/matching.md)、
-[事件 Schema](../../docs/contracts/event-schema.md)、
-[退化状态](../../docs/contracts/degenerate-states.md)、
-[代理策略](../../docs/contracts/agent-strategy.md)、
-[账户与保证金](../../docs/contracts/margin-and-account.md)、
-[验收向量](../../docs/contracts/acceptance-vectors.md)、
-[指标字典](../../docs/product/metrics-dictionary.md)
+**实现合同**：[撮合](../../contracts/matching.md)、
+[事件 Schema](../../contracts/event-schema.md)、
+[退化状态](../../contracts/degenerate-states.md)、
+[代理策略](../../contracts/agent-strategy.md)、
+[账户与保证金](../../contracts/margin-and-account.md)、
+[验收向量](../../contracts/acceptance-vectors.md)、
+[指标字典](../../research/metrics-dictionary.md)
 
 ## 问题与目标
 
@@ -80,14 +80,14 @@
 ### 市场与撮合
 
 - **FR-001**：实现价格时间优先的单品种限价订单簿，支持限价单、市价单、撤单与部分
-  成交。撮合规则见[撮合合同](../../docs/contracts/matching.md)：成交价取 maker 挂单
+  成交。撮合规则见[撮合合同](../../contracts/matching.md)：成交价取 maker 挂单
   价，跨档逐笔拆分为多个 `TRADE_SETTLE`，限价单剩余挂入簿、市价单剩余按 IOC 撤销。
 - **FR-002**：市场制度通过约束钩子注入（D-1），钩子只能拒绝或延迟订单，
   **不得改写**。第一版只提供 `crypto_perp_free` 一套配置；接口须能在不改撮合核心的
   前提下接入其他制度。
 - **FR-003**：支持 tick size、最小数量与 maker / taker 分离计费（含负 maker 费率）。
   价格、数量与金额一律以最小单位整数承载，手续费为唯一舍入点（ADR-001）。
-- **FR-004**：账户模型为**线性永续合约**（[账户与保证金合同](../../docs/contracts/margin-and-account.md)）：
+- **FR-004**：账户模型为**线性永续合约**（[账户与保证金合同](../../contracts/margin-and-account.md)）：
   维护钱包余额、合约仓位、开仓成本、保证金占用、已实现/未实现 PnL。
   **无现金/库存交割，无债务字段**。每一次账户变动以分录形式记录在引发它的事件上
   （事件 Schema §4.2.1）。
@@ -111,7 +111,7 @@
 
 - **FR-009**：代理信念以因子权重向量表达，权重从可配置分布中抽取，**一次运行内固定
   不变**（D-3、PRD §13.3）。从信息集到订单意图的完整管线由
-  [代理策略合同](../../docs/contracts/agent-strategy.md)定义，**同一信息集与 RNG
+  [代理策略合同](../../contracts/agent-strategy.md)定义，**同一信息集与 RNG
   状态必然产生同一组意图**。
 - **FR-010**：因子库至少包含动量、回归、从众、盘口、随机五类，且**必须覆盖不同信息
   源**；每次研究运行须输出因子相关矩阵（D-3）。
@@ -291,7 +291,7 @@ ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的
 而非固定值。
 
 口径为**保证金率**（保证金/名义价值），不是担保比例（权益/保证金占用）——后者在
-无仓位时分母为 0（[账户合同](../../docs/contracts/margin-and-account.md) §3.1）。
+无仓位时分母为 0（[账户合同](../../contracts/margin-and-account.md) §3.1）。
 
 | 参数 | 取值 | 依据 |
 |---|---|---|
@@ -358,7 +358,7 @@ ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的
 - **KR-004**：每代理独立 RNG 流，由 **`hashlib.blake2b`**（标准库，KR-005）按语义键
   派生：`(master_seed, agent_id, mechanism, decision_index, draw_index)`。
   **不使用 `numpy.random.SeedSequence`**——NumPy 不是标准库。分布变换算法见
-  [代理策略合同](../../docs/contracts/agent-strategy.md) §10。
+  [代理策略合同](../../contracts/agent-strategy.md) §10。
   仅按 `agent_id` 派生是不够的——处理变量改变代理行为后，抽取次数与顺序会分叉，
   「相同种子」不再等于「相同随机冲击路径」，配对对照的效力被悄悄削弱。语义键使
   同一决策序号上的同一机制抽到同一随机数，与另一组的行为差异无关。
@@ -397,7 +397,7 @@ ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的
   `Σwallet` 与 `Σentry_notional` **各自都不守恒**，守恒的是两者之差；测试**必须
   包含三代理跨价换手**，否则会误证已被推翻的旧等式（账户合同 §2.3）。
   个体账户另须桥接检验 `Δequity = Δwallet + Δunrealized`。
-  **十个验收向量**（[`acceptance-vectors.md`](../../docs/contracts/acceptance-vectors.md)）
+  **十个验收向量**（[`acceptance-vectors.md`](../../contracts/acceptance-vectors.md)）
   须全部通过，其整数期望值是实现的唯一裁判。
 - **SC-002**：固定种子的两次运行产生相同事件摘要哈希。
 - **SC-003**：单个命令可运行不少于 30 个种子的对照实验。
@@ -426,7 +426,7 @@ ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的
 ## 未闭合事项
 
 **实现合同已全部闭合**：产品决策（Q-001—Q-016）、
-[代理策略合同](../../docs/contracts/agent-strategy.md)（信息集→因子→信号→目标仓位
+[代理策略合同](../../contracts/agent-strategy.md)（信息集→因子→信号→目标仓位
 →意图→准入）与 PnL 会计桥接（指标字典 §5.2）均已写定。**0.1.1 可以开工。**
 
 仍未闭合的是**预注册研究设计**（PRD §17.2 C），须在正式实验前完成，可与 0.1.1 并行

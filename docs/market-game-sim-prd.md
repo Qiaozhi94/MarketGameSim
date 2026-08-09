@@ -4,15 +4,16 @@
 **状态**：Draft  
 **创建日期**：2026-07-28　**更新日期**：2026-07-31  
 **产品阶段**：实验性 MVP  
-**关联宪章**：[`../../.specify/memory/constitution.md`](../../.specify/memory/constitution.md)  
-**当前交付规格**：[`../../specs/v0.1-belief-testing-laboratory/spec.md`](../../specs/v0.1-belief-testing-laboratory/spec.md)  
-**方法论说明**：[`methodology.md`](methodology.md)　**指标字典**：[`metrics-dictionary.md`](metrics-dictionary.md)
+**项目原则**：[`docs/SOP.md`](../SOP.md)（唯一入口，含安全与合规边界 §4）  
+**当前交付规格**：[`docs/features/0.1/spec.md`](../features/0.1/spec.md)  
+**方法论说明**：[`docs/research/methodology.md`](../research/methodology.md)　
+**指标字典**：[`docs/research/metrics-dictionary.md`](../research/metrics-dictionary.md)
 
-**已生效 ADR**：[ADR-001](../adr/001-numeric-and-serialization-contract.md)
+**已生效 ADR**：[ADR-001](../decisions/001-numeric-and-serialization-contract.md)
 （数值与序列化口径）、
-[ADR-002](../adr/002-same-timestamp-event-scheduling.md)（事件调度与因果链）  
+[ADR-002](../decisions/002-same-timestamp-event-scheduling.md)（事件调度与因果链）  
 **其余设计决策**：见
-[v0.1 规格 §设计决策与理由](../../specs/v0.1-belief-testing-laboratory/spec.md)（D-1—D-7）
+[v0.1 规格 §设计决策与理由](../features/0.1/spec.md)（D-1—D-7）
 
 ## 0. 关于本版
 
@@ -388,13 +389,13 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 不允许「先把功能做全再说」。
 
 ### 0.1.1：最小确定性内核（**无杠杆**）
-→ [`specs/v0.1-.../0.1.1-minimal-kernel/spec.md`](../../specs/v0.1-belief-testing-laboratory/0.1.1-minimal-kernel/spec.md)
+→ [`specs/v0.1-.../0.1.1-minimal-kernel/spec.md`](../features/0.1/0.1.1-minimal-kernel/spec.md)
 
 订单簿、账户、事件调度与日志、确定性哈希、因果链。**账户结构须一次留好保证金字段**，
 但本阶段不开启杠杆。
 
 **退出条件**：见
-[0.1.1 spec §3](../../specs/v0.1-belief-testing-laboratory/0.1.1-minimal-kernel/spec.md)
+[0.1.1 spec §3](../features/0.1/0.1.1-minimal-kernel/spec.md)
 的退出条件表。**该表是唯一真源；本节不复述数量，也不复述 ID 列表。**
 
 性质上的要点（非枚举）：守恒等式逐事件整数精确成立；账户与订单簿验收向量通过；
@@ -408,8 +409,8 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 和确定性钉死。带着杠杆调试账本会让两类缺陷混在一起。
 
 ### 0.1.2：杠杆与第一个实验闭环
-→ [`0.1.2-leverage-and-first-experiment.md`](../../specs/v0.1-belief-testing-laboratory/0.1.2-leverage-and-first-experiment/spec.md)
-→ [`0.1.2-tasks.md`](../../specs/v0.1-belief-testing-laboratory/0.1.2-leverage-and-first-experiment/tasks.md)
+→ [`0.1.2-leverage-and-first-experiment.md`](../features/0.1/0.1.2-leverage-and-first-experiment/spec.md)
+→ [`0.1.2-tasks.md`](../features/0.1/0.1.2-leverage-and-first-experiment/tasks.md)
 
 杠杆、保证金、强平、穿仓、连锁；最小代理策略合同；**无杠杆 vs 有杠杆的配对对照**。
 
@@ -417,16 +418,16 @@ w = (w_动量, w_回归, w_从众, w_盘口, w_噪声, …)   一次运行内固
 经济终点与连续指标两部分报告齐备；KPI-005、KPI-007、KPI-010、KPI-011 达标。
 
 ### 0.1.3：模型稳健性
-→ [`0.1.3-robustness.md`](../../specs/v0.1-belief-testing-laboratory/0.1.3-robustness/spec.md)
-→ [`0.1.3-tasks.md`](../../specs/v0.1-belief-testing-laboratory/0.1.3-robustness/tasks.md)
+→ [`0.1.3-robustness.md`](../features/0.1/0.1.3-robustness/spec.md)
+→ [`0.1.3-tasks.md`](../features/0.1/0.1.3-robustness/tasks.md)
 
 替代代理规则、参数空间与模型族扫描、因子消融、共同随机输入、留出验证区。
 
 **退出条件**：旗舰结论不依赖单一行为映射或单一狭窄参数点。
 
 ### 0.1.4：回放与报告
-→ [`0.1.4-replay-and-report/spec.md`](../../specs/v0.1-belief-testing-laboratory/0.1.4-replay-and-report/spec.md)
-→ [`0.1.4-replay-and-report/tasks.md`](../../specs/v0.1-belief-testing-laboratory/0.1.4-replay-and-report/tasks.md)
+→ [`0.1.4-replay-and-report/spec.md`](../features/0.1/0.1.4-replay-and-report/spec.md)
+→ [`0.1.4-replay-and-report/tasks.md`](../features/0.1/0.1.4-replay-and-report/tasks.md)
 
 单文件 HTML 回放器（**PR-018**）、总结报告（**PR-019**）、K 线视图（**PR-020**）。
 回放器是事件日志的消费者，不导入内核（v0.1 / D-7）。
@@ -440,7 +441,7 @@ PR-020 = K 线视图。以 §9.5 为准。）
 **为什么单独成里程碑**：FR-019/FR-020/SC-008 是 v0.1 必选需求，却曾在 0.1.1 →
 0.1.2 → 0.1.3 之间互相推诿（「0.1.2」→「0.1.3 或按需」→「后续展示阶段」），三个
 里程碑可以全部签收而它们仍未交付。归属见
-[v0.1 spec §需求追踪矩阵](../../specs/v0.1-belief-testing-laboratory/spec.md)。
+[v0.1 spec §需求追踪矩阵](../features/0.1/spec.md)。
 
 **完整 v0.1 签收 = 0.1.1—0.1.4 全部退出条件通过。**
 

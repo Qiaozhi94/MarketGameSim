@@ -110,7 +110,7 @@ def apply_ablation(
 
     Lives in the agent layer (not robustness/) because the kernel decision
     path must consume it without violating the L2->L3 dependency rule
-    (plan.md §2: agent must not import experiment/robustness).
+    (design.md §2: agent must not import experiment/robustness).
 
     Backward-compatible 2-tuple view of :func:`apply_ablation_named`.
     """

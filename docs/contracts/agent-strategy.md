@@ -5,7 +5,7 @@
 **创建日期**：2026-08-01  
 **支撑需求**：v0.1 / FR-009—FR-013；PRD / PR-008—PR-011  
 **关联**：[事件 Schema](event-schema.md)、[退化状态](degenerate-states.md)、
-[指标字典](../product/metrics-dictionary.md)
+[指标字典](../research/metrics-dictionary.md)
 
 ## 0. 本文为什么必须存在
 

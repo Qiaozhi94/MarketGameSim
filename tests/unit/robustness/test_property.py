@@ -3,7 +3,7 @@
 Covers scan expansion, pairing join, contamination check, ablation
 renormalization and alternative mappings with *invariant* assertions
 (parametrized / deterministic-exhaustive, no new deps -- hypothesis is
-optional per plan.md §1 and not added):
+optional per design.md §1 and not added):
 
 - scan/grid: Cartesian completeness, cell_id uniqueness per combination,
   run_id uniqueness per seed/replicate;

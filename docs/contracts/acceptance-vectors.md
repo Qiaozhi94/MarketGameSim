@@ -5,7 +5,7 @@
 **创建日期**：2026-08-01  
 **支撑需求**：v0.1 / SC-001；PRD / KPI-001  
 **关联**：[账户与保证金](margin-and-account.md)、[事件 Schema](event-schema.md)、
-[指标字典](../product/metrics-dictionary.md)
+[指标字典](../research/metrics-dictionary.md)
 
 ## 0. 用途与地位
 
