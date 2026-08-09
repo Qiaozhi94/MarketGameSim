@@ -27,7 +27,7 @@
   - `spec.md` 需求与验收　`plan.md` 架构与测试策略
   - `0.1.1-minimal-kernel/` 最小确定性内核（**当前阶段，可开工**）
   - `0.1.2-leverage-and-first-experiment/` 杠杆实验闭环（任务已拆，待 0.1.1 退出）
-  - `0.1.3-robustness/` 模型稳健性（任务已拆，待 0.1.2 退出）
+  - `0.1.3-robustness/` 模型稳健性（任务已拆，可从 T001 开工）
   - `0.1.4-replay-and-report/` 回放与报告（任务已拆，待 0.1.3 退出）
 
 每个里程碑目录下各有 `spec.md` 与 `tasks.md`。
