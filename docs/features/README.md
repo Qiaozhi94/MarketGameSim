@@ -1,0 +1,126 @@
+# docs/features —— 版本与里程碑（Feature / Milestone）生命周期
+
+本文是 `docs/features/` 的入口与规则唯一真源，规定 Feature/里程碑三件套的职责、状态
+门、问题语法（Q/DQ）与版本收口方式。本目录**不是**某份正文的复制，状态与需求正文只
+属于各 `spec.md`。
+
+> 参考：与 PersonaHub 共用同一套 docs 骨架与生命周期；MarketGameSim 额外保留
+> `traceability.json` 与 `contracts/`、`experiments/` 差异。
+
+## 目录骨架
+
+```text
+docs/features/
+├─ README.md           # 本文：规则与入口
+├─ TEMPLATE/           # 三件套模板唯一真源
+│  ├─ spec.md
+│  ├─ design.md
+│  └─ tasks.md
+├─ releases/           # 版本收口记录（<version>.md）
+└─ <version>/          # 版本根 + 里程碑
+   ├─ README.md        # 版本入口与收口提示（派生，不声明独立状态）
+   ├─ spec.md          # 版本级研究规格（状态唯一真源）
+   ├─ design.md        # 跨里程碑共享技术设计（承接原 plan.md）
+   ├─ traceability.json# requirement → milestone → exit 机器追踪
+   └─ <milestone>/
+      ├─ spec.md
+      ├─ design.md     # gate v1 起必选
+      └─ tasks.md
+```
+
+## 状态唯一真源
+
+- **唯一状态真源**是每个版本/里程碑 `spec.md` 的 frontmatter `status`。
+- `design.md`、`tasks.md`、`README.md`、`CLAUDE.md` **不得**声明第二份独立 Status；
+  它们只链接或展示由 spec 派生的索引。
+- 状态机：`draft → ready-for-development → in-progress → review → done`。
+- `status` 表示生命周期；`prerequisites` 表示调度依赖；两者分离，不再使用
+  「Ready after 0.1.3」这类混合自由文本。
+- 版本根只有在全部里程碑 `done` 且收口检查通过后才能变为 `done`。
+
+## 三件套职责
+
+| 文件 | 职责 |
+|---|---|
+| `spec.md` | 做什么、怎样算完成。**状态唯一真源**，固定 9 个顶层章节（§2.3.1）。 |
+| `design.md` | 怎么实现、边界与取舍。固定 11 个顶层章节；不写逐步编码任务。 |
+| `tasks.md` | 按什么顺序实施。固定 6 个顶层章节；Phase 只作为第 2 节动态三级标题。 |
+
+### gate 规则
+
+- `gate_version: 0`：仅用于已确认的 legacy 里程碑（0.1.1—0.1.3），只执行元数据、
+  状态唯一性、路径、链接与现有 traceability 校验。**新建或回退到 v0 必须失败。**
+- `gate_version: 1`：新里程碑（0.1.4 起）必选。额外校验三件套齐全、顶层结构与模板
+  完全一致、Q/DQ 全部关闭、AC 引用真实存在的 requirement 与仓库内测试路径。
+
+### 固定顶层章节
+
+`spec.md`（9 章）：
+
+```text
+0. 来源与意图
+1. 问题、目标与非目标
+2. 用户场景
+3. 范围与边界
+4. 需求
+5. 生命周期与不变量
+6. 成功与验收
+7. 测试、依赖与决策
+8. 待确认问题
+```
+
+`design.md`（11 章）：
+
+```text
+0. 输入与约束
+1. 技术概要与影响面
+2. 架构与模块边界
+3. 数据模型与 Migration
+4. 接口、Contract 与 Event
+5. Runtime、Workflow 与并发
+6. UI 与可观测性
+7. 失败、恢复、安全与兼容
+8. 测试策略与验收映射
+9. 已确认决策与残余风险
+10. 待确认设计问题
+```
+
+`tasks.md`（6 章）：
+
+```text
+0. 来源与执行规则
+1. 前置条件
+2. 实现任务
+3. 验证与验收任务
+4. 依赖与并行关系
+5. 明确后移
+```
+
+## 问题语法（Q / DQ）
+
+- spec 待确认问题用 `Q-xxx`，design 用 `DQ-xxx`。
+- 开放：`- [ ] Q-001: <问题>`；关闭：`- [x] Q-001: <问题> — 决策：<结论>`。
+- 「8. 待确认问题」/「10. 待确认设计问题」只接受规范 checkbox 或单独一行 `无`；
+  禁止自由文本、空章节、缺章节。
+- `ready-for-development` 及以上不允许 spec/design 留有未关闭问题。
+
+## 版本收口
+
+- 某版本全部里程碑 `done` 后：新建 `docs/features/releases/<version>.md`，版本根
+  `spec.md` 原地转为 `done`（不复制 stable spec），新增或更新版本 README 标记收口。
+- `closed_at` 写入前必须验证全部里程碑状态、traceability、合同真源、链接和测试门禁。
+- 不创建 `v0.x-stable` 副本，不把里程碑移动到 archive，不重写 requirement owner。
+
+## 需求追踪
+
+- `traceability.json` 是 requirement → milestone → exit 的机器追踪真源。
+- requirement `statuses` 只表示 `owned/deferred/removed`；milestone 生命周期由各
+  milestone `spec.md` frontmatter 表示；release 生命周期由版本根 `spec.md` 与
+  `releases/<version>.md` 表示。
+- 退出条件编号只在单个里程碑内唯一，跨里程碑引用用 `<milestone-id>/<exit-id>`。
+
+## 相关入口
+
+- `docs/README.md`：全仓文档所有权地图。
+- `docs/SOP.md`：开发纪律与质量门。
+- 唯一公开验证入口：`python tools/verify.py`。

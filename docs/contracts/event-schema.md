@@ -5,9 +5,9 @@
 **创建日期**：2026-07-29　**更新日期**：2026-08-02  
 **支撑需求**：v0.1 / FR-004、FR-008、FR-015、KR-001—KR-006；PRD / KPI-002、KPI-006  
 **关联**：
-[ADR-001](../adr/001-numeric-and-serialization-contract.md)、
-[ADR-002](../adr/002-same-timestamp-event-scheduling.md)、
-[指标字典](../product/metrics-dictionary.md)
+[ADR-001](../decisions/001-numeric-and-serialization-contract.md)、
+[ADR-002](../decisions/002-same-timestamp-event-scheduling.md)、
+[指标字典](../research/metrics-dictionary.md)
 
 ## 1. 队列顺序与日志顺序
 

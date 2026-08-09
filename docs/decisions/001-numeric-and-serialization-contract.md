@@ -2,9 +2,9 @@
 
 日期：2026-07-30  
 状态：Accepted  
-关联规格：[`../../specs/v0.1-belief-testing-laboratory/spec.md`](../../specs/v0.1-belief-testing-laboratory/spec.md)  
+关联规格：[`../features/0.1/spec.md`](../features/0.1/spec.md)  
 解决问题：PRD Q-011  
-关联文档：[指标字典](../product/metrics-dictionary.md)、
+关联文档：[指标字典](../research/metrics-dictionary.md)、
 [事件 Schema](../contracts/event-schema.md)、
 [退化状态定义](../contracts/degenerate-states.md)
 

@@ -1,6 +1,17 @@
 # MarketGameSim 项目须知
 
+## 项目原则入口
+
+- **不可违反原则**唯一入口：[`docs/SOP.md`](docs/SOP.md)（含各原则唯一拥有者链接）。
+- 规格与生命周期规则：[`docs/features/README.md`](docs/features/README.md)。
+- 全仓文档所有权地图：[`docs/README.md`](docs/README.md)。
+- 当前 v0.1 规格真源：[`docs/features/0.1/spec.md`](docs/features/0.1/spec.md)。
+
 ## 提交前必须本地跑通
+
+```bash
+python tools/verify.py
+```
 
 ```bash
 pytest

@@ -5,8 +5,8 @@
 **创建日期**：2026-08-01  
 **支撑需求**：v0.1 / FR-004—FR-008；PRD / PR-004—PR-007  
 **关联**：[事件 Schema](event-schema.md)、[退化状态](degenerate-states.md)、
-[代理策略](agent-strategy.md)、[指标字典](../product/metrics-dictionary.md)、
-[ADR-001](../adr/001-numeric-and-serialization-contract.md)
+[代理策略](agent-strategy.md)、[指标字典](../research/metrics-dictionary.md)、
+[ADR-001](../decisions/001-numeric-and-serialization-contract.md)
 
 ## 0. 为什么是永续合约
 

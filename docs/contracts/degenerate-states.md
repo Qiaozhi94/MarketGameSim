@@ -4,7 +4,7 @@
 **状态**：Stable（跨规格实现合同；变更须记 ADR 并提升 `schema_version`）  
 **创建日期**：2026-07-29  
 **支撑需求**：v0.1 / FR-007、FR-018、SC-005；PRD / KPI-005  
-**关联**：[v0.1 规格](../../specs/v0.1-belief-testing-laboratory/spec.md)、[指标字典](../product/metrics-dictionary.md)
+**关联**：[v0.1 规格](../features/0.1/spec.md)、[指标字典](../research/metrics-dictionary.md)
 
 ## 0. 原则
 
@@ -15,7 +15,7 @@
 
 「未定义的量」（如单边簿下的 `mid`）与「未定义的状态」是两回事：前者是合法且必须
 被记录的观测结果，在日志中以 `null` 表达、在分析层才成为 NaN
-（[ADR-001](../adr/001-numeric-and-serialization-contract.md) §6）；后者是
+（[ADR-001](../decisions/001-numeric-and-serialization-contract.md) §6）；后者是
 本文要消除的对象。
 
 ## 1. 订单簿退化

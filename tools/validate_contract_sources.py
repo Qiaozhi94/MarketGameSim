@@ -5,7 +5,7 @@
 
 - `src/market_game_sim/schema/event_fields.json`  —— 事件字段规范
 - `src/market_game_sim/schema/report_artifacts.json` —— 0.1.4 报告输入 artifact Schema
-- `specs/v0.1-belief-testing-laboratory/traceability.json` —— 需求追踪
+- `docs/features/0.1/traceability.json` —— 需求追踪
 
 第 33 章总结过一条原则：**每引入一个「唯一真源」，必须同时引入检验它唯一性的手段**，
 否则它只是多了一个可以漂移的地方。
@@ -33,11 +33,11 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 SCHEMA = ROOT / "src" / "market_game_sim" / "schema" / "event_fields.json"
 ARTIFACT_SCHEMAS = ROOT / "src" / "market_game_sim" / "schema" / "report_artifacts.json"
-TRACE = ROOT / "specs" / "v0.1-belief-testing-laboratory" / "traceability.json"
-SPEC = ROOT / "specs" / "v0.1-belief-testing-laboratory" / "spec.md"
+TRACE = ROOT / "docs" / "features" / "0.1" / "traceability.json"
+SPEC = ROOT / "docs" / "features" / "0.1" / "spec.md"
 EVENT_SCHEMA_DOC = ROOT / "docs" / "contracts" / "event-schema.md"
 REPORT_SPEC = (
-    ROOT / "specs" / "v0.1-belief-testing-laboratory" / "0.1.4-replay-and-report" / "spec.md"
+    ROOT / "docs" / "features" / "0.1" / "0.1.4-replay-and-report" / "spec.md"
 )
 
 ARTIFACT_FIELD_TYPES = {"string", "integer", "number", "boolean", "object", "array"}

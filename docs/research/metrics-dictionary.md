@@ -117,7 +117,7 @@ EWMA 平滑系数：`α = 1 - 2^(-1/τ)`，每笔成交按 `anchor ← α·price
 ### 1.8 最小单位（tick_size / min_quantity / cash_unit）
 
 领域层与事件日志中的价格、数量、现金、名义金额、费用与持仓成本**一律为最小单位
-整数**，禁止浮点（[ADR-001](../adr/001-numeric-and-serialization-contract.md) §1）。
+整数**，禁止浮点（[ADR-001](../decisions/001-numeric-and-serialization-contract.md) §1）。
 `cash_unit` 初值 `1e-8`。
 
 配置校验断言 `tick_size × min_quantity` 是 `cash_unit` 的整数倍，因此**成交名义

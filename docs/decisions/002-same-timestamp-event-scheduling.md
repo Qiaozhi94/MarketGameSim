@@ -3,7 +3,7 @@
 日期：2026-07-30  
 状态：Accepted（2026-08-01 修订为 queue key / log key 双键；2026-08-02 修订
 KPI-006 路径为 AGENT/LIQUIDATION 分支，见 §3 附注）
-关联规格：[`../../specs/v0.1-belief-testing-laboratory/spec.md`](../../specs/v0.1-belief-testing-laboratory/spec.md)  
+关联规格：[`../features/0.1/spec.md`](../features/0.1/spec.md)  
 解决问题：PRD Q-012  
 关联决策：v0.1 规格 D-5（离散事件内核）  
 关联文档：[事件 Schema](../contracts/event-schema.md)
