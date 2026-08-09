@@ -410,6 +410,61 @@ def test_check_shared_randomness_parity_detects_divergent_signal_bp():
     assert "signal_bp" in err
 
 
+def test_check_shared_randomness_parity_detects_key_set_mismatch():
+    """v013 regression (high): a key present in only ONE arm must fail-closed.
+    The old implementation only compared the key intersection, so a fully
+    disjoint key set (completely misaligned random path) passed silently."""
+
+    def _run(agent_id: str) -> RunResult:
+        return RunResult(
+            seed=1,
+            terminated="COMPLETED",
+            abort_code=None,
+            events=[
+                {
+                    "event_type": "AGENT_DECIDE",
+                    "agent_id": agent_id,
+                    "_decision_index": 0,
+                    "internal_state": {"signal_bp": 100},
+                }
+            ],
+            book_last_ticks=None,
+            accounts={},
+            liquidation_metrics=LiquidationMetrics(),
+            classification=RunClassification(),
+        )
+
+    # disjoint key sets: control has agent "a", treatment has agent "b"
+    err = check_shared_randomness_parity([_run("a")], [_run("b")])
+    assert err is not None
+    assert "semantic-key sets differ" in err
+
+    # one arm has an EXTRA key the other lacks -> must fail too
+    def _run_two(agents: list[str]) -> RunResult:
+        return RunResult(
+            seed=1,
+            terminated="COMPLETED",
+            abort_code=None,
+            events=[
+                {
+                    "event_type": "AGENT_DECIDE",
+                    "agent_id": aid,
+                    "_decision_index": 0,
+                    "internal_state": {"signal_bp": 100},
+                }
+                for aid in agents
+            ],
+            book_last_ticks=None,
+            accounts={},
+            liquidation_metrics=LiquidationMetrics(),
+            classification=RunClassification(),
+        )
+
+    err2 = check_shared_randomness_parity([_run_two(["a", "b"])], [_run_two(["a"])])
+    assert err2 is not None
+    assert "semantic-key sets differ" in err2
+
+
 def test_run_paired_raises_on_parity_violation():
     mm = _mm_spec()
     b_control = _belief_spec("agent-0")
@@ -695,3 +750,39 @@ def test_build_market_validation_report_skips_technical_invalid_runs():
     )
     report = build_market_validation_report([ti_result])
     assert report["per_seed"] == {}
+
+
+def test_verify_bridge_residuals_raises_on_nonzero_under_opt(monkeypatch):
+    """v013 regression (high): KPI-009 gate must raise BridgeResidualError on
+    a non-zero residual even under `python -O` -- the old `assert` is stripped
+    by -O and would silently accept the corrupted run."""
+    from market_game_sim.experiment import runner as runner_mod
+    from market_game_sim.experiment.runner import BridgeResidualError
+
+    # a TRADE_SETTLE whose price is inconsistent with the valuation marks
+    # produces a non-zero bridge residual
+    event = {
+        "event_type": "TRADE_SETTLE",
+        "trade_id": "t1",
+        "price_ticks": 19980,
+        "valuation_mark_before_half_ticks": 19980,
+        "valuation_mark_after_half_ticks": 19980,
+        "postings": [
+            {
+                "posting_type": "TRADE_POSTING",
+                "agent_id": "a1",
+                "wallet_delta_units": -999000,
+                "position_delta_units": 1000,
+                "entry_notional_delta_units": 9990000000,
+                "fee_delta_units": 999000,
+                "position_after_units": 1000,
+            }
+        ],
+    }
+    with pytest.raises(BridgeResidualError, match="bridge residual"):
+        runner_mod._verify_bridge_residuals([event], mult=1000)
+
+    # sanity: a consistent trade passes
+    clean = dict(event)
+    clean["price_ticks"] = 9990
+    runner_mod._verify_bridge_residuals([clean], mult=1000)

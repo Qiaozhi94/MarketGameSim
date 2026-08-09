@@ -82,10 +82,12 @@ class Preregistration:
         """Structural consistency checks; returns a list of violation strings
         (empty when valid)."""
         problems: list[str] = []
-        if (
-            "linear" not in self.alternative_behavior_mappings
-            and not self.alternative_behavior_mappings
-        ):
+        # T003: at least one ALTERNATIVE mapping beyond the linear baseline.
+        # v013: a list containing only "linear" is not a valid preregistration
+        # (the old condition only fired on an EMPTY list, so "linear"-only
+        # passed silently).
+        alternatives = [m for m in self.alternative_behavior_mappings if m != "linear"]
+        if not alternatives:
             problems.append("no alternative behavior mappings preregistered")
         if len(self.model_families) < 2:
             problems.append("fewer than two model families preregistered")

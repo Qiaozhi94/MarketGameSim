@@ -80,3 +80,24 @@ class TestOtherContrasts:
         base = {"maint_bp": 500, "mm_thickness": 10}
         changed = {"maint_bp": 600, "mm_thickness": 10}
         assert validate_contrast(base, changed, rule)
+
+    def test_deleted_shared_field_rejected(self):
+        """v013 regression (high): silently DELETING a shared config field
+        must fail-closed -- the old diff only iterated ``changed`` keys, so a
+        deletion passed validation."""
+        rule = ContrastRule(kind="scan_axis", allowed_fields=["maint_bp"])
+        base = {"maint_bp": 500, "mm_thickness": 10}
+        changed = {"maint_bp": 600}  # mm_thickness deleted
+        with pytest.raises(DiffValidationError, match="outside allowed set"):
+            validate_contrast(base, changed, rule)
+
+    def test_deleted_family_defining_field_rejected(self):
+        rule = ContrastRule(
+            kind="model_family",
+            family_defining_fields=["factor_architecture"],
+            requires_structural_change=True,
+        )
+        base = {"model_family_id": "f1", "factor_architecture": "belief", "maint_bp": 500}
+        changed = {"model_family_id": "f2", "maint_bp": 500}  # defining field deleted
+        with pytest.raises(DiffValidationError, match="deleted defining field"):
+            validate_contrast(base, changed, rule)

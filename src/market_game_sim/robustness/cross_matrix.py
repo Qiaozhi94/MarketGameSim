@@ -67,7 +67,9 @@ class CrossMatrix:
 
         Returns a dict with:
           - ``complete``: matrix completeness over declared families/mappings
-          - ``same_direction``: all significant cells share one direction
+          - ``same_direction``: EVERY comparable cell significant, non-zero
+            direction, and all agreeing -- zero-direction or non-significant
+            cells are NOT silently ignored (v013 fix)
           - ``directions``: the direction signature
           - ``mapping_effect`` / ``family_effect``: per-dimension direction
             counts (reported, not stitched into a conclusion by themselves)
@@ -76,6 +78,10 @@ class CrossMatrix:
         """
         missing = self.missing(families, mappings)
         sig = self.direction_signature()
+        n_cells = len(self.cells)
+        n_significant_nonzero = len(
+            [c for c in self.cells if c.significant and c.effect_direction != 0]
+        )
 
         mapping_dirs: dict[str, set[int]] = {}
         family_dirs: dict[str, set[int]] = {}
@@ -85,12 +91,18 @@ class CrossMatrix:
             mapping_dirs.setdefault(c.mapping_id, set()).add(c.effect_direction)
             family_dirs.setdefault(c.family_id, set()).add(c.effect_direction)
 
-        same_direction = len(sig) <= 1 and bool(sig)
+        # v013 (critical): same-direction robustness holds ONLY when every
+        # comparable cell is significant with a non-zero direction and all
+        # directions agree.  A zero-direction cell means that cell shows no
+        # effect -- the claim does NOT hold across the whole matrix, so this
+        # is a dependency boundary, never "同向成立".
+        same_direction = n_significant_nonzero == n_cells and len(sig) == 1
 
         if missing:
             conclusion = "证据不足"  # incomplete matrix
-        elif not sig:
-            conclusion = "证据不足"  # nothing significant -> cannot claim robustness
+        elif n_significant_nonzero < n_cells:
+            # at least one cell non-significant or zero-direction
+            conclusion = "证据不足" if n_significant_nonzero == 0 else "依赖边界"
         elif same_direction:
             conclusion = "同向成立"
         else:

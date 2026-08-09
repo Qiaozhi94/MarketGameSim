@@ -34,6 +34,22 @@ class TestHoldoutRunTracker:
         t.mark_completed("run3")
         assert t.completed_run_id == "run3"
 
+    def test_completed_id_cannot_be_overwritten(self):
+        """v013 regression (high): the completed holdout id is fixed; a second
+        completion must be rejected (holdout runs exactly once)."""
+        t = HoldoutRunTracker(frozen_plan_id="p1")
+        t.mark_completed("run3")
+        with pytest.raises(HoldoutRunError, match="refusing to overwrite"):
+            t.mark_completed("run4")
+
+    def test_no_rerun_after_completion(self):
+        """v013 regression (high): after the holdout completed, requesting a
+        technical re-run must be rejected."""
+        t = HoldoutRunTracker(frozen_plan_id="p1")
+        t.mark_completed("run3")
+        with pytest.raises(HoldoutRunError, match="no re-run allowed"):
+            t.request_rerun("run9", "TI-1")
+
 
 class TestCompareZones:
     def test_replication_passed(self):
