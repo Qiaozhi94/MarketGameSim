@@ -1,8 +1,8 @@
 ---
 report_type: fix-verification
-round: 7
+round: 9
 date: 2026-08-10
-prior_report: 22e759d
+prior_report: 775f248
 scope: diff-only
 stop_condition_met: true
 severity_counts: {critical: 0, high: 0, medium: 0, low: 0}
@@ -15,9 +15,9 @@ issues:
     origin: process-gap
     pattern_tag: test-simulates-itself
     status: fixed
-    fix_summary: 补 architecture 复制字段级合同门禁（check_architecture_contract_copy）：architecture.md 以 C1:/C2: 定义式复制守恒方程即报错
-    regression_test: tests/unit/test_spec_lifecycle.py::test_architecture_copying_invariant_fails / test_architecture_referencing_invariant_passes / test_ownership_drift_detected_for_future_version / test_milestone_design_redefines_invariant_fails
-    location: tools/spec_validation.py:534
+    fix_summary: 版本 README 遍历 + design 不变量门禁 + architecture 复制字段级合同门禁
+    regression_test: test_architecture_copying_invariant_fails / test_architecture_referencing_invariant_passes / test_milestone_design_redefines_invariant_fails 等
+    location: tools/spec_validation.py:536
     first_seen_round: 1
     resolved_round: 7
   - id: STRUCT-C002
@@ -106,29 +106,41 @@ issues:
     location: tests/unit/test_spec_lifecycle.py:494
     first_seen_round: 3
     resolved_round: 3
+  - id: STRUCT-C005
+    title: architecture 字段级合同门禁把带冒号的合法引用误判为合同复制
+    severity: medium
+    category: correctness
+    root_cause: symptom-patch
+    origin: fix-regression
+    pattern_tag: partial-symmetric-fix
+    status: fixed
+    fix_summary: 引入 _contains_invariant_definition 判定 C1:/C2: 后是否带方程符号，仅定义式拒绝、引用放行；同步修 milestone design 门禁同类误判
+    regression_test: tests/unit/test_spec_lifecycle.py::test_architecture_colon_reference_passes / test_milestone_design_colon_reference_passes
+    location: tools/spec_validation.py:569
+    first_seen_round: 8
+    resolved_round: 9
 ---
 
 # 目录结构改造代码检视
 
-结论：**最终 diff-only 复核通过。** STRUCT-C001 最后一个缺口（architecture 复制字段级
-合同门禁）已补：`check_architecture_contract_copy` 拦截 architecture.md 以 `C1:`/`C2:`
-定义式复制守恒方程，且保留仅引用形式的通过（正反用例）。本地 1569 测试全绿，
-`validate_spec_lifecycle` 通过，ruff 0.16 下 check/format 全绿。High 清零。
+结论：**最终 diff-only 复核通过。** STRUCT-C005（architecture 门禁误判带冒号合法引用）
+已修复：`_contains_invariant_definition` 只在 C1:/C2: 后带守恒方程符号（Σ/≡/position_units/
+wallet_units/entry_notional）时判为复制，纯引用指针（含冒号引用）放行；milestone design
+门禁同步修复。本地 1571 测试全绿，`validate_spec_lifecycle` 通过，ruff 0.16 全绿。
+全部 High/Medium/Low 清零。
 
 ## 有限检查清单
 
-- 生产入口是否实际调用已声明的链接与所有权规则（已接线，含 architecture 字段级合同门禁）；
-- 版本根和 milestone 是否都进入生命周期校验（已接线）；
+- 生产入口是否实际调用已声明的链接与所有权规则（已接线）；
 - 版本 `done` 是否强制关联 release 文件与结构化 `closed_at`（已接线）；
-- 版本 README 扫描是否遍历全部版本而非硬编码（已修复）；
-- 里程碑 design.md 是否被阻止重新定义全局不变量（已接线）；
-- architecture 是否被阻止复制字段级合同（已接线）。
+- architecture 是否被阻止复制字段级合同、同时允许合法引用（含冒号引用）；
+- 里程碑 design 是否被阻止重定义不变量、同时允许冒号引用。
 
 ## 发现
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| STRUCT-C001 | 链接与文档所有权门禁未接入生产校验入口 | High | 正确性 | 根因 | 流程缺陷 | 已修复 | 版本 README 遍历 + design 重定义不变量门禁 + architecture 复制字段级合同门禁 | test_architecture_copying_invariant_fails / test_architecture_referencing_invariant_passes 等 | 1 | 7 | test-simulates-itself |
+| STRUCT-C001 | 链接与文档所有权门禁未接入生产校验入口 | High | 正确性 | 根因 | 流程缺陷 | 已修复 | 版本 README 遍历 + design 不变量门禁 + architecture 字段级合同门禁 | 见各子用例 | 1 | 7 | test-simulates-itself |
 | STRUCT-C002 | 版本级生命周期与 release 收口规则未执行 | High | 正确性 | 根因 | 流程缺陷 | 已修复 | closed_at 结构化解析，正文子串不绕过 | test_version_done_prose_closed_at_bypass_fails | 1 | 3 | marked-done-not-implemented |
 | prereq-cycle-false-positive | 环检测对菱形依赖误报 | 中 | 正确性 | 根因 | 原始编码 | 已修复 | 三色 DFS 只判当前路径回边 | test_prereq_diamond_not_flagged_as_cycle | 1 | 1 | — |
 | tasks-status-uniqueness-skipped | gate-0 里程碑 tasks 状态不被检查 | 中 | 正确性 | 根因 | 原始编码 | 已修复 | 独立检查 design 与 tasks | test_tasks_status_uniqueness_without_design | 1 | 1 | — |
@@ -136,10 +148,11 @@ issues:
 | section-substring-match | 章节子串匹配误匹配 | 低 | 质量 | 根因 | 原始编码 | 已修复 | 精确匹配顶层标题 | test_gate1_* | 1 | 1 | — |
 | STRUCT-C003 | round-1 修复遗留死代码（seen dict 永不触发） | 低 | 质量 | 症状 | 修改引入 | 已修复 | 移除永不触发的 seen 逻辑 | test_dup_id_preserves_dups | 2 | 2 | — |
 | STRUCT-C004 | 重复 ID 回归测试把临时 fixture 写入固定仓库路径 | Medium | 测试覆盖 | 根因 | 修改引入 | 已修复 | 改用 pytest tmp_path fixture | test_dup_id_preserves_dups | 3 | 3 | test-writes-repo-state |
+| STRUCT-C005 | architecture 门禁误判带冒号合法引用为复制 | Medium | 正确性 | 症状 | 修改引入 | 已修复 | 仅方程定义式拒绝，引用（含冒号）放行 | test_architecture_colon_reference_passes / test_milestone_design_colon_reference_passes | 8 | 9 | partial-symmetric-fix |
 
 ## 证据与停止条件
 
-- 版本 README 扫描遍历 `discover_versions`；
-- 里程碑 design.md 与 architecture.md 均被阻止重定义/复制 C1/C2（正反用例）；
-- `validate_versions()` 以结构化 frontmatter 解析 `closed_at`；
-- 本地 1569 测试全绿，`validate_spec_lifecycle` 通过，ruff 0.16 下 check/format 全绿。
+- `_contains_invariant_definition` 区分定义式与引用，正反用例齐全；
+- 版本 README 遍历 `discover_versions`；
+- `validate_versions()` 结构化解析 `closed_at`；
+- 本地 1571 测试全绿，`validate_spec_lifecycle` 通过，ruff 0.16 下 check/format 全绿。

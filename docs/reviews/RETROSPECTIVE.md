@@ -161,43 +161,40 @@ open"而非"忘了关",`status` 上和真正的遗留 bug 要区分开。
 ## 循环 5: 目录结构改造代码检视
 
 - **report_type**: code-review
-- **周期**: 2026-08-10，7 轮（首轮全量 + 六轮 diff-only 复核）
-- **状态**: 已闭环。HEAD `22e759d` + round-7 修复；本地 1569 tests、
+- **周期**: 2026-08-10，9 轮（首轮全量 + 八轮 diff-only 复核）
+- **状态**: 已闭环。HEAD `775f248` + round-9 修复；本地 1571 tests、
   `validate_spec_lifecycle`、ruff 0.16 下 check/format 全绿
-- **结论**: 2 个 High + 5 个 Medium + 3 个 Low（含 round-1/round-2/round-3 修复引入的
-  STRUCT-C003/C004）全部关闭
+- **结论**: 2 个 High + 6 个 Medium + 3 个 Low（含 round-1/2/3/7 修复引入的
+  STRUCT-C003/C004/C005）全部关闭
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| STRUCT-C001 | 链接与文档所有权门禁未接入生产校验入口 | High | correctness | root-cause | process-gap | fixed | validate_spec_lifecycle 调用 check_docs_links 与 check_ownership_index；round-3 补跨层级状态漂移；round-5 版本 README 遍历 + design 不变量门禁；round-7 补 architecture 复制字段级合同门禁 | `tests/unit/test_spec_lifecycle.py::test_entry_level_dead_link_rejected`; `::test_entry_level_dir_as_file_rejected`; `::test_ownership_index_missing_fails`; `::test_ownership_index_broken_link_fails`; `::test_ownership_status_drift_fails`; `::test_ownership_drift_detected_for_future_version`; `::test_milestone_design_redefines_invariant_fails`; `::test_milestone_design_without_invariant_passes`; `::test_architecture_copying_invariant_fails`; `::test_architecture_referencing_invariant_passes` | 1 | 7 | test-simulates-itself |
-| STRUCT-C002 | 版本级生命周期与 release 收口规则未执行 | High | correctness | root-cause | process-gap | fixed | 新增 validate_versions；round-3 closed_at 改为结构化 frontmatter 解析，正文子串不绕过 | `tests/unit/test_spec_lifecycle.py::test_version_done_without_release_fails`; `::test_version_done_release_without_closed_at_fails`; `::test_version_done_with_pending_milestone_fails`; `::test_version_done_valid_closes_clean`; `::test_version_done_prose_closed_at_bypass_fails` | 1 | 3 | marked-done-not-implemented |
+| STRUCT-C001 | 链接与文档所有权门禁未接入生产校验入口 | High | correctness | root-cause | process-gap | fixed | validate_spec_lifecycle 调用 check_docs_links 与 check_ownership_index；分轮补跨层级状态漂移、版本 README 遍历、design/architecture 不变量与字段级合同门禁 | `tests/unit/test_spec_lifecycle.py` 各所有权/链接/不变量用例 | 1 | 7 | test-simulates-itself |
+| STRUCT-C002 | 版本级生命周期与 release 收口规则未执行 | High | correctness | root-cause | process-gap | fixed | 新增 validate_versions；round-3 closed_at 结构化解析，正文子串不绕过 | `tests/unit/test_spec_lifecycle.py::test_version_done_prose_closed_at_bypass_fails` 等 | 1 | 3 | marked-done-not-implemented |
 | prereq-cycle-false-positive | 环检测对菱形依赖误报 | Medium | correctness | root-cause | original-coding | fixed | 三色 DFS 只判当前路径回边 | `tests/unit/test_spec_lifecycle.py::test_prereq_diamond_not_flagged_as_cycle` | 1 | 1 | — |
-| tasks-status-uniqueness-skipped | gate-0 里程碑 tasks 状态不被检查 | Medium | correctness | root-cause | original-coding | fixed | 独立检查 design 与 tasks，不以 design 存在为前置 | `tests/unit/test_spec_lifecycle.py::test_tasks_status_uniqueness_without_design` | 1 | 1 | — |
+| tasks-status-uniqueness-skipped | gate-0 里程碑 tasks 状态不被检查 | Medium | correctness | root-cause | original-coding | fixed | 独立检查 design 与 tasks | `tests/unit/test_spec_lifecycle.py::test_tasks_status_uniqueness_without_design` | 1 | 1 | — |
 | dup-id-info-lost | 重复 ID 覆盖丢失首个信息 | Low | quality | root-cause | original-coding | fixed | 保留首个条目，重复追加 __dups__ | `tests/unit/test_spec_lifecycle.py::test_dup_id_preserves_dups` | 1 | 1 | — |
 | section-substring-match | 章节子串匹配误匹配 | Low | quality | root-cause | original-coding | fixed | 精确匹配顶层标题 | `tests/unit/test_spec_lifecycle.py` test_gate1_* | 1 | 1 | — |
 | STRUCT-C003 | round-1 修复遗留死代码（seen dict 永不触发） | Low | quality | symptom | fix-regression | fixed | 移除永不触发的 seen 逻辑 | `tests/unit/test_spec_lifecycle.py::test_dup_id_preserves_dups` | 2 | 2 | — |
-| STRUCT-C004 | 重复 ID 回归测试写入仓库固定路径 | Medium | test-coverage | root-cause | fix-regression | fixed | 改用 pytest tmp_path，不再写入仓库固定路径 | `tests/unit/test_spec_lifecycle.py::test_dup_id_preserves_dups` | 3 | 3 | test-writes-repo-state |
+| STRUCT-C004 | 重复 ID 回归测试写入仓库固定路径 | Medium | test-coverage | root-cause | fix-regression | fixed | 改用 pytest tmp_path | `tests/unit/test_spec_lifecycle.py::test_dup_id_preserves_dups` | 3 | 3 | test-writes-repo-state |
+| STRUCT-C005 | architecture 门禁把带冒号的合法引用误判为合同复制 | Medium | correctness | symptom | fix-regression | fixed | `_contains_invariant_definition` 仅在 C1:/C2: 后带方程符号时拒绝，引用（含冒号）放行 | `tests/unit/test_spec_lifecycle.py::test_architecture_colon_reference_passes`; `::test_milestone_design_colon_reference_passes` | 8 | 9 | partial-symmetric-fix |
 
 **模式性教训**: 两个 High 都属于 `marked-done-not-implemented`/`test-simulates-itself`——
 把校验函数"写出来"却"没接进生产入口"，CLI 还输出"链接校验通过"，绿灯成了假阳性。
-这类缺陷只有"入口级接线测试"能抓住（只测孤立纯函数永远发现不了函数从未被调用）。
-STRUCT-C001 跨 7 轮关闭，反复因"部分接线"被顶回（只查存在性→漏状态漂移→版本硬编码
-→漏全局不变量→漏 architecture 复制字段级合同），说明"所有权校验"这类语义规则几乎
-不可能一次写全，必须拆成可独立验证的子规则逐步补齐——这也是方案 §2.6 文档所有权
-规则需要逐条机器化、且每条都要正反两个用例的原因。round-3 又暴露
-`test-writes-repo-state`（测试把临时 fixture 写进固定仓库路径，污染工作树并破坏本地
-verify）。来源分布为 `process-gap` 4、`original-coding` 4、`fix-regression` 2、
-`spec-drift` 1；round-1/round-2 修复各引入 1 条新缺陷（STRUCT-C003/C004），印证
-"修复自伤率每轮 20-30%"——1 轮就宣布闭环是假闭环。
+这类缺陷只有"入口级接线测试"能抓住。STRUCT-C001 跨 7 轮、C005 是 round-7 修复引入的
+`partial-symmetric-fix`（只测了无冒号引用放行，漏了带冒号引用也会被误判），印证：
+**任何"区分 X 与 Y"的门禁都必须同时覆盖 X 的放行用例与 Y 的拒绝用例，且每个变体都要
+正反两例**。来源分布为 `process-gap` 4、`original-coding` 4、`fix-regression` 3、
+`spec-drift` 1；修复自伤率稳定在每轮 20-30%，1 轮就宣布闭环是假闭环。
 
 ---
 
 ## 循环 5-文档: 目录结构改造文档检视
 
 - **report_type**: doc-review
-- **周期**: 2026-08-10，5 轮（首轮全量 + 四轮 diff-only 复核）
-- **状态**: 已闭环。STRUCT-D001/D002/D003 内容修复成立；D004 在代码 High 清零并通过
-  复核后才标记闭环
+- **周期**: 2026-08-10，9 轮（首轮全量 + 八轮 diff-only 复核）
+- **状态**: 已闭环。STRUCT-D001/D002/D003 内容修复成立；D004 在代码通道全部 Medium/High
+  清零并通过复核后才标记闭环
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
