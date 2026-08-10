@@ -541,3 +541,47 @@ def test_dup_id_preserves_dups(sv, tmp_path):
     )
     coll = sv.collect_all_milestones(features)
     assert len(coll["0.1.1"][1].get("__dups__", [])) == 1
+
+
+# --------------------------------------------------------------------------- #
+# round4 修复回归：STRUCT-C001 版本无关 README 扫描 + 跨层级真相源
+# --------------------------------------------------------------------------- #
+
+
+def test_ownership_drift_detected_for_future_version(sv, tmp_path):
+    """STRUCT-C001: 版本 README 扫描不得硬编码 0.1——未来版本漂移必报。"""
+    features = _write_version_forest(tmp_path)
+    (tmp_path / "docs" / "README.md").write_text("map\n", encoding="utf-8")
+    # 新增第二个版本 0.2，其 README 声明 0.1.1 为 in-progress（与 spec 的 done 冲突）
+    v2 = features / "0.2"
+    v2.mkdir(parents=True)
+    (v2 / "spec.md").write_text(
+        '---\nkind: version-spec\nid: v0.2\nversion: "0.2"\nstatus: in-progress\n---\n',
+        encoding="utf-8",
+    )
+    (v2 / "README.md").write_text("| 0.1.1 | in-progress |\n", encoding="utf-8")
+    errors: list[str] = []
+    sv.validate_spec_lifecycle(features, tmp_path, errors)
+    assert any("0.1.1" in e and "不一致" in e for e in errors)
+
+
+def test_milestone_design_redefines_invariant_fails(sv, tmp_path):
+    """STRUCT-C001: 里程碑 design.md 重新定义全局不变量 C1/C2 必报。"""
+    features = _write_version_forest(tmp_path)
+    (tmp_path / "docs" / "README.md").write_text("map\n", encoding="utf-8")
+    mdir = features / "0.1" / "0.1.1-minimal-kernel"
+    (mdir / "design.md").write_text("## 3. 数据模型\n\nC1: 守恒式\n", encoding="utf-8")
+    errors: list[str] = []
+    sv.validate_spec_lifecycle(features, tmp_path, errors)
+    assert any("全局不变量" in e and "C1" in e for e in errors)
+
+
+def test_milestone_design_without_invariant_passes(sv, tmp_path):
+    """STRUCT-C001: 里程碑 design.md 不重定义不变量则通过。"""
+    features = _write_version_forest(tmp_path)
+    (tmp_path / "docs" / "README.md").write_text("map\n", encoding="utf-8")
+    mdir = features / "0.1" / "0.1.1-minimal-kernel"
+    (mdir / "design.md").write_text("## 2. 架构与模块边界\n不涉及不变量\n", encoding="utf-8")
+    errors: list[str] = []
+    sv.validate_spec_lifecycle(features, tmp_path, errors)
+    assert not any("全局不变量" in e for e in errors)
