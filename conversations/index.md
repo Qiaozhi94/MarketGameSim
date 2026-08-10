@@ -1,15 +1,15 @@
 # AI 对话归档索引
 
-> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 53
+> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 63
 
 ## 工具统计
 
 | 工具 | 会话数 |
 |---|---|
 
-| OpenCode | 32 |
-| Claude Code | 9 |
-| Codex CLI | 12 |
+| OpenCode | 37 |
+| Claude Code | 10 |
+| Codex CLI | 16 |
 
 ## 会话血缘树
 
@@ -54,6 +54,12 @@
   - Assess exit-checklist evidence gaps (@explore subagent) (`opencode` · 2026-08-09T11:58:34Z)
 - **3104e4f4-1477-4e53-8859-432885363307** (`claude` · 2026-08-09T08:37:14Z)
 - **af94eb8e-2e71-4606-a8a3-b656a49ce826** (`claude` · 2026-08-09T10:17:38Z)
+- **按评审基线方案调整项目结构** (`opencode` · 2026-08-09T15:18:11Z)
+- **0a2397e0-ef0a-486c-8155-7711eeeac4ad** (`claude` · 2026-08-10T14:22:24Z)
+- **需求文档0.1.4开发实施** (`opencode` · 2026-08-10T16:21:31Z)
+  - Map src module structure (@explore subagent) (`opencode` · 2026-08-10T16:23:04Z)
+  - Map artifact producers and registry (@explore subagent) (`opencode` · 2026-08-10T16:23:13Z)
+  - Map event log format and transactions (@explore subagent) (`opencode` · 2026-08-10T16:23:21Z)
 
 ## 原始会话清单
 
@@ -112,3 +118,13 @@
 | 2026-08-09T11:58:34Z | OpenCode | Assess exit-checklist evidence gaps (@explore subagent) | claude-haiku-4-5 | `opencode/ses_0199c69a2ffeWjHVF56II1DR0n.md` |
 | 2026-08-09T13:46:31Z | Codex CLI | rollout-2026-08-09T21-46-04-019fe6c6-0106-79c3-88e5-22b3546c06d8 | openai | `codex/rollout-2026-08-09T21-46-04-019fe6c6-0106-79c3-88e5-22b3546c06d8.md` |
 | 2026-08-09T13:52:49Z | Codex CLI | rollout-2026-08-09T21-52-46-019fe6cc-231b-7592-9aeb-00827339d420 | openai | `codex/rollout-2026-08-09T21-52-46-019fe6cc-231b-7592-9aeb-00827339d420.md` |
+| 2026-08-09T15:18:11Z | OpenCode | 按评审基线方案调整项目结构 | deepseek-v4-flash | `opencode/ses_018e5a763ffeE3pSf4qUbj3M5O.md` |
+| 2026-08-09T16:33:24Z | Codex CLI | rollout-2026-08-10T00-32-09-019fe75e-105f-7292-892c-04650e64815b | openai | `codex/rollout-2026-08-10T00-32-09-019fe75e-105f-7292-892c-04650e64815b.md` |
+| 2026-08-09T16:36:13Z | Codex CLI | rollout-2026-08-10T00-36-10-019fe761-bbad-71e3-b663-3a12929337ce | openai | `codex/rollout-2026-08-10T00-36-10-019fe761-bbad-71e3-b663-3a12929337ce.md` |
+| 2026-08-10T14:14:59Z | Codex CLI | rollout-2026-08-10T22-14-23-019fec06-48f9-7972-9598-2cf8e6ef517c | openai | `codex/rollout-2026-08-10T22-14-23-019fec06-48f9-7972-9598-2cf8e6ef517c.md` |
+| 2026-08-10T14:21:13Z | Codex CLI | rollout-2026-08-10T22-21-08-019fec0c-7841-7bb2-af30-8431fb9bc5db | openai | `codex/rollout-2026-08-10T22-21-08-019fec0c-7841-7bb2-af30-8431fb9bc5db.md` |
+| 2026-08-10T14:22:24Z | Claude Code | 0a2397e0-ef0a-486c-8155-7711eeeac4ad | claude-sonnet-5 | `claude/0a2397e0-ef0a-486c-8155-7711eeeac4ad.md` |
+| 2026-08-10T16:21:31Z | OpenCode | 需求文档0.1.4开发实施 | deepseek-v4-flash | `opencode/ses_013854ed4ffeDL4uBdQiSBgfr5.md` |
+| 2026-08-10T16:23:04Z | OpenCode | Map src module structure (@explore subagent) | deepseek-v4-flash | `opencode/ses_01383e345ffejRQh7l38mT3ewc.md` |
+| 2026-08-10T16:23:13Z | OpenCode | Map artifact producers and registry (@explore subagent) | deepseek-v4-flash | `opencode/ses_01383bef9ffeRL7AMegBYL6YcP.md` |
+| 2026-08-10T16:23:21Z | OpenCode | Map event log format and transactions (@explore subagent) | deepseek-v4-flash | `opencode/ses_01383a022ffeDk1t6uL7bkQOxG.md` |

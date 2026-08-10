@@ -4,7 +4,7 @@ round: 5
 date: 2026-08-11
 prior_report: round 4（本文件 round 4 版本，git 历史可查）
 scope: diff-only
-stop_condition_met: false
+stop_condition_met: true
 severity_counts: {critical: 0, high: 0, medium: 0, low: 0}
 issues:
   - id: R014-D001
@@ -104,12 +104,12 @@ issues:
 
 ## 结论
 
-**本地开发门放行；检视尚未正式闭环。** R014-D002 经历 round 2→3→4→5 四轮迭代才完全关闭——每轮都是同一类
+**检视已满足正式闭环条件。** R014-D002 经历 round 2→3→4→5 四轮迭代才完全关闭——每轮都是同一类
 "shape 校验冒充 value 校验"的模式在不同字段上重复出现（hex_length 的奇偶性 vs 精确
 值、hash_algorithm 的 enum 形状 vs 精确值），round 5 把三处精确值断言一次性补齐并
 接入 spec↔JSON 双向核对，diff-only 复核未再发现同类缺口。本地统一质量门
-`python tools/verify.py` 全绿（1595 tests）。`stop_condition_met` 仍为 false，仅因为
-修复尚未提交/推送，最终 CI 门没有可验证的远端提交；这不阻塞开始 0.1.4 开发。
+`python tools/verify.py` 全绿（1595 tests）。修复提交 `8beb1c9` 已推送，最终 CI
+`31408615638` 的 4 个 job 全部通过，0.1.4 可以开始开发。
 
 ## 有限检查清单（round 1）
 
@@ -164,15 +164,16 @@ issues:
 - 无任何校验从「失败即拒绝」降级为「仅警告」；本轮新增测试均为正反两面。
 - 独立复现验证：`hex_length=62`、`hash_algorithm=["md5"]`、
   `charset="uppercase_hex"`、spec 单独改为 128 位，四种漂移均被明确拒绝。
+- GitHub Actions `31408615638`：真源与生命周期校验、ruff、pytest 3.11、
+  pytest 3.13 全部 `success`；对应远端提交为 `8beb1c9`。
 - R014-D002 的存活轮数（round 1→5，共 4 轮）是本次检视所有 issue 中最长的，
   根因是同一个模式（shape 校验冒充 value 校验）在不同字段上分批暴露，而不是
   审查发散——每轮暴露的都是前一轮遗留的具体新缺口，且每轮都缩小了范围
   （round 2：3 个子问题 → round 3：摘要长度维度 → round 4：值校验维度 →
   round 5：全部补齐），符合收敛而非打转。
 
-## 收尾提示
+## 收尾状态
 
-本轮为本地收敛候选；仓库 CLAUDE.md 要求推送后以 `gh run watch` 确认 CI 全绿才算
-正式闭环。本次修复未提交、未推送，尚未触发 CI；并且 `CURRENT-doc.md` 仍是未跟踪
-文件，round 1—5 不在 git 历史中。提交时须先纳入版本控制；CI 绿后完整回写 issue 表到
-RETROSPECTIVE，再由检视人删除本文件。
+修复提交 `8beb1c9` 已进入 `origin/main`，并以 `gh run watch 31408615638
+--exit-status` 确认最终 CI 全绿。本文件已纳入 Git 历史；完整 issue 表与模式性教训将
+归档进 `RETROSPECTIVE.md`，随后由检视人删除本文件，结束本轮文档检视。
