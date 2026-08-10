@@ -530,7 +530,23 @@ def check_ownership_index(
 
 
 # 全局不变量指纹：出现在里程碑 design.md 即视为「重新定义」而非「引用」。
-_GLOBAL_INVARIANT_MARKERS = ("C1:", "C2:")
+_GLOBAL_INVARIANT_MARKERS = ("C1", "C2")
+
+# C1/C2 定义式的特征符号（方程内容）——出现即视为「复制/重定义」，纯引用指针不算。
+_INVARIANT_DEFINITION_TOKENS = ("Σ", "≡", "position_units", "wallet_units", "entry_notional")
+
+
+def _contains_invariant_definition(text: str, marker: str) -> bool:
+    """判断 `marker`（C1/C2）是否为定义式而非引用。
+
+    定义式：`C1: Σ position_units ≡ 0` 这类带守恒方程符号的内容；引用式：
+    `C1/C2 见 docs/contracts/` 或 `C1: 参见…` 只指向所有权、无方程内容。
+    """
+    for m in re.finditer(rf"{marker}\s*:", text):
+        tail = text[m.end() : m.end() + 120]
+        if any(tok in tail for tok in _INVARIANT_DEFINITION_TOKENS):
+            return True
+    return False
 
 
 def check_global_invariant_ownership(
@@ -549,7 +565,7 @@ def check_global_invariant_ownership(
                 continue
             text = design.read_text(encoding="utf-8")
             for marker in _GLOBAL_INVARIANT_MARKERS:
-                if marker in text:
+                if _contains_invariant_definition(text, marker):
                     where = f"{mdir.name} design.md"
                     owner = "（属 contracts/architecture）"
                     fail(errors, f"{where}: 重新定义全局不变量 {marker}{owner}")
@@ -559,15 +575,16 @@ def check_architecture_contract_copy(root: pathlib.Path, errors: list[str]) -> N
     """architecture 不得复制字段级合同或重定义全局不变量（§2.6）。
 
     字段级合同（如 C1/C2 守恒方程）归 `docs/contracts/` 唯一所有。architecture 只能
-    *引用*（如「守恒以 C1/C2 整数精确断言」），不得以定义形式（`C1:`/`C2:` 带等式）
-    复制。本检查对 `docs/market-game-sim-architecture.md` 生效。
+    *引用*（如「守恒以 C1/C2 整数精确断言」或「C1: 见 docs/contracts/…」），不得以
+    定义式（`C1: Σ position_units ≡ 0` 这类带守恒方程内容）复制。本检查对
+    `docs/market-game-sim-architecture.md` 生效。
     """
     arch = root / "docs" / "market-game-sim-architecture.md"
     if not arch.is_file():
         return
     text = arch.read_text(encoding="utf-8")
     for marker in _GLOBAL_INVARIANT_MARKERS:
-        if marker in text:
+        if _contains_invariant_definition(text, marker):
             owner = "（属 docs/contracts/）"
             fail(errors, f"architecture: 复制字段级合同/重定义不变量 {marker}{owner}")
 
