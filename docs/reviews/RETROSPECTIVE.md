@@ -161,8 +161,8 @@ open"而非"忘了关",`status` 上和真正的遗留 bug 要区分开。
 ## 循环 5: 目录结构改造代码检视
 
 - **report_type**: code-review
-- **周期**: 2026-08-10，9 轮（首轮全量 + 八轮 diff-only 复核）
-- **状态**: 已闭环。HEAD `775f248` + round-9 修复；本地 1571 tests、
+- **周期**: 2026-08-10，11 轮（首轮全量 + 十轮 diff-only 复核）
+- **状态**: 已闭环。HEAD `556c7f8` + round-11 修复；本地 1573 tests、
   `validate_spec_lifecycle`、ruff 0.16 下 check/format 全绿
 - **结论**: 2 个 High + 6 个 Medium + 3 个 Low（含 round-1/2/3/7 修复引入的
   STRUCT-C003/C004/C005）全部关闭
@@ -177,22 +177,24 @@ open"而非"忘了关",`status` 上和真正的遗留 bug 要区分开。
 | section-substring-match | 章节子串匹配误匹配 | Low | quality | root-cause | original-coding | fixed | 精确匹配顶层标题 | `tests/unit/test_spec_lifecycle.py` test_gate1_* | 1 | 1 | — |
 | STRUCT-C003 | round-1 修复遗留死代码（seen dict 永不触发） | Low | quality | symptom | fix-regression | fixed | 移除永不触发的 seen 逻辑 | `tests/unit/test_spec_lifecycle.py::test_dup_id_preserves_dups` | 2 | 2 | — |
 | STRUCT-C004 | 重复 ID 回归测试写入仓库固定路径 | Medium | test-coverage | root-cause | fix-regression | fixed | 改用 pytest tmp_path | `tests/unit/test_spec_lifecycle.py::test_dup_id_preserves_dups` | 3 | 3 | test-writes-repo-state |
-| STRUCT-C005 | architecture 门禁把带冒号的合法引用误判为合同复制 | Medium | correctness | symptom | fix-regression | fixed | `_contains_invariant_definition` 仅在 C1:/C2: 后带方程符号时拒绝，引用（含冒号）放行 | `tests/unit/test_spec_lifecycle.py::test_architecture_colon_reference_passes`; `::test_milestone_design_colon_reference_passes` | 8 | 9 | partial-symmetric-fix |
+| STRUCT-C005 | architecture 门禁把带冒号的合法引用误判为合同复制 | Medium | correctness | symptom | fix-regression | fixed | 先修单行带冒号引用；再改为可判定单行语法：C1:/C2: 后同一行出现方程运算符（=/≡/Σ）才算定义式，不跨行采样、不用固定 token | `tests/unit/test_spec_lifecycle.py::test_architecture_colon_reference_passes`; `::test_architecture_cross_line_reference_passes`; `::test_architecture_generic_equation_fails`; `::test_milestone_design_colon_reference_passes` | 8 | 11 | partial-symmetric-fix |
 
 **模式性教训**: 两个 High 都属于 `marked-done-not-implemented`/`test-simulates-itself`——
 把校验函数"写出来"却"没接进生产入口"，CLI 还输出"链接校验通过"，绿灯成了假阳性。
 这类缺陷只有"入口级接线测试"能抓住。STRUCT-C001 跨 7 轮、C005 是 round-7 修复引入的
-`partial-symmetric-fix`（只测了无冒号引用放行，漏了带冒号引用也会被误判），印证：
-**任何"区分 X 与 Y"的门禁都必须同时覆盖 X 的放行用例与 Y 的拒绝用例，且每个变体都要
-正反两例**。来源分布为 `process-gap` 4、`original-coding` 4、`fix-regression` 3、
-`spec-drift` 1；修复自伤率稳定在每轮 20-30%，1 轮就宣布闭环是假闭环。
+`partial-symmetric-fix`，且因"单行引用放行"用例不足而一路拖到 round-11：先补带冒号引用、
+再补跨行误报、再补通用方程漏报。**教训：任何"区分 X 与 Y"的门禁必须同时覆盖 X 放行与
+Y 拒绝的每个变体，且最好一开始就用可判定语法（如"同一行方程运算符"）而非启发式
+（固定 token 列表、固定字符窗口）——启发式每补一个用例就漏一个相邻反例。** 来源分布
+为 `process-gap` 4、`original-coding` 4、`fix-regression` 3、`spec-drift` 1；修复自伤率
+稳定在每轮 20-30%，1 轮就宣布闭环是假闭环。
 
 ---
 
 ## 循环 5-文档: 目录结构改造文档检视
 
 - **report_type**: doc-review
-- **周期**: 2026-08-10，9 轮（首轮全量 + 八轮 diff-only 复核）
+- **周期**: 2026-08-10，11 轮（首轮全量 + 十轮 diff-only 复核）
 - **状态**: 已闭环。STRUCT-D001/D002/D003 内容修复成立；D004 在代码通道全部 Medium/High
   清零并通过复核后才标记闭环
 

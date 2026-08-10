@@ -532,19 +532,24 @@ def check_ownership_index(
 # 全局不变量指纹：出现在里程碑 design.md 即视为「重新定义」而非「引用」。
 _GLOBAL_INVARIANT_MARKERS = ("C1", "C2")
 
-# C1/C2 定义式的特征符号（方程内容）——出现即视为「复制/重定义」，纯引用指针不算。
-_INVARIANT_DEFINITION_TOKENS = ("Σ", "≡", "position_units", "wallet_units", "entry_notional")
+# C1/C2 定义式的可判定语法：同一行内 marker 后出现方程运算符（=、≡、Σ）。
+# 不用固定 token 列表（会漏判通用方程），也不跨行 lookahead（会误吞下一行普通描述）。
+_INVARIANT_DEFINITION_OPERATORS = ("=", "≡", "Σ")
 
 
 def _contains_invariant_definition(text: str, marker: str) -> bool:
     """判断 `marker`（C1/C2）是否为定义式而非引用。
 
-    定义式：`C1: Σ position_units ≡ 0` 这类带守恒方程符号的内容；引用式：
-    `C1/C2 见 docs/contracts/` 或 `C1: 参见…` 只指向所有权、无方程内容。
+    可判定规则：`C1:`/`C2:` 之后**同一行**出现方程运算符（`=`/`≡`/`Σ`）即视为定义式；
+    引用（`C1: 见 docs/contracts/…`、`C1/C2 见…`）同一行无运算符，故放行。不跨行
+    采样，因此下一行的普通字段描述不会误归到该 marker。
     """
-    for m in re.finditer(rf"{marker}\s*:", text):
-        tail = text[m.end() : m.end() + 120]
-        if any(tok in tail for tok in _INVARIANT_DEFINITION_TOKENS):
+    for m in re.finditer(rf"{re.escape(marker)}\s*:", text):
+        line_end = text.find("\n", m.end())
+        if line_end < 0:
+            line_end = len(text)
+        tail = text[m.end() : line_end]
+        if any(op in tail for op in _INVARIANT_DEFINITION_OPERATORS):
             return True
     return False
 

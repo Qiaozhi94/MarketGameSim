@@ -640,3 +640,28 @@ def test_milestone_design_colon_reference_passes(sv, tmp_path):
     errors: list[str] = []
     sv.validate_spec_lifecycle(features, tmp_path, errors)
     assert not any("全局不变量" in e and ("C1" in e or "C2" in e) for e in errors)
+
+
+def test_architecture_cross_line_reference_passes(sv, tmp_path):
+    """STRUCT-C005: C1: 引用后下一行出现普通字段描述，不得跨行误判为定义。"""
+    features = _write_version_forest(tmp_path)
+    (tmp_path / "docs" / "README.md").write_text("map\n", encoding="utf-8")
+    (tmp_path / "docs" / "market-game-sim-architecture.md").write_text(
+        "## 技术不变量\nC1: 见 docs/contracts/ 文档\nwallet_units 表示钱包余额。\n",
+        encoding="utf-8",
+    )
+    errors: list[str] = []
+    sv.validate_spec_lifecycle(features, tmp_path, errors)
+    assert not any("architecture" in e and ("C1" in e or "C2" in e) for e in errors)
+
+
+def test_architecture_generic_equation_fails(sv, tmp_path):
+    """STRUCT-C005: C1: 通用守恒方程（无预置 token）也应判为定义并拒绝。"""
+    features = _write_version_forest(tmp_path)
+    (tmp_path / "docs" / "README.md").write_text("map\n", encoding="utf-8")
+    (tmp_path / "docs" / "market-game-sim-architecture.md").write_text(
+        "## 技术不变量\nC1: cash + position = 0\n", encoding="utf-8"
+    )
+    errors: list[str] = []
+    sv.validate_spec_lifecycle(features, tmp_path, errors)
+    assert any("architecture" in e and "C1" in e for e in errors)
