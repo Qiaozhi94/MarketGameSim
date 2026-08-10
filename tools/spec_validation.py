@@ -474,8 +474,12 @@ def validate_versions(
                 fail(errors, f"{where}: status=done 但缺 release {rel.name}")
                 continue
             release_text = rel.read_text(encoding="utf-8")
-            if "closed_at" not in release_text:
-                fail(errors, f"{where}: release 缺 closed_at")
+            release_front = parse_frontmatter(release_text)
+            closed_at = release_front.get("closed_at")
+            if not closed_at:
+                fail(errors, f"{where}: release 缺结构化 closed_at 字段值")
+            if release_front.get("version") not in (None, front.get("version")):
+                fail(errors, f"{where}: release frontmatter version 与版本根不一致")
             for mdir in discover_milestones(vdir):
                 mfront = parse_frontmatter((mdir / "spec.md").read_text(encoding="utf-8"))
                 if mfront.get("status") != "done":
@@ -487,15 +491,47 @@ def check_ownership_index(
     root: pathlib.Path,
     errors: list[str],
 ) -> None:
-    """校验 docs/README.md 所有权索引链接存在且指向真实文件（§4.3 item 6）。"""
+    """校验 docs/README.md 所有权索引与跨层级所有权漂移（§4.3 item 6）。
+
+    覆盖规则：
+    - 索引文件本身存在，且其链接有效、留在仓库边界内；
+    - README/CLAUDE/版本 README 不得声明与 spec frontmatter 不同的当前状态
+      （§2.6：派生入口不得成为第二份状态声明）。
+    """
     readme = root / "docs" / "README.md"
     if not readme.is_file():
         fail(errors, "缺 docs/README.md 所有权索引")
         return
-    check_markdown_links(readme.read_text(encoding="utf-8"), readme.parent, errors, "docs/README")
-    check_links_out_of_repo(
-        readme.read_text(encoding="utf-8"), readme.parent, root, errors, "docs/README"
-    )
+    readme_text = readme.read_text(encoding="utf-8")
+    check_markdown_links(readme_text, readme.parent, errors, "docs/README")
+    check_links_out_of_repo(readme_text, readme.parent, root, errors, "docs/README")
+
+    # 跨层级状态漂移：派生入口（CLAUDE、版本 README）不得声明与 spec 相悖的状态。
+    authoritative = _authoritative_status(root, features_dir)
+    for p in (root / "CLAUDE.md", root / "docs" / "features" / "0.1" / "README.md"):
+        if not p.is_file():
+            continue
+        text = p.read_text(encoding="utf-8")
+        status_alt = r"(done|in-progress|ready-for-development|review|draft)"
+        for mid, status in authoritative.items():
+            m = re.search(rf"{re.escape(mid)}\s*[|:]\s*{status_alt}\b", text)
+            if m and m.group(1) != status:
+                where = f"{p.name}: 声明 {mid}={m.group(1)}"
+                fail(errors, f"{where}，与 spec frontmatter {status} 不一致")
+
+
+def _authoritative_status(root: pathlib.Path, features_dir: pathlib.Path) -> dict[str, str]:
+    """收集版本根与各里程碑 spec frontmatter 的权威状态。"""
+    out: dict[str, str] = {}
+    for vdir in discover_versions(features_dir):
+        front = parse_frontmatter((vdir / "spec.md").read_text(encoding="utf-8"))
+        if front.get("status"):
+            out[vdir.name] = front["status"]
+        for mdir in discover_milestones(vdir):
+            mfront = parse_frontmatter((mdir / "spec.md").read_text(encoding="utf-8"))
+            if mfront.get("status"):
+                out[mfront.get("id")] = mfront["status"]
+    return out
 
 
 def check_docs_links(
