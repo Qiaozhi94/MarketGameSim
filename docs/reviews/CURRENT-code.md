@@ -1,8 +1,8 @@
 ---
 report_type: fix-verification
-round: 9
+round: 11
 date: 2026-08-10
-prior_report: 775f248
+prior_report: 556c7f8
 scope: diff-only
 stop_condition_met: true
 severity_counts: {critical: 0, high: 0, medium: 0, low: 0}
@@ -114,27 +114,27 @@ issues:
     origin: fix-regression
     pattern_tag: partial-symmetric-fix
     status: fixed
-    fix_summary: 引入 _contains_invariant_definition 判定 C1:/C2: 后是否带方程符号，仅定义式拒绝、引用放行；同步修 milestone design 门禁同类误判
-    regression_test: tests/unit/test_spec_lifecycle.py::test_architecture_colon_reference_passes / test_milestone_design_colon_reference_passes
-    location: tools/spec_validation.py:569
+    fix_summary: 改用可判定单行语法：C1:/C2: 后同一行出现方程运算符（=/≡/Σ）才判为定义式；不跨行采样、不用固定 token，消除跨行误报与通用方程漏报
+    regression_test: tests/unit/test_spec_lifecycle.py::test_architecture_colon_reference_passes / test_architecture_cross_line_reference_passes / test_architecture_generic_equation_fails / test_milestone_design_colon_reference_passes
+    location: tools/spec_validation.py:539
     first_seen_round: 8
-    resolved_round: 9
+    resolved_round: 11
 ---
 
 # 目录结构改造代码检视
 
-结论：**最终 diff-only 复核通过。** STRUCT-C005（architecture 门禁误判带冒号合法引用）
-已修复：`_contains_invariant_definition` 只在 C1:/C2: 后带守恒方程符号（Σ/≡/position_units/
-wallet_units/entry_notional）时判为复制，纯引用指针（含冒号引用）放行；milestone design
-门禁同步修复。本地 1571 测试全绿，`validate_spec_lifecycle` 通过，ruff 0.16 全绿。
-全部 High/Medium/Low 清零。
+结论：**round-11 diff-only 复核通过。** STRUCT-C005 用**可判定单行语法**（C1:/C2: 后
+同一行出现 `=`/`≡`/`Σ` 才算定义式）取代启发式，同时消除跨行误报与通用方程漏报。本地
+1573 测试全绿，`validate_spec_lifecycle` 通过，ruff 0.16 全绿。全部 High/Medium/Low
+清零。
 
 ## 有限检查清单
 
 - 生产入口是否实际调用已声明的链接与所有权规则（已接线）；
 - 版本 `done` 是否强制关联 release 文件与结构化 `closed_at`（已接线）；
-- architecture 是否被阻止复制字段级合同、同时允许合法引用（含冒号引用）；
-- 里程碑 design 是否被阻止重定义不变量、同时允许冒号引用。
+- architecture 是否被阻止复制字段级合同、同时允许合法引用（含冒号与跨行引用）；
+- 里程碑 design 是否被阻止重定义不变量、同时允许冒号引用；
+- 不变量判定是否为可判定语法而非启发式（无固定 token、无跨行采样）。
 
 ## 发现
 
@@ -148,11 +148,11 @@ wallet_units/entry_notional）时判为复制，纯引用指针（含冒号引�
 | section-substring-match | 章节子串匹配误匹配 | 低 | 质量 | 根因 | 原始编码 | 已修复 | 精确匹配顶层标题 | test_gate1_* | 1 | 1 | — |
 | STRUCT-C003 | round-1 修复遗留死代码（seen dict 永不触发） | 低 | 质量 | 症状 | 修改引入 | 已修复 | 移除永不触发的 seen 逻辑 | test_dup_id_preserves_dups | 2 | 2 | — |
 | STRUCT-C004 | 重复 ID 回归测试把临时 fixture 写入固定仓库路径 | Medium | 测试覆盖 | 根因 | 修改引入 | 已修复 | 改用 pytest tmp_path fixture | test_dup_id_preserves_dups | 3 | 3 | test-writes-repo-state |
-| STRUCT-C005 | architecture 门禁误判带冒号合法引用为复制 | Medium | 正确性 | 症状 | 修改引入 | 已修复 | 仅方程定义式拒绝，引用（含冒号）放行 | test_architecture_colon_reference_passes / test_milestone_design_colon_reference_passes | 8 | 9 | partial-symmetric-fix |
+| STRUCT-C005 | architecture 门禁误判带冒号合法引用为复制 | Medium | 正确性 | 症状 | 修改引入 | 已修复 | 可判定单行语法：同一行方程运算符才算定义式 | test_architecture_cross_line_reference_passes / test_architecture_generic_equation_fails | 8 | 11 | partial-symmetric-fix |
 
 ## 证据与停止条件
 
-- `_contains_invariant_definition` 区分定义式与引用，正反用例齐全；
-- 版本 README 遍历 `discover_versions`；
-- `validate_versions()` 结构化解析 `closed_at`；
-- 本地 1571 测试全绿，`validate_spec_lifecycle` 通过，ruff 0.16 下 check/format 全绿。
+- `_contains_invariant_definition` 为可判定单行语法：同一行方程运算符（=/≡/Σ），无固定 token、无跨行采样；
+- 独立复现 `C1: 见合同` + 下一行 `wallet_units` → 放行（跨行误报消除）；
+- 独立复现 `C1: cash + position = 0` → 拒绝（通用方程漏报消除）；
+- 本地 1573 测试全绿，`validate_spec_lifecycle` 通过，ruff 0.16 下 check/format 全绿。
