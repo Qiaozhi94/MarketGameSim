@@ -1,8 +1,8 @@
 ---
 report_type: doc-review
-round: 3
+round: 5
 date: 2026-08-10
-prior_report: 3424b91
+prior_report: 445c281
 scope: diff-only
 stop_condition_met: true
 severity_counts: {critical: 0, high: 0, medium: 0, low: 0}
@@ -41,7 +41,7 @@ issues:
     origin: process-gap
     pattern_tag: marked-done-not-implemented
     status: fixed
-    fix_summary: 报告元数据与正文已统一为真实轮次（round 3/diff-only），不再宣称未执行的轮次
+    fix_summary: 报告元数据与正文已统一为真实轮次（round 5/diff-only），不再宣称未执行的轮次
     regression_test: ""
     location: docs/reviews/CURRENT-doc.md:3
     first_seen_round: 2
@@ -54,18 +54,18 @@ issues:
     origin: process-gap
     pattern_tag: marked-done-not-implemented
     status: fixed
-    fix_summary: RETROSPECTIVE 循环按单值 report_type 记录；代码/文档两通道均通过后才标记闭环
+    fix_summary: report_type 单值化；代码通道 High 清零并重新复核后才在 RETROSPECTIVE 标记闭环
     regression_test: ""
     location: docs/reviews/RETROSPECTIVE.md
     first_seen_round: 2
-    resolved_round: 3
+    resolved_round: 5
 ---
 
 # 目录结构改造文档检视
 
-结论：**第三轮（diff-only）文档复核通过。** STRUCT-D001/D002 内容修复成立；D003 将
-报告元数据与正文统一为真实轮次；D004 修正 RETROSPECTIVE 的 report_type 为结构化单值
-并在两通道都通过后才闭环。全仓维护中文档链接扫描无死链、无目录冒充文件。
+结论：**封顶 diff-only 文档复核通过。** STRUCT-D001/D002/D003 修复成立；STRUCT-C001
+（代码 High）已清零并通过复核，因此 D004 的「RETROSPECTIVE 提前标记闭环」条件消除，
+RETROSPECTIVE 现可如实标记本轮闭环。全仓维护中文档链接扫描无死链、无目录冒充文件。
 
 ## 有限检查清单
 
@@ -82,13 +82,13 @@ issues:
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | STRUCT-D001 | releases 目录未纳入 Git 且维护文档链接指向目录 | Medium | 正确性 | 根因 | 流程缺陷 | 已修复 | 新增 releases/README.md 索引，链接改到该文件 | test_entry_level_dir_as_file_rejected | 1 | 1 | marked-done-not-implemented |
 | STRUCT-D002 | 改造方案顶部仍称 M030 待确认 | Low | 质量 | 根因 | 规格漂移 | 已修复 | 顶部状态同步为 M030 已完成 | — | 1 | 1 | cross-feature-contract-drift |
-| STRUCT-D003 | 文档检视报告仍标 round 1 却宣称已完成第二轮复核 | Medium | 正确性 | 根因 | 流程缺陷 | 已修复 | 报告元数据与正文统一为 round 3/diff-only | — | 2 | 3 | marked-done-not-implemented |
-| STRUCT-D004 | RETROSPECTIVE 合并报告类型并在停止条件未满足时记录已闭环 | Medium | 正确性 | 根因 | 流程缺陷 | 已修复 | report_type 单值化；两通道通过后才闭环 | — | 2 | 3 | marked-done-not-implemented |
+| STRUCT-D003 | 文档检视报告仍标 round 1 却宣称第二轮已完成 | Medium | 正确性 | 根因 | 流程缺陷 | 已修复 | 报告元数据与正文统一为真实轮次 | — | 2 | 3 | marked-done-not-implemented |
+| STRUCT-D004 | RETROSPECTIVE 合并报告类型并提前记录闭环 | Medium | 正确性 | 根因 | 流程缺陷 | 已修复 | report_type 单值化；代码 High 清零并通过复核后才闭环 | — | 2 | 5 | marked-done-not-implemented |
 
 ## 证据与停止条件
 
 - `git ls-tree` 现含 `docs/features/releases/README.md`，空目录不再丢失；
 - 0.1 README 链接指向 `releases/README.md`（文件），不再指向目录；
 - 方案第 4 行状态与任务清单一致（M030 已完成，M025 待条件满足）；
-- 本报告元数据与正文一致为 round 3/diff-only；
-- RETROSPECTIVE 的 `report_type` 为结构化单值，且代码/文档两通道均通过后才标记闭环。
+- 本报告元数据与正文一致为 round 5/diff-only；
+- 代码通道 STRUCT-C001 High 已清零并通过复核，RETROSPECTIVE 现可如实标记闭环。

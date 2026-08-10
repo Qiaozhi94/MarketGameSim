@@ -495,8 +495,10 @@ def check_ownership_index(
 
     覆盖规则：
     - 索引文件本身存在，且其链接有效、留在仓库边界内；
-    - README/CLAUDE/版本 README 不得声明与 spec frontmatter 不同的当前状态
-      （§2.6：派生入口不得成为第二份状态声明）。
+    - README/CLAUDE/各版本 README 不得声明与 spec frontmatter 不同的当前状态
+      （§2.6：派生入口不得成为第二份状态声明）；
+    - 里程碑 design.md 不得重新定义全局不变量（属 contracts/architecture 所有权，
+      §2.6：Feature design 不得重新定义全局不变量）。
     """
     readme = root / "docs" / "README.md"
     if not readme.is_file():
@@ -506,9 +508,11 @@ def check_ownership_index(
     check_markdown_links(readme_text, readme.parent, errors, "docs/README")
     check_links_out_of_repo(readme_text, readme.parent, root, errors, "docs/README")
 
-    # 跨层级状态漂移：派生入口（CLAUDE、版本 README）不得声明与 spec 相悖的状态。
+    # 跨层级状态漂移：派生入口（CLAUDE、各版本 README）不得声明与 spec 相悖的状态。
     authoritative = _authoritative_status(root, features_dir)
-    for p in (root / "CLAUDE.md", root / "docs" / "features" / "0.1" / "README.md"):
+    derived = [root / "CLAUDE.md"]
+    derived += [vdir / "README.md" for vdir in discover_versions(features_dir)]
+    for p in derived:
         if not p.is_file():
             continue
         text = p.read_text(encoding="utf-8")
@@ -518,6 +522,35 @@ def check_ownership_index(
             if m and m.group(1) != status:
                 where = f"{p.name}: 声明 {mid}={m.group(1)}"
                 fail(errors, f"{where}，与 spec frontmatter {status} 不一致")
+
+    # 跨层级真相源：里程碑 design.md 不得重新定义 contracts/architecture 拥有的全局不变量。
+    check_global_invariant_ownership(features_dir, errors)
+
+
+# 全局不变量指纹：出现在里程碑 design.md 即视为「重新定义」而非「引用」。
+_GLOBAL_INVARIANT_MARKERS = ("C1:", "C2:")
+
+
+def check_global_invariant_ownership(
+    features_dir: pathlib.Path,
+    errors: list[str],
+) -> None:
+    """里程碑 design.md 不得重新定义全局不变量（§2.6）。
+
+    版本根 design.md 是共享技术设计、可陈述不变量；里程碑级 design.md 若自行定义
+    C1/C2 即视为跨层级真相源漂移（这些归 contracts/architecture 所有）。
+    """
+    for vdir in discover_versions(features_dir):
+        for mdir in discover_milestones(vdir):
+            design = mdir / "design.md"
+            if not design.is_file():
+                continue
+            text = design.read_text(encoding="utf-8")
+            for marker in _GLOBAL_INVARIANT_MARKERS:
+                if marker in text:
+                    where = f"{mdir.name} design.md"
+                    owner = "（属 contracts/architecture）"
+                    fail(errors, f"{where}: 重新定义全局不变量 {marker}{owner}")
 
 
 def _authoritative_status(root: pathlib.Path, features_dir: pathlib.Path) -> dict[str, str]:

@@ -161,15 +161,15 @@ open"而非"忘了关",`status` 上和真正的遗留 bug 要区分开。
 ## 循环 5: 目录结构改造代码检视
 
 - **report_type**: code-review
-- **周期**: 2026-08-10，3 轮（首轮全量 + 两轮 diff-only 复核）
-- **状态**: 已闭环。HEAD `3424b91` + round-3 修复；本地 1564 tests、
+- **周期**: 2026-08-10，5 轮（首轮全量 + 四轮 diff-only 复核）
+- **状态**: 已闭环。HEAD `445c281` + round-5 修复；本地 1567 tests、
   `validate_spec_lifecycle`、ruff 0.16 下 check/format 全绿
-- **结论**: 2 个 High + 5 个 Medium + 3 个 Low（含 round-1/round-2 修复引入的
+- **结论**: 2 个 High + 5 个 Medium + 3 个 Low（含 round-1/round-2/round-3 修复引入的
   STRUCT-C003/C004）全部关闭
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| STRUCT-C001 | 链接与文档所有权门禁未接入生产校验入口 | High | correctness | root-cause | process-gap | fixed | validate_spec_lifecycle 调用 check_docs_links 与 check_ownership_index；round-3 补跨层级状态漂移检测 | `tests/unit/test_spec_lifecycle.py::test_entry_level_dead_link_rejected`; `::test_entry_level_dir_as_file_rejected`; `::test_ownership_index_missing_fails`; `::test_ownership_index_broken_link_fails`; `::test_ownership_status_drift_fails` | 1 | 3 | test-simulates-itself |
+| STRUCT-C001 | 链接与文档所有权门禁未接入生产校验入口 | High | correctness | root-cause | process-gap | fixed | validate_spec_lifecycle 调用 check_docs_links 与 check_ownership_index；round-3 补跨层级状态漂移；round-5 版本 README 扫描遍历全部版本 + 里程碑 design 重定义全局不变量门禁 | `tests/unit/test_spec_lifecycle.py::test_entry_level_dead_link_rejected`; `::test_entry_level_dir_as_file_rejected`; `::test_ownership_index_missing_fails`; `::test_ownership_index_broken_link_fails`; `::test_ownership_status_drift_fails`; `::test_ownership_drift_detected_for_future_version`; `::test_milestone_design_redefines_invariant_fails`; `::test_milestone_design_without_invariant_passes` | 1 | 5 | test-simulates-itself |
 | STRUCT-C002 | 版本级生命周期与 release 收口规则未执行 | High | correctness | root-cause | process-gap | fixed | 新增 validate_versions；round-3 closed_at 改为结构化 frontmatter 解析，正文子串不绕过 | `tests/unit/test_spec_lifecycle.py::test_version_done_without_release_fails`; `::test_version_done_release_without_closed_at_fails`; `::test_version_done_with_pending_milestone_fails`; `::test_version_done_valid_closes_clean`; `::test_version_done_prose_closed_at_bypass_fails` | 1 | 3 | marked-done-not-implemented |
 | prereq-cycle-false-positive | 环检测对菱形依赖误报 | Medium | correctness | root-cause | original-coding | fixed | 三色 DFS 只判当前路径回边 | `tests/unit/test_spec_lifecycle.py::test_prereq_diamond_not_flagged_as_cycle` | 1 | 1 | — |
 | tasks-status-uniqueness-skipped | gate-0 里程碑 tasks 状态不被检查 | Medium | correctness | root-cause | original-coding | fixed | 独立检查 design 与 tasks，不以 design 存在为前置 | `tests/unit/test_spec_lifecycle.py::test_tasks_status_uniqueness_without_design` | 1 | 1 | — |
@@ -181,27 +181,31 @@ open"而非"忘了关",`status` 上和真正的遗留 bug 要区分开。
 **模式性教训**: 两个 High 都属于 `marked-done-not-implemented`/`test-simulates-itself`——
 把校验函数"写出来"却"没接进生产入口"，CLI 还输出"链接校验通过"，绿灯成了假阳性。
 这类缺陷只有"入口级接线测试"能抓住（只测孤立纯函数永远发现不了函数从未被调用）。
-round-3 又暴露 `test-writes-repo-state`（测试把临时 fixture 写进固定仓库路径，污染
-工作树并破坏本地 verify）。来源分布为 `process-gap` 4、`original-coding` 4、
-`fix-regression` 2、`spec-drift` 1；round-1/round-2 修复各引入 1 条新缺陷（STRUCT-C003/
-C004），印证"修复自伤率每轮 20-30%"——1 轮就宣布闭环是假闭环。
+STRUCT-C001 跨 5 轮关闭，反复因"部分接线"被顶回（只查存在性→漏状态漂移→版本硬编码
+→漏全局不变量），说明"所有权校验"这类语义规则很难一次写全，必须拆成可独立验证的
+子规则逐步补齐。round-3 又暴露 `test-writes-repo-state`（测试把临时 fixture 写进固定
+仓库路径，污染工作树并破坏本地 verify）。来源分布为 `process-gap` 4、`original-coding`
+4、`fix-regression` 2、`spec-drift` 1；round-1/round-2 修复各引入 1 条新缺陷
+（STRUCT-C003/C004），印证"修复自伤率每轮 20-30%"——1 轮就宣布闭环是假闭环。
 
 ---
 
 ## 循环 5-文档: 目录结构改造文档检视
 
 - **report_type**: doc-review
-- **周期**: 2026-08-10，3 轮（首轮全量 + 两轮 diff-only 复核）
-- **状态**: 已闭环。STRUCT-D001/D002 内容修复成立；D003 报告元数据与正文统一；
-  D004 RETROSPECTIVE report_type 单值化、停止条件满足后才闭环
+- **周期**: 2026-08-10，5 轮（首轮全量 + 四轮 diff-only 复核）
+- **状态**: 已闭环。STRUCT-D001/D002/D003 内容修复成立；D004 在代码 High 清零并通过
+  复核后才标记闭环
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
 | STRUCT-D001 | releases 目录未纳入 Git 且链接指向目录 | Medium | correctness | root-cause | process-gap | fixed | 新增 releases/README.md 索引，链接改到该文件 | `tests/unit/test_spec_lifecycle.py::test_entry_level_dir_as_file_rejected` | 1 | 1 | marked-done-not-implemented |
 | STRUCT-D002 | 改造方案顶部仍称 M030 待确认 | Low | quality | root-cause | spec-drift | fixed | 顶部状态同步为 M030 已完成 | — | 1 | 1 | cross-feature-contract-drift |
 | STRUCT-D003 | 文档检视报告仍标 round 1 却宣称第二轮已完成 | Medium | correctness | root-cause | process-gap | fixed | 报告元数据与正文统一为真实轮次 | — | 2 | 3 | marked-done-not-implemented |
-| STRUCT-D004 | RETROSPECTIVE 合并报告类型并提前记录闭环 | Medium | correctness | root-cause | process-gap | fixed | report_type 单值化；两通道通过后才闭环 | — | 2 | 3 | marked-done-not-implemented |
+| STRUCT-D004 | RETROSPECTIVE 合并报告类型并提前记录闭环 | Medium | correctness | root-cause | process-gap | fixed | report_type 单值化；代码 High 清零并通过复核后才闭环 | — | 2 | 5 | marked-done-not-implemented |
 
 **模式性教训**: 文档通道的缺陷集中于 `marked-done-not-implemented`——报告宣称完成
-的轮次/状态与元数据、与真实验证结果不一致。教训：报告 frontmatter 的 round/scope/
-report_type/stop_condition 必须与正文和实际验证结果严格同步，不能先写结论后补元数据。
+的轮次/状态与元数据、与真实验证结果不一致；且 RETROSPECTIVE 在代码通道仍有 High 时
+提前标记"已闭环"。教训：报告 frontmatter 的 round/scope/report_type/stop_condition
+必须与正文和实际验证结果严格同步；复盘归档必须在所有相关通道的停止条件都满足后
+才标记闭环，不能先写结论后补元数据。
