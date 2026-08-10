@@ -279,6 +279,157 @@ def test_duplicate_artifact_row_in_spec_is_rejected(validator, artifact_schemas)
 
 
 # --------------------------------------------------------------------------- #
+# 负向：manifest_schema（0.1.4 R014-D002 回归——manifest 七字段唯一真源）
+# --------------------------------------------------------------------------- #
+
+
+def test_manifest_schema_present_and_valid(validator, artifact_schemas):
+    """正向对照：当前仓库 manifest_schema 通过结构与七字段封闭校验。"""
+    errors: list[str] = []
+    validator.validate_manifest_schema_data(artifact_schemas, errors)
+    assert errors == []
+
+
+def _manifest_missing_schema(d: dict) -> None:
+    d.pop("manifest_schema", None)
+
+
+def _manifest_extra_entry_field(d: dict) -> None:
+    d["manifest_schema"]["top_level_fields"]["artifacts"]["item_fields"]["extra_field"] = {
+        "type": "string"
+    }
+
+
+def _manifest_missing_entry_field(d: dict) -> None:
+    del d["manifest_schema"]["top_level_fields"]["artifacts"]["item_fields"]["hash"]
+
+
+def _manifest_extra_top_level_field(d: dict) -> None:
+    d["manifest_schema"]["top_level_fields"]["extra_top"] = {"type": "string"}
+
+
+def _manifest_hash_algorithm_enum_not_list(d: dict) -> None:
+    entry = d["manifest_schema"]["top_level_fields"]["artifacts"]["item_fields"]
+    entry["hash_algorithm"]["enum"] = "blake2b"
+
+
+def _manifest_hash_algorithm_enum_wrong_element_type(d: dict) -> None:
+    entry = d["manifest_schema"]["top_level_fields"]["artifacts"]["item_fields"]
+    entry["hash_algorithm"]["enum"] = [1]
+
+
+def _manifest_hash_hex_length_odd(d: dict) -> None:
+    entry = d["manifest_schema"]["top_level_fields"]["artifacts"]["item_fields"]
+    entry["hash"]["hex_length"] = 63
+
+
+def _manifest_hash_hex_length_not_int(d: dict) -> None:
+    entry = d["manifest_schema"]["top_level_fields"]["artifacts"]["item_fields"]
+    entry["hash"]["hex_length"] = "64"
+
+
+def _manifest_hash_hex_length_on_non_string(d: dict) -> None:
+    entry = d["manifest_schema"]["top_level_fields"]["artifacts"]["item_fields"]
+    entry["schema_version"]["hex_length"] = 64
+
+
+def _manifest_hash_hex_length_wrong_value(d: dict) -> None:
+    """round-4 复核复现的确切场景：64 改成 62，仍是合法正偶数，形状校验放行。"""
+    entry = d["manifest_schema"]["top_level_fields"]["artifacts"]["item_fields"]
+    entry["hash"]["hex_length"] = 62
+
+
+def _manifest_hash_algorithm_wrong_but_valid_enum(d: dict) -> None:
+    """enum 仍是合法的非空字符串数组，但值不是 blake2b——形状校验放行。"""
+    entry = d["manifest_schema"]["top_level_fields"]["artifacts"]["item_fields"]
+    entry["hash_algorithm"]["enum"] = ["md5"]
+
+
+def _manifest_hash_charset_wrong_but_known_type(d: dict) -> None:
+    entry = d["manifest_schema"]["top_level_fields"]["artifacts"]["item_fields"]
+    entry["hash"]["charset"] = "uppercase_hex"
+
+
+MANIFEST_SCHEMA_MUTATIONS = [
+    pytest.param(_manifest_missing_schema, "缺 manifest_schema", id="缺 manifest_schema"),
+    pytest.param(_manifest_extra_entry_field, "七项封闭清单", id="entry 字段超出七项"),
+    pytest.param(_manifest_missing_entry_field, "七项封闭清单", id="entry 字段少于七项"),
+    pytest.param(_manifest_extra_top_level_field, "顶层字段集合非法", id="顶层字段超出三项"),
+    pytest.param(
+        _manifest_hash_algorithm_enum_not_list,
+        "enum 必须为非空数组",
+        id="hash_algorithm enum 非数组",
+    ),
+    pytest.param(
+        _manifest_hash_algorithm_enum_wrong_element_type,
+        "enum 元素必须都是字符串",
+        id="hash_algorithm enum 元素类型错误",
+    ),
+    pytest.param(_manifest_hash_hex_length_odd, "正偶数", id="hash hex_length 奇数"),
+    pytest.param(_manifest_hash_hex_length_not_int, "正偶数", id="hash hex_length 非整数"),
+    pytest.param(
+        _manifest_hash_hex_length_on_non_string,
+        "只能用于 type=string",
+        id="hex_length 用在非 string 字段",
+    ),
+    pytest.param(
+        _manifest_hash_hex_length_wrong_value,
+        "hex_length 必须精确为 64",
+        id="hash hex_length 合法正偶数但非 64",
+    ),
+    pytest.param(
+        _manifest_hash_algorithm_wrong_but_valid_enum,
+        "enum 必须精确为 ['blake2b']",
+        id="hash_algorithm 合法 enum 但非 blake2b",
+    ),
+    pytest.param(
+        _manifest_hash_charset_wrong_but_known_type,
+        "charset",
+        id="hash charset 非 lowercase_hex",
+    ),
+]
+
+
+@pytest.mark.parametrize("mutate, expected", MANIFEST_SCHEMA_MUTATIONS)
+def test_manifest_schema_mutations_are_rejected(validator, artifact_schemas, mutate, expected):
+    mutated = copy.deepcopy(artifact_schemas)
+    mutate(mutated)
+    errors: list[str] = []
+    validator.validate_manifest_schema_data(mutated, errors)
+    assert any(expected in e for e in errors), f"变异未被拒绝，实际错误：{errors}"
+
+
+def test_manifest_field_drift_from_spec_is_rejected(validator, artifact_schemas):
+    """spec.md §4.1 的七字段编号列表与机器 manifest_schema 漂移必报。"""
+    spec_text = validator.REPORT_SPEC.read_text(encoding="utf-8")
+    broken = spec_text.replace("7. `hash`（字符串", "7. `checksum`（字符串", 1)
+    assert broken != spec_text, "变异未生效：spec 第 7 项字段名已改写，请同步本测试"
+    errors: list[str] = []
+    validator.validate_manifest_schema_against_spec(artifact_schemas, broken, errors)
+    assert any("manifest 七字段" in e and "不一致" in e for e in errors), errors
+
+
+def test_manifest_hash_length_drift_from_spec_is_rejected(validator, artifact_schemas):
+    """round-4 复核指出的双向核对缺口：spec 展示的位数与机器 hex_length 漂移必报
+    ——即使机器 Schema 自身的精确值校验（validate_manifest_schema_data）没变，
+    spec 文案单独改错位数也要能被 validate_manifest_schema_against_spec 抓到。"""
+    spec_text = validator.REPORT_SPEC.read_text(encoding="utf-8")
+    broken = spec_text.replace("固定 64 位十六进制小写摘要", "固定 128 位十六进制小写摘要", 1)
+    assert broken != spec_text, "变异未生效：spec 的 hash 位数描述已改写，请同步本测试"
+    errors: list[str] = []
+    validator.validate_manifest_schema_against_spec(artifact_schemas, broken, errors)
+    assert any("hash 位数" in e and "不一致" in e for e in errors), errors
+
+
+def test_manifest_hash_length_matches_spec(validator, artifact_schemas):
+    """正向对照：当前仓库 spec 展示的 64 位与机器 hex_length=64 一致，不误报。"""
+    spec_text = validator.REPORT_SPEC.read_text(encoding="utf-8")
+    errors: list[str] = []
+    validator.validate_manifest_schema_against_spec(artifact_schemas, spec_text, errors)
+    assert not any("hash 位数" in e for e in errors), errors
+
+
+# --------------------------------------------------------------------------- #
 # 负向：traceability
 # --------------------------------------------------------------------------- #
 

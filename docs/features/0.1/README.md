@@ -23,7 +23,7 @@ frontmatter**；本文只做入口与收口提示，不复制状态或需求正�
 |---|---|---|
 | [`0.1.1-minimal-kernel/`](0.1.1-minimal-kernel/spec.md) | done | 0 |
 | [`0.1.2-leverage-and-first-experiment/`](0.1.2-leverage-and-first-experiment/spec.md) | done | 0 |
-| [`0.1.3-robustness/`](0.1.3-robustness/spec.md) | in-progress | 0 |
+| [`0.1.3-robustness/`](0.1.3-robustness/spec.md) | done | 0 |
 | [`0.1.4-replay-and-report/`](0.1.4-replay-and-report/spec.md) | ready-for-development | 1 |
 
 ## Legacy design 规则

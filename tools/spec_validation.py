@@ -226,11 +226,18 @@ def validate_ids_unique(all_ids: dict[str, tuple[pathlib.Path, dict]], errors: l
 # --------------------------------------------------------------------------- #
 
 
+# 进入这些状态即视为「实施入口」已打开（SOP §3：前置未达成时实施入口由门禁判定
+# blocked）；`draft`/`ready-for-development` 允许在前置未 done 时先把文档写好。
+_IMPLEMENTATION_STATUSES = {"in-progress", "review", "done"}
+
+
 def validate_prerequisites(
     all_ids: dict[str, tuple[pathlib.Path, dict]], errors: list[str]
 ) -> None:
-    """prerequisite 引用存在且无循环；结构化 ID 而非自由文本。"""
+    """prerequisite 引用存在且无循环；结构化 ID 而非自由文本；前置未 done 时禁止
+    自身进入实施状态（SOP §3 状态门）。"""
     for mid, (_dir, front) in all_ids.items():
+        own_status = front.get("status")
         for pre in front.get("prerequisites", []) or []:
             if not isinstance(pre, str) or not pre:
                 fail(errors, f"{mid}: prerequisite 必须是结构化 ID")
@@ -240,6 +247,15 @@ def validate_prerequisites(
                 continue
             if pre not in all_ids:
                 fail(errors, f"{mid}: prerequisite {pre!r} 引用不存在的里程碑")
+                continue
+            if own_status in _IMPLEMENTATION_STATUSES:
+                pre_status = all_ids[pre][1].get("status")
+                if pre_status != "done":
+                    fail(
+                        errors,
+                        f"{mid}: status={own_status!r} 但前置 {pre!r} 未 done"
+                        f"（当前 {pre_status!r}），实施入口被前置未达成阻塞（SOP §3）",
+                    )
 
     # 环检测：三色 DFS，只判当前路径上的回边（不误报菱形依赖）。
     graph = {mid: set(front.get("prerequisites", []) or []) for mid, (_d, front) in all_ids.items()}
@@ -427,6 +443,33 @@ def _check_open_questions(
         fail(errors, f"{where}: 待确认问题 {m.group(1)} 仍未关闭")
 
 
+_AC_ID = re.compile(r"AC-(\d+)")
+# 只匹配 tasks.md 里真正的「范围声明」形态：`AC-001`—`AC-005`（两端都是反引号
+# 包裹的 AC ID，中间用 em dash 连接）。不能退化成「AC 编号是否在全文任意位置
+# 出现过」——那样即使范围声明本身过期（如 T404 仍写 AC-005），只要另一个任务
+# 单独提过新 ID（如 T202 提了 `AC-006`），旧检查也会误判为通过（R014-D004 在
+# 0.1.4 复核 round 3 出现过一次：门禁验证了错误的代理量）。
+_AC_RANGE = re.compile(r"`AC-\d+`—`AC-(\d+)`")
+
+
+def _check_ac_range_completeness(
+    spec_text: str, tasks_text: str, errors: list[str], where: str
+) -> None:
+    """spec 验收清单新增 AC 后，tasks.md 里硬编码的 AC 范围声明必须跟着扩大
+    ——否则「运行统一质量门」这类任务会静默漏掉新 AC（acceptance-mapping-gap）。"""
+    spec_ac_ids = {int(n) for n in _AC_ID.findall(spec_text)}
+    if not spec_ac_ids:
+        return
+    max_ac = max(spec_ac_ids)
+    for end in _AC_RANGE.findall(tasks_text):
+        if int(end) < max_ac:
+            fail(
+                errors,
+                f"{where}: tasks.md 声明的 AC 范围上界为 AC-{end}，"
+                f"未覆盖 spec 验收清单已到的 AC-{max_ac:03d}",
+            )
+
+
 def validate_gate1(
     spec_text: str,
     design_text: str,
@@ -445,6 +488,7 @@ def validate_gate1(
     if status in ("ready-for-development", "in-progress", "review", "done"):
         _check_open_questions(spec_text, "待确认问题", "Q", errors, f"{where} spec")
         _check_open_questions(design_text, "待确认设计问题", "DQ", errors, f"{where} design")
+    _check_ac_range_completeness(spec_text, tasks_text, errors, where)
 
 
 # --------------------------------------------------------------------------- #

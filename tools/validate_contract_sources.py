@@ -44,6 +44,7 @@ REPORT_SPEC = ROOT / "docs" / "features" / "0.1" / "0.1.4-replay-and-report" / "
 
 ARTIFACT_FIELD_TYPES = {"string", "integer", "number", "boolean", "object", "array"}
 ARTIFACT_SCALAR_TYPES = {"string", "integer", "number", "boolean"}
+_KNOWN_CHARSETS = {"lowercase_hex"}
 
 
 def _fail(errors: list[str], msg: str) -> None:
@@ -322,6 +323,9 @@ def _validate_artifact_fields(fields: dict, parent: str, errors: list[str]) -> N
             "additional_value_type",
             "item_type",
             "item_fields",
+            "enum",
+            "hex_length",
+            "charset",
         }
         if extra := set(field) - allowed:
             _fail(errors, f"{where}: 含未知 Schema 属性 {sorted(extra)}")
@@ -330,6 +334,31 @@ def _validate_artifact_fields(fields: dict, parent: str, errors: list[str]) -> N
             _fail(errors, f"{where}: type={field_type!r} 非法")
         if "nullable" in field and not isinstance(field["nullable"], bool):
             _fail(errors, f"{where}: nullable 必须为 bool")
+        if "enum" in field:
+            enum_values = field["enum"]
+            if not isinstance(enum_values, list) or not enum_values:
+                _fail(errors, f"{where}: enum 必须为非空数组")
+            elif field_type == "string" and not all(isinstance(v, str) for v in enum_values):
+                _fail(errors, f"{where}: type=string 的 enum 元素必须都是字符串")
+        if "hex_length" in field:
+            hex_length = field["hex_length"]
+            if field_type != "string":
+                _fail(errors, f"{where}: hex_length 只能用于 type=string")
+            if (
+                not isinstance(hex_length, int)
+                or isinstance(hex_length, bool)
+                or hex_length <= 0
+                or hex_length % 2 != 0
+            ):
+                _fail(errors, f"{where}: hex_length 必须为正偶数（十六进制每字节 2 字符）")
+        if "charset" in field:
+            if field_type != "string":
+                _fail(errors, f"{where}: charset 只能用于 type=string")
+            if field["charset"] not in _KNOWN_CHARSETS:
+                _fail(
+                    errors,
+                    f"{where}: charset={field['charset']!r} 不在已知集合 {sorted(_KNOWN_CHARSETS)}",
+                )
 
         if field_type == "object":
             nested = field.get("required_fields")
@@ -356,6 +385,97 @@ def _validate_artifact_fields(fields: dict, parent: str, errors: list[str]) -> N
                     _fail(errors, f"{where}: object 数组必须冻结非空 item_fields")
                 else:
                     _validate_artifact_fields(item_fields, f"{where}[]", errors)
+
+
+# manifest 逐 artifact 的七字段封闭清单（spec.md §4.1 与本文件 manifest_schema
+# 双向核对的对象，见 validate_manifest_schema_against_spec）。
+_MANIFEST_ARTIFACT_ENTRY_FIELDS = {
+    "artifact_id",
+    "path",
+    "format",
+    "schema_version",
+    "producer",
+    "hash_algorithm",
+    "hash",
+}
+
+
+def validate_manifest_schema_data(d: dict, errors: list[str]) -> None:
+    """冻结 artifact manifest 顶层结构，及逐 artifact 七字段封闭清单。"""
+    schema = d.get("manifest_schema")
+    if not isinstance(schema, dict):
+        _fail(errors, "report artifacts: 缺 manifest_schema")
+        return
+    top = schema.get("top_level_fields")
+    if not isinstance(top, dict):
+        _fail(errors, "manifest_schema: top_level_fields 必须为对象")
+        return
+    if set(top) != {"manifest_version", "artifact_root", "artifacts"}:
+        _fail(errors, f"manifest_schema: 顶层字段集合非法 {sorted(top)}")
+        return
+    _validate_artifact_fields(top, "manifest_schema", errors)
+    entry_fields = top.get("artifacts", {}).get("item_fields", {})
+    if set(entry_fields) != _MANIFEST_ARTIFACT_ENTRY_FIELDS:
+        _fail(
+            errors,
+            "manifest_schema.artifacts[]: 字段集合必须恰为七项封闭清单 "
+            f"{sorted(_MANIFEST_ARTIFACT_ENTRY_FIELDS)}，实际 {sorted(entry_fields)}",
+        )
+        return
+
+    # 通用 shape 校验（_validate_artifact_fields）只保证「合法枚举/合法正偶数」，
+    # 不保证「就是这个业务值」——round 4 复核证明 hex_length=62 会被 shape 校验
+    # 放行。这里补精确值断言，与 hash_algorithm 的单元素 enum 同一层级严格度。
+    hash_algorithm_def = entry_fields.get("hash_algorithm", {})
+    if hash_algorithm_def.get("enum") != ["blake2b"]:
+        _fail(
+            errors,
+            "manifest_schema.artifacts[].hash_algorithm: enum 必须精确为 ['blake2b']，"
+            f"实际 {hash_algorithm_def.get('enum')!r}",
+        )
+    hash_def = entry_fields.get("hash", {})
+    if hash_def.get("hex_length") != 64:
+        _fail(
+            errors,
+            "manifest_schema.artifacts[].hash: hex_length 必须精确为 64"
+            f"（blake2b digest_size=32），实际 {hash_def.get('hex_length')!r}",
+        )
+    if hash_def.get("charset") != "lowercase_hex":
+        _fail(
+            errors,
+            "manifest_schema.artifacts[].hash: charset 必须精确为 'lowercase_hex'，"
+            f"实际 {hash_def.get('charset')!r}",
+        )
+
+
+_MANIFEST_FIELD_LIST_ITEM = re.compile(r"^\s*\d+\.\s+`([a-z][a-z0-9_]*)`", re.M)
+_SPEC_HASH_LENGTH = re.compile(r"固定\s*(\d+)\s*位十六进制小写摘要")
+
+
+def validate_manifest_schema_against_spec(d: dict, spec_text: str, errors: list[str]) -> None:
+    """spec.md §4.1 展示的七字段编号列表必须与机器 manifest_schema 双向一致。"""
+    entry_fields = (
+        d.get("manifest_schema", {})
+        .get("top_level_fields", {})
+        .get("artifacts", {})
+        .get("item_fields", {})
+    )
+    shown = set(_MANIFEST_FIELD_LIST_ITEM.findall(spec_text))
+    if shown != set(entry_fields):
+        _fail(
+            errors,
+            f"report artifacts: manifest 七字段 spec 展示 {sorted(shown)} 与"
+            f" 机器 Schema {sorted(entry_fields)} 不一致",
+        )
+
+    spec_lengths = {int(n) for n in _SPEC_HASH_LENGTH.findall(spec_text)}
+    machine_length = entry_fields.get("hash", {}).get("hex_length")
+    if spec_lengths and machine_length not in spec_lengths:
+        _fail(
+            errors,
+            f"report artifacts: spec 展示的 hash 位数 {sorted(spec_lengths)} 与"
+            f" 机器 Schema hex_length={machine_length!r} 不一致",
+        )
 
 
 _REPORT_ARTIFACT_ROW = re.compile(
@@ -445,6 +565,8 @@ def validate_artifact_schemas(errors: list[str]) -> None:
     d = json.loads(ARTIFACT_SCHEMAS.read_text(encoding="utf-8"))
     validate_artifact_schema_data(d, errors)
     validate_artifact_schemas_against_spec(d, REPORT_SPEC.read_text(encoding="utf-8"), errors)
+    validate_manifest_schema_data(d, errors)
+    validate_manifest_schema_against_spec(d, REPORT_SPEC.read_text(encoding="utf-8"), errors)
 
 
 def validate_trace(errors: list[str]) -> None:

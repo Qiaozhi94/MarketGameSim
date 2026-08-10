@@ -84,22 +84,33 @@ US-5），并通过回放器逐帧观察这些状态如何演变。
 
 ## 3. 范围与边界
 
-### 范围内
+### 3.1 范围内
 
-- **单文件 HTML 回放器**：以事件日志为唯一输入，逐帧呈现价格、订单簿、账户与强平。
+- **单文件 HTML 回放器**：以事件日志为唯一输入，逐帧呈现价格、订单簿、账户与强平；
+  数据内联嵌入产物本身，不产生 `fetch`、不依赖 CDN 或外部字体（离线打开验收 E2）。
 - **K 线视图**：周期定义见指标字典 §1.9，仅使用**已完成**的 K 线。
 - **总结报告**：一次运行的指标汇总、PnL 桥接、经济终点与技术无效统计。
 - **逐帧一致性验收**：SC-008 / KPI-012：回放状态与原运行逐帧相等。
 
-### 范围外
+### 3.2 与内核的边界（解耦不变量）
+
+回放器与报告是事件日志的**只读消费者**：与内核之间只有**日志文件**这一条通路，
+不反向导入内核模块——可执行断言见 §4 的 NFR-004（四类禁止导入模块的封闭清单）。
+这条边界划定的是「范围」而非「实现细节」：即使回放器逐帧结果完全正确，只要它
+导入了内核模块，就已经引入了第二个真源，属于范围违规而非功能缺陷。
+
+### 3.3 降采样与大日志边界
+
+大日志允许降采样，但降采样比例与规则必须写入产物并在页面上可见；**E1 逐帧一致性
+验收在未降采样的完整日志上执行**，降采样产物不得用于该项验收。
+
+### 3.4 范围外
 
 - 在线实时渲染、人在环交互、多运行对比看板（后移 v0.2+）。
 
-### 边界场景
+### 3.5 边界场景
 
-- 空簿/单边簿下的回放与 K 线呈现；
-- 大日志：允许降采样，但规则写入产物并页面可见；E1 一致性验收在未降采样日志上执行；
-- artifact 缺件/哈希不符/schema_version 不匹配时，报告生成失败而非降级为部分报告。
+- 空簿/单边簿下的回放与 K 线呈现。
 
 ## 4. 需求
 
@@ -114,12 +125,7 @@ US-5），并通过回放器逐帧观察这些状态如何演变。
   上游 artifact，**不自行重算**。
 - **PR-020**：K 线视图与指标字典 §1.9 的周期定义一致，且只用已完成 K 线。
 
-### 事件 / Trace 需求
-
-- **TR-001**：逐帧一致性 oracle 由测试专用独立 observer 提供，只作期望值输入，绝不
-  喂给回放器（§4.2 oracle 设计）。
-
-### 报告输入 artifact（唯一真源是 `report_artifacts.json`）
+### 4.1 报告输入 artifact 与 manifest 合同（唯一真源是 `report_artifacts.json`）
 
 报告的输入是一份 artifact manifest，列出被消费的冻结产物及其哈希。10 类 artifact 的
 字段 Schema 唯一真源是 `src/market_game_sim/schema/report_artifacts.json`；本表是
@@ -139,6 +145,46 @@ US-5），并通过回放器逐帧观察这些状态如何演变。
 | `robustness_conclusion` | 0.1.3 T604 |
 | `negative_results` | 0.1.3 T606 |
 
+**manifest 结构**（唯一真源是 `report_artifacts.json` 的 `manifest_schema` 键；本节
+是人类可读索引，两者同样由 `tools/validate_contract_sources.py` 双向核对）：
+
+- 顶层封闭字段：`manifest_version`（整数）、`artifact_root`（字符串，manifest 文件
+  唯一的产物根目录来源——不作为报告入口的额外参数出现，见 design.md §4）、
+  `artifacts`（数组，元素见下）。
+- **完备性**：`artifacts` 数组必须恰好为上表 10 类 `artifact_id` 各声明一条，
+  一一对应、不重不漏；registry 中存在但 manifest 未声明的 `artifact_id` 即判定
+  为「必备件缺失」。
+- `artifacts` 数组每个元素声明以下**七个封闭字段**，逐 artifact 一条：
+  1. `artifact_id`（字符串）——须在 registry 中存在；
+  2. `path`（字符串）——相对 `artifact_root` 的路径；
+  3. `format`（字符串）——须与 registry 声明一致；
+  4. `schema_version`（整数）——须与 registry 声明一致；
+  5. `producer`（字符串）——须与 registry 声明一致，供溯源；
+  6. `hash_algorithm`（字符串，**枚举唯一值 `blake2b`**）——机器 Schema 冻结为
+     单元素枚举，不接受其他算法；
+  7. `hash`（字符串，**固定 64 位十六进制小写摘要**）——对 `path` 指向文件的字节
+     内容计算 `blake2b(digest_size=32)`，与事件摘要哈希（KPI-002，事件 Schema
+     §7，`eventlog/digest.py::DIGEST_SIZE`）同一 digest_size，而非
+     `config_hash`（事件 Schema §6.1）用于配置指纹的 `digest_size=16`——两者
+     用途不同（文件内容完整性 vs 配置指纹去重），不得混用同一长度。
+- **额外数据件扫描**：递归扫描 `artifact_root` 目录下全部常规文件；任一文件的相对
+  路径未出现在任何 manifest 条目的 `path` 字段中，即判定为「未声明数据件」。
+- **五类失败**（与 T302 五类负向夹具、design.md `failure.code` 一一对应），任一
+  出现即报告生成失败（不降级为部分报告）：必备件缺失（含 manifest 遗漏 registry
+  中某 `artifact_id`）/ 哈希不符 / `schema_version` 错版 / 必备字段缺失或类型
+  错误（含 `hash_algorithm` 不等于 `blake2b`）/ 出现未声明额外数据件。
+
+### 4.2 事件 / Trace 需求（oracle 设计）
+
+- **TR-001**：逐帧一致性 oracle 由测试专用独立 observer 提供，只作期望值输入，绝不
+  喂给回放器。oracle 的帧与字段规则唯一真源在 design.md §4（Event / Trace
+  Contract）：bootstrap 两个事务合并为第 0 帧，此后第 k 帧对应
+  `transaction_seq = k + 2`；判等字段为账户 11 项（事件 Schema §4.6.1）、交易所
+  2 项（事件 Schema §4.6.1）、最近成交价 `last_ticks`（价格状态，事件 Schema
+  §4.6.2）与订单簿聚合三项 `price_ticks`/`quantity_units`/`order_count`（同上
+  §4.6.2）。判等顺序：先比帧数与帧键集合相等，再逐帧比对上述字段集合；任一字段
+  不等即判定不一致。
+
 ### 非功能需求
 
 - **NFR-004**（沿用）：回放器与报告**不导入** `kernel/`、`book/`、`ledger/`、
@@ -148,8 +194,9 @@ US-5），并通过回放器逐帧观察这些状态如何演变。
 
 - 回放器是只读消费者：读日志 → 内联生成单文件 HTML；报告读 manifest → 核对哈希 →
   生成总结报告。
-- 缺件行为：任一 `required` 件缺失、哈希不符、`schema_version` 不匹配，或出现未声明
-  数据件 → **报告生成失败**，不降级为「部分报告」。
+- 缺件行为（五类失败，定义见 §4.1）：必备件缺失、哈希不符、`schema_version` 错版、
+  必备字段缺失或类型错误、出现未声明额外数据件 → **报告生成失败**，不降级为
+  「部分报告」。
 
 不变量：
 
@@ -172,7 +219,8 @@ US-5），并通过回放器逐帧观察这些状态如何演变。
 | E2 | 产物为单文件 HTML，**离线打开可用**，无任何外部请求 | §3.1 / PR-018；用断网环境验收 |
 | E3 | K 线视图与指标字典 §1.9 的周期定义一致，且只用已完成 K 线 | FR-020 / PR-020 |
 | E4 | **总结报告**含条件性结论、效应量、置信区间与失效边界，且全部数值消费 §4.1 的上游 artifact，**不自行重算** | PR-019 |
-| E5 | 回放器与报告**不导入** `kernel/`、`ledger/`、`book/` | §3.2；导入检查测试 |
+| E5 | 回放器与报告**不导入** `kernel/`、`ledger/`、`book/`、`eventlog/` | §3.2；导入检查测试 |
+| E6 | **交互控制与强平呈现**：回放器逐帧呈现价格曲线、订单簿深度、账户权益与仓位，支持拖拽定位到任意帧、变速与暂停；发生强平的帧在页面上有可见标注 | FR-019 |
 
 ### 验收清单
 
@@ -185,8 +233,11 @@ US-5），并通过回放器逐帧观察这些状态如何演变。
   完成 K 线 — tests: `tests/unit/replay/test_kline.py`
 - [ ] **AC-004** (`PR-019`): 总结报告含条件性结论、效应量、置信区间与失效边界，且全部
   数值消费 §4.1 上游 artifact，**不自行重算** — tests: `tests/integration/test_report_artifacts.py`
-- [ ] **AC-005** (`NFR-004`): 回放器与报告**不导入** `kernel/`、`ledger/`、`book/` —
-  tests: `tests/unit/replay/test_no_kernel_import.py`
+- [ ] **AC-005** (`NFR-004`): 回放器与报告**不导入** `kernel/`、`ledger/`、`book/`、
+  `eventlog/` — tests: `tests/unit/replay/test_no_kernel_import.py`
+- [ ] **AC-006** (`FR-019`, `E6`): 逐帧呈现价格曲线、订单簿深度、账户权益与仓位；
+  支持拖拽定位到任意帧、变速播放与暂停；发生强平的帧带有可见标注 —
+  tests: `tests/unit/replay/test_frame_presentation.py`
 
 ## 7. 测试、依赖与决策
 

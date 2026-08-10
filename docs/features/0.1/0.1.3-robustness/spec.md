@@ -3,10 +3,10 @@ kind: milestone
 id: 0.1.3
 parent: v0.1-belief-testing-laboratory
 version: "0.1"
-status: in-progress
+status: done
 gate_version: 0
 created: 2026-08-01
-updated: 2026-08-09
+updated: 2026-08-10
 prerequisites:
   - 0.1.2
 ---

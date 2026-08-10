@@ -60,22 +60,55 @@ replay/   消费事件日志，生成单文件 HTML 逐帧回放
 
 ### API / CLI / Adapter Contract
 
-- 回放器入口：单文件 HTML 生成器，输入日志路径，输出 `.html`。
-- 报告入口：输入 artifact manifest 路径与 `artifact_root`，输出总结报告产物。
+- **回放器入口**：`market_game_sim.replay.generate.build_replay(log_path: Path,
+  out_path: Path, *, downsample: DownsampleRule | None = None) -> None`；CLI
+  `python -m market_game_sim.replay.generate --log <path> --out <path.html>
+  [--downsample <rule>]`。失败即非 0 退出码并向 stderr 打印失败原因；先写临时
+  文件成功后原子替换，不产出半成品 `.html`。
+
+- **报告入口**：`market_game_sim.report.generate.build_report(manifest_path: Path,
+  out_dir: Path) -> ReportResult`；CLI
+  `python -m market_game_sim.report.generate --manifest <path> --out <dir>`。
+  **`artifact_root` 只有一个来源**——manifest 文件自身的顶层字段（§4.1），不作为
+  CLI flag 或函数参数重复出现，避免两个真源互相冲突；`artifact_root` 为相对路径
+  时相对 `manifest_path` 所在目录解析，为绝对路径时直接使用。产出两个文件到
+  `out_dir`：`report.json`（机器可读，**唯一真源**）与 `report.md`（人类可读，
+  由 `report.json` 渲染而来，不得反向派生）。
+
+  `report.json` 顶层封闭字段：`schema_version`（整数）、`run_id`（字符串）、
+  `manifest_hash`（字符串，manifest 文件自身摘要）、`generated_at`（ISO 8601
+  字符串）、`metrics`（对象，PnL 桥接/经济终点/技术无效率汇总）、
+  `conditional_conclusion`（对象，原样消费 §4.1 的 `conditional_conclusion`
+  artifact）、`robustness_conclusion`（对象或 `null`，同上消费 0.1.3 产物）、
+  `negative_results`（数组，原样消费 `negative_results` artifact）、
+  `failure`（对象或 `null`）。
+
+  **成功/失败二态，不存在「部分成功」中间态**：成功时 `failure` 为 `null`，
+  `metrics`/`conditional_conclusion`/`negative_results` 均已填充，CLI 退出码
+  `0`；失败时上述业务字段全为 `null`，`failure` 非空，CLI 退出码 `1`。
+
+  `failure.code` 取值封闭为五类，与 §4.1 manifest 五类失败一一对应：
+  `MISSING_ARTIFACT` / `HASH_MISMATCH` / `SCHEMA_VERSION_MISMATCH` /
+  `FIELD_SCHEMA_INVALID` / `UNDECLARED_EXTRA_FILE`。`failure.artifact_id` 定位到
+  触发失败的 artifact（`UNDECLARED_EXTRA_FILE` 时改填触发失败的文件相对路径），
+  `failure.message` 是人类可读原因。
 
 ### Event / Trace Contract
 
 - 逐帧一致性：bootstrap 两个事务合并为第 0 帧；此后第 k 帧对应
   `transaction_seq = k + 2`。帧键两边必须相等。
-- 投影字段：价格、盘口聚合、各账户 11 字段（事件 Schema §4.6.1）+ 交易所 2 字段。
+- 投影字段：各账户 11 字段 + 交易所 2 字段（事件 Schema §4.6.1）、最近成交价
+  `last_ticks` 与盘口聚合 `price_ticks`/`quantity_units`/`order_count`（事件
+  Schema §4.6.2）。
 - 降采样：允许，但规则写入产物并页面可见；E1 一致性验收在未降采样日志上执行。
 
 ## 5. Runtime、Workflow 与并发
 
 - 单次进程内生成，无并发与事务状态。
 - 降采样流程：读日志 → 按声明规则抽样 → 内联嵌入 HTML → 页面标注。
-- 缺件行为：任一 required 件缺失/哈希不符/schema_version 不匹配，或出现未声明数据件
-  → 报告生成失败，不降级为部分报告。
+- 缺件行为（五类失败，见 §4 `failure.code`）：必备件缺失 / 哈希不符 /
+  `schema_version` 错版 / 必备字段缺失或类型错误 / 出现未声明额外数据件
+  → 报告生成失败（`report.json.failure` 非空），不降级为部分报告。
 
 ## 6. UI 与可观测性
 
@@ -85,7 +118,8 @@ replay/   消费事件日志，生成单文件 HTML 逐帧回放
 
 ## 7. 失败、恢复、安全与兼容
 
-- 失败映射：artifact 校验失败即报告生成失败，错误信息定位到具体 artifact。
+- 失败映射：artifact 校验失败即报告生成失败，`report.json.failure.code`（五类
+  封闭清单，见 §4）与 `failure.artifact_id` 定位到具体 artifact 与失败类别。
 - 安全边界：纯离线单文件，无网络、无执行外部代码（除自身内联 JS）。
 - 兼容：回放与报告同源，保证「看到的」与「统计的」是同一份数据。
 
@@ -97,7 +131,8 @@ replay/   消费事件日志，生成单文件 HTML 逐帧回放
 | `AC-002` (E2/PR-018) | integration | 离线打开 | 断网环境下单文件可用，无外部请求 |
 | `AC-003` (E3/FR-020) | unit | K 线视图 | 周期与指标字典 §1.9 一致，只用已完成 K 线 |
 | `AC-004` (E4/PR-019) | integration | 总结报告 | 数值消费上游 artifact，不自行重算，哈希核对通过 |
-| `AC-005` (E5) | unit | 导入检查 | `replay/`、`report/` 不导入内核模块 |
+| `AC-005` (E5) | unit | 导入检查 | `replay/`、`report/` 不导入 `kernel/`、`ledger/`、`book/`、`eventlog/` |
+| `AC-006` (E6/FR-019) | unit | 逐帧呈现与交互控制 | 拖拽定位、变速、暂停均可用；强平帧带可见标注 |
 
 - E1 的 oracle 由测试专用独立 observer 提供，只作期望值输入，绝不喂给回放器。
 

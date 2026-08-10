@@ -51,8 +51,9 @@ prerequisites:
 
 - [ ] T201 (`spec §3.1`): 单文件 HTML 产物，数据内联，**无 `fetch`、无 CDN、无外部
       字体**；构建后用断网环境打开验收（E2）— verify: `tests/integration/test_replay_offline_single_file.py`
-- [ ] T202 (`FR-019`): 逐帧呈现价格曲线、订单簿深度、账户权益与仓位、强平事件标注；
-      时间轴以 `timestamp` 为准，可按事务或逻辑时间步进 — verify:
+- [ ] T202 (`FR-019`, `AC-006`): 逐帧呈现价格曲线、订单簿深度、账户权益与仓位、强平
+      事件标注；时间轴以 `timestamp` 为准，可按事务或逻辑时间步进；实现拖拽定位到
+      任意帧、变速播放与暂停三种交互控制 — verify:
       `tests/unit/replay/test_frame_presentation.py`
 - [ ] T203 (`FR-020`, `指标字典 §1.9`): K 线视图，周期取指标字典定义，**只画已完成的
       K 线** — verify: `tests/unit/replay/test_kline.py`
@@ -80,10 +81,11 @@ prerequisites:
       不得拿日志里的 SNAPSHOT 当 oracle — verify:
       `tests/integration/test_replay_frame_consistency.py`
 - [ ] T402 (`spec §3.2`): 导入检查——`replay/`、`report/` 不导入 `kernel/`、`ledger/`、
-      `book/`（E5）；复用 `0.1.1 T604` 机制 — verify: `tests/unit/replay/test_no_kernel_import.py`
+      `book/`、`eventlog/`（E5，NFR-004 四类模块须与检查逐一对齐，不得漏检其中任一
+      类）；复用 `0.1.1 T604` 机制 — verify: `tests/unit/replay/test_no_kernel_import.py`
 - [ ] T403 (`spec E2`): 离线可用性验收——断网环境打开产物，功能完整、无控制台报错 —
       verify: 断网手动验收
-- [ ] T404 (`AC-001`—`AC-005`): 运行项目统一质量门 — verify: `python tools/verify.py`
+- [ ] T404 (`AC-001`—`AC-006`): 运行项目统一质量门 — verify: `python tools/verify.py`
 - [ ] T405: 回写 spec 验收证据、活跃索引和状态 — verify: `python tools/validate_spec_lifecycle.py`
 
 ## 4. 依赖与并行关系
