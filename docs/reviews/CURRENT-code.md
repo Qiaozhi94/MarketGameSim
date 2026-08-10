@@ -1,11 +1,11 @@
 ---
-report_type: code-review
-round: 2
+report_type: fix-verification
+round: 3
 date: 2026-08-10
-prior_report: 5041155
+prior_report: 26dfa00
 scope: diff-only
 stop_condition_met: true
-severity_counts: {critical: 0, high: 0, medium: 0, low: 1}
+severity_counts: {critical: 0, high: 0, medium: 0, low: 0}
 issues:
   - id: STRUCT-C001
     title: 链接与文档所有权门禁未接入生产校验入口
@@ -15,11 +15,11 @@ issues:
     origin: process-gap
     pattern_tag: test-simulates-itself
     status: fixed
-    fix_summary: validate_spec_lifecycle 现在调用 check_docs_links 与 check_ownership_index，遍历维护中文档校验链接/仓库边界与所有权索引
-    regression_test: tests/unit/test_spec_lifecycle.py::test_entry_level_dead_link_rejected / test_entry_level_dir_as_file_rejected / test_ownership_index_missing_fails / test_ownership_index_broken_link_fails
-    location: tools/spec_validation.py:270
+    fix_summary: check_ownership_index 增加跨层级状态漂移检测（派生入口 README/CLAUDE 声明与 spec frontmatter 相悖状态即报错）
+    regression_test: tests/unit/test_spec_lifecycle.py::test_ownership_status_drift_fails / test_entry_level_dead_link_rejected / test_ownership_index_*
+    location: tools/spec_validation.py:490
     first_seen_round: 1
-    resolved_round: 1
+    resolved_round: 3
   - id: STRUCT-C002
     title: 版本级生命周期与 release 收口规则未执行
     severity: high
@@ -28,11 +28,11 @@ issues:
     origin: process-gap
     pattern_tag: marked-done-not-implemented
     status: fixed
-    fix_summary: 新增 validate_versions：校验 version-spec 元数据与状态转换；版本 done 强制关联 release/closed_at/全部里程碑 done
-    regression_test: tests/unit/test_spec_lifecycle.py::test_version_done_without_release_fails / test_version_done_release_without_closed_at_fails / test_version_done_with_pending_milestone_fails / test_version_done_valid_closes_clean
-    location: tools/spec_validation.py:460
+    fix_summary: release 的 closed_at 改为结构化 frontmatter 解析，正文提及 closed_at 不再绕过；校验 version 一致
+    regression_test: tests/unit/test_spec_lifecycle.py::test_version_done_prose_closed_at_bypass_fails / test_version_done_*
+    location: tools/spec_validation.py:475
     first_seen_round: 1
-    resolved_round: 1
+    resolved_round: 3
   - id: prereq-cycle-false-positive
     title: prerequisites 环检测对菱形依赖误报
     severity: medium
@@ -93,39 +93,52 @@ issues:
     location: tools/spec_validation.py:217
     first_seen_round: 2
     resolved_round: 2
+  - id: STRUCT-C004
+    title: 重复 ID 回归测试把临时 fixture 写入固定仓库路径
+    severity: medium
+    category: test-coverage
+    root_cause: root-cause
+    origin: fix-regression
+    pattern_tag: test-writes-repo-state
+    status: fixed
+    fix_summary: 改用 pytest tmp_path fixture，测试不再写入仓库固定路径
+    regression_test: tests/unit/test_spec_lifecycle.py::test_dup_id_preserves_dups
+    location: tests/unit/test_spec_lifecycle.py:494
+    first_seen_round: 3
+    resolved_round: 3
 ---
 
 # 目录结构改造代码检视
 
-结论：**第二轮（diff-only）复核通过。** round-1 修复后对修复 diff 及其相邻契约复核，
-发现并清理了一条 round-1 修复引入的死代码（STRUCT-C003）；原 2 个 High 与 4 个
-Medium/Low 均已修复并有回归测试锁定。本地 1562 测试全绿，`validate_spec_lifecycle`
-通过，`verify.py` 全绿。
+结论：**第三轮（diff-only）复核通过。** round-3 发现的 STRUCT-C004（测试写入固定路径）
+已用 tmp_path 修复；STRUCT-C001 补上跨层级状态漂移检测；STRUCT-C002 的 closed_at 改为
+结构化解析、正文子串不再绕过。本地 1564 测试全绿，`validate_spec_lifecycle` 通过，
+`verify.py` 的 ruff 步骤在锁定版本 0.16 下全绿（0.12 为本地路径版本漂移，非本改动缺陷）。
 
 ## 有限检查清单
 
-- 生产入口是否实际调用已声明的链接与所有权规则（已接线）；
+- 生产入口是否实际调用已声明的链接与所有权规则（已接线，含跨层级状态漂移）；
 - 版本根和 milestone 是否都进入生命周期校验（已接线）；
-- 版本 `done` 是否强制关联 release 文件与 `closed_at`（已接线）；
-- 测试是否覆盖函数接线，而非只覆盖孤立纯函数（新增 11 个入口级用例）；
-- prerequisites 环检测是否只判真实环（不误报菱形依赖）；
-- design/tasks 状态唯一性是否对 gate-0（无 design）里程碑也生效。
+- 版本 `done` 是否强制关联 release 文件与结构化 `closed_at`（已接线）；
+- 测试是否覆盖函数接线，而非只覆盖孤立纯函数（入口级用例）；
+- 测试是否避免写入仓库固定路径（已改 tmp_path）。
 
 ## 发现
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| STRUCT-C001 | 链接与文档所有权门禁未接入生产校验入口 | High | 正确性 | 根因 | 流程缺陷 | 已修复 | validate_spec_lifecycle 调用 check_docs_links 与 check_ownership_index | test_entry_level_dead_link_rejected / test_ownership_index_* | 1 | 1 | test-simulates-itself |
-| STRUCT-C002 | 版本级生命周期与 release 收口规则未执行 | High | 正确性 | 根因 | 流程缺陷 | 已修复 | 新增 validate_versions：版本 done 强制关联 release/closed_at/全部里程碑 done | test_version_done_* | 1 | 1 | marked-done-not-implemented |
+| STRUCT-C001 | 链接与文档所有权门禁未接入生产校验入口 | High | 正确性 | 根因 | 流程缺陷 | 已修复 | 增加跨层级状态漂移检测 | test_ownership_status_drift_fails | 1 | 3 | test-simulates-itself |
+| STRUCT-C002 | 版本级生命周期与 release 收口规则未执行 | High | 正确性 | 根因 | 流程缺陷 | 已修复 | closed_at 结构化解析，正文子串不绕过 | test_version_done_prose_closed_at_bypass_fails | 1 | 3 | marked-done-not-implemented |
 | prereq-cycle-false-positive | 环检测对菱形依赖误报 | 中 | 正确性 | 根因 | 原始编码 | 已修复 | 三色 DFS 只判当前路径回边 | test_prereq_diamond_not_flagged_as_cycle | 1 | 1 | — |
 | tasks-status-uniqueness-skipped | gate-0 里程碑 tasks 状态不被检查 | 中 | 正确性 | 根因 | 原始编码 | 已修复 | 独立检查 design 与 tasks | test_tasks_status_uniqueness_without_design | 1 | 1 | — |
 | dup-id-info-lost | 重复 ID 覆盖丢失首个信息 | 低 | 质量 | 根因 | 原始编码 | 已修复 | 保留首个条目，重复追加 __dups__ | test_dup_id_preserves_dups | 1 | 1 | — |
 | section-substring-match | 章节子串匹配误匹配 | 低 | 质量 | 根因 | 原始编码 | 已修复 | 精确匹配顶层标题 | test_gate1_* | 1 | 1 | — |
 | STRUCT-C003 | round-1 修复遗留死代码（seen dict 永不触发） | 低 | 质量 | 症状 | 修改引入 | 已修复 | 移除永不触发的 seen 逻辑 | test_dup_id_preserves_dups | 2 | 2 | — |
+| STRUCT-C004 | 重复 ID 回归测试把临时 fixture 写入固定仓库路径 | Medium | 测试覆盖 | 根因 | 修改引入 | 已修复 | 改用 pytest tmp_path fixture | test_dup_id_preserves_dups | 3 | 3 | test-writes-repo-state |
 
 ## 证据与停止条件
 
-- 修复后 `validate_spec_lifecycle()` 遍历维护中文档执行链接/仓库边界/所有权索引校验，且只报告实际执行的门禁；
-- 新增 `validate_versions()` 校验版本根元数据与状态转换（done ↔ release/closed_at/里程碑完成）；
-- 第二轮 diff-only 复核清理 round-1 遗留死代码；
-- 本地 1562 测试全绿，`validate_spec_lifecycle` 与 `verify.py` 通过。
+- `check_ownership_index()` 现检测跨层级状态漂移（派生入口与 spec frontmatter 相悖即报）；
+- `validate_versions()` 以结构化 frontmatter 解析 `closed_at`，正文提及不再绕过收口；
+- `test_dup_id_preserves_dups` 改用 tmp_path，不再写入仓库固定路径；
+- 本地 1564 测试全绿，`validate_spec_lifecycle` 通过，ruff 0.16 下 check/format 全绿。

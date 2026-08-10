@@ -420,6 +420,19 @@ def test_ownership_index_broken_link_fails(sv, tmp_path):
     assert any("README" in e and "不存在" in e for e in errors)
 
 
+def test_ownership_status_drift_fails(sv, tmp_path):
+    """STRUCT-C001: 派生入口（版本 README）声明与 spec 相悖状态必报。"""
+    features = _write_version_forest(tmp_path)  # 0.1.1 = done
+    (tmp_path / "docs" / "README.md").write_text("map\n", encoding="utf-8")
+    vreadme = tmp_path / "docs" / "features" / "0.1" / "README.md"
+    vreadme.parent.mkdir(parents=True, exist_ok=True)
+    # 0.1 版本 README 声明 0.1.1 为 in-progress，与 spec 的 done 冲突
+    vreadme.write_text("| 0.1.1 | in-progress |\n", encoding="utf-8")
+    errors: list[str] = []
+    sv.validate_spec_lifecycle(features, tmp_path, errors)
+    assert any("不一致" in e for e in errors)
+
+
 def test_version_done_without_release_fails(sv, tmp_path):
     """STRUCT-C002: 版本 done 但缺 release 文件必报。"""
     features = _write_version_forest(tmp_path, version_status="done")
@@ -430,12 +443,27 @@ def test_version_done_without_release_fails(sv, tmp_path):
 
 
 def test_version_done_release_without_closed_at_fails(sv, tmp_path):
-    """STRUCT-C002: release 缺 closed_at 必报。"""
+    """STRUCT-C002: release 缺结构化 closed_at 必报。"""
     features = _write_version_forest(tmp_path, version_status="done")
     (tmp_path / "docs" / "README.md").write_text("map\n", encoding="utf-8")
     rel_dir = tmp_path / "docs" / "features" / "releases"
     rel_dir.mkdir(parents=True)
-    (rel_dir / "0.1.md").write_text("# release\n", encoding="utf-8")
+    (rel_dir / "0.1.md").write_text('---\nversion: "0.1"\n---\n# release\n', encoding="utf-8")
+    errors: list[str] = []
+    sv.validate_spec_lifecycle(features, tmp_path, errors)
+    assert any("closed_at" in e for e in errors)
+
+
+def test_version_done_prose_closed_at_bypass_fails(sv, tmp_path):
+    """STRUCT-C002: 正文只提及 closed_at 但 frontmatter 无该字段，不得绕过收口。"""
+    features = _write_version_forest(tmp_path, version_status="done")
+    (tmp_path / "docs" / "README.md").write_text("map\n", encoding="utf-8")
+    rel_dir = tmp_path / "docs" / "features" / "releases"
+    rel_dir.mkdir(parents=True)
+    (rel_dir / "0.1.md").write_text(
+        '---\nversion: "0.1"\n---\n# release\nclosed_at 已由 2026-08-10 记录在正文中\n',
+        encoding="utf-8",
+    )
     errors: list[str] = []
     sv.validate_spec_lifecycle(features, tmp_path, errors)
     assert any("closed_at" in e for e in errors)
@@ -453,7 +481,9 @@ def test_version_done_with_pending_milestone_fails(sv, tmp_path):
     (tmp_path / "docs" / "README.md").write_text("map\n", encoding="utf-8")
     rel_dir = tmp_path / "docs" / "features" / "releases"
     rel_dir.mkdir(parents=True)
-    (rel_dir / "0.1.md").write_text("# release\nclosed_at: 2026-08-10\n", encoding="utf-8")
+    (rel_dir / "0.1.md").write_text(
+        '---\nversion: "0.1"\nclosed_at: 2026-08-10\n---\n# release\n', encoding="utf-8"
+    )
     errors: list[str] = []
     sv.validate_spec_lifecycle(features, tmp_path, errors)
     assert any("未 done" in e for e in errors)
@@ -465,7 +495,9 @@ def test_version_done_valid_closes_clean(sv, tmp_path):
     (tmp_path / "docs" / "README.md").write_text("map\n", encoding="utf-8")
     rel_dir = tmp_path / "docs" / "features" / "releases"
     rel_dir.mkdir(parents=True)
-    (rel_dir / "0.1.md").write_text("# release\nclosed_at: 2026-08-10\n", encoding="utf-8")
+    (rel_dir / "0.1.md").write_text(
+        '---\nversion: "0.1"\nclosed_at: 2026-08-10\n---\n# release\n', encoding="utf-8"
+    )
     errors: list[str] = []
     sv.validate_spec_lifecycle(features, tmp_path, errors)
     assert errors == []
@@ -492,26 +524,20 @@ def test_tasks_status_uniqueness_without_design(sv):
     assert any("tasks.md" in e and "status" in e for e in errors)
 
 
-def test_dup_id_preserves_dups(sv):
+def test_dup_id_preserves_dups(sv, tmp_path):
     """dup-id-info-lost: collect_all_milestones 保留重复目录信息。"""
-    tmp = pathlib.Path("tests/unit/fixtures_dup")
-    try:
-        features = tmp / "docs" / "features"
-        for name in ["0.1.1-a", "0.1.1-b"]:
-            mdir = features / "0.1" / name
-            mdir.mkdir(parents=True)
-            (mdir / "spec.md").write_text(
-                '---\nkind: milestone\nid: 0.1.1\nversion: "0.1"\nstatus: done\n'
-                "gate_version: 0\ncreated: 2026-08-01\nprerequisites: []\n---\n# d\n",
-                encoding="utf-8",
-            )
-        (features / "0.1" / "spec.md").write_text(
-            '---\nkind: version-spec\nid: v0.1\nversion: "0.1"\nstatus: in-progress\n---\n',
+    features = tmp_path / "docs" / "features"
+    for name in ["0.1.1-a", "0.1.1-b"]:
+        mdir = features / "0.1" / name
+        mdir.mkdir(parents=True)
+        (mdir / "spec.md").write_text(
+            '---\nkind: milestone\nid: 0.1.1\nversion: "0.1"\nstatus: done\n'
+            "gate_version: 0\ncreated: 2026-08-01\nprerequisites: []\n---\n# d\n",
             encoding="utf-8",
         )
-        coll = sv.collect_all_milestones(features)
-        assert len(coll["0.1.1"][1].get("__dups__", [])) == 1
-    finally:
-        import shutil
-
-        shutil.rmtree(tmp, ignore_errors=True)
+    (features / "0.1" / "spec.md").write_text(
+        '---\nkind: version-spec\nid: v0.1\nversion: "0.1"\nstatus: in-progress\n---\n',
+        encoding="utf-8",
+    )
+    coll = sv.collect_all_milestones(features)
+    assert len(coll["0.1.1"][1].get("__dups__", [])) == 1
