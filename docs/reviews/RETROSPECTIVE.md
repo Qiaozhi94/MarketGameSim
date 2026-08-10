@@ -203,7 +203,7 @@ Y 拒绝的每个变体，且最好一开始就用可判定语法（如"同一�
 | STRUCT-D001 | releases 目录未纳入 Git 且链接指向目录 | Medium | correctness | root-cause | process-gap | fixed | 新增 releases/README.md 索引，链接改到该文件 | `tests/unit/test_spec_lifecycle.py::test_entry_level_dir_as_file_rejected` | 1 | 1 | marked-done-not-implemented |
 | STRUCT-D002 | 改造方案顶部仍称 M030 待确认 | Low | quality | root-cause | spec-drift | fixed | 顶部状态同步为 M030 已完成 | — | 1 | 1 | cross-feature-contract-drift |
 | STRUCT-D003 | 文档检视报告仍标 round 1 却宣称第二轮已完成 | Medium | correctness | root-cause | process-gap | fixed | 报告元数据与正文统一为真实轮次 | — | 2 | 3 | marked-done-not-implemented |
-| STRUCT-D004 | RETROSPECTIVE 合并报告类型并提前记录闭环 | Medium | correctness | root-cause | process-gap | fixed | report_type 单值化；代码 High 清零并通过复核后才闭环 | — | 2 | 5 | marked-done-not-implemented |
+| STRUCT-D004 | RETROSPECTIVE 合并报告类型并提前记录闭环 | Medium | correctness | root-cause | process-gap | fixed | report_type 单值化；代码通道 High 与 STRUCT-C005 Medium 清零并通过复核后才闭环 | — | 2 | 11 | marked-done-not-implemented |
 
 **模式性教训**: 文档通道的缺陷集中于 `marked-done-not-implemented`——报告宣称完成
 的轮次/状态与元数据、与真实验证结果不一致；且 RETROSPECTIVE 在代码通道仍有 High 时
