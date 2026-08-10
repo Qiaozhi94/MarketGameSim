@@ -117,3 +117,24 @@
 - 工具: `Claude Code` · 模型: claude-sonnet-5
 - 起止: 2026-08-09T10:17:38Z → 2026-08-09T10:51:25Z
 
+## 工作流 17: 按评审基线方案调整项目结构
+
+- 工具: `OpenCode` · 模型: deepseek-v4-flash
+- 起止: 2026-08-09T15:18:11Z → 2026-08-10T14:06:27Z
+- Token: in 5232152 / out 205113 · 成本 $0.0000
+
+## 工作流 18: 0a2397e0-ef0a-486c-8155-7711eeeac4ad
+
+- 工具: `Claude Code` · 模型: claude-sonnet-5
+- 起止: 2026-08-10T14:22:24Z → 2026-08-10T16:01:07Z
+
+## 工作流 19: 需求文档0.1.4开发实施
+
+- 工具: `OpenCode` · 模型: deepseek-v4-flash
+- 起止: 2026-08-10T16:21:31Z → 2026-08-10T16:30:38Z
+- Token: in 274636 / out 5550 · 成本 $0.0000
+- 派生子代理:
+  - Map src module structure (@explore subagent) (`opencode` · 2026-08-10T16:23:04Z)
+  - Map artifact producers and registry (@explore subagent) (`opencode` · 2026-08-10T16:23:13Z)
+  - Map event log format and transactions (@explore subagent) (`opencode` · 2026-08-10T16:23:21Z)
+

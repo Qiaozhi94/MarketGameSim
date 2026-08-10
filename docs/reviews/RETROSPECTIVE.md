@@ -210,3 +210,30 @@ Y 拒绝的每个变体，且最好一开始就用可判定语法（如"同一�
 提前标记"已闭环"。教训：报告 frontmatter 的 round/scope/report_type/stop_condition
 必须与正文和实际验证结果严格同步；复盘归档必须在所有相关通道的停止条件都满足后
 才标记闭环，不能先写结论后补元数据。
+
+---
+
+## 循环 6: 0.1.4「回放与总结报告」开发前文档检视
+
+- **report_type**: doc-review
+- **周期**: 2026-08-11，5 轮（首轮全量 + 4 次 diff-only 复核）
+- **状态**: 已闭环。修复提交 `8beb1c9`；本地 `python tools/verify.py` 通过
+  1595 tests，CI `31408615638` 的真源与生命周期校验、ruff、pytest 3.11、
+  pytest 3.13 全部 `success`
+- **结论**: 5 个 High 与 2 个 Medium 全部关闭，0.1.4 可以开始开发
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| R014-D001 | 0.1.3 状态真源未关闭，0.1.4 前置条件仍被阻塞 | High | correctness | root-cause | process-gap | fixed | 0.1.3 spec 状态改 done 并同步派生索引；新增 SOP §3 前置状态门 | `tests/unit/test_spec_lifecycle.py::test_prerequisite_not_done_blocks_implementation` 等 3 条 | 1 | 2 | marked-done-not-implemented |
+| R014-D002 | 三件套引用不存在的小节并丢失 manifest 与 oracle 的可执行合同 | High | correctness | root-cause | spec-drift | fixed | 补齐三处精确值断言，并将摘要位数接入 spec↔JSON 双向核对 | `tests/unit/test_contract_sources.py::test_manifest_schema_mutations_are_rejected` 3 个变体；`::test_manifest_hash_length_drift_from_spec_is_rejected`；`::test_manifest_hash_length_matches_spec` | 1 | 5 | cross-feature-contract-drift |
+| R014-D003 | E5 验收遗漏 NFR-004 禁止导入的 eventlog 模块 | High | test-coverage | root-cause | spec-drift | fixed | E5、AC-005、design 映射与 T402 统一补齐 eventlog | `tests/unit/replay/test_no_kernel_import.py`（0.1.4 实现阶段落地） | 1 | 2 | partial-symmetric-fix |
+| R014-D004 | FR-019 的交互控制与强平呈现未进入任何 AC 验收路径 | High | test-coverage | root-cause | spec-drift | fixed | T404 扩为 AC-006；AC 范围门禁只认范围声明语法 | `tests/unit/test_spec_lifecycle.py::test_ac_range_completeness_not_fooled_by_unrelated_mention` | 1 | 4 | acceptance-mapping-gap |
+| R014-D005 | 首笔成交前的空 K 线没有确定的 OHLC 规则 | Medium | correctness | root-cause | spec-drift | fixed | 指标字典冻结首笔成交前 OHLC=initial_price | `tests/unit/replay/test_kline.py`（0.1.4 实现阶段落地） | 1 | 2 | undefined-initial-boundary |
+| R014-D006 | 总结报告产物格式与机器可验收接口未冻结 | Medium | quality | root-cause | original-coding | fixed | 冻结入口签名、CLI、顶层结构与成功/失败二态 | `tests/integration/test_report_artifacts.py`（0.1.4 实现阶段落地） | 1 | 2 | underspecified-output-contract |
+| R014-D007 | artifact_root 同时来自 manifest 与 API 参数且无冲突裁决 | High | correctness | root-cause | fix-regression | fixed | 删除独立 artifact_root 参数/flag，唯一来源改为 manifest | `tests/integration/test_report_artifacts.py`（0.1.4 实现阶段落地） | 2 | 3 | duplicate-source-of-truth |
+
+**模式性教训**: 7 条问题的来源分布为 `spec-drift` 4、`process-gap` 1、
+`original-coding` 1、`fix-regression` 1。R014-D002 存活最长（第 1→5 轮）：通用 shape
+校验不能替代业务 value 校验，合同字段必须同时覆盖结构合法、精确值和跨真源双向一致性。
+R014-D003 的 `partial-symmetric-fix` 与 R014-D007 的 `duplicate-source-of-truth` 进一步说明，
+跨文档清单要一次对称更新，API 参数和 manifest 不能并存为同一配置的两个真源。
