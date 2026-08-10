@@ -1,8 +1,8 @@
 ---
 report_type: fix-verification
-round: 5
+round: 7
 date: 2026-08-10
-prior_report: 445c281
+prior_report: 22e759d
 scope: diff-only
 stop_condition_met: true
 severity_counts: {critical: 0, high: 0, medium: 0, low: 0}
@@ -15,11 +15,11 @@ issues:
     origin: process-gap
     pattern_tag: test-simulates-itself
     status: fixed
-    fix_summary: 版本 README 扫描改为遍历 discover_versions（不再硬编码 0.1）；新增里程碑 design.md 重定义全局不变量（C1/C2）的跨层级真相源门禁
-    regression_test: tests/unit/test_spec_lifecycle.py::test_ownership_drift_detected_for_future_version / test_milestone_design_redefines_invariant_fails / test_milestone_design_without_invariant_passes / test_ownership_status_drift_fails / test_ownership_index_*
-    location: tools/spec_validation.py:489
+    fix_summary: 补 architecture 复制字段级合同门禁（check_architecture_contract_copy）：architecture.md 以 C1:/C2: 定义式复制守恒方程即报错
+    regression_test: tests/unit/test_spec_lifecycle.py::test_architecture_copying_invariant_fails / test_architecture_referencing_invariant_passes / test_ownership_drift_detected_for_future_version / test_milestone_design_redefines_invariant_fails
+    location: tools/spec_validation.py:534
     first_seen_round: 1
-    resolved_round: 5
+    resolved_round: 7
   - id: STRUCT-C002
     title: 版本级生命周期与 release 收口规则未执行
     severity: high
@@ -110,24 +110,25 @@ issues:
 
 # 目录结构改造代码检视
 
-结论：**封顶 diff-only 复核通过。** STRUCT-C001 的两个剩余缺口已补：版本 README 扫描
-改为遍历 `discover_versions`（不再硬编码 0.1），并新增里程碑 design.md 重定义全局
-不变量的跨层级真相源门禁。本地 1567 测试全绿，`validate_spec_lifecycle` 通过，ruff
-0.16 下 check/format 全绿。High 清零。
+结论：**最终 diff-only 复核通过。** STRUCT-C001 最后一个缺口（architecture 复制字段级
+合同门禁）已补：`check_architecture_contract_copy` 拦截 architecture.md 以 `C1:`/`C2:`
+定义式复制守恒方程，且保留仅引用形式的通过（正反用例）。本地 1569 测试全绿，
+`validate_spec_lifecycle` 通过，ruff 0.16 下 check/format 全绿。High 清零。
 
 ## 有限检查清单
 
-- 生产入口是否实际调用已声明的链接与所有权规则（已接线，含跨层级状态漂移与真相源）；
+- 生产入口是否实际调用已声明的链接与所有权规则（已接线，含 architecture 字段级合同门禁）；
 - 版本根和 milestone 是否都进入生命周期校验（已接线）；
 - 版本 `done` 是否强制关联 release 文件与结构化 `closed_at`（已接线）；
 - 版本 README 扫描是否遍历全部版本而非硬编码（已修复）；
-- 里程碑 design.md 是否被阻止重新定义全局不变量（已接线）。
+- 里程碑 design.md 是否被阻止重新定义全局不变量（已接线）；
+- architecture 是否被阻止复制字段级合同（已接线）。
 
 ## 发现
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| STRUCT-C001 | 链接与文档所有权门禁未接入生产校验入口 | High | 正确性 | 根因 | 流程缺陷 | 已修复 | 版本 README 扫描遍历全部版本；里程碑 design 重定义全局不变量门禁 | test_ownership_drift_detected_for_future_version / test_milestone_design_redefines_invariant_fails | 1 | 5 | test-simulates-itself |
+| STRUCT-C001 | 链接与文档所有权门禁未接入生产校验入口 | High | 正确性 | 根因 | 流程缺陷 | 已修复 | 版本 README 遍历 + design 重定义不变量门禁 + architecture 复制字段级合同门禁 | test_architecture_copying_invariant_fails / test_architecture_referencing_invariant_passes 等 | 1 | 7 | test-simulates-itself |
 | STRUCT-C002 | 版本级生命周期与 release 收口规则未执行 | High | 正确性 | 根因 | 流程缺陷 | 已修复 | closed_at 结构化解析，正文子串不绕过 | test_version_done_prose_closed_at_bypass_fails | 1 | 3 | marked-done-not-implemented |
 | prereq-cycle-false-positive | 环检测对菱形依赖误报 | 中 | 正确性 | 根因 | 原始编码 | 已修复 | 三色 DFS 只判当前路径回边 | test_prereq_diamond_not_flagged_as_cycle | 1 | 1 | — |
 | tasks-status-uniqueness-skipped | gate-0 里程碑 tasks 状态不被检查 | 中 | 正确性 | 根因 | 原始编码 | 已修复 | 独立检查 design 与 tasks | test_tasks_status_uniqueness_without_design | 1 | 1 | — |
@@ -138,7 +139,7 @@ issues:
 
 ## 证据与停止条件
 
-- 版本 README 扫描遍历 `discover_versions`，新版本漂移被 `test_ownership_drift_detected_for_future_version` 锁定；
-- 里程碑 design.md 重定义 C1/C2 被 `check_global_invariant_ownership` 拦截（正反用例）；
+- 版本 README 扫描遍历 `discover_versions`；
+- 里程碑 design.md 与 architecture.md 均被阻止重定义/复制 C1/C2（正反用例）；
 - `validate_versions()` 以结构化 frontmatter 解析 `closed_at`；
-- 本地 1567 测试全绿，`validate_spec_lifecycle` 通过，ruff 0.16 下 check/format 全绿。
+- 本地 1569 测试全绿，`validate_spec_lifecycle` 通过，ruff 0.16 下 check/format 全绿。

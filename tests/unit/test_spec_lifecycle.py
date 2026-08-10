@@ -585,3 +585,29 @@ def test_milestone_design_without_invariant_passes(sv, tmp_path):
     errors: list[str] = []
     sv.validate_spec_lifecycle(features, tmp_path, errors)
     assert not any("全局不变量" in e for e in errors)
+
+
+def test_architecture_copying_invariant_fails(sv, tmp_path):
+    """STRUCT-C001: architecture.md 复制字段级合同（C1:/C2: 定义式）必报。"""
+    features = _write_version_forest(tmp_path)
+    (tmp_path / "docs" / "README.md").write_text("map\n", encoding="utf-8")
+    (tmp_path / "docs" / "market-game-sim-architecture.md").write_text(
+        "## 技术不变量\n\nC1: Σ position_units ≡ 0\nC2: Σ wallet_units ≡ 0\n",
+        encoding="utf-8",
+    )
+    errors: list[str] = []
+    sv.validate_spec_lifecycle(features, tmp_path, errors)
+    assert any("architecture" in e and "C1" in e for e in errors)
+
+
+def test_architecture_referencing_invariant_passes(sv, tmp_path):
+    """STRUCT-C001: architecture.md 仅引用 C1/C2（无定义式）则通过。"""
+    features = _write_version_forest(tmp_path)
+    (tmp_path / "docs" / "README.md").write_text("map\n", encoding="utf-8")
+    (tmp_path / "docs" / "market-game-sim-architecture.md").write_text(
+        "## 技术不变量\n守恒以 C1/C2 整数精确断言，定义见 docs/contracts/。\n",
+        encoding="utf-8",
+    )
+    errors: list[str] = []
+    sv.validate_spec_lifecycle(features, tmp_path, errors)
+    assert not any("architecture" in e and "C1" in e for e in errors)

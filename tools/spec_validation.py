@@ -525,6 +525,8 @@ def check_ownership_index(
 
     # 跨层级真相源：里程碑 design.md 不得重新定义 contracts/architecture 拥有的全局不变量。
     check_global_invariant_ownership(features_dir, errors)
+    # architecture 不得复制字段级合同 / 重定义全局不变量（§2.6）。
+    check_architecture_contract_copy(root, errors)
 
 
 # 全局不变量指纹：出现在里程碑 design.md 即视为「重新定义」而非「引用」。
@@ -551,6 +553,23 @@ def check_global_invariant_ownership(
                     where = f"{mdir.name} design.md"
                     owner = "（属 contracts/architecture）"
                     fail(errors, f"{where}: 重新定义全局不变量 {marker}{owner}")
+
+
+def check_architecture_contract_copy(root: pathlib.Path, errors: list[str]) -> None:
+    """architecture 不得复制字段级合同或重定义全局不变量（§2.6）。
+
+    字段级合同（如 C1/C2 守恒方程）归 `docs/contracts/` 唯一所有。architecture 只能
+    *引用*（如「守恒以 C1/C2 整数精确断言」），不得以定义形式（`C1:`/`C2:` 带等式）
+    复制。本检查对 `docs/market-game-sim-architecture.md` 生效。
+    """
+    arch = root / "docs" / "market-game-sim-architecture.md"
+    if not arch.is_file():
+        return
+    text = arch.read_text(encoding="utf-8")
+    for marker in _GLOBAL_INVARIANT_MARKERS:
+        if marker in text:
+            owner = "（属 docs/contracts/）"
+            fail(errors, f"architecture: 复制字段级合同/重定义不变量 {marker}{owner}")
 
 
 def _authoritative_status(root: pathlib.Path, features_dir: pathlib.Path) -> dict[str, str]:
