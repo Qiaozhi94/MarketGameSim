@@ -1,6 +1,25 @@
 {
   "registry_version": 1,
   "schema_id": "market-game-sim/report-artifacts",
+  "manifest_schema": {
+    "top_level_fields": {
+      "manifest_version": {"type": "integer"},
+      "artifact_root": {"type": "string"},
+      "artifacts": {
+        "type": "array",
+        "item_type": "object",
+        "item_fields": {
+          "artifact_id": {"type": "string"},
+          "path": {"type": "string"},
+          "format": {"type": "string"},
+          "schema_version": {"type": "integer"},
+          "producer": {"type": "string"},
+          "hash_algorithm": {"type": "string", "enum": ["blake2b"]},
+          "hash": {"type": "string", "hex_length": 64, "charset": "lowercase_hex"}
+        }
+      }
+    }
+  },
   "artifacts": {
     "market_metrics": {
       "producer": "0.1.2 T501",

@@ -161,6 +161,42 @@ def test_prerequisite_missing(sv):
     assert any("0.1.9" in e and "不存在" in e for e in errors)
 
 
+def test_prerequisite_not_done_blocks_implementation(sv):
+    """SOP §3 状态门：前置未 done 时，自身不得进入 in-progress/review/done。"""
+    all_ids = {
+        "0.1.3": (pathlib.Path("a"), {"prerequisites": [], "status": "in-progress"}),
+        "0.1.4": (pathlib.Path("b"), {"prerequisites": ["0.1.3"], "status": "in-progress"}),
+    }
+    errors: list[str] = []
+    sv.validate_prerequisites(all_ids, errors)
+    assert any("0.1.4" in e and "未 done" in e for e in errors)
+
+
+def test_prerequisite_done_allows_implementation(sv):
+    """正向对照：前置已 done 时，自身进入 in-progress 不应被拦。"""
+    all_ids = {
+        "0.1.3": (pathlib.Path("a"), {"prerequisites": [], "status": "done"}),
+        "0.1.4": (pathlib.Path("b"), {"prerequisites": ["0.1.3"], "status": "in-progress"}),
+    }
+    errors: list[str] = []
+    sv.validate_prerequisites(all_ids, errors)
+    assert errors == []
+
+
+def test_prerequisite_not_done_allows_ready_for_development(sv):
+    """正向对照：前置未 done 时，自身仍可停在 ready-for-development（文档先行）。"""
+    all_ids = {
+        "0.1.3": (pathlib.Path("a"), {"prerequisites": [], "status": "in-progress"}),
+        "0.1.4": (
+            pathlib.Path("b"),
+            {"prerequisites": ["0.1.3"], "status": "ready-for-development"},
+        ),
+    }
+    errors: list[str] = []
+    sv.validate_prerequisites(all_ids, errors)
+    assert errors == []
+
+
 def test_prerequisite_cycle(sv):
     all_ids = {
         "0.1.1": (pathlib.Path("a"), {"prerequisites": ["0.1.2"]}),
@@ -282,6 +318,38 @@ def test_gate1_all_sections_present(sv):
     errors: list[str] = []
     sv._check_sections(_SPEC_TEMPLATE, sv.SPEC_SECTIONS, errors, "spec")
     assert errors == []
+
+
+def test_ac_range_completeness_rejects_stale_upper_bound(sv):
+    """acceptance-mapping-gap 回归（R014-D004）：spec 新增 AC 后 tasks 范围未跟着扩大必报。"""
+    spec_text = "- [ ] **AC-005** (`X`): 一条\n- [ ] **AC-006** (`Y`): 新增一条\n"
+    tasks_text = "- [ ] T404 (`AC-001`—`AC-005`): 运行统一质量门\n"
+    errors: list[str] = []
+    sv._check_ac_range_completeness(spec_text, tasks_text, errors, "m")
+    assert any("AC-006" in e for e in errors)
+
+
+def test_ac_range_completeness_passes_when_synced(sv):
+    """正向对照：tasks 范围已扩大到最新 AC 编号时不报错。"""
+    spec_text = "- [ ] **AC-005** (`X`): 一条\n- [ ] **AC-006** (`Y`): 新增一条\n"
+    tasks_text = "- [ ] T404 (`AC-001`—`AC-006`): 运行统一质量门\n"
+    errors: list[str] = []
+    sv._check_ac_range_completeness(spec_text, tasks_text, errors, "m")
+    assert errors == []
+
+
+def test_ac_range_completeness_not_fooled_by_unrelated_mention(sv):
+    """round-3 回归（R014-D004 残留）：范围声明本身过期时，即使别的任务单独提过
+    新 AC ID（不是范围声明的一部分），门禁仍须报错——不能把「新 ID 在全文任意
+    位置出现过」误当作「范围声明已同步」。"""
+    spec_text = "- [ ] **AC-005** (`X`): 一条\n- [ ] **AC-006** (`Y`): 新增一条\n"
+    tasks_text = (
+        "- [ ] T202 (`FR-019`, `AC-006`): 提前引用了新 AC，但这不是范围声明\n"
+        "- [ ] T404 (`AC-001`—`AC-005`): 运行统一质量门\n"
+    )
+    errors: list[str] = []
+    sv._check_ac_range_completeness(spec_text, tasks_text, errors, "m")
+    assert any("AC-006" in e for e in errors)
 
 
 def test_pending_section_free_text_fails(sv):

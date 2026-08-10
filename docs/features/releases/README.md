@@ -8,4 +8,4 @@
 
 | 版本 | 状态 | release 文件 |
 |---|---|---|
-| 0.1 | in-progress（0.1.3 在研，0.1.4 ready） | 未生成（条件未满足） |
+| 0.1 | in-progress（0.1.1—0.1.3 done，0.1.4 ready-for-development） | 未生成（条件未满足） |
