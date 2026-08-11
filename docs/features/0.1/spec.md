@@ -4,14 +4,16 @@ id: v0.1-belief-testing-laboratory
 version: "0.1"
 status: in-progress
 created: 2026-07-31
-updated: 2026-08-09
+updated: 2026-08-12
 ---
 
 # Feature Specification: Belief Testing Laboratory
 
 **规格编号**：v0.1-belief-testing-laboratory  
 **状态**：见 frontmatter（唯一状态真源）。当前里程碑 0.1.3 在研，0.1.1—0.1.2 已
-达成退出。根规格转 Stable 的条件是 **0.1.4** 退出（完整 v0.1 签收）。  
+达成退出。根规格转 Stable 的条件是 **0.1.4** 退出（完整 v0.1 签收）**——该条件待
+[ADR-003](../../decisions/003-goal-driven-agents-and-flagship-identification.md)
+定案；若 Accepted，条件调整为新增里程碑 0.1.5 退出，见本文「未闭合事项」**。  
 **创建日期**：2026-07-31　**更新日期**：2026-08-02  
 **关联 PRD**：[`../../market-game-sim-prd.md`](../../market-game-sim-prd.md) v0.4.0  
 **架构**：[`design.md`](design.md)　**里程碑**：[`0.1.1`](0.1.1-minimal-kernel/spec.md) · [`0.1.2`](0.1.2-leverage-and-first-experiment/spec.md) · [`0.1.3`](0.1.3-robustness/spec.md) · [`0.1.4`](0.1.4-replay-and-report/spec.md)  
@@ -450,6 +452,18 @@ ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的
 可行方向：只允许看见**已提交、已进入通信队列、但尚未到达交易所**的订单意图
 （`latency_ns > 0` 恰好制造了这个窗口）。这样可见集合与预知者的当前决策无关，自指
 消解。P-3 中「强平单同样在可见范围内」一句须删除。
+
+### 根规格 Stable 条件待 ADR-003 定案
+
+[ADR-003](../../decisions/003-goal-driven-agents-and-flagship-identification.md)
+（Proposed）指出当前目标仓位公式把 `leverage_tier` 直接写进了代理的目标仓位计算，
+使旗舰问题（PRD §3.1：杠杆/保证金是否足以自发产生涌现式崩盘、暴涨或流动性枯竭）
+的因果识别不成立——0.1.2/0.1.3 现有证据只验证了工程链路，不构成旗舰结论。
+
+若 ADR-003 转为 Accepted，本文头部「根规格转 Stable 的条件是 0.1.4 退出」须改为
+新增里程碑（暂定 0.1.5：目标驱动代理与旗舰实验识别）退出，且该里程碑需求须先补入
+下方追踪矩阵。若 ADR-003 被 Reject 或改写，本节随之更新或删除。**在此之前，0.1.4
+退出不得被解读为 v0.1 已完整签收。**
 
 ## 需求追踪矩阵（唯一真源）
 
