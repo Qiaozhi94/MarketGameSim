@@ -28,7 +28,7 @@ def environment_fingerprint() -> dict[str, str]:
     return {
         "python": platform.python_version(),
         "platform": platform.platform(),
-        "schema_version": "2",
+        "schema_version": "3",
     }
 
 

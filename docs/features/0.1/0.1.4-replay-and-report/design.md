@@ -79,8 +79,9 @@ replay/   消费事件日志，生成单文件 HTML 逐帧回放
   `manifest_hash`（字符串，manifest 文件自身摘要）、`generated_at`（ISO 8601
   字符串）、`metrics`（对象，PnL 桥接/经济终点/技术无效率汇总）、
   `conditional_conclusion`（对象，原样消费 §4.1 的 `conditional_conclusion`
-  artifact）、`robustness_conclusion`（对象或 `null`，同上消费 0.1.3 产物）、
-  `negative_results`（数组，原样消费 `negative_results` artifact）、
+  artifact）、  `robustness_conclusion`（对象或 `null`，同上消费 0.1.3 产物）、
+  `negative_results`（对象，原样消费 `negative_results` artifact 的 envelope，含
+  `schema_version` 与 `results[]`；E4 禁止重算，不抽取 `.results` 为数组）、
   `failure`（对象或 `null`）。
 
   **成功/失败二态，不存在「部分成功」中间态**：成功时 `failure` 为 `null`，
@@ -93,10 +94,24 @@ replay/   消费事件日志，生成单文件 HTML 逐帧回放
   触发失败的 artifact（`UNDECLARED_EXTRA_FILE` 时改填触发失败的文件相对路径），
   `failure.message` 是人类可读原因。
 
+  **artifact 读取格式（版本化契约，R-A）**：registry 的 `format` 即消费契约——全部
+  10 类 artifact 当前均声明 `json`（JSON 表格或对象，报告层直接按 UTF-8 JSON 消费并
+  对照 `shape` 校验）。`parquet` 是保留枚举值，仅面向未来归档写出（T507：Parquet
+  写入依赖属于分析/报告层），报告层无 parquet 运行库，遇到非 `json` 声明即显式拒绝、
+  不静默按错误格式解码。artifact 级可空性由 registry 的 `nullable` 声明（唯一真源，
+  R-D）；`robustness_conclusion` 声明 `nullable: true`（对象或 `null`），其余 artifact
+  默认可空为 `false`。
+
+  **跨 artifact run_id 一致性（R-C）**：加载并校验全部 artifact 后，汇总所有在
+  registry `required_fields` 中声明了 `run_id` 的 artifact（对象取 `value["run_id"]`，
+  表取每行的 `run_id`），强制全部一致且与报告 `run_id` 相同；任一不匹配即
+  `FIELD_SCHEMA_INVALID` 失败。空表（`[]`）不贡献 run_id，属合法状态（R-B）。
+
 ### Event / Trace Contract
 
-- 逐帧一致性：bootstrap 两个事务合并为第 0 帧；此后第 k 帧对应
-  `transaction_seq = k + 2`。帧键两边必须相等。
+- 逐帧一致性：bootstrap 两个连续事务（ACCOUNT 在 `transaction_seq=b`、BOOK 在
+  `b+1`，事件 Schema §4.6.3 的可判定快照规则）合并为第 0 帧；此后第 k 帧对应
+  `transaction_seq = b + k`（bootstrap 屏障完整实现后 `b=2`）。帧键两边必须相等。
 - 投影字段：各账户 11 字段 + 交易所 2 字段（事件 Schema §4.6.1）、最近成交价
   `last_ticks` 与盘口聚合 `price_ticks`/`quantity_units`/`order_count`（事件
   Schema §4.6.2）。

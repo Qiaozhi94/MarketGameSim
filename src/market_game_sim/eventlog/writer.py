@@ -3,7 +3,8 @@
 [事件 Schema §6-§9] 事件日志写入器
 [事件 Schema §6.1] RUN_HEADER (tick_size/min_quantity/cash_unit as string decimals)
 [事件 Schema §6.2] RUN_TRAILER
-[事件 Schema §4.6.3] bootstrap snapshots written as first two EVENTs
+[事件 Schema §4.6.3] bootstrap snapshots written as the first two SNAPSHOT EVENTs
+  （屏障完整实现后位于 transaction_seq=1,2；当前内核下为连续事务 b/b+1，见 §4.6.3 已知缺口）
 
 Writes a complete event log file:
 
@@ -14,8 +15,9 @@ Writes a complete event log file:
 Uses the canonical serializer from T104 (ADR-001 §7).  Handles fail-stop
 (T204d): if the kernel aborts, the writer still writes the header +
 committed records + ``ABORTED`` trailer.  Handles bootstrap (T204e3):
-the two ``SNAPSHOT`` EVENTs appear at ``transaction_seq=1,2`` before any
-business events.
+the two ``SNAPSHOT`` EVENTs are written first; they appear on contiguous
+transactions ``b/b+1`` (bootstrap barrier fully enforced: ``1,2``; current
+kernel with t=0 lower-class events: ``b, b+1``, see event-schema §4.6.3).
 """
 
 from __future__ import annotations
@@ -36,15 +38,29 @@ def build_run_header(
     tick_size: str,
     min_quantity: str,
     cash_unit: str,
+    mult: int,
+    fee_bps_cap: int,
+    initial_price_ticks: int,
+    agent_initial_bp: dict[str, int],
     run_mode: str = "benchmark",
     information_set_mode: str = "full",
-    schema_version: int = 2,
+    schema_version: int = 3,
 ) -> dict[str, Any]:
     """Build a ``RUN_HEADER`` dict (§6.1).
 
     ``tick_size`` / ``min_quantity`` / ``cash_unit`` are **string decimals**
     (e.g. ``"0.01"``), never floats -- otherwise the header is not
     byte-deterministic across platforms (ADR-001 §2).
+
+    ``mult`` / ``fee_bps_cap`` / ``initial_price_ticks`` / ``agent_initial_bp``
+    are replay-critical config (F1 / ADR-004): the replay reader rebuilds
+    ``reserved_units`` / ``margin_ratio_bp`` from these, so they MUST travel
+    in the header to guarantee the public ``build_replay`` path produces
+    E1-consistent frames without hard-coded defaults.  These four fields are
+    **required** -- a producer that omits them writes a header whose replay
+    config does not match the actual run, making the log unreplayable via
+    the public path.  Pass ``agent_initial_bp={}`` explicitly if no agent
+    has a special initial margin bp.
     """
     if not all(isinstance(x, str) for x in (tick_size, min_quantity, cash_unit)):
         raise TypeError("tick_size/min_quantity/cash_unit must be string decimals (§6.1)")
@@ -61,6 +77,10 @@ def build_run_header(
         "cash_unit": cash_unit,
         "run_mode": run_mode,
         "information_set_mode": information_set_mode,
+        "mult": mult,
+        "fee_bps_cap": fee_bps_cap,
+        "initial_price_ticks": initial_price_ticks,
+        "agent_initial_bp": dict(agent_initial_bp),
     }
 
 

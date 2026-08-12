@@ -45,25 +45,37 @@
         "family": "belief_family",
         "mapping": "linear",
         "effect_size": 30.8,
-        "significant": true
+        "significant": true,
+        "effect_direction": 1,
+        "ci_low": 0.0,
+        "ci_high": 0.0
       },
       {
         "family": "belief_family",
         "mapping": "threshold",
         "effect_size": 33.4,
-        "significant": true
+        "significant": true,
+        "effect_direction": 1,
+        "ci_low": 0.0,
+        "ci_high": 0.0
       },
       {
         "family": "signal_family",
         "mapping": "linear",
         "effect_size": 10.0,
-        "significant": true
+        "significant": true,
+        "effect_direction": 0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
       },
       {
         "family": "signal_family",
         "mapping": "threshold",
         "effect_size": 10.0,
-        "significant": true
+        "significant": true,
+        "effect_direction": 0,
+        "ci_low": 0.0,
+        "ci_high": 0.0
       }
     ]
   },

@@ -46,6 +46,22 @@ ARTIFACT_FIELD_TYPES = {"string", "integer", "number", "boolean", "object", "arr
 ARTIFACT_SCALAR_TYPES = {"string", "integer", "number", "boolean"}
 _KNOWN_CHARSETS = {"lowercase_hex"}
 
+#: Closed set of artifact-level keys in the registry. ``format`` is BOTH the
+#: upstream producer encoding AND the report consumption format: every
+#: artifact is currently ``json`` (JSON table/object); ``parquet`` remains an
+#: enum value for future archive-only producers but is NOT consumable by the
+#: stdlib report layer (no parquet dependency, ADR-004/T507 boundary).
+#: ``nullable`` allows an object artifact's value to be JSON null.
+_ARTIFACT_KEYS = {
+    "producer",
+    "format",
+    "shape",
+    "nullable",
+    "schema_version",
+    "required_fields",
+}
+_ARTIFACT_FORMATS = {"json", "parquet"}
+
 
 def _fail(errors: list[str], msg: str) -> None:
     errors.append(msg)
@@ -289,14 +305,21 @@ def validate_artifact_schema_data(d: dict, errors: list[str]) -> None:
         if not isinstance(artifact, dict):
             _fail(errors, f"{where}: 定义必须为对象")
             continue
+        if extra := set(artifact) - _ARTIFACT_KEYS:
+            _fail(errors, f"{where}: 含未知 artifact 级属性 {sorted(extra)}")
         if not re.fullmatch(r"0\.1\.[23] T\d+", artifact.get("producer", "")):
             _fail(errors, f"{where}: producer 必须是精确的 0.1.2/0.1.3 task")
         artifact_format = artifact.get("format")
-        if artifact_format not in {"json", "parquet"}:
-            _fail(errors, f"{where}: format 只能是 json/parquet")
-        expected_shape = "table" if artifact_format == "parquet" else "object"
-        if artifact.get("shape") != expected_shape:
-            _fail(errors, f"{where}: {artifact_format} 的 shape 必须为 {expected_shape}")
+        if artifact_format not in _ARTIFACT_FORMATS:
+            _fail(errors, f"{where}: format 只能是 {sorted(_ARTIFACT_FORMATS)}")
+        if "nullable" in artifact and not isinstance(artifact["nullable"], bool):
+            _fail(errors, f"{where}: nullable 必须为 bool")
+        # format 与 shape 解耦：parquet 必须为 table（归档语义）；json 可为
+        # table（JSON 表格投影）或 object（JSON 对象）。
+        if artifact_format == "parquet" and artifact.get("shape") != "table":
+            _fail(errors, f"{where}: parquet 的 shape 必须为 table")
+        if artifact_format == "json" and artifact.get("shape") not in {"table", "object"}:
+            _fail(errors, f"{where}: json 的 shape 必须为 table 或 object")
         if not isinstance(artifact.get("schema_version"), int) or artifact["schema_version"] < 1:
             _fail(errors, f"{where}: schema_version 必须为正整数")
         fields = artifact.get("required_fields")

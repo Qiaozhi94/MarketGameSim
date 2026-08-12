@@ -29,7 +29,7 @@ def registry() -> SchemaRegistry:
 def _order_arrival_event(**overrides) -> dict:
     base = {
         "record_kind": "EVENT",
-        "schema_version": 2,
+        "schema_version": 3,
         "event_id": "e1_0",
         "run_id": "r",
         "timestamp": 100,
@@ -122,8 +122,8 @@ class TestEventDigest:
         assert event_digest(e1, registry) != event_digest(e2, registry)
 
     def test_schema_version_affects_digest(self, registry):
-        e1 = _order_arrival_event(schema_version=2)
-        e2 = _order_arrival_event(schema_version=3)
+        e1 = _order_arrival_event(schema_version=3)
+        e2 = _order_arrival_event(schema_version=2)
         assert event_digest(e1, registry) != event_digest(e2, registry)
 
     def test_enqueue_seq_affects_digest(self, registry):
@@ -170,14 +170,14 @@ class TestHashProjection:
     def test_projection_includes_schema_version(self, registry):
         event = _order_arrival_event()
         proj = event_hash_input(event, registry)
-        assert proj["schema_version"] == 2
+        assert proj["schema_version"] == 3
 
 
 class TestPostingsHashProjection:
     def _trade_settle_event(self, postings: list) -> dict:
         return {
             "record_kind": "EVENT",
-            "schema_version": 2,
+            "schema_version": 3,
             "event_id": "e3_1",
             "run_id": "r",
             "timestamp": 100,
@@ -305,7 +305,7 @@ class TestHashCoverage:
         """Empty postings array must produce different hash input than non-empty."""
         empty_event = {
             "event_type": "MARGIN_CALL",
-            "schema_version": 2,
+            "schema_version": 3,
             "timestamp": 100,
             "transaction_seq": 3,
             "record_index": 1,

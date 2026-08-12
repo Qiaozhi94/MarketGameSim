@@ -59,9 +59,9 @@ class TestRunHeaderFields:
             f = reg.get_field("RUN_HEADER", fname)
             assert f.hash_class == "HASH_EXCLUDE", f"RUN_HEADER.{fname} must be HASH_EXCLUDE"
 
-    def test_header_has_12_fields(self):
+    def test_header_has_16_fields(self):
         reg = get_registry()
-        assert len(reg.field_names("RUN_HEADER")) == 12
+        assert len(reg.field_names("RUN_HEADER")) == 16
 
     def test_build_run_header_rejects_float_tick_size(self):
         with pytest.raises(TypeError, match="string decimals"):
@@ -74,6 +74,10 @@ class TestRunHeaderFields:
                 tick_size=0.01,  # type: ignore[arg-type]
                 min_quantity="0.001",
                 cash_unit="0.01",
+                mult=1000,
+                fee_bps_cap=0,
+                initial_price_ticks=10000,
+                agent_initial_bp={},
             )
 
 

@@ -57,7 +57,7 @@ class EventKernel:
     def __init__(
         self,
         run_id: str = "run",
-        schema_version: int = 2,
+        schema_version: int = 3,
     ) -> None:
         self._run_id = run_id
         self._schema_version = schema_version

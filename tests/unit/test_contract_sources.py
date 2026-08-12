@@ -233,6 +233,10 @@ def _nest_artifact_array_without_item_schema(d: dict) -> None:
     ] = "array"
 
 
+def _add_unknown_artifact_level_key(d: dict) -> None:
+    d["artifacts"]["market_metrics"]["unknown_key"] = True
+
+
 ARTIFACT_SCHEMA_MUTATIONS = [
     pytest.param(_drop_report_artifact, "不一致", id="缺 artifact"),
     pytest.param(_set_invalid_artifact_field_type, "type='int64' 非法", id="非法字段类型"),
@@ -241,6 +245,9 @@ ARTIFACT_SCHEMA_MUTATIONS = [
     pytest.param(_make_artifact_object_shape_ambiguous, "只能选一个", id="对象形状双定义"),
     pytest.param(
         _nest_artifact_array_without_item_schema, "item_type='array' 非法", id="数组嵌套未冻结"
+    ),
+    pytest.param(
+        _add_unknown_artifact_level_key, "未知 artifact 级属性", id="未知 artifact 级属性"
     ),
 ]
 

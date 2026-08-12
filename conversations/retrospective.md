@@ -131,10 +131,35 @@
 ## 工作流 19: 需求文档0.1.4开发实施
 
 - 工具: `OpenCode` · 模型: deepseek-v4-flash
-- 起止: 2026-08-10T16:21:31Z → 2026-08-10T16:30:38Z
-- Token: in 274636 / out 5550 · 成本 $0.0000
+- 起止: 2026-08-10T16:21:31Z → 2026-08-10T18:07:03Z
+- Token: in 1242123 / out 55375 · 成本 $0.0000
 - 派生子代理:
   - Map src module structure (@explore subagent) (`opencode` · 2026-08-10T16:23:04Z)
   - Map artifact producers and registry (@explore subagent) (`opencode` · 2026-08-10T16:23:13Z)
   - Map event log format and transactions (@explore subagent) (`opencode` · 2026-08-10T16:23:21Z)
+  - Implement report module 0.1.4 (@Sisyphus-Junior subagent) (`opencode` · 2026-08-10T16:32:13Z)
+  - E1 frame-consistency replay design (@oracle subagent) (`opencode` · 2026-08-10T16:36:02Z)
+  - Implement replay module 0.1.4 (@Sisyphus-Junior subagent) (`opencode` · 2026-08-10T16:46:40Z)
+
+## 工作流 20: 92966491-5a15-453a-aea0-263ad52cd240
+
+- 工具: `Claude Code` · 模型: claude-sonnet-5
+- 起止: 2026-08-11T13:44:53Z → 2026-08-11T16:58:08Z
+
+## 工作流 21: 市场游戏模拟项目深入分析建议
+
+- 工具: `OpenCode` · 模型: deepseek-v4-flash
+- 起止: 2026-08-11T14:03:57Z → 2026-08-11T14:10:11Z
+- Token: in 219334 / out 4803 · 成本 $0.0000
+
+## 工作流 22: 修复0.1.4代码检视意见
+
+- 工具: `OpenCode` · 模型: deepseek-v4-flash
+- 起止: 2026-08-11T14:37:37Z → 2026-08-12T15:42:13Z
+- Token: in 2299571 / out 231999 · 成本 $0.9063
+- 派生子代理:
+  - Fix replay module review findings (@Sisyphus-Junior subagent) (`opencode` · 2026-08-11T14:45:06Z)
+  - Fix report module review findings (@Sisyphus-Junior subagent) (`opencode` · 2026-08-11T14:45:57Z)
+  - Fix replay round-2 findings (@Sisyphus-Junior subagent) (`opencode` · 2026-08-11T16:02:03Z)
+  - Fix report round-2 findings (@Sisyphus-Junior subagent) (`opencode` · 2026-08-11T16:02:49Z)
 
