@@ -8,7 +8,7 @@ topics: [replay, report]
 doc_kind: tasks
 gate_version: 1
 created: 2026-08-01
-updated: 2026-08-09
+updated: 2026-08-11
 prerequisites:
   - 0.1.3
 ---
@@ -29,44 +29,44 @@ prerequisites:
 
 ## 1. 前置条件
 
-- [ ] T001 (`DQ-001`): 关闭所有阻塞性 spec/design 问题 — verify: `spec.md`、`design.md`
-- [ ] T002 (`0.1.3`): 验证 0.1.3 退出证据与上游 artifact 可用 — verify: `0.1.3` 实验产物
+- [x] T001 (`DQ-001`): 关闭所有阻塞性 spec/design 问题 — verify: `spec.md`、`design.md`
+- [x] T002 (`0.1.3`): 验证 0.1.3 退出证据与上游 artifact 可用 — verify: `0.1.3` 实验产物
 
 ## 2. 实现任务
 
 ### Phase 1：日志读取与状态重建
 
-- [ ] T101 (`FR-019`, `事件 Schema §6`): 独立日志读取器——解析 `RUN_HEADER + EVENT* +
+- [x] T101 (`FR-019`, `事件 Schema §6`): 独立日志读取器——解析 `RUN_HEADER + EVENT* +
       RUN_TRAILER` 三种顶层记录，**不导入 `kernel/`**；拒绝 TI-4/TI-5 日志（§1.5）—
       verify: `tests/unit/replay/test_log_reader.py`
-- [ ] T102 (`FR-019`, `0.1.1 T603`): 复用并扩展独立验证器的状态重建，账户与**订单簿**
+- [x] T102 (`FR-019`, `0.1.1 T603`): 复用并扩展独立验证器的状态重建，账户与**订单簿**
       两类终态；0.1.1 已实现部分不重写，只增加逐帧快照能力 — verify:
       `tests/unit/replay/test_state_rebuild.py`
-- [ ] T103 (`事件 Schema §4.6.3`): **逐帧状态序列**——第 0 帧由 `transaction_seq=1`
-      （ACCOUNT）与 `2`（BOOK）两条初态快照构成，第 k 帧为 `transaction_seq=k+2` 提交后
-      的完整状态；帧边界取事务边界。这是 E1 的输入 — verify:
-      `tests/unit/replay/test_frame_sequence.py`
+- [x] T103 (`事件 Schema §4.6.3`): **逐帧状态序列**——第 0 帧由两条连续初态快照
+      （ACCOUNT 在 `transaction_seq=b`、BOOK 在 `b+1`）提交后构成，第 k 帧为
+      `transaction_seq=b+k` 提交后的完整状态；帧边界取事务边界。这是 E1 的输入 —
+      verify: `tests/unit/replay/test_frame_sequence.py`
 
 ### Phase 2：单文件回放器
 
-- [ ] T201 (`spec §3.1`): 单文件 HTML 产物，数据内联，**无 `fetch`、无 CDN、无外部
+- [x] T201 (`spec §3.1`): 单文件 HTML 产物，数据内联，**无 `fetch`、无 CDN、无外部
       字体**；构建后用断网环境打开验收（E2）— verify: `tests/integration/test_replay_offline_single_file.py`
-- [ ] T202 (`FR-019`, `AC-006`): 逐帧呈现价格曲线、订单簿深度、账户权益与仓位、强平
+- [x] T202 (`FR-019`, `AC-006`): 逐帧呈现价格曲线、订单簿深度、账户权益与仓位、强平
       事件标注；时间轴以 `timestamp` 为准，可按事务或逻辑时间步进；实现拖拽定位到
       任意帧、变速播放与暂停三种交互控制 — verify:
       `tests/unit/replay/test_frame_presentation.py`
-- [ ] T203 (`FR-020`, `指标字典 §1.9`): K 线视图，周期取指标字典定义，**只画已完成的
+- [x] T203 (`FR-020`, `指标字典 §1.9`): K 线视图，周期取指标字典定义，**只画已完成的
       K 线** — verify: `tests/unit/replay/test_kline.py`
-- [ ] T204 (`spec §3.3`): 降采样——允许，但比例与规则必须在页面上可见；降采样产物
+- [x] T204 (`spec §3.3`): 降采样——允许，但比例与规则必须在页面上可见；降采样产物
       不得用于 E1 验收 — verify: `tests/unit/replay/test_downsampling.py`
 
 ### Phase 3：总结报告
 
-- [ ] T301 (`PR-019`): 报告生成，两组内容缺一不可：① 指标汇总、PnL 桥接、经济终点
+- [x] T301 (`PR-019`): 报告生成，两组内容缺一不可：① 指标汇总、PnL 桥接、经济终点
       发生率、技术无效率与排除率（`metrics/`）；② 条件性结论、效应量、置信区间与失效
       边界（`analysis/` + `conclusion/`）。第 ② 组是 PR-019 核心 — verify:
       `tests/integration/test_report_artifacts.py`
-- [ ] T302 (`spec §4.1`, `E4`): **artifact manifest 与不重算断言**——manifest 按七项封闭
+- [x] T302 (`spec §4.1`, `E4`): **artifact manifest 与不重算断言**——manifest 按七项封闭
       清单逐 artifact 声明，加载 `report_artifacts.json` 校验 producer/format/版本/字段，
       不得复制 Schema；断言 ① 改任一上游产物报告随之变化；② 报告层不执行任何统计检验
       或重新聚合。五类负向夹具：必备件缺失 / 哈希不符 / schema_version 错版 / 必备字段
@@ -75,18 +75,19 @@ prerequisites:
 
 ## 3. 验证与验收任务
 
-- [ ] T401 (`SC-008`, `KPI-012`): **逐帧一致性**（E1）——在未降采样日志上，断言回放
+- [x] T401 (`SC-008`, `KPI-012`): **逐帧一致性**（E1）——在未降采样日志上，断言回放
       重建的每一帧与 oracle 逐字段相等；oracle 是测试专用独立 observer，每事务提交后
       直接从内核对象读快照，**绝不喂给回放器**；先断言帧数与帧键集合相等再逐帧比字段；
       不得拿日志里的 SNAPSHOT 当 oracle — verify:
       `tests/integration/test_replay_frame_consistency.py`
-- [ ] T402 (`spec §3.2`): 导入检查——`replay/`、`report/` 不导入 `kernel/`、`ledger/`、
+- [x] T402 (`spec §3.2`): 导入检查——`replay/`、`report/` 不导入 `kernel/`、`ledger/`、
       `book/`、`eventlog/`（E5，NFR-004 四类模块须与检查逐一对齐，不得漏检其中任一
       类）；复用 `0.1.1 T604` 机制 — verify: `tests/unit/replay/test_no_kernel_import.py`
-- [ ] T403 (`spec E2`): 离线可用性验收——断网环境打开产物，功能完整、无控制台报错 —
-      verify: 断网手动验收
-- [ ] T404 (`AC-001`—`AC-006`): 运行项目统一质量门 — verify: `python tools/verify.py`
-- [ ] T405: 回写 spec 验收证据、活跃索引和状态 — verify: `python tools/validate_spec_lifecycle.py`
+- [x] T403 (`spec E2`): 离线可用性验收——断网环境打开产物，功能完整、无控制台报错 —
+      verify: `tools/t403_offline_check.js`（2026-08-12 真实 Chrome 离线验证通过：零外部
+      请求、零控制台错误、暂停/变速/拖拽生效、强平帧标注 LIQUIDATION 可见、四 canvas 渲染）
+- [x] T404 (`AC-001`—`AC-006`): 运行项目统一质量门 — verify: `python tools/verify.py`
+- [x] T405: 回写 spec 验收证据、活跃索引和状态 — verify: `python tools/validate_spec_lifecycle.py`
 
 ## 4. 依赖与并行关系
 

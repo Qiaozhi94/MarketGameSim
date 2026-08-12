@@ -222,14 +222,14 @@ class TestE002HashIncludeParity:
 
 
 class TestSchemaVersionAndKinds:
-    def test_schema_version_is_2(self, raw_schema):
-        assert raw_schema["schema_version"] == 2
+    def test_schema_version_is_3(self, raw_schema):
+        assert raw_schema["schema_version"] == 3
 
     def test_record_kinds_match(self, raw_schema):
         assert raw_schema["record_kinds"] == ["RUN_HEADER", "EVENT", "RUN_TRAILER"]
 
-    def test_run_header_field_count_12(self, registry):
-        assert len(registry.field_names("RUN_HEADER")) == 12
+    def test_run_header_field_count_16(self, registry):
+        assert len(registry.field_names("RUN_HEADER")) == 16
 
     def test_run_trailer_field_count_6(self, registry):
         assert len(registry.field_names("RUN_TRAILER")) == 6

@@ -33,6 +33,10 @@ def _make_header(run_id: str = "r") -> dict:
         tick_size="0.01",
         min_quantity="0.001",
         cash_unit="0.01",
+        mult=1000,
+        fee_bps_cap=0,
+        initial_price_ticks=10000,
+        agent_initial_bp={},
     )
 
 

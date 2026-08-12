@@ -1,6 +1,6 @@
 {
   "$comment": "事件日志字段的规范真源（合同产物，随 docs/contracts/event-schema.md 一同评审）。此文件不是实现细节：registry.py 只负责加载它，不得内嵌第二份声明。放在包内而非 docs/ 是因为 wheel 只打包 src/market_game_sim，装包后须能由 importlib.resources 读取。",
-  "schema_version": 2,
+  "schema_version": 3,
   "meta": {
     "field_metadata_keys": [
       "value_type",
@@ -228,6 +228,30 @@
             "digest",
             "full"
           ],
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "mult": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "fee_bps_cap": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "initial_price_ticks": {
+          "value_type": "int",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "agent_initial_bp": {
+          "value_type": "object",
           "nullable": false,
           "required": "always",
           "hash": "HASH_EXCLUDE"

@@ -136,6 +136,31 @@ class Book:
     def ask_depth_k(self) -> int:
         return len(self._ask_prices)
 
+    def level_aggregates(self) -> dict:
+        """Bid/ask levels with price, total qty, and resting-order count.
+
+        Mirrors the ``BOOK`` snapshot aggregation (event-schema §4.6.2):
+        bids descending, asks ascending.  Exposed for the 0.1.4 replay
+        oracle; ``order_count`` cannot be derived from quantity alone.
+        """
+        bids = [
+            {
+                "price_ticks": p,
+                "quantity_units": sum(o.quantity_units for o in self._bids[p]),
+                "order_count": len(self._bids[p]),
+            }
+            for p in reversed(self._bid_prices)
+        ]
+        asks = [
+            {
+                "price_ticks": p,
+                "quantity_units": sum(o.quantity_units for o in self._asks[p]),
+                "order_count": len(self._asks[p]),
+            }
+            for p in self._ask_prices
+        ]
+        return {"bids": bids, "asks": asks}
+
     # ------------------------------------------------------------------ #
     # Dirty flag (for MARKET_DATA_PUBLISH trigger)
     # ------------------------------------------------------------------ #

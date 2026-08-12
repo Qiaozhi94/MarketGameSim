@@ -2,7 +2,7 @@
 
 **适用范围**：跨规格实现合同（当前交付规格 v0.1）  
 **状态**：Stable（跨规格实现合同；变更须记 ADR 并提升 `schema_version`）  
-**创建日期**：2026-07-29　**更新日期**：2026-08-02  
+**创建日期**：2026-07-29　**更新日期**：2026-08-12  
 **支撑需求**：v0.1 / FR-004、FR-008、FR-015、KR-001—KR-006；PRD / KPI-002、KPI-006  
 **关联**：
 [ADR-001](../decisions/001-numeric-and-serialization-contract.md)、
@@ -265,11 +265,17 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 
 事件日志顶层必须携带 `schema_version` 字段。
 
-**当前 `schema_version = 2`。** 版本 2 将原单一 `(timestamp, priority_class, seq)`
+**当前 `schema_version = 3`。** 版本 2 将原单一 `(timestamp, priority_class, seq)`
 替换为 queue/log 双键，并把 class 1—2 明确为事务记录。2026-07-31 的方向重置新增了
 `MARGIN_CALL`（§4.2.2）与杠杆相关字段；2026-08-01 关闭 P0-K01/K03 时新增
 `ORDER_CANCELLED`（§4.7）、冻结了事务内记录顺序（§1.4）并改写 E-002 为按事件类型的
 封闭清单。这些变更**均未提升版本号**——至今没有任何实验运行过，不存在可比性问题。
+
+**版本 3**（ADR-004）在 RUN_HEADER 新增四个必填回放关键字段：`mult` /
+`fee_bps_cap` / `initial_price_ticks` / `agent_initial_bp`（§6.1）。RUN_HEADER 整条
+不参与事件摘要哈希（§7），因此 v3 的哈希输入与 v2 相同。**v2 日志（缺四个回放字段）
+不可通过公开回放路径回放**：回放读取器对缺失字段抛 `LogError`（TI-5），显式拒绝、
+不静默降级——回放一致性的前提是配置在日志内自包含。
 
 **首次正式运行之后，任何字段、class 或哈希字段集合的变更都必须提升版本号。**
 「首次正式运行」指第一次产出被 `docs/experiments/` 引用的事件日志。
@@ -723,8 +729,7 @@ C1（`Σ position ≡ 0`）的求和。
 
 **内核在 `timestamp = 0` 预先入队两个 `SNAPSHOT` 队列事件**：先 `ACCOUNT`
 （`enqueue_seq = 0`）后 `BOOK`（`enqueue_seq = 1`）。它们像其他队列事件一样弹出，
-各自形成一个事务：`transaction_seq = 1` 与 `2`，各自 `record_index = 0`。
-**业务事务从 `transaction_seq = 3` 开始。**
+各自形成一个事务、各自 `record_index = 0`。**业务事务从两个快照之后开始。**
 
 ##### bootstrap 屏障（必须显式实现，`enqueue_seq` 不足以保证）
 
@@ -741,13 +746,24 @@ C1（`Σ position ≡ 0`）的求和。
 这条约束落在**入队时点**上，与 queue key 的比较规则无关，因此不受 class 影响。
 实现须提供断言：bootstrap 未完成时调用入队接口即抛异常（配 `abort_code = INTERNAL`）。
 
+**已知缺口（2026-08-11 记录，见 ADR-004）**：当前内核实现未强制该屏障——实验运行器
+在 `bootstrap()` 后立即入队各代理的首次 `AGENT_OBSERVE`（class 3 < 5），因此真实日志
+中两个快照落在 `transaction_seq = b, b+1`（`b = 1 + t=0 低 class 事件数`），而非固定
+`1, 2`。回放读取器按以下**可判定规则**强制快照结构（TI-5）：前两条 `SNAPSHOT` 必须
+依次为 `ACCOUNT`、`BOOK`，均 `timestamp = 0`、`record_index = 0`，且事务号**连续**
+（`BOOK.transaction_seq == ACCOUNT.transaction_seq + 1`）——ACCOUNT 与 BOOK 之间出现
+事务号间隙即拒绝。屏障的完整实现（快照提交前禁止任何入队）列为后续内核整改项。
+
 ##### 失败与边界形状
+
+下表为 **bootstrap 屏障完整实现后（§4.6.3 已知缺口，即 `b = 2`）** 的失败与边界形状；
+屏障未实现时快照事务号为 `b/b+1`，下列 `last_committed` 相应为 `b`/`b+1`：
 
 | 情形 | 合法尾部 |
 |---|---|
-| 第一张（ACCOUNT）写出失败 | `terminated=ABORTED`，`last_committed_transaction_seq = null` |
-| **第二张（BOOK）写出失败** | `terminated=ABORTED`，**`last_committed_transaction_seq = 1`**——ACCOUNT 已作为独立事务提交，不是 null |
-| 零业务事务的正常运行 | `terminated=COMPLETED`，`last_committed_transaction_seq = 2`，恰 2 条 EVENT |
+| 第一张（ACCOUNT）写出失败 | `terminated=ABORTED`，`last_committed_transaction_seq = null`（无任何已提交事务） |
+| **第二张（BOOK）写出失败** | `terminated=ABORTED`，**`last_committed_transaction_seq = b`**——ACCOUNT 已作为独立事务提交，不是 null |
+| 零业务事务的正常运行 | `terminated=COMPLETED`，`last_committed_transaction_seq = b+1`，恰 2 条 EVENT（屏障实现后为 `2`） |
 
 **配置校验强制 `max_transactions ≥ 2`**：终止检查以
 `processed_transactions >= max_transactions` 为准（指标字典 §1.1.1），若允许配置
@@ -806,8 +822,9 @@ C1（`Σ position ≡ 0`）的求和。
 
 ##### 帧的定义
 
-**一帧 = 一个已提交事务之后的完整状态。** 第 0 帧由 `transaction_seq = 1`（账户）与
-`2`（订单簿）两条初态快照共同构成；第 k 帧是 `transaction_seq = k + 2` 提交后的状态。
+**一帧 = 一个已提交事务之后的完整状态。** 第 0 帧由两条初态快照（`ACCOUNT` 在
+`transaction_seq = b`、`BOOK` 在 `b+1`，见 §4.6.3 的可判定快照规则）共同构成；第 k 帧是
+`transaction_seq = b + k` 提交后的状态（bootstrap 屏障完整实现后 `b = 2`）。
 0.1.4 的逐帧比较按此对齐——帧边界取事务边界，不取单条记录边界，因为事务内的中间态
 本就不该被观察到（§1.4）。
 
@@ -928,9 +945,10 @@ trade_id
 ```text
 RUN_HEADER          恰好一条，文件第一行
 EVENT+              至少两条，§4 的事件记录
-                    ├ 前两条恒为 t=0 的 ACCOUNT / BOOK 快照（§4.6.3）
-                    │   它们是真正的队列事件，transaction_seq = 1 与 2
-                    └ 其余为业务事务的记录，transaction_seq 从 3 开始
+├ 前两条 SNAPSHOT 恒为 t=0 的 ACCOUNT / BOOK 快照（§4.6.3）
+│   它们是真正的队列事件，事务号连续（ACCOUNT = b，BOOK = b+1，b 视 t=0 低 class
+│   事件数而定；屏障完整实现后固定为 1 与 2）
+│   └ 其余为业务事务的记录，事务号从 b+2 开始（屏障完整实现后从 3 开始）
 RUN_TRAILER         至多一条，文件最后一行
 ```
 
@@ -945,7 +963,7 @@ RUN_TRAILER         至多一条，文件最后一行
 | 字段 | 类型 | 可空 | 说明 |
 |---|---|---|---|
 | `record_kind` | 枚举 | 否 | 恒为 `"RUN_HEADER"` |
-| `schema_version` | 整数 | 否 | 事件日志格式版本，当前为 `2`（§2） |
+| `schema_version` | 整数 | 否 | 事件日志格式版本，当前为 `3`（§2） |
 | `run_id` | 字符串 | 否 | 本次运行的唯一标识 |
 | `code_version` | 字符串 | 否 | Git commit SHA，工作区不干净时追加 `-dirty` |
 | `config_hash` | 字符串 | 否 | 规范化配置的 `blake2b` 摘要（十六进制） |
@@ -956,6 +974,10 @@ RUN_TRAILER         至多一条，文件最后一行
 | `cash_unit` | 字符串 | 否 | 同上 |
 | `run_mode` | 枚举 | 否 | `benchmark` \| `research` \| `interactive`（v0.1 / D-7） |
 | `information_set_mode` | 枚举 | 否 | `digest` \| `full`（E-001）。研究运行必须为 `full` |
+| `mult` | 整数 | 否 | 回放关键配置：现金单位缩放因子（`ExperimentConfig.mult`）。回放重建 `reserved_units`/`margin_ratio_bp` 时需要，不参与摘要哈希 |
+| `fee_bps_cap` | 整数 | 否 | 回放关键配置：手续费上限（`max(maker_bps, taker_bps, 0)`）。回放重建 `reserved_units` 时需要 |
+| `initial_price_ticks` | 整数 | 否 | 回放关键配置：初始价格（ticks）。回放重建 `reserved_units` 时作为无成交时的风险标记价 |
+| `agent_initial_bp` | 对象 | 否 | 回放关键配置：`agent_id -> initial_margin_bp` 映射。回放重建 `reserved_units` 时需要每个代理的初始保证金率 |
 
 三个单位字段用**字符串十进制**而非浮点，与配置解析同一理由（ADR-001 §2）：
 `0.01` 在 IEEE 754 下不可精确表示，写成浮点会使不同平台的 header 逐字节不同，

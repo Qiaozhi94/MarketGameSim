@@ -1,15 +1,15 @@
 # AI 对话归档索引
 
-> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 63
+> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 77
 
 ## 工具统计
 
 | 工具 | 会话数 |
 |---|---|
 
-| OpenCode | 37 |
-| Claude Code | 10 |
-| Codex CLI | 16 |
+| OpenCode | 46 |
+| Claude Code | 11 |
+| Codex CLI | 20 |
 
 ## 会话血缘树
 
@@ -60,6 +60,16 @@
   - Map src module structure (@explore subagent) (`opencode` · 2026-08-10T16:23:04Z)
   - Map artifact producers and registry (@explore subagent) (`opencode` · 2026-08-10T16:23:13Z)
   - Map event log format and transactions (@explore subagent) (`opencode` · 2026-08-10T16:23:21Z)
+  - Implement report module 0.1.4 (@Sisyphus-Junior subagent) (`opencode` · 2026-08-10T16:32:13Z)
+  - E1 frame-consistency replay design (@oracle subagent) (`opencode` · 2026-08-10T16:36:02Z)
+  - Implement replay module 0.1.4 (@Sisyphus-Junior subagent) (`opencode` · 2026-08-10T16:46:40Z)
+- **92966491-5a15-453a-aea0-263ad52cd240** (`claude` · 2026-08-11T13:44:53Z)
+- **市场游戏模拟项目深入分析建议** (`opencode` · 2026-08-11T14:03:57Z)
+- **修复0.1.4代码检视意见** (`opencode` · 2026-08-11T14:37:37Z)
+  - Fix replay module review findings (@Sisyphus-Junior subagent) (`opencode` · 2026-08-11T14:45:06Z)
+  - Fix report module review findings (@Sisyphus-Junior subagent) (`opencode` · 2026-08-11T14:45:57Z)
+  - Fix replay round-2 findings (@Sisyphus-Junior subagent) (`opencode` · 2026-08-11T16:02:03Z)
+  - Fix report round-2 findings (@Sisyphus-Junior subagent) (`opencode` · 2026-08-11T16:02:49Z)
 
 ## 原始会话清单
 
@@ -128,3 +138,17 @@
 | 2026-08-10T16:23:04Z | OpenCode | Map src module structure (@explore subagent) | deepseek-v4-flash | `opencode/ses_01383e345ffejRQh7l38mT3ewc.md` |
 | 2026-08-10T16:23:13Z | OpenCode | Map artifact producers and registry (@explore subagent) | deepseek-v4-flash | `opencode/ses_01383bef9ffeRL7AMegBYL6YcP.md` |
 | 2026-08-10T16:23:21Z | OpenCode | Map event log format and transactions (@explore subagent) | deepseek-v4-flash | `opencode/ses_01383a022ffeDk1t6uL7bkQOxG.md` |
+| 2026-08-10T16:32:13Z | OpenCode | Implement report module 0.1.4 (@Sisyphus-Junior subagent) | glm-5.2 | `opencode/ses_0137b83ceffew9pOJDDQF56fKb.md` |
+| 2026-08-10T16:36:02Z | OpenCode | E1 frame-consistency replay design (@oracle subagent) | deepseek-v4-pro | `opencode/ses_0137804b3ffeKQzvISy2lZ7hsW.md` |
+| 2026-08-10T16:46:40Z | OpenCode | Implement replay module 0.1.4 (@Sisyphus-Junior subagent) | glm-5.2 | `opencode/ses_0136e4807ffevnOBhW0IlWITQ7.md` |
+| 2026-08-11T13:44:53Z | Claude Code | 92966491-5a15-453a-aea0-263ad52cd240 | claude-sonnet-5 | `claude/92966491-5a15-453a-aea0-263ad52cd240.md` |
+| 2026-08-11T14:01:47Z | Codex CLI | rollout-2026-08-11T22-01-17-019ff120-a935-7641-a562-75811da2e0e2 | openai | `codex/rollout-2026-08-11T22-01-17-019ff120-a935-7641-a562-75811da2e0e2.md` |
+| 2026-08-11T14:03:57Z | OpenCode | 市场游戏模拟项目深入分析建议 | deepseek-v4-flash | `opencode/ses_00edce6bfffeqEcL5Im34gXeCM.md` |
+| 2026-08-11T14:37:37Z | OpenCode | 修复0.1.4代码检视意见 | deepseek-v4-flash | `opencode/ses_00ebe133dffeK8bRp8aUjTbAtM.md` |
+| 2026-08-11T14:40:40Z | Codex CLI | rollout-2026-08-11T22-40-01-019ff144-1f59-7fc1-aff1-782647c502d0 | openai | `codex/rollout-2026-08-11T22-40-01-019ff144-1f59-7fc1-aff1-782647c502d0.md` |
+| 2026-08-11T14:45:06Z | OpenCode | Fix replay module review findings (@Sisyphus-Junior subagent) | glm-5.2 | `opencode/ses_00eb73751ffeMA2oI7OOD3GRzd.md` |
+| 2026-08-11T14:45:57Z | OpenCode | Fix report module review findings (@Sisyphus-Junior subagent) | glm-5.2 | `opencode/ses_00eb670d7ffeqRKUaU4Cw3VLTa.md` |
+| 2026-08-11T14:55:50Z | Codex CLI | rollout-2026-08-11T22-40-03-019ff144-23f1-72c1-b1af-42dd01e91425 | openai | `codex/rollout-2026-08-11T22-40-03-019ff144-23f1-72c1-b1af-42dd01e91425.md` |
+| 2026-08-11T15:21:27Z | Codex CLI | rollout-2026-08-11T23-21-20-019ff169-f21a-7461-8181-94fb49039800 | openai | `codex/rollout-2026-08-11T23-21-20-019ff169-f21a-7461-8181-94fb49039800.md` |
+| 2026-08-11T16:02:03Z | OpenCode | Fix replay round-2 findings (@Sisyphus-Junior subagent) | glm-5.2 | `opencode/ses_00e70c77fffeG49MMeMC15wp0C.md` |
+| 2026-08-11T16:02:49Z | OpenCode | Fix report round-2 findings (@Sisyphus-Junior subagent) | glm-5.2 | `opencode/ses_00e701278ffeNWtBUGE3fyTjDK.md` |

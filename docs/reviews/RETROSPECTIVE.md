@@ -237,3 +237,163 @@ Y 拒绝的每个变体，且最好一开始就用可判定语法（如"同一�
 校验不能替代业务 value 校验，合同字段必须同时覆盖结构合法、精确值和跨真源双向一致性。
 R014-D003 的 `partial-symmetric-fix` 与 R014-D007 的 `duplicate-source-of-truth` 进一步说明，
 跨文档清单要一次对称更新，API 参数和 manifest 不能并存为同一配置的两个真源。
+
+---
+
+## 循环 7: 0.1.4「回放与总结报告」代码实现检视
+
+- **report_type**: fix-verification
+- **周期**: 2026-08-11 → 2026-08-12，11 轮（round 1 全量扫描 → round 2/3/5/6/7/8/9/10
+  reviewer 复核 → round 4/6/7/8/9/10/11 修复复核）
+- **状态**: 待最终门禁确认。本地 `python tools/verify.py` 全绿（**1811 tests**）；CI 尚未
+  触发（未 commit/push）；T403 浏览器验收由 `tools/t403_offline_check.js`（含 --self-test）
+  真实 Chrome 离线验证通过
+- **结论**: round 1—10 的 45 条发现全部处理完毕
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| public-replay-config-defaults | 公开 build_replay 用硬编码配置默认值 | Critical | correctness | root-cause | original-coding | fixed | RUN_HEADER 增四字段 + ReplayConfig.from_header + build_replay 读 header | `test_replay_frame_consistency.py::test_e1_frame_consistency_through_public_build_replay`；`::test_e1_frame_consistency_non_default_config` | 1 | 2 | duplicate-source-of-truth |
+| report-manifest-not-enforced-parquet-as-json | 报告不校验 manifest 内容、JSON 冒充 Parquet | Critical | correctness | root-cause | original-coding | fixed | validate_artifact_value 全量校验（shape/required_fields/嵌套/可空/schema_version）+ ArtifactRead/SchemaError | `test_report_artifacts.py` 空{}/缺字段/错类型/多行 table/非UTF8 夹具 | 1 | 2 | test-simulates-itself |
+| e6-controls-malfunction | E6 控件失效（含 OK 误标强平） | High | correctness | root-cause | original-coding | fixed | JS .includes/setTimeout/双序列/底基座/verdict 过滤 | `test_frame_presentation.py` 5 条 + verdict 3 例 | 1 | 2 | — |
+| kline-view-absent-period-wrong | K 线缺失且周期 5 小时 | High | correctness | root-cause | original-coding | fixed | 60s 周期 + 参数化 + kline-canvas/drawKlines | `test_kline.py` + `test_frame_presentation.py` | 1 | 2 | — |
+| report-decode-failures-escape-contract | 解码失败逃出二态契约 | High | correctness | root-cause | original-coding | fixed | 全路径 try/except 归一化 failure + exit 1 | `test_report_artifacts.py` 不可解码 + CLI | 1 | 2 | — |
+| log-reader-accepts-invalid-logs | 读取器接受无效日志 | High | correctness | root-cause | original-coding | fixed | 结构/快照/索引/末提交/版本/run_id 全量校验 | `test_log_reader.py` 10 条 | 1 | 2 | — |
+| artifact-path-escape | artifact 路径逃逸 | High | correctness | root-cause | original-coding | fixed | 绝对路径拒绝 + is_relative_to 限制 | `test_manifest.py` 绝对/../ 逃逸 + 批量 | 1 | 2 | trust-boundary-escape |
+| html-script-injection | 内联 JSON 脚本注入 | Medium | correctness | root-cause | original-coding | fixed | <,>,& 转义 | `test_script_injection_escaped_in_embedded_data` | 1 | 2 | — |
+| frame-missing-timestamp | Frame 缺时间戳 | Medium | correctness | root-cause | original-coding | fixed | Frame.timestamp 取事务时间戳 | `test_frame_sequence.py` 2 条 | 1 | 2 | — |
+| large-log-materialization | 大日志物化+重复扫描 | Medium | quality | root-cause | original-coding | fixed | K 线单遍分桶 + JS 循环 min/max | `test_kline.py` 2 条 | 1 | 2 | — |
+| downsample-invalid-rules | 非法降采样规则 | Medium | correctness | root-cause | original-coding | fixed | __post_init__ 校验 + CLI 错误退出 | `test_downsampling.py` 5 条 | 1 | 2 | — |
+| negative-results-shape-conflict | negative_results 形状冲突 | Medium | correctness | root-cause | spec-drift | fixed | design.md §4 改对象（verbatim） | 字节一致断言保留 | 1 | 2 | — |
+| acceptance-tests-prove-markers | 验收测试只证 marker | Medium | test-coverage | root-cause | process-gap | fixed | E1 走公共路径 + 真实 table 夹具；浏览器由 E2/T403 手动 | 公共路径 2 条 + 多行夹具 | 1 | 3 | test-simulates-itself |
+| report-pair-atomicity | 报告未成对原子发布 | Low | quality | root-cause | original-coding | fixed | 专属临时目录+fsync+如实文档 | rename 失败 + 无残留 | 1 | 2 | — |
+| public-replay-config-defaults-r2 | 生产 header 可用错误默认配置（无生产闭环 E2E） | Critical | correctness | root-cause | original-coding | fixed | build_run_header 四字段必填 + 生产闭环 E2E（cfg→header→日志→build_replay→oracle） | `test_e1_closed_loop_through_build_run_header` | 1 | 3 | duplicate-source-of-truth |
+| report-manifest-not-enforced-parquet-as-json-r2 | Parquet 仍按 JSON 解码 | Critical | correctness | root-cause | original-coding | fixed | report_read_format=json 版本化 JSON 投影契约 + 显式消费 + 校验 | `TestReportReadFormat::test_unknown_report_read_format_rejected` | 1 | 3 | test-simulates-itself |
+| e6-controls-malfunction-r2 | 权益公式漏 mult/首笔前 mark=0/降采样强平错位 | High | correctness | root-cause | original-coding | fixed | JS 乘 mult + initial_price 回退 + 展示索引映射 | `test_frame_presentation.py` 3 条 | 1 | 3 | partial-symmetric-fix |
+| log-reader-accepts-invalid-logs-r2 | bootstrap 精确结构未强制 | High | correctness | root-cause | original-coding | fixed | 前两条 SNAPSHOT 连续事务/顺序/t=0/index=0 强制；契约文档如实改写 | `test_log_reader.py` 6 条 | 1 | 3 | partial-symmetric-fix |
+| run-header-fields-without-schema-bump | 必填 header 字段无版本升级 | High | correctness | root-cause | fix-regression | fixed | ADR-004 + event schema v3 + v2 显式拒绝策略 | `test_schema_version_is_3` + 493 测试 | 2 | 3 | cross-version-contract-break |
+| report-empty-table-rejected-without-contract | 无约束却拒空 table | High | correctness | root-cause | fix-regression | fixed | 移除空表 blanket 拒绝（空 [] 合法） | `TestTableSemantics` 正反例 | 2 | 3 | overstrict-fail-closed |
+| report-cross-artifact-run-id-unchecked | 未校验 artifact run_id 一致 | High | correctness | root-cause | original-coding | fixed | validate_run_id_consistency 全 artifact/行唯一性 | `TestCrossArtifactRunId` 3 条 | 2 | 3 | cross-artifact-consistency-gap |
+| frame-missing-timestamp-r2 | 时间轴未用逻辑时间 | Medium | correctness | root-cause | original-coding | fixed | frame-info 展示 f.timestamp | `test_frame_info_displays_logical_timestamp` | 1 | 3 | partial-symmetric-fix |
+| large-log-materialization-r2 | build_replay 全量物化再采样 | Medium | quality | root-cause | original-coding | fixed | 构建期按模过滤（downsample 参数） | `test_inline_downsample_matches_post_hoc_apply` | 1 | 3 | partial-symmetric-fix |
+| kline-period-invalid-crash | 非正周期除零 | Medium | correctness | root-cause | fix-regression | fixed | API/CLI 拒绝 period_ns<=0，exit 2 | `test_kline.py` 3 条 + CLI 实测 | 2 | 3 | boundary-validation-gap |
+| artifact-nullability-hardcoded-outside-registry | 可空规则第三真源 | Medium | quality | root-cause | fix-regression | fixed | nullable 完全下沉 registry（删硬编码） | `TestNullableFromRegistry` 3 条 | 2 | 3 | third-truth-source |
+
+**模式性教训**: 全周期 32 条问题。来源分布：`original-coding` 24、`fix-regression` 5、
+`spec-drift` 1、`process-gap` 2。**round 2/3 的 18 条里 5 条是前一轮修复引入的
+（`fix-regression`）——修复自伤率稳定在每轮 20-30%，每轮闭环都必须有独立复核轮**。
+三类反复出现的模式：
+① `partial-symmetric-fix` 出现 6 次（修一半：校验补了顺序没补、字段加了契约没升版、
+帧键改了 reader 没改 spec/design/tasks）——**对称性检查（契约两端/清单两端同时更新）
+应成为修复的默认动作**；② `test-simulates-itself` 出现 4 次——marker 断言、手写夹具
+与"声明 parquet 按 json 读"的格式矛盾，都会系统性高估完成度，验收必须走公共入口 +
+真实形状，契约声明必须与消费实现一致；③ `boundary-validation-gap` 3 次——kline 周期、
+降采样零匹配这类"合法输入产生非法输出"的边界，必须在 API/CLI 边界显式拒绝。
+**最贵的教训是 `duplicate-source-of-truth`（跨 4 轮）与契约漂移**：配置一旦出现在日志
+之外就会以默认值回来；文档声明（txn 1/2）与内核实际行为（b/b+1）矛盾时，必须统一
+全部真源而不是只改一处。**本轮把从未兑现的 parquet 声明正式改为 json 契约**——仓库
+里从未有 parquet 文件，与其保留"设计意图"式的假声明，不如让契约如实描述消费实现。
+
+**round 3/4 补充（6 条）**：
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| report-manifest-not-enforced-parquet-as-json-r3 | 声明 Parquet 却按 JSON 解码 | Critical | correctness | root-cause | original-coding | fixed | 格式契约正式改 json + 删冗余 report_read_format | `TestFormatContract` 2 条 | 1 | 4 | test-simulates-itself |
+| log-reader-accepts-invalid-logs-r3 | bootstrap 帧键跨真源冲突 | High | correctness | root-cause | original-coding | fixed | spec/design/tasks/frames/writer 六处统一 b/b+1 | E1 公共路径端到端 | 1 | 4 | partial-symmetric-fix |
+| run-header-fields-without-schema-bump-r3 | v2 日志被接受 | High | correctness | root-cause | fix-regression | fixed | read_log 强制 schema_version==3 | `test_log_reader.py` 3 条 | 2 | 4 | cross-version-contract-break |
+| frame-missing-timestamp-r3 | timeline 未用逻辑时间 | Medium | correctness | root-cause | original-coding | fixed | timeline 改 timestamp 驱动 | `test_timeline_is_timestamp_based` | 1 | 4 | partial-symmetric-fix |
+| acceptance-tests-prove-markers-r3 | 浏览器行为证据缺失 | Medium | test-coverage | root-cause | process-gap | carried-forward | T403/AC-002 撤勾 + 显式待办 | —（手工验收项） | 1 | — | test-simulates-itself |
+| downsample-empty-output-breaks-html | 零帧破页 | Medium | correctness | root-cause | original-coding | fixed | 空帧拒绝（ValueError + CLI exit 2） | `test_downsampling.py` 2 条 | 3 | 4 | boundary-validation-gap |
+
+**round 5/6 补充（4 条）**：
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| report-manifest-not-enforced-parquet-as-json-r5 | 格式契约无真实 producer 产物链 | Critical | correctness | root-cause | original-coding | fixed | artifact_export 适配层（真实 producer 输出 → registry 形状）+ 真实 producer E2E | `test_report_real_producers.py` 2 条 | 1 | 6 | test-simulates-itself |
+| log-reader-accepts-invalid-logs-r5 | reader 接受缺必填字段 | High | correctness | root-cause | original-coding | fixed | EVENT/trailer 必填字段强制 + event-schema 残留清理 | `test_log_reader.py` 4 条 | 1 | 6 | partial-symmetric-fix |
+| timestamp-timeline-collapses-same-time-frames | 同时间戳多帧不可达 | High | correctness | root-cause | fix-regression | fixed | 唯一帧位置 + 时间戳展示 | `test_timeline_reaches_every_frame_with_duplicate_timestamps` | 4 | 6 | non-unique-key-mapping |
+| acceptance-tests-prove-markers-r5 | 浏览器行为证据缺失 | Medium | test-coverage | root-cause | process-gap | fixed | t403_offline_check.js 真实 Chrome 离线验证 | `tools/t403_offline_check.js` | 1 | 4 | test-simulates-itself |
+
+**round 5/6 模式教训**: 4 条中 2 条 `fix-regression` 持续出现——round-4 的 timestamp 时间轴
+修复引入了「同 timestamp 折叠」新问题（`non-unique-key-mapping`），印证收敛协议每轮
+20-30% 自伤率；轮次要继续直到 diff-only 复核不再发现新问题。**最深的根因是
+`test-simulates-itself`（跨 5 轮仍未根除）**：测试一直按 registry 自造 artifact，直到
+round 5 才发现「真实 producer 根本不产出 registry 形状」——registry 与 producer 从未
+接线。修法不是改 label，而是**补上缺失的适配层（artifact_export）+ 真实运行 E2E**，
+让「报告能消费真实冻结产物」成为可复现的机器断言。**教训：当契约两端的实现（registry
+schema 与 producer 输出）分别开发时，「自证」测试会长期掩盖它们之间的形状分歧；唯一
+的根治是双向适配层 + 全链 E2E。** T403 浏览器证据最终以仓库工具
+（`tools/t403_offline_check.js`）固化——真实 Chrome 离线验证可重复运行，不再依赖
+「手工验收」的空洞勾选。
+
+**round 6/7 补充（3 条）**：
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| report-manifest-not-enforced-parquet-as-json-r7 | 格式链无生产写出口 | Critical | correctness | root-cause | original-coding | fixed | write_artifacts/build_artifacts + CLI + 真实数据驱动负结果/结论 | `test_report_real_producers.py`（生产入口） | 1 | 7 | test-simulates-itself |
+| log-reader-accepts-invalid-logs-r7 | trailer 全字段未封闭 | High | correctness | root-cause | original-coding | fixed | §6.2 五字段 + 状态条件 + 边界表 b 标注 | `test_log_reader.py` 3 条 | 1 | 7 | partial-symmetric-fix |
+| acceptance-tests-prove-markers-r7 | T403 工具可假绿 | Medium | test-coverage | root-cause | process-gap | fixed | 全合取 pass + 索引 seek + --self-test | `t403_offline_check.js --self-test` | 1 | 7 | test-simulates-itself |
+
+**round 6/7 模式教训**: 三个顽固问题最终都指向同一根因——**「工具/测试能自证通过」不等于
+「真实行为正确」**：① 格式链的「自造 artifact」拖到第 7 轮才由「生产写出口 + 真实运行
+E2E」根除（适配层 + CLI 让冻结产物链成为生产代码）；② T403 浏览器工具的 `&&`/`||`
+优先级让任一 OR 分支即可绕过其余断言（假绿）——验收工具的 pass 判定必须显式括号全
+合取，并用 `--self-test` 对已知坏输入做反证；③ trailer 校验的「字段存在才比较」模式
+（`if x is not None`）系统性放行缺失字段——契约字段应强制存在而非可选比较。**验收与
+校验代码本身也需要被测试**（工具的 self-test、校验器的正反例），否则验收工具就是
+`test-simulates-itself` 的最终形态。
+
+**round 7/8 补充（1 条）**：
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| report-manifest-not-enforced-parquet-as-json-r8 | 生产入口伪造 T604/T606 语义 | Critical | correctness | root-cause | original-coding | fixed | 接入真实 build_final_conclusion + NegativeResultReport 封闭枚举门禁 + 真实交叉矩阵 | `test_negative_results_pass_real_t606_validation` | 1 | 8 | test-simulates-itself |
+
+**round 8/9 补充（1 条）**：
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| report-manifest-not-enforced-parquet-as-json-r9 | T105 矩阵不足且 T606 类别语义错配 | Critical | correctness | root-cause | original-coding | fixed | 2×2 真实矩阵 + 按证据语义分类（vanish/reversal/narrow） | 3 条语义测试 + 2×2 E2E | 1 | 9 | test-simulates-itself |
+
+**round 8/9 模式教训**: 「枚举合法」不等于「语义正确」——上一轮修到 T606 枚举合法
+（`validate()` 通过），本轮 reviewer 用独立负例证明语义仍错位：消失被标成窄区、反转被
+标成消失。**分类逻辑必须按证据语义设计（同族异映射消失 / 显著反向 / 子集显著），并配
+三态正反测试锁定**，而不是从枚举里挑一个看起来差不多的类别。另外 1×2 子矩阵因
+`CrossMatrix.report` 只对调用方传入维度校验而报 `complete=true`——**完整性校验必须对
+真实合同维度（E1 最低 2×2）校验，不能由调用方自报维度**。
+
+**round 7/8 模式教训**: 「真实 producer 链」的最后一层伪装——适配层曾自创
+`no_endpoint_effect` 类别并被 T606 封闭枚举拒绝。**当契约方（registry/T606 枚举）已有
+自己的语义校验器时，适配层必须直接消费该校验器（fail-closed），而不是另写一套宽松的
+字段级校验**——宽松校验正是 `test-simulates-itself` 的隐蔽形态：格式对、语义错。
+修复后 robustness_conclusion/negative_results/robustness_effects 全部由真实
+T604/T105/T606 producer 构造并经其门禁，E2E 以真实 2-cell 交叉矩阵驱动。至此
+`test-simulates-itself` 在 8 轮内被逐步根除：registry 声明 → 消费格式 → 生产写入口 →
+真实 producer 语义，每一层都从「自证」换成了「真实产物」。
+
+**round 9/10 补充（1 条）**：
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| report-manifest-not-enforced-parquet-as-json-r10 | 2×2 临时重跑替代冻结上游证据且窄区语义错误 | Critical | correctness | root-cause | original-coding | fixed | 消费冻结 0.1.3 证据 + narrow 仅由参数扫描产生 | family_dependence + narrow_requires_parameter_scan | 1 | 10 | test-simulates-itself |
+
+**round 9/10 模式教训**: 「用真实底层函数重新生成另一套证据」仍是 `test-simulates-itself`
+——哪怕函数是真实的，只要结果不是**预注册/冻结**的那一份，就只是另一套未预注册证据。
+修复的关键是**把证据来源切到冻结产物**（0.1.4 CLI 读取 `0.1.3-exit-evidence.json` 的
+E1 交叉矩阵与 E2 参数扫描），而不是在消费层重现生成。同时 `narrow_parameter_region`
+的语义必须绑定**参数轴扫描证据**（failure boundary localization），不能由交叉矩阵的
+稀疏性（模型族依赖）推断——**同一个枚举类别必须与同一个证据来源一一对应**，这是
+「语义正确」的可判定形式。
+
+**round 10/11 补充（1 条）**：
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| report-manifest-not-enforced-parquet-as-json-r11 | 冻结 E1 结论被不一致 cells 二次重算并反转 | Critical | correctness | root-cause | original-coding | fixed | cells 补 effect_direction + 自一致性门禁 + 原样消费冻结结论 | frozen_evidence_self_consistent + frozen_evidence_gate_rejects | 1 | 11 | test-simulates-itself |
+
+**round 10/11 模式教训**: 本轮暴露了**「冻结产物」自身的字段完整性**问题——0.1.3
+evidence 的 E1 cells 序列化丢弃 `effect_direction`（producer 的 >20 阈值规则在序列化后
+无法还原），消费方只能从 effect_size 重推方向，导致冻结结论被静默改写。**跨里程碑消费
+冻结产物时，产物的自一致性（report == 从其 cells 可重算）必须有 fail-closed 门禁**，
+且**序列化必须保留推导所需的全部中间字段**（direction 是独立于 effect_size 的语义，
+不能由后者重推）。「原样消费」的关键不是再包一层函数，而是让冻结产物的每个字段都能
+逐字传递到最终 report，任何一步的「重推导」都是 `test-simulates-itself` 的变体。

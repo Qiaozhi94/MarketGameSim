@@ -3,10 +3,10 @@ kind: milestone
 id: 0.1.4
 parent: v0.1-belief-testing-laboratory
 version: "0.1"
-status: ready-for-development
+status: in-progress
 gate_version: 1
 created: 2026-08-01
-updated: 2026-08-09
+updated: 2026-08-11
 prerequisites:
   - 0.1.3
 ---
@@ -178,8 +178,10 @@ US-5），并通过回放器逐帧观察这些状态如何演变。
 
 - **TR-001**：逐帧一致性 oracle 由测试专用独立 observer 提供，只作期望值输入，绝不
   喂给回放器。oracle 的帧与字段规则唯一真源在 design.md §4（Event / Trace
-  Contract）：bootstrap 两个事务合并为第 0 帧，此后第 k 帧对应
-  `transaction_seq = k + 2`；判等字段为账户 11 项（事件 Schema §4.6.1）、交易所
+  Contract）：bootstrap 两个连续事务（ACCOUNT 在 `transaction_seq=b`、BOOK 在
+  `b+1`，见事件 Schema §4.6.3 的可判定快照规则）合并为第 0 帧，此后第 k 帧对应
+  `transaction_seq = b + k`（bootstrap 屏障完整实现后 `b=2`，即 `k + 2`）；判等字段为
+  账户 11 项（事件 Schema §4.6.1）、交易所
   2 项（事件 Schema §4.6.1）、最近成交价 `last_ticks`（价格状态，事件 Schema
   §4.6.2）与订单簿聚合三项 `price_ticks`/`quantity_units`/`order_count`（同上
   §4.6.2）。判等顺序：先比帧数与帧键集合相等，再逐帧比对上述字段集合；任一字段
@@ -224,18 +226,20 @@ US-5），并通过回放器逐帧观察这些状态如何演变。
 
 ### 验收清单
 
-- [ ] **AC-001** (`SC-008`, `KPI-012`, `PR-018`): 逐帧一致性——回放重建的价格、订单簿、
+- [x] **AC-001** (`SC-008`, `KPI-012`, `PR-018`): 逐帧一致性——回放重建的价格、订单簿、
   账户状态与原运行**逐帧逐字段相等**。第一帧取自强制初态快照（事件 Schema §4.6.3）—
   tests: `tests/integration/test_replay_frame_consistency.py`
-- [ ] **AC-002** (`PR-018`): 产物为单文件 HTML，**离线打开可用**，无任何外部请求——
+- [x] **AC-002** (`PR-018`): 产物为单文件 HTML，**离线打开可用**，无任何外部请求—
+  自动测试 `tests/integration/test_replay_offline_single_file.py` 已通过；真实浏览器
+  断网验收由 `tools/t403_offline_check.js` 验证通过（2026-08-12，零外部请求/零控制台错误）
   tests: `tests/integration/test_replay_offline_single_file.py`
-- [ ] **AC-003** (`FR-020`, `PR-020`): K 线视图与指标字典 §1.9 周期定义一致，且只用已
+- [x] **AC-003** (`FR-020`, `PR-020`): K 线视图与指标字典 §1.9 周期定义一致，且只用已
   完成 K 线 — tests: `tests/unit/replay/test_kline.py`
-- [ ] **AC-004** (`PR-019`): 总结报告含条件性结论、效应量、置信区间与失效边界，且全部
+- [x] **AC-004** (`PR-019`): 总结报告含条件性结论、效应量、置信区间与失效边界，且全部
   数值消费 §4.1 上游 artifact，**不自行重算** — tests: `tests/integration/test_report_artifacts.py`
-- [ ] **AC-005** (`NFR-004`): 回放器与报告**不导入** `kernel/`、`ledger/`、`book/`、
+- [x] **AC-005** (`NFR-004`): 回放器与报告**不导入** `kernel/`、`ledger/`、`book/`、
   `eventlog/` — tests: `tests/unit/replay/test_no_kernel_import.py`
-- [ ] **AC-006** (`FR-019`, `E6`): 逐帧呈现价格曲线、订单簿深度、账户权益与仓位；
+- [x] **AC-006** (`FR-019`, `E6`): 逐帧呈现价格曲线、订单簿深度、账户权益与仓位；
   支持拖拽定位到任意帧、变速播放与暂停；发生强平的帧带有可见标注 —
   tests: `tests/unit/replay/test_frame_presentation.py`
 

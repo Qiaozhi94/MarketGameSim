@@ -40,7 +40,7 @@ def _small_config_dict(max_transactions: int = 200) -> dict:
     return {
         "benchmark_id": "TEST",
         "config_schema_version": 1,
-        "event_schema_version": 2,
+        "event_schema_version": 3,
         "regime": "crypto_perp_free",
         "market": _MARKET,
         "margin": _MARGIN,

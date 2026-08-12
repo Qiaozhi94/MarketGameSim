@@ -19,7 +19,7 @@ benchmark_id: BENCH-001
 #   config_schema_version —— 本 YAML 配置格式的版本，由基准运行器消费
 #   event_schema_version  —— 事件日志格式版本，由内核写入 RUN_HEADER 并由验证器消费
 config_schema_version: 1
-event_schema_version: 2
+event_schema_version: 3
 
 regime: crypto_perp_free
 

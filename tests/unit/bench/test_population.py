@@ -29,7 +29,7 @@ def _config_dict(agents: list[dict], master_seed: int = 42) -> dict:
     return {
         "benchmark_id": "TEST",
         "config_schema_version": 1,
-        "event_schema_version": 2,
+        "event_schema_version": 3,
         "regime": "crypto_perp_free",
         "market": _MARKET,
         "margin": _MARGIN,

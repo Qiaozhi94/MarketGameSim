@@ -3,19 +3,42 @@
   "schema_id": "market-game-sim/report-artifacts",
   "manifest_schema": {
     "top_level_fields": {
-      "manifest_version": {"type": "integer"},
-      "artifact_root": {"type": "string"},
+      "manifest_version": {
+        "type": "integer"
+      },
+      "artifact_root": {
+        "type": "string"
+      },
       "artifacts": {
         "type": "array",
         "item_type": "object",
         "item_fields": {
-          "artifact_id": {"type": "string"},
-          "path": {"type": "string"},
-          "format": {"type": "string"},
-          "schema_version": {"type": "integer"},
-          "producer": {"type": "string"},
-          "hash_algorithm": {"type": "string", "enum": ["blake2b"]},
-          "hash": {"type": "string", "hex_length": 64, "charset": "lowercase_hex"}
+          "artifact_id": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "schema_version": {
+            "type": "integer"
+          },
+          "producer": {
+            "type": "string"
+          },
+          "hash_algorithm": {
+            "type": "string",
+            "enum": [
+              "blake2b"
+            ]
+          },
+          "hash": {
+            "type": "string",
+            "hex_length": 64,
+            "charset": "lowercase_hex"
+          }
         }
       }
     }
@@ -23,39 +46,86 @@
   "artifacts": {
     "market_metrics": {
       "producer": "0.1.2 T501",
-      "format": "parquet",
+      "format": "json",
       "shape": "table",
       "schema_version": 1,
       "required_fields": {
-        "schema_version": {"type": "integer"},
-        "run_id": {"type": "string"},
-        "timestamp": {"type": "integer"},
-        "last_ticks": {"type": "integer", "nullable": true},
-        "mid_ticks": {"type": "integer", "nullable": true},
-        "spread_ticks": {"type": "integer", "nullable": true},
-        "bid_depth_k": {"type": "integer"},
-        "ask_depth_k": {"type": "integer"},
-        "volume_since_last": {"type": "integer"},
-        "cancel_count_since_last": {"type": "integer"},
-        "trade_count_since_last": {"type": "integer"}
+        "schema_version": {
+          "type": "integer"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "integer"
+        },
+        "last_ticks": {
+          "type": "integer",
+          "nullable": true
+        },
+        "mid_ticks": {
+          "type": "integer",
+          "nullable": true
+        },
+        "spread_ticks": {
+          "type": "integer",
+          "nullable": true
+        },
+        "bid_depth_k": {
+          "type": "integer"
+        },
+        "ask_depth_k": {
+          "type": "integer"
+        },
+        "volume_since_last": {
+          "type": "integer"
+        },
+        "cancel_count_since_last": {
+          "type": "integer"
+        },
+        "trade_count_since_last": {
+          "type": "integer"
+        }
       }
     },
     "agent_metrics": {
       "producer": "0.1.2 T501",
-      "format": "parquet",
+      "format": "json",
       "shape": "table",
       "schema_version": 1,
       "required_fields": {
-        "schema_version": {"type": "integer"},
-        "run_id": {"type": "string"},
-        "timestamp": {"type": "integer"},
-        "agent_id": {"type": "string"},
-        "wallet_units": {"type": "integer"},
-        "position_units": {"type": "integer"},
-        "entry_notional_units": {"type": "integer"},
-        "margin_ratio_bp": {"type": "integer", "nullable": true},
-        "leverage_bp": {"type": "integer", "nullable": true},
-        "realized_pnl_units": {"type": "integer"}
+        "schema_version": {
+          "type": "integer"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "timestamp": {
+          "type": "integer"
+        },
+        "agent_id": {
+          "type": "string"
+        },
+        "wallet_units": {
+          "type": "integer"
+        },
+        "position_units": {
+          "type": "integer"
+        },
+        "entry_notional_units": {
+          "type": "integer"
+        },
+        "margin_ratio_bp": {
+          "type": "integer",
+          "nullable": true
+        },
+        "leverage_bp": {
+          "type": "integer",
+          "nullable": true
+        },
+        "realized_pnl_units": {
+          "type": "integer"
+        }
       }
     },
     "liquidation_metrics": {
@@ -64,50 +134,110 @@
       "shape": "object",
       "schema_version": 1,
       "required_fields": {
-        "schema_version": {"type": "integer"},
-        "run_id": {"type": "string"},
-        "total_liquidations": {"type": "integer"},
-        "total_volume": {"type": "integer"},
-        "liquidation_volume": {"type": "integer"},
-        "liquidation_volume_ratio": {"type": "number"},
-        "chain_depth_counts": {"type": "object", "additional_value_type": "integer"},
-        "chain_size_by_id": {"type": "object", "additional_value_type": "integer"},
-        "bankruptcy_total": {"type": "integer"},
-        "breach_volume_units": {"type": "integer"}
+        "schema_version": {
+          "type": "integer"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "total_liquidations": {
+          "type": "integer"
+        },
+        "total_volume": {
+          "type": "integer"
+        },
+        "liquidation_volume": {
+          "type": "integer"
+        },
+        "liquidation_volume_ratio": {
+          "type": "number"
+        },
+        "chain_depth_counts": {
+          "type": "object",
+          "additional_value_type": "integer"
+        },
+        "chain_size_by_id": {
+          "type": "object",
+          "additional_value_type": "integer"
+        },
+        "bankruptcy_total": {
+          "type": "integer"
+        },
+        "breach_volume_units": {
+          "type": "integer"
+        }
       }
     },
     "pnl_bridge": {
       "producer": "0.1.2 T503",
-      "format": "parquet",
+      "format": "json",
       "shape": "table",
       "schema_version": 1,
       "required_fields": {
-        "schema_version": {"type": "integer"},
-        "run_id": {"type": "string"},
-        "event_id": {"type": "string"},
-        "agent_id": {"type": "string"},
-        "spread": {"type": "integer"},
-        "impact": {"type": "integer"},
-        "revaluation": {"type": "integer"},
-        "funding": {"type": "integer"},
-        "fees": {"type": "integer"},
-        "equity_delta": {"type": "integer"},
-        "residual": {"type": "integer"}
+        "schema_version": {
+          "type": "integer"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "event_id": {
+          "type": "string"
+        },
+        "agent_id": {
+          "type": "string"
+        },
+        "spread": {
+          "type": "integer"
+        },
+        "impact": {
+          "type": "integer"
+        },
+        "revaluation": {
+          "type": "integer"
+        },
+        "funding": {
+          "type": "integer"
+        },
+        "fees": {
+          "type": "integer"
+        },
+        "equity_delta": {
+          "type": "integer"
+        },
+        "residual": {
+          "type": "integer"
+        }
       }
     },
     "sample_classification": {
       "producer": "0.1.2 T504",
-      "format": "parquet",
+      "format": "json",
       "shape": "table",
       "schema_version": 1,
       "required_fields": {
-        "schema_version": {"type": "integer"},
-        "run_id": {"type": "string"},
-        "is_technical_invalid": {"type": "boolean"},
-        "technical_invalid_code": {"type": "string", "nullable": true},
-        "is_economic_endpoint": {"type": "boolean"},
-        "economic_endpoint_codes": {"type": "array", "item_type": "string"},
-        "breached": {"type": "boolean"}
+        "schema_version": {
+          "type": "integer"
+        },
+        "run_id": {
+          "type": "string"
+        },
+        "is_technical_invalid": {
+          "type": "boolean"
+        },
+        "technical_invalid_code": {
+          "type": "string",
+          "nullable": true
+        },
+        "is_economic_endpoint": {
+          "type": "boolean"
+        },
+        "economic_endpoint_codes": {
+          "type": "array",
+          "item_type": "string"
+        },
+        "breached": {
+          "type": "boolean"
+        }
       }
     },
     "effect_sizes": {
@@ -116,21 +246,51 @@
       "shape": "object",
       "schema_version": 1,
       "required_fields": {
-        "schema_version": {"type": "integer"},
-        "comparison_id": {"type": "string"},
-        "metric_id": {"type": "string"},
-        "n_control": {"type": "integer"},
-        "n_treatment": {"type": "integer"},
-        "control_rate": {"type": "number"},
-        "treatment_rate": {"type": "number"},
-        "effect_size": {"type": "number"},
-        "ci_low": {"type": "number"},
-        "ci_high": {"type": "number"},
-        "ci_level": {"type": "number"},
-        "n_resamples": {"type": "integer"},
-        "bootstrap_seed": {"type": "integer"},
-        "multiplicity_method": {"type": "string"},
-        "multiplicity_passed": {"type": "boolean"}
+        "schema_version": {
+          "type": "integer"
+        },
+        "comparison_id": {
+          "type": "string"
+        },
+        "metric_id": {
+          "type": "string"
+        },
+        "n_control": {
+          "type": "integer"
+        },
+        "n_treatment": {
+          "type": "integer"
+        },
+        "control_rate": {
+          "type": "number"
+        },
+        "treatment_rate": {
+          "type": "number"
+        },
+        "effect_size": {
+          "type": "number"
+        },
+        "ci_low": {
+          "type": "number"
+        },
+        "ci_high": {
+          "type": "number"
+        },
+        "ci_level": {
+          "type": "number"
+        },
+        "n_resamples": {
+          "type": "integer"
+        },
+        "bootstrap_seed": {
+          "type": "integer"
+        },
+        "multiplicity_method": {
+          "type": "string"
+        },
+        "multiplicity_passed": {
+          "type": "boolean"
+        }
       }
     },
     "conditional_conclusion": {
@@ -139,65 +299,147 @@
       "shape": "object",
       "schema_version": 1,
       "required_fields": {
-        "schema_version": {"type": "integer"},
-        "comparison_id": {"type": "string"},
-        "text": {"type": "string"},
-        "structure_desc": {"type": "string"},
-        "param_range_desc": {"type": "string"},
-        "n_control_seeds": {"type": "integer"},
-        "n_treatment_seeds": {"type": "integer"},
-        "effect_size": {"type": "number"},
-        "ci_low": {"type": "number"},
-        "ci_high": {"type": "number"},
-        "ci_level": {"type": "number"},
-        "failure_condition_desc": {"type": "string"},
-        "extrapolation_forbidden": {"type": "boolean"}
+        "schema_version": {
+          "type": "integer"
+        },
+        "comparison_id": {
+          "type": "string"
+        },
+        "text": {
+          "type": "string"
+        },
+        "structure_desc": {
+          "type": "string"
+        },
+        "param_range_desc": {
+          "type": "string"
+        },
+        "n_control_seeds": {
+          "type": "integer"
+        },
+        "n_treatment_seeds": {
+          "type": "integer"
+        },
+        "effect_size": {
+          "type": "number"
+        },
+        "ci_low": {
+          "type": "number"
+        },
+        "ci_high": {
+          "type": "number"
+        },
+        "ci_level": {
+          "type": "number"
+        },
+        "failure_condition_desc": {
+          "type": "string"
+        },
+        "extrapolation_forbidden": {
+          "type": "boolean"
+        }
       }
     },
     "robustness_effects": {
       "producer": "0.1.3 T601",
-      "format": "parquet",
+      "format": "json",
       "shape": "table",
       "schema_version": 1,
       "required_fields": {
-        "schema_version": {"type": "integer"},
-        "cell_id": {"type": "string"},
-        "pair_family": {"type": "string"},
-        "model_family_id": {"type": "string"},
-        "behavior_mapping_id": {"type": "string"},
-        "parameter_unit": {"type": "object", "additional_value_type": "json-value"},
-        "n_pairs": {"type": "integer"},
-        "effect_size": {"type": "number"},
-        "ci_low": {"type": "number"},
-        "ci_high": {"type": "number"},
-        "ci_level": {"type": "number"},
-        "significant": {"type": "boolean"},
-        "effect_direction": {"type": "integer"}
+        "schema_version": {
+          "type": "integer"
+        },
+        "cell_id": {
+          "type": "string"
+        },
+        "pair_family": {
+          "type": "string"
+        },
+        "model_family_id": {
+          "type": "string"
+        },
+        "behavior_mapping_id": {
+          "type": "string"
+        },
+        "parameter_unit": {
+          "type": "object",
+          "additional_value_type": "json-value"
+        },
+        "n_pairs": {
+          "type": "integer"
+        },
+        "effect_size": {
+          "type": "number"
+        },
+        "ci_low": {
+          "type": "number"
+        },
+        "ci_high": {
+          "type": "number"
+        },
+        "ci_level": {
+          "type": "number"
+        },
+        "significant": {
+          "type": "boolean"
+        },
+        "effect_direction": {
+          "type": "integer"
+        }
       }
     },
     "robustness_conclusion": {
       "producer": "0.1.3 T604",
       "format": "json",
       "shape": "object",
+      "nullable": true,
       "schema_version": 1,
       "required_fields": {
-        "schema_version": {"type": "integer"},
-        "text": {"type": "string"},
+        "schema_version": {
+          "type": "integer"
+        },
+        "text": {
+          "type": "string"
+        },
         "elements": {
           "type": "object",
           "required_fields": {
-            "structure_desc": {"type": "string"},
-            "param_range_desc": {"type": "string"},
-            "behavior_mapping_id": {"type": "string"},
-            "model_family_id": {"type": "string"},
-            "cross_verdict": {"type": "string"},
-            "n_control_seeds": {"type": "integer"},
-            "n_treatment_seeds": {"type": "integer"},
-            "effect_size": {"type": "number"},
-            "ci_low": {"type": "number"},
-            "ci_high": {"type": "number"},
-            "failure_boundary_desc": {"type": "string"},
-            "extrapolation_forbidden": {"type": "boolean"}
+            "structure_desc": {
+              "type": "string"
+            },
+            "param_range_desc": {
+              "type": "string"
+            },
+            "behavior_mapping_id": {
+              "type": "string"
+            },
+            "model_family_id": {
+              "type": "string"
+            },
+            "cross_verdict": {
+              "type": "string"
+            },
+            "n_control_seeds": {
+              "type": "integer"
+            },
+            "n_treatment_seeds": {
+              "type": "integer"
+            },
+            "effect_size": {
+              "type": "number"
+            },
+            "ci_low": {
+              "type": "number"
+            },
+            "ci_high": {
+              "type": "number"
+            },
+            "failure_boundary_desc": {
+              "type": "string"
+            },
+            "extrapolation_forbidden": {
+              "type": "boolean"
+            }
           }
         }
       }
@@ -208,14 +450,23 @@
       "shape": "object",
       "schema_version": 1,
       "required_fields": {
-        "schema_version": {"type": "integer"},
+        "schema_version": {
+          "type": "integer"
+        },
         "results": {
           "type": "array",
           "item_type": "object",
           "item_fields": {
-            "result_class": {"type": "string"},
-            "description": {"type": "string"},
-            "machine_readable": {"type": "object", "additional_value_type": "json-value"}
+            "result_class": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            },
+            "machine_readable": {
+              "type": "object",
+              "additional_value_type": "json-value"
+            }
           }
         }
       }

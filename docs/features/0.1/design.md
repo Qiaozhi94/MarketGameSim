@@ -13,7 +13,7 @@
 | 语言/版本 | Python ≥ 3.11 |
 | 核心领域层依赖 | **仅标准库**（KR-005）——不含 NumPy、pandas |
 | 分析/报告层依赖 | 允许 NumPy、SciPy、pandas（不被核心层导入） |
-| 存储 | 事件日志 JSONL（规范序列化，ADR-001 §7）；分析产物 Parquet |
+| 存储 | 事件日志 JSONL（规范序列化，ADR-001 §7）；分析产物 JSON 表格（报告层消费格式，R-A；Parquet 仅作归档写出，T507） |
 | 测试框架 | pytest + 属性测试（`hypothesis` 可选，仅测试层） |
 | 性能目标 | BENCH-001 归一化耗时 ≤ 10 秒，且覆盖断言全满足 |
 | 代码风格 | ruff（`line-length = 100`，见 `pyproject.toml`） |

@@ -70,7 +70,7 @@ def _minimal_yaml(**overrides) -> str:
     sections = {
         "benchmark_id": "TEST-001",
         "config_schema_version": "1",
-        "event_schema_version": "2",
+        "event_schema_version": "3",
         "regime": "crypto_perp_free",
         "market": market,
         "margin": margin,
@@ -173,7 +173,7 @@ class TestBench001Parsing:
         assert mm.max_inventory_units == 5_000_000
 
     def test_event_schema_version(self, bench_config):
-        assert bench_config.event_schema_version == 2
+        assert bench_config.event_schema_version == 3
 
 
 # --------------------------------------------------------------------------- #
@@ -185,7 +185,7 @@ class TestFloatRejection:
     _BASE_YAML = textwrap.dedent("""
     benchmark_id: T
     config_schema_version: 1
-    event_schema_version: 2
+    event_schema_version: 3
     regime: crypto_perp_free
     market:
       symbol: S

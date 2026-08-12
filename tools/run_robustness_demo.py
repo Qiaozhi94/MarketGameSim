@@ -121,6 +121,9 @@ def run_e1_cross_matrix() -> dict:
                 "mapping": c.mapping_id,
                 "effect_size": c.effect_size,
                 "significant": c.significant,
+                "effect_direction": c.effect_direction,
+                "ci_low": c.ci_low,
+                "ci_high": c.ci_high,
             }
             for c in cells
         ],
