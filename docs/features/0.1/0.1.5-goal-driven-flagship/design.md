@@ -80,6 +80,14 @@ public market tape + completed bars + private state
 不新增 UI。离线报告必须展示运行族、目标模型版本、`L/M` cell、三终点家族、排除原因、
 evidence class 与研究声明资格；缺项时报告生成失败。
 
+成果包（`FR-027`）落在被 git 忽略的 `artifacts/showcase/<gate>/`，固定包含 `RUN.md`
+（重建命令与边界声明）、`manifest.json`（代码版本、配置哈希、种子计划、
+`evidence_class`）、`replay.html` 与 `summary.md`；只有正式摘要与 evidence index 进入
+`docs/experiments/`。`evidence_class` 取值与生命周期约束由
+[`docs/features/README.md`](../../README.md) 拥有，成果包只引用不重定义；
+`engineering-demonstration` 与 `experiment-preview` 的报告必须由生成器写入
+“不可作结论”声明，缺失即生成失败，不允许仅在人工措辞上约束。
+
 ## 7. 失败、恢复、安全与兼容
 
 - 非法字段、未知版本、跨族 provenance、证据越权均抛出可定位的验证错误。
@@ -96,6 +104,8 @@ evidence class 与研究声明资格；缺项时报告生成失败。
 | `AC-003`—`AC-004` | unit | `tests/unit/experiment/` | 三族允许/拒绝矩阵；协议有限且 cell 相同 |
 | `AC-005` | integration | `tests/integration/` | 多成交链全部外键存在且顺序合法 |
 | `AC-006`—`AC-010` | integration + formal run | `tests/integration/`、`docs/experiments/` | 四 cell、三家族、证据权限与复现闭环 |
+| `AC-011` | integration | `tests/integration/test_showcase_bundle.py`、`test_goal_driven_showcase.py`、`test_flagship_preview.py` | 单命令重建成果包；manifest `evidence_class` 与运行族一致；预览/示范带“不可作结论”声明 |
+| `AC-012` | integration | `tests/integration/test_delivery_entry.py` | README → 报告/回放/限制说明/evidence index 的链接深度 ≤ 2 且全部有效 |
 
 ## 9. 已确认决策与残余风险
 

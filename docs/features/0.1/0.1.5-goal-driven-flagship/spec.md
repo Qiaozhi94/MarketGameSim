@@ -19,7 +19,7 @@ prerequisites:
 
 ## 0. 来源与意图
 
-- **版本规格**：[`../spec.md`](../spec.md)（FR-021—FR-026、NFR-005、SC-009—SC-011）。
+- **版本规格**：[`../spec.md`](../spec.md)（FR-021—FR-027、NFR-005、SC-009—SC-011）。
 - **PRD 来源**：[`../../../market-game-sim-prd.md`](../../../market-game-sim-prd.md) §3.1、§12、§15。
 - **上游决策**：[`ADR-003`](../../../decisions/003-goal-driven-agents-and-flagship-identification.md)。
 - **Contract 来源**：[`agent-strategy.md`](../../../contracts/agent-strategy.md)、
@@ -111,6 +111,10 @@ prerequisites:
   因果外键回溯到观察、订单、成交、风险与强平。
 - **FR-026**：只有 `SPONTANEOUS` 的正式预注册运行可产出 `formal-research` 证据；研究
   声明建立时必须登记 evidence index，旧工程示范、压力和基准产物不得越权。
+- **FR-027**：R1—R5 每个成果门都必须由单条命令生成成果包（`RUN.md`、`manifest.json`、
+  `replay.html`、`summary.md`），manifest 记录代码版本、配置哈希、种子计划与
+  `evidence_class`；`engineering-demonstration` 与 `experiment-preview` 成果包的报告
+  必须携带“不可作结论”声明，且不得写入正式 evidence index。
 
 ### 数据 / 实体需求
 
@@ -145,7 +149,7 @@ prerequisites:
 draft -> ready-for-development  三件套、Contract 变更与预注册全部评审通过
 ready-for-development -> in-progress  0.1.4 已 done，按 tasks 顺序实施
 in-progress -> review  代码、正反回归测试、正式运行入口和证据 Schema 完成
-review -> done  E1—E6、全部 AC、统一门禁与正式证据复核通过
+review -> done  E1—E7、全部 AC、统一门禁与正式证据复核通过
 not-established -> established  status=done 且 formal-research evidence index 存在
 ```
 
@@ -170,6 +174,7 @@ not-established -> established  status=done 且 formal-research evidence index �
 | E4 | 0.1.2 T404—T407 的迁移任务完成，观察—目标—约束—订单—成交—强平链可审计。 |
 | E5 | `L × M` 四 cell 和三终点家族预注册、配对运行、分别推断与报告完成。 |
 | E6 | evidence index 仅引用 `formal-research` 自发运行；里程碑达到 `done / established`。 |
+| E7 | R1—R5 五个成果门各自产出可单命令重建的成果包，`evidence_class` 正确且预览/示范产物携带“不可作结论”声明。 |
 
 ### 验收清单
 
@@ -183,6 +188,10 @@ not-established -> established  status=done 且 formal-research evidence index �
 - [ ] **AC-008** (`FR-026`, `SC-011`): benchmark/stress/旧示范证据越权测试被拒绝。
 - [ ] **AC-009** (`FR-026`, `SC-011`): 正式 evidence index 完整且所有路径存在。
 - [ ] **AC-010** (`NFR-005`): `python tools/verify.py` 全绿且正式运行可由 manifest 复现。
+- [ ] **AC-011** (`FR-027`, `NFR-005`): R1—R4 每个成果包可由单条命令重建，manifest 的
+      `evidence_class` 与运行族一致，示范/预览报告携带“不可作结论”声明。
+- [ ] **AC-012** (`FR-027`, `SC-011`): R5 交付入口存在，非开发者从 README 两次点击内
+      到达总结报告、代表性回放、限制说明与 evidence index，且全部链接有效。
 
 ## 7. 测试、依赖与决策
 
