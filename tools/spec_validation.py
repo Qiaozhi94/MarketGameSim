@@ -592,6 +592,34 @@ def _block_has_existing_path(block: str, root: pathlib.Path) -> bool:
     return False
 
 
+# 「本 spec 声明的需求必须有 AC 认领」规则的引入日；此前 created 的里程碑不追溯执法
+# （0.1.4 的 US-004/US-005/TR-001/SC-006 就没有 AC，规则出现时它已经 done）。
+AC_COVERAGE_RULE_DATE = "2026-08-15"
+# 只对这几族强制 AC 覆盖：US 用「独立测试」段自证，SC/KR 是版本级成功标准，
+# 它们的验收锚点在版本根而不在里程碑。
+AC_COVERED_FAMILIES = ("FR", "NFR", "DR", "TR", "IR")
+
+
+def _check_requirement_ac_coverage(
+    front: dict, spec_text: str, errors: list[str], where: str
+) -> None:
+    """本 spec 声明的每条 FR/NFR/DR/TR/IR 都必须被至少一条 AC 引用。
+
+    D009 的成因：0.1.5 一次写下 6 条 IR/DR/TR，AC 却只引用 FR/NFR/SC——接口、数据、
+    事件三类需求整体没有验收锚点，而且没有任何门禁会说话。
+    """
+    created = front.get("created", "")
+    if not isinstance(created, str) or created < AC_COVERAGE_RULE_DATE:
+        return
+    body = _without_fenced_code(spec_text)
+    declared = {rid for rid in _declared_ids(body) if rid.split("-")[0] in AC_COVERED_FAMILIES}
+    referenced: set[str] = set()
+    for match in _AC_DECL.finditer(body):
+        referenced.update(_BACKTICKED_ID.findall(match.group("refs")))
+    for rid in sorted(declared - referenced):
+        fail(errors, f"{where}: {rid} 没有被任何 AC 引用，该需求没有验收锚点")
+
+
 def _check_ac_references(
     spec_text: str,
     tasks_text: str,
@@ -1064,6 +1092,7 @@ def validate_spec_lifecycle(
                 where,
                 front.get("status", ""),
             )
+            _check_requirement_ac_coverage(front, spec_text, errors, where)
 
         validate_completion_state(mid, front, spec_text, tasks_text, all_ids, errors)
         validate_outcome_gates(front, tasks_text, errors, where)

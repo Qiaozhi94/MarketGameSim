@@ -150,7 +150,8 @@ draft -> ready-for-development  三件套、Contract 变更与预注册全部评
 ready-for-development -> in-progress  0.1.4 已 done，按 tasks 顺序实施
 in-progress -> review  代码、正反回归测试、正式运行入口和证据 Schema 完成
 review -> done  E1—E7、全部 AC、统一门禁与正式证据复核通过
-not-established -> established  status=done 且 formal-research evidence index 存在
+not-established -> established  status=done 且 evidence_class: formal-research
+                               且 research_evidence 列出存在的正式证据路径
 ```
 
 不变量：目标模型不读取制度处理；三运行族互斥；四 cell 仅 `L/M` 不同；三终点不合成；
@@ -179,14 +180,20 @@ not-established -> established  status=done 且 formal-research evidence index �
 ### 验收清单
 
 - [ ] **AC-001** (`FR-021`, `SC-009`): 目标层没有制度字段依赖，约束正反测试通过。
-- [ ] **AC-002** (`FR-022`, `NFR-005`, `SC-009`): 信息游标、K 线和 EWMA 确定性通过。
-- [ ] **AC-003** (`FR-023`, `NFR-005`): 三运行族非法输入和未知字段均 fail closed。
-- [ ] **AC-004** (`FR-023`): `StressProtocolV1` 有限且四 cell 逐事件一致。
-- [ ] **AC-005** (`FR-025`): 全部成交的目标—约束—订单—风险因果链机器可验证。
+- [ ] **AC-002** (`FR-022`, `DR-501`, `TR-501`, `NFR-005`, `SC-009`): 信息游标、K 线与
+      EWMA 确定性通过；观察/决策事件记录游标边界与封闭 Schema 版本。
+- [ ] **AC-003** (`FR-023`, `IR-501`, `NFR-005`): 三运行族非法输入和未知字段均 fail
+      closed，且拒绝信息包含字段路径与原因。
+- [ ] **AC-004** (`FR-023`, `DR-501`): `StressProtocolV1` 有限、版本化、确定性序列化，
+      且四 cell 逐事件一致。
+- [ ] **AC-005** (`FR-025`, `TR-501`, `TR-502`): 全部成交的目标—约束—订单—风险因果链
+      机器可验证；`trigger_provenance` 为闭集且 `SPONTANEOUS` 无 `EXOGENOUS_STRESS`。
 - [ ] **AC-006** (`FR-024`, `SC-010`): `2 × 2` 配对计划和三终点预注册冻结。
 - [ ] **AC-007** (`FR-024`, `SC-010`): 三终点分别输出效应量、不确定性与方向不对称。
-- [ ] **AC-008** (`FR-026`, `SC-011`): benchmark/stress/旧示范证据越权测试被拒绝。
-- [ ] **AC-009** (`FR-026`, `SC-011`): 正式 evidence index 完整且所有路径存在。
+- [ ] **AC-008** (`FR-026`, `IR-502`, `SC-011`): benchmark/stress/旧示范证据越权测试被
+      拒绝，报告入口不做隐式降级或跨族聚合。
+- [ ] **AC-009** (`FR-026`, `DR-502`, `SC-011`): 正式 evidence index 完整（配置哈希、
+      代码版本、种子计划、预注册引用、三终点结果与 evidence class）且所有路径存在。
 - [ ] **AC-010** (`NFR-005`): `python tools/verify.py` 全绿且正式运行可由 manifest 复现。
 - [ ] **AC-011** (`FR-027`, `NFR-005`): R1—R4 每个成果包可由单条命令重建，manifest 的
       `evidence_class` 与运行族一致，示范/预览报告携带“不可作结论”声明。

@@ -787,6 +787,49 @@ def test_missing_test_path_blocks_only_after_draft(sv, tmp_path):
     assert fixed_errors == []
 
 
+def test_declared_requirement_without_ac_fails(sv):
+    """IR/DR/TR 这类里程碑本地需求最容易漏——D009 就是一次写下 6 条却一条 AC 都没有。"""
+    spec = _spec_with_ac(
+        "- [ ] **AC-001** (`FR-001`): 只认领了 FR。",
+        "- **FR-001**：需求一。\n- **IR-501**：接口需求。\n- **DR-501**：数据需求。\n",
+    )
+    errors: list[str] = []
+    sv._check_requirement_ac_coverage({"created": "2026-08-15"}, spec, errors, "m")
+    assert any("IR-501" in e and "验收锚点" in e for e in errors)
+    assert any("DR-501" in e for e in errors)
+
+
+def test_all_declared_requirements_covered_passes(sv):
+    spec = _spec_with_ac(
+        "- [ ] **AC-001** (`FR-001`, `IR-501`, `DR-501`): 全部认领。",
+        "- **FR-001**：需求一。\n- **IR-501**：接口需求。\n- **DR-501**：数据需求。\n",
+    )
+    errors: list[str] = []
+    sv._check_requirement_ac_coverage({"created": "2026-08-15"}, spec, errors, "m")
+    assert errors == []
+
+
+def test_us_and_sc_are_not_required_to_have_ac(sv):
+    """US 用「独立测试」段自证，SC/KR 的验收锚点在版本根，不强制里程碑 AC 覆盖。"""
+    spec = _spec_with_ac(
+        "- [ ] **AC-001** (`FR-001`): 只认领 FR。",
+        "- **FR-001**：需求一。\n- **SC-009**：成功标准。\n\n### US-501：场景\n",
+    )
+    errors: list[str] = []
+    sv._check_requirement_ac_coverage({"created": "2026-08-15"}, spec, errors, "m")
+    assert errors == []
+
+
+def test_ac_coverage_rule_not_applied_before_its_introduction(sv):
+    spec = _spec_with_ac(
+        "- [ ] **AC-001** (`FR-001`): 只认领 FR。",
+        "- **FR-001**：需求一。\n- **TR-001**：事件需求。\n",
+    )
+    errors: list[str] = []
+    sv._check_requirement_ac_coverage({"created": "2026-08-09"}, spec, errors, "m")
+    assert errors == []
+
+
 @pytest.mark.parametrize(
     "decl", ["- [x] **T001** (`FR-001`): 加粗", "- [x] T001 (`FR-001`): 不加粗"]
 )
