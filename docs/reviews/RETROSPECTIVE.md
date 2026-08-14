@@ -398,3 +398,77 @@ evidence 的 E1 cells 序列化丢弃 `effect_direction`（producer 的 >20 阈�
 且**序列化必须保留推导所需的全部中间字段**（direction 是独立于 effect_size 的语义，
 不能由后者重推）。「原样消费」的关键不是再包一层函数，而是让冻结产物的每个字段都能
 逐字传递到最终 report，任何一步的「重推导」都是 `test-simulates-itself` 的变体。
+
+---
+
+## 循环 8: 0.1.5「目标驱动代理与旗舰识别」开发前文档与门禁检视
+
+- **report_type**: doc-review + fix-verification（同期两份 CURRENT，分别闭环）
+- **周期**: 2026-08-15（1 天，2 轮）
+- **构成**: round 1 全量扫描（doc 16 条 + code 3 条）→ 5 个修复提交 → round 2 diff-only
+- **回归测试**: `tests/unit/test_spec_lifecycle.py` 由 77 增至 81 passed（净增 4 组共 12 个用例）
+- **收尾状态**: doc 3 High / code 2 High 全部 fixed；8 条 Medium + 1 Low 显式 carried-forward
+- **关键背景**: 本轮全部 19 条发现，**0 条会被既有门禁挡下**——`python tools/verify.py`
+  在检视开始时就是全绿的。绿的是「结构合法」，不是「内容一致」。
+
+### doc-review issue 表
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| R015-D001 | T200 引用 0.1.4 独占的 FR-019/FR-020，R1 成果门在 0.1.5 没有需求锚点 | High | correctness | root-cause | spec-drift | fixed | 新增 FR-027 + traceability owner/exit E7；五个成果门任务改引 FR-027 | `python tools/verify.py` 真源与生命周期校验 | 1 | 1 | cross-feature-contract-drift |
+| R015-D002 | 成果标签三值与校验器两值不一致，T213 的 experiment-preview 标记无法落地 | High | correctness | root-cause | spec-drift | fixed | experiment-preview 升为里程碑级 evidence_class；PRD/features README 写明取值与组合约束 | `test_experiment_preview_is_a_legal_evidence_class`、`test_experiment_preview_cannot_establish_research_claim` | 1 | 1 | cross-feature-contract-drift |
+| R015-D003 | R1—R5 成果门只在 tasks/PRD 存在，spec 无需求/AC/退出条件，可被静默跳过 | High | test-coverage | root-cause | spec-drift | fixed | 补 E7、AC-011、AC-012；T217/T218 核对范围由 AC-010 扩到 AC-012 | `test_ac_range_completeness_not_fooled_by_unrelated_mention` | 1 | 1 | acceptance-mapping-gap |
+| R015-D004 | design.md 未随 tasks 的成果门改动更新，三件套不同步 | Medium | correctness | root-cause | spec-drift | fixed | design §6 补成果包落盘结构，§8 补 AC-011/012 测试映射 | `python tools/verify.py` gate v1 结构校验 | 1 | 1 | cross-feature-contract-drift |
+| R015-D010 | 成果标签定义重复三处，与 docs/README 所有权地图冲突 | Medium | quality | root-cause | spec-drift | fixed | PRD 拥有语义，features/README 只拥有 frontmatter 取值与组合约束 | —（真源自校验） | 1 | 1 | duplicated-source-of-truth |
+| R015-D015 | 成果包最小构成「replay.html 或 summary.md」与 T200「两者都有」不一致 | Low | correctness | root-cause | spec-drift | fixed | FR-027 与 design §6 统一为四件套全部必需 | AC-011（实现阶段落为 `test_showcase_bundle.py`） | 1 | 1 | partial-symmetric-fix |
+| R015-D013 | 三处头部块行尾双空格被删，Markdown 渲染合并成一段 | Low | quality | root-cause | fix-regression | fixed | agent-strategy.md、0.1/spec.md、ADR-003 补回行尾双空格 | — | 1 | 2 | — |
+| R015-D016 | 上一循环闭环的 CURRENT-doc.md 删除动作从未提交，工作树长期脏 | Low | quality | root-cause | process-gap | fixed | 本循环 round 1 报告覆盖该路径并提交；闭环序列补做纯删除提交 | — | 1 | 1 | closure-not-committed |
+| R015-D017 | 0.1.5 三件套与 v0.1 根 spec 的 updated 未随本轮改动更新 | Low | quality | root-cause | process-gap | fixed | 四份文件 updated 同步为 2026-08-15，正文日期对齐 | —（无机器校验，同 D006） | 2 | 2 | — |
+| R015-D005 | Phase 2（T208—T211）没有成果门，且三处规则口径互不相同 | Medium | correctness | root-cause | spec-drift | carried-forward | 待下一循环（模板与门禁改造） | — | 1 | — | partial-symmetric-fix |
+| R015-D006 | 成果门标记格式未统一（`[成果门]` vs `[成果门:R1]`）且无机器校验 | Medium | test-coverage | root-cause | process-gap | carried-forward | 待下一循环 | — | 1 | — | rule-without-gate |
+| R015-D007 | 任务 ID 不连续，T200 排在 T201/T202 之后 | Medium | quality | root-cause | original-coding | carried-forward | 待下一循环（涉及全 tasks 重排） | — | 1 | — | — |
+| R015-D008 | H1 手动沙盒同时被写成 v0.2.1+ 与 v0.1 期间并行开发，版本归属矛盾 | Medium | correctness | root-cause | spec-drift | carried-forward | 需产品决策，非文档一致性修复 | — | 1 | — | — |
+| R015-D009 | IR/DR/TR 六条需求没有任何 AC 或退出条件引用 | Medium | test-coverage | root-cause | original-coding | carried-forward | 待 ready-for-development 评审前补齐 | — | 1 | — | acceptance-mapping-gap |
+| R015-D011 | established 所需的 evidence_class / research_evidence 字段名未写入 spec 生命周期块 | Medium | correctness | root-cause | spec-drift | carried-forward | 待下一循环 | — | 1 | — | — |
+| R015-D012 | EV 判据到三终点家族的映射未定义重叠归属与多重比较校正 | Medium | correctness | root-cause | original-coding | carried-forward | 需与预注册协议一起定 | — | 1 | — | — |
+| R015-D014 | PRD「技术里程碑与范围」与后续里程碑同级，形成空章节 | Low | quality | root-cause | original-coding | carried-forward | 纯排版 | — | 1 | — | — |
+
+### fix-verification issue 表（门禁代码）
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| R015-C001 | `research_claim_required` 字符串裸比较且字段无合法值校验，拼错或写 True 即静默失效 | High | correctness | root-cause | original-coding | fixed | BOOL_FIELDS 闭集校验 + required/not-applicable 矛盾提前到任意状态报错 | `test_research_claim_required_rejects_non_canonical_boolean`、`..._accepts_canonical_boolean`、`test_misspelled_research_claim_required_does_not_silently_disable_gate`、`test_research_claim_required_conflicts_with_not_applicable_before_done` | 1 | 1 | fail-open-validation |
+| R015-C004 | 空值 frontmatter 字段（`key:` → `[]`）让闭集判定抛 TypeError，校验器崩溃而非报错 | High | correctness | root-cause | fix-regression | fixed | 新增 `in_enum()`（非字符串一律不合法），五个闭集字段统一走它 | `test_empty_frontmatter_value_is_reported_not_crashed`（5 字段参数化） | 2 | 2 | validator-crashes-instead-of-reporting |
+| R015-C002 | `EVIDENCE_CLASSES` 缺 experiment-preview，与文档三值体系不一致 | Medium | correctness | root-cause | spec-drift | fixed | 加入闭集，同时锁定它不能建立研究声明 | `test_experiment_preview_is_a_legal_evidence_class`、`test_experiment_preview_cannot_establish_research_claim` | 1 | 1 | cross-feature-contract-drift |
+| R015-C005 | experiment-preview 与 formal-research 两个拒绝分支重复触发，同一配置报两条错 | Low | quality | root-cause | fix-regression | fixed | 改为 if/elif，保留更具体的消息 | `test_established_requires_done_formal_evidence` | 2 | 2 | — |
+| R015-C003 | features/README 声称 gate v1 校验 AC 引用的 requirement 与测试路径，实现不存在 | Medium | test-coverage | root-cause | process-gap | carried-forward | 需先定 draft 阶段是否放宽，且会让当前多个里程碑 AC 立刻失败 | — | 1 | — | rule-without-gate |
+
+### 模式教训
+
+**`origin` 分布**：spec-drift 8 条、process-gap 4 条、original-coding 5 条、
+fix-regression 3 条。**spec-drift 占比最高（38%）且全部集中在同一个动作上**——
+`f8f84b9` 引入成果门体系时只改了 `tasks.md` 与 PRD，没有回到 `spec.md`/`design.md`。
+本仓库的三件套结构本来就是为了防这个，但改动方向是"从 tasks 往回"时，没有任何门禁
+提醒你 spec 还没跟上。**新增一类跨里程碑机制（成果门、证据标签这种）时，正确的落地
+顺序是 spec → design → tasks，反过来一定漏。**
+
+**`rule-without-gate` 复现 3 次**（D006 成果门标记、D009/C003 的 AC 校验承诺、
+D017 的 updated 字段）：规则写在 README/模板里但没有机器校验。这与 RETROSPECTIVE
+循环 1 的 `marked-done-not-implemented` 是同源问题的两种形态——前者是"规则没有执法者"，
+后者是"状态没有验证者"。**判据很简单：一条规则如果只能靠人工检视发现违反，它在
+下一次忙碌的提交里一定会被违反。**
+
+**`fix-regression` 3 条，全部由 round 2 抓到，round 1 物理上不存在**：C004（校验器
+崩溃）、C005（重复分支）、D013（行尾空格）。其中 C004 最典型——为了修 fail-open 而
+新增的闭集判定，自己引入了一条 crash 路径，而且这条路径在四个旧字段上早就潜伏着。
+**这直接印证协议"最低 2 轮"的必要性：如果 round 1 修完就宣布闭环，会把一个把 CI
+变成堆栈跟踪的 bug 留在门禁核心里。**
+
+**存活轮数**：全部 fixed 项的 `resolved_round - first_seen_round` 均为 0，最长 1
+（D013、D017）。相比循环 1 的 21 轮、循环 7 的 11 轮，本轮 2 轮闭环——差别不在
+问题更简单，而在**首轮就定了有限清单并把 Medium 显式 carried-forward**，没有让
+"还能挑出中等问题"驱动新一轮。
+
+**`validator-crashes-instead-of-reporting`（新模式）**：校验器崩溃在可用性上等价于
+校验缺失——CI 打出的是堆栈，读的人得先判断"是校验器坏了还是规格写错了"，定位成本
+完全不同。所有闭集判定都应先做类型收敛（`isinstance(value, str)`）再查集合。

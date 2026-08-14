@@ -1,11 +1,11 @@
 ---
-report_type: code-review
-round: 1
+report_type: fix-verification
+round: 2
 date: 2026-08-15
-prior_report: 无（与 CURRENT-doc.md 同批产生，拆分为独立循环）
-scope: full-scan
-stop_condition_met: false
-severity_counts: {critical: 0, high: 1, medium: 2, low: 0}
+prior_report: round 1（commit 7532c5d）
+scope: diff-only
+stop_condition_met: true
+severity_counts: {critical: 0, high: 0, medium: 1, low: 0}
 issues:
   - id: R015-C001
     title: research_claim_required 用字符串比较且字段本身无合法值校验，拼错或写 True 即静默失效
@@ -14,12 +14,12 @@ issues:
     root_cause: root-cause
     origin: original-coding
     pattern_tag: fail-open-validation
-    status: open
-    fix_summary: ""
-    regression_test: ""
+    status: fixed
+    fix_summary: 新增 BOOL_FIELDS 闭集校验（只允许 true/false），required 解析成布尔量后再比较；并把 required=true 与 not-applicable 的矛盾提前到任意状态就报错
+    regression_test: tests/unit/test_spec_lifecycle.py::test_research_claim_required_rejects_non_canonical_boolean[True|yes|TRUE|1]、::test_research_claim_required_accepts_canonical_boolean[true|false]、::test_misspelled_research_claim_required_does_not_silently_disable_gate、::test_research_claim_required_conflicts_with_not_applicable_before_done
     location: tools/spec_validation.py:216
     first_seen_round: 1
-    resolved_round:
+    resolved_round: 1
   - id: R015-C002
     title: EVIDENCE_CLASSES 缺 experiment-preview，与文档定义的三值标签体系不一致
     severity: medium
@@ -27,12 +27,38 @@ issues:
     root_cause: root-cause
     origin: spec-drift
     pattern_tag: cross-feature-contract-drift
-    status: open
-    fix_summary: ""
-    regression_test: ""
+    status: fixed
+    fix_summary: experiment-preview 加入 EVIDENCE_CLASSES（用户决定升为里程碑级证据类别），同时在 validate_research_claim 里锁定它不能建立研究声明
+    regression_test: tests/unit/test_spec_lifecycle.py::test_experiment_preview_is_a_legal_evidence_class、::test_experiment_preview_cannot_establish_research_claim
     location: tools/spec_validation.py:20
     first_seen_round: 1
-    resolved_round:
+    resolved_round: 1
+  - id: R015-C004
+    title: 空值 frontmatter 字段让闭集判定抛 TypeError，校验器崩溃而不是报错
+    severity: high
+    category: correctness
+    root_cause: root-cause
+    origin: fix-regression
+    pattern_tag: validator-crashes-instead-of-reporting
+    status: fixed
+    fix_summary: 新增 in_enum()（非字符串一律不合法），kind/status/research_claim_status/evidence_class/research_claim_required 五个闭集字段全部改走它
+    regression_test: tests/unit/test_spec_lifecycle.py::test_empty_frontmatter_value_is_reported_not_crashed[五个字段各一例]
+    location: tools/spec_validation.py:148
+    first_seen_round: 2
+    resolved_round: 2
+  - id: R015-C005
+    title: experiment-preview 与 formal-research 两个拒绝分支重复触发，同一配置报两条错
+    severity: low
+    category: quality
+    root_cause: root-cause
+    origin: fix-regression
+    pattern_tag: ""
+    status: fixed
+    fix_summary: 改为 if/elif，保留更具体的那条消息
+    regression_test: tests/unit/test_spec_lifecycle.py::test_established_requires_done_formal_evidence（既有断言仍成立）
+    location: tools/spec_validation.py:196
+    first_seen_round: 2
+    resolved_round: 2
   - id: R015-C003
     title: features/README 声称 gate v1 校验 AC 引用的 requirement 与测试路径，实现不存在
     severity: medium
@@ -40,7 +66,7 @@ issues:
     root_cause: root-cause
     origin: process-gap
     pattern_tag: rule-without-gate
-    status: open
+    status: carried-forward
     fix_summary: ""
     regression_test: ""
     location: tools/spec_validation.py:531
@@ -48,88 +74,63 @@ issues:
     resolved_round:
 ---
 
-# spec_validation.py 新增研究声明/完成态门禁检视（code-review）
+# spec_validation.py 研究声明/完成态门禁检视（fix-verification）
 
 ## 结论先行
 
-**不通过。** `42d424b` 新增的 `validate_research_claim` 与 `validate_completion_state`
-方向正确、负向路径也大体齐备（`research_evidence` 做了绝对路径、逃逸、存在性三重
-校验，legacy 迁移映射做了唯一性与目标存在性校验，`_without_fenced_code` 对未闭合围栏
-选择 fail-closed——这几处值得保留）。问题集中在**新门禁自身的开关是 fail-open 的**：
-一个 frontmatter 键拼错就能让整条研究声明门禁静默消失，而这正是它要防的那类事故。
+**通过（闭环候选）。** round 1 的 1 条 High（研究声明门禁 fail-open）已修；round 2
+的 diff-only 复核在**我自己上一轮的修复里**抓到 2 条新问题，其中 C004 是真正的
+fix-regression：新加的 `value not in BOOL_VALUES` 在字段写成 `key:`（空值）时会抛
+`TypeError: unhashable type: 'list'`——校验器崩溃与校验放行同样糟。已用统一的
+`in_enum()` 修掉，并顺带覆盖了四个早就存在同样隐患的旧字段。
 
-与文档侧 3 条重合发现（标签体系、承诺未实现的校验）在此以代码视角单独追踪，闭环
-证据是 `tests/unit/test_spec_lifecycle.py` 的负向变异测试，不是文档改动。
+这正是协议"最低 2 轮"的价值：C004/C005 在 round 1 物理上不存在，只有第 2 轮的
+diff 复核抓得到。
+
+C003（README 承诺但未实现的 AC 校验）为 Medium，显式 carried-forward。
 
 ## 发现
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| R015-C001 | `research_claim_required` 用字符串比较且字段本身无合法值校验，拼错或写 `True` 即静默失效 | High | correctness | root-cause | original-coding | open | — | — | 1 | — | fail-open-validation |
-| R015-C002 | `EVIDENCE_CLASSES` 缺 `experiment-preview`，与文档定义的三值标签体系不一致 | Medium | correctness | root-cause | spec-drift | open | — | — | 1 | — | cross-feature-contract-drift |
-| R015-C003 | features/README 声称 gate v1 校验 AC 引用的 requirement 与测试路径，实现不存在 | Medium | test-coverage | root-cause | process-gap | open | — | — | 1 | — | rule-without-gate |
+| R015-C001 | `research_claim_required` 字符串裸比较且无合法值校验，拼错或写 True 即静默失效 | High | correctness | root-cause | original-coding | fixed | BOOL_FIELDS 闭集校验 + required/not-applicable 矛盾提前报错 | `test_research_claim_required_rejects_non_canonical_boolean` 等 4 组 | 1 | 1 | fail-open-validation |
+| R015-C004 | 空值字段让闭集判定抛 TypeError，校验器崩溃而不是报错 | High | correctness | root-cause | fix-regression | fixed | 新增 `in_enum()`，五个闭集字段统一走它 | `test_empty_frontmatter_value_is_reported_not_crashed`（5 个字段） | 2 | 2 | validator-crashes-instead-of-reporting |
+| R015-C002 | `EVIDENCE_CLASSES` 缺 experiment-preview，与文档三值体系不一致 | Medium | correctness | root-cause | spec-drift | fixed | 加入闭集并锁定它不能建立研究声明 | `test_experiment_preview_is_a_legal_evidence_class` 等 2 条 | 1 | 1 | cross-feature-contract-drift |
+| R015-C005 | 两个拒绝分支重复触发，同一配置报两条错 | Low | quality | root-cause | fix-regression | fixed | 改为 if/elif，保留更具体的消息 | `test_established_requires_done_formal_evidence` | 2 | 2 | — |
+| R015-C003 | README 声称 gate v1 校验 AC 引用的 requirement 与测试路径，实现不存在 | Medium | test-coverage | root-cause | process-gap | carried-forward | — | — | 1 | — | rule-without-gate |
 
-## 逐条问题与建议修复
+## round 2 复核记录（diff-only）
 
-### R015-C001（High）
+复核范围：`3d24ba3` 的 diff（`tools/spec_validation.py` 与
+`tests/unit/test_spec_lifecycle.py`），不重读整个校验器。
 
-```python
-if (
-    front.get("status") == "done"
-    and front.get("research_claim_required") == "true"
-    and claim != "established"
-):
-```
+1. **C004（fix-regression）**：实测复现——`research_claim_required:` 空值经
+   `parse_frontmatter` 得到 `[]`，`[] in {"true","false"}` 直接抛 `TypeError`。
+   同样的写法在 `kind`/`status`/`research_claim_status`/`evidence_class` 上早就存在，
+   只是没人写过空值。修复用 `in_enum()` 统一处理，回归测试对五个字段各测一次，
+   并断言 `[]` 这个前提本身仍成立（`parse_frontmatter` 改行为时测试会明说要重写）。
+2. **C005（quality）**：`experiment-preview` 的拒绝分支与既有 `!= formal-research`
+   分支重复触发。改 if/elif。
+3. **C001 的修复是根因修复**：判定标准（协议 §4）——"以后有人把闭集校验删掉，
+   测试会红吗？"会。四组测试分别锁住非闭集值被拒、闭集值通过、拼错 key 时第二道
+   防线仍生效、矛盾组合在 draft 阶段就报错。
+4. **未发现其它 fix-regression**：`validate_completion_state` 与 legacy 迁移映射逻辑
+   本轮未改动，不在 diff 范围内。
 
-`parse_frontmatter` 是自研子集解析器，`research_claim_required: true` 得到字符串
-`"true"`，所以当前 v0.1 spec 能命中。但：
+## carried-forward 的理由
 
-- 写成 `True` / `yes` / `"true"` 之外的任何变体 → 条件为假，门禁消失，无任何报错；
-- 把 key 拼成 `research_claim_requred` → 同样静默放行；
-- `validate_frontmatter_meta` 对 `research_claim_status` 做了闭集校验，但对
-  `research_claim_required` 没有任何合法值校验。
-
-这与本仓库 fail-closed 原则相反，也和 `research_claim_status` 的处理不对称
-（`partial-symmetric-fix`）。更关键的是：这个门禁保护的是"v0.1 能否签收"这件事，
-静默失效等于签收闸门不存在。
-
-建议修复：把该字段纳入 `validate_frontmatter_meta` 的闭集校验（合法值仅
-`true`/`false`，缺省视为 `false`），比较改为解析后的布尔量；同时对
-`research_claim_status: not-applicable` 与 `research_claim_required: true` 并存的组合
-显式报错（当前只在 `status == done` 时才检查，draft 阶段的矛盾配置可以一直潜伏）。
-
-配套回归测试（按 CLAUDE.md「正反两种结果都要断言」要求）：
-`research_claim_required: True` / 拼错 key / 合法 `true` 三个变体，前两者必须被拒、
-第三者在 `established` 时通过。
-
-### R015-C002（Medium）
-
-`EVIDENCE_CLASSES = {"engineering-demonstration", "formal-research"}` 与 PRD §15、
-`docs/features/README.md` 定义的三值标签冲突（详见 CURRENT-doc.md R015-D002）。
-修复方向取决于文档侧那条决定；无论选哪边，都需要一条负向测试锁定
-"`experiment-preview` 能/不能出现在 frontmatter"这个结论，避免以后被无声改回。
-
-### R015-C003（Medium）
-
-`docs/features/README.md` 的 gate 规则写着 gate v1"额外校验……AC 引用真实存在的
-requirement 与仓库内测试路径"。`validate_gate1` 实际只做了：固定章节、Q/DQ 关闭、
-AC 范围上界完整性。**AC → requirement 存在性、AC → 仓库内测试路径存在性两项都没有
-实现。** 0.1.5 的 AC-001—AC-010 恰好完全没有引用任何测试路径，也没被拦下。
-
-这条与 R015-D009（IR/DR/TR 无 AC 覆盖）互为因果：如果这个门禁存在，D009 在写 spec
-的当天就会被拦下，而不是靠人工检视发现。
-
-建议修复：实现 `_check_ac_references`，对 gate v1 的 spec 校验每条 AC 括号内引用的
-ID 必须在本 spec 声明过，并要求 AC 或其对应 tasks 项至少给出一个存在的仓库内测试
-路径；对 `draft` 状态可放宽为"路径可不存在但必须声明"，避免阻塞尚未开工的里程碑。
+**C003**（gate v1 的 AC → requirement / 测试路径校验未实现）：实现它需要定义
+"draft 阶段是否放宽"的规则，并会立刻让当前多个里程碑的 AC 失败（0.1.5 的
+AC-001—AC-012 都没写测试路径）。这是一次独立的门禁改造 + 全仓规格回填，不应塞进
+本轮的 fail-open 修复。它与文档侧 D006/D009 属同一模式（`rule-without-gate`），
+建议合并成下一个循环处理。
 
 ## 停止条件评估
 
 | 条件 | 状态 |
 |---|---|
-| Critical/High 清零 | 未满足（1 条 High） |
-| 本地 `python tools/verify.py` 全绿 | 已满足（1822 passed）——但三条发现均无测试覆盖 |
-| CI 最终门禁触发一次 | 未到收敛候选轮，不触发 |
-| 图谱 `detect_changes_tool` 复核 | 修复落地后需跑一次 |
-
-下一轮（round 2）为 `diff-only`，只审修复 diff 与新增测试，不重新通读 `spec_validation.py`。
+| Critical/High 清零 | ✅ C001、C004 均已修，剩 1 Medium carried-forward |
+| 本地 `python tools/verify.py` 全绿 | ✅ 提交前每次跑过（test_spec_lifecycle.py 77→81 passed） |
+| 最少 2 轮，第 2 轮 diff-only | ✅ round 2 抓到 2 条，其中 1 条 fix-regression |
+| 图谱 `detect_changes_tool` | ✅ 每次提交后跑过；报告的 "Untested: in_enum/validate_*" 是误报——这些函数经 `sv` fixture 动态加载调用，图谱静态解析看不到该边 |
+| CI 最终门禁跑绿 | 待触发（本轮为收敛候选轮，push 后确认） |
