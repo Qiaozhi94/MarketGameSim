@@ -72,6 +72,16 @@ def fail(errors: list[str], msg: str) -> None:
     errors.append(msg)
 
 
+def in_enum(value: object, allowed: set[str]) -> bool:
+    """闭集判定：非字符串一律不合法，且不得让校验器自己崩掉。
+
+    `parse_frontmatter` 对 `key:`（空值）产出的是 `[]`，直接 `value in {...}` 会抛
+    `TypeError: unhashable type`——校验器崩溃和校验通过一样糟：CI 报的是堆栈，不是
+    "这个字段写错了"，定位成本完全不同。
+    """
+    return isinstance(value, str) and value in allowed
+
+
 # --------------------------------------------------------------------------- #
 # frontmatter 解析
 # --------------------------------------------------------------------------- #
@@ -138,24 +148,24 @@ def validate_frontmatter_meta(front: dict, errors: list[str], where: str) -> Non
         fail(errors, f"{where}: 缺少 frontmatter")
         return
     kind = front.get("kind")
-    if kind not in KINDS:
+    if not in_enum(kind, KINDS):
         fail(errors, f"{where}: kind={kind!r} 非法（应为 version-spec/milestone）")
     status = front.get("status")
-    if status not in STATUSES:
+    if not in_enum(status, STATUSES):
         fail(errors, f"{where}: status={status!r} 非法")
     research_claim_status = front.get("research_claim_status")
-    if research_claim_status not in RESEARCH_CLAIM_STATUSES:
+    if not in_enum(research_claim_status, RESEARCH_CLAIM_STATUSES):
         fail(
             errors,
             f"{where}: research_claim_status={research_claim_status!r} 非法"
             "（应为 not-applicable/not-established/established）",
         )
     evidence_class = front.get("evidence_class")
-    if evidence_class is not None and evidence_class not in EVIDENCE_CLASSES:
+    if evidence_class is not None and not in_enum(evidence_class, EVIDENCE_CLASSES):
         fail(errors, f"{where}: evidence_class={evidence_class!r} 非法")
     for key in BOOL_FIELDS:
         value = front.get(key)
-        if value is not None and value not in BOOL_VALUES:
+        if value is not None and not in_enum(value, BOOL_VALUES):
             fail(errors, f"{where}: {key}={value!r} 非法（只允许 true/false）")
     if not front.get("id"):
         fail(errors, f"{where}: 缺 id")
@@ -199,11 +209,12 @@ def validate_research_claim(
         # 修的人已经不是写的人。
         fail(errors, f"{where}: research_claim_required=true 与 not-applicable 矛盾")
     if claim == "established":
-        if front.get("evidence_class") == "experiment-preview":
-            fail(errors, f"{where}: experiment-preview 是预览证据，不能建立研究声明")
         if front.get("status") != "done":
             fail(errors, f"{where}: research_claim_status=established 但 status 不是 done")
-        if front.get("evidence_class") != "formal-research":
+        evidence_class = front.get("evidence_class")
+        if evidence_class == "experiment-preview":
+            fail(errors, f"{where}: experiment-preview 是预览证据，不能建立研究声明")
+        elif evidence_class != "formal-research":
             fail(errors, f"{where}: established 必须声明 evidence_class=formal-research")
         refs = front.get("research_evidence")
         if not isinstance(refs, list) or not refs:
