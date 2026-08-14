@@ -16,8 +16,14 @@ import re
 
 STATUSES = {"draft", "ready-for-development", "in-progress", "review", "done"}
 RESEARCH_CLAIM_STATUSES = {"not-applicable", "not-established", "established"}
-EVIDENCE_CLASSES = {"engineering-demonstration", "formal-research"}
+EVIDENCE_CLASSES = {"engineering-demonstration", "experiment-preview", "formal-research"}
 KINDS = {"version-spec", "milestone"}
+
+# frontmatter 里的布尔字段：`parse_frontmatter` 只产出字符串，因此合法值是闭集而不是
+# 「Python 真值」。不做闭集校验的话，`True`/`yes` 这类变体或拼错的 key 会让依赖它的
+# 门禁静默失效（fail-open）——研究声明门禁保护的是版本能否签收，不能靠拼写运气。
+BOOL_FIELDS = ("research_claim_required",)
+BOOL_VALUES = {"true", "false"}
 
 # spec.md / design.md / tasks.md 的固定顶层章节（§2.3.1）。
 SPEC_SECTIONS = [
@@ -147,6 +153,10 @@ def validate_frontmatter_meta(front: dict, errors: list[str], where: str) -> Non
     evidence_class = front.get("evidence_class")
     if evidence_class is not None and evidence_class not in EVIDENCE_CLASSES:
         fail(errors, f"{where}: evidence_class={evidence_class!r} 非法")
+    for key in BOOL_FIELDS:
+        value = front.get(key)
+        if value is not None and value not in BOOL_VALUES:
+            fail(errors, f"{where}: {key}={value!r} 非法（只允许 true/false）")
     if not front.get("id"):
         fail(errors, f"{where}: 缺 id")
     if not front.get("version"):
@@ -183,7 +193,14 @@ def validate_research_claim(
 ) -> None:
     """研究声明与工程生命周期正交，但 established 必须有正式仓库内证据。"""
     claim = front.get("research_claim_status")
+    required = front.get("research_claim_required") == "true"
+    if required and claim == "not-applicable":
+        # 不等到 done 才报：草稿期就矛盾的配置一旦潜伏下来，等到签收那天才暴露，
+        # 修的人已经不是写的人。
+        fail(errors, f"{where}: research_claim_required=true 与 not-applicable 矛盾")
     if claim == "established":
+        if front.get("evidence_class") == "experiment-preview":
+            fail(errors, f"{where}: experiment-preview 是预览证据，不能建立研究声明")
         if front.get("status") != "done":
             fail(errors, f"{where}: research_claim_status=established 但 status 不是 done")
         if front.get("evidence_class") != "formal-research":
@@ -205,11 +222,7 @@ def validate_research_claim(
                     continue
                 if not resolved.is_file():
                     fail(errors, f"{where}: research_evidence 不存在：{ref!r}")
-    if (
-        front.get("status") == "done"
-        and front.get("research_claim_required") == "true"
-        and claim != "established"
-    ):
+    if front.get("status") == "done" and required and claim != "established":
         fail(errors, f"{where}: 该规格要求正式研究声明，status=done 时必须 established")
     if is_version and front.get("status") == "done" and claim == "not-established":
         fail(errors, f"{where}: 版本 status=done 时研究声明不得仍为 not-established")
