@@ -197,6 +197,124 @@ def test_established_with_repository_evidence_passes(sv, tmp_path):
     assert errors == []
 
 
+@pytest.mark.parametrize("value", ["True", "yes", "TRUE", "1", ""])
+def test_research_claim_required_rejects_non_canonical_boolean(sv, value):
+    """`parse_frontmatter` 只产字符串：非闭集写法必须报错，不能静默当成 false。
+
+    这一条挡的是 fail-open——`research_claim_required: True` 曾经能通过元数据校验，
+    然后让 `status=done` 时的研究声明门禁整条消失，且没有任何提示。
+    """
+    errors: list[str] = []
+    sv.validate_frontmatter_meta(
+        {
+            "kind": "milestone",
+            "id": "0.1.5",
+            "version": "0.1",
+            "status": "draft",
+            "research_claim_status": "not-established",
+            "research_claim_required": value,
+            "gate_version": 1,
+        },
+        errors,
+        "x",
+    )
+    assert any("research_claim_required" in e and "非法" in e for e in errors)
+
+
+@pytest.mark.parametrize("value", ["true", "false"])
+def test_research_claim_required_accepts_canonical_boolean(sv, value):
+    errors: list[str] = []
+    sv.validate_frontmatter_meta(
+        {
+            "kind": "milestone",
+            "id": "0.1.5",
+            "version": "0.1",
+            "status": "draft",
+            "research_claim_status": "not-established",
+            "research_claim_required": value,
+            "gate_version": 1,
+        },
+        errors,
+        "x",
+    )
+    assert errors == []
+
+
+def test_misspelled_research_claim_required_does_not_silently_disable_gate(sv, tmp_path):
+    """key 拼错时门禁必须仍然拦住 done：拼写错误不得成为放行通道。
+
+    拼错的 key 无法被闭集校验发现（校验器不知道它本该叫什么），因此第二道防线是
+    版本根 `status=done` 时 `research_claim_status` 不得仍为 not-established——
+    本测试锁定的正是这道防线在 required 失效时仍然生效。
+    """
+    errors: list[str] = []
+    sv.validate_research_claim(
+        {
+            "status": "done",
+            "research_claim_status": "not-established",
+            "research_claim_requred": "true",  # 故意拼错
+        },
+        tmp_path,
+        errors,
+        "version v0.1",
+        is_version=True,
+    )
+    assert any("not-established" in e for e in errors)
+
+
+def test_experiment_preview_cannot_establish_research_claim(sv, tmp_path):
+    evidence = tmp_path / "docs" / "experiments" / "evidence.json"
+    evidence.parent.mkdir(parents=True)
+    evidence.write_text("{}", encoding="utf-8")
+    errors: list[str] = []
+    sv.validate_research_claim(
+        {
+            "status": "done",
+            "research_claim_status": "established",
+            "evidence_class": "experiment-preview",
+            "research_evidence": ["docs/experiments/evidence.json"],
+        },
+        tmp_path,
+        errors,
+        "milestone 0.1.5",
+    )
+    assert any("experiment-preview" in e for e in errors)
+
+
+def test_experiment_preview_is_a_legal_evidence_class(sv):
+    """预览是里程碑级证据类别（PRD §15 成果口径），只是不能签收研究声明。"""
+    errors: list[str] = []
+    sv.validate_frontmatter_meta(
+        {
+            "kind": "milestone",
+            "id": "0.1.5",
+            "version": "0.1",
+            "status": "in-progress",
+            "research_claim_status": "not-established",
+            "evidence_class": "experiment-preview",
+            "gate_version": 1,
+        },
+        errors,
+        "x",
+    )
+    assert errors == []
+
+
+def test_research_claim_required_conflicts_with_not_applicable_before_done(sv, tmp_path):
+    errors: list[str] = []
+    sv.validate_research_claim(
+        {
+            "status": "draft",
+            "research_claim_status": "not-applicable",
+            "research_claim_required": "true",
+        },
+        tmp_path,
+        errors,
+        "milestone 0.1.5",
+    )
+    assert any("矛盾" in e for e in errors)
+
+
 def test_research_spec_cannot_close_as_not_applicable_when_claim_required(sv, tmp_path):
     errors: list[str] = []
     sv.validate_research_claim(
