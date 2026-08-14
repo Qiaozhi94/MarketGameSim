@@ -31,12 +31,19 @@ docs/features/
 ## 状态唯一真源
 
 - **唯一状态真源**是每个版本/里程碑 `spec.md` 的 frontmatter `status`。
+- `research_claim_status` 是与工程生命周期正交的研究声明状态，只允许
+  `not-applicable`、`not-established`、`established`；它不替代或复制 `status`。
 - `design.md`、`tasks.md`、`README.md`、`CLAUDE.md` **不得**声明第二份独立 Status；
   它们只链接或展示由 spec 派生的索引。
 - 状态机：`draft → ready-for-development → in-progress → review → done`。
 - `status` 表示生命周期；`prerequisites` 表示调度依赖；两者分离，不再使用
   「Ready after 0.1.3」这类混合自由文本。
 - 版本根只有在全部里程碑 `done` 且收口检查通过后才能变为 `done`。
+- `research_claim_status: established` 只允许与 `status: done`、
+  `evidence_class: formal-research` 和存在的 `research_evidence` 路径同时出现；版本根
+  `done` 时不得仍为 `not-established`。
+- 需要以研究声明作为退出条件的 spec 必须声明 `research_claim_required: true`；此时
+  `status: done` 与 `research_claim_status: established` 必须同时成立。
 
 ## 三件套职责
 
@@ -50,8 +57,11 @@ docs/features/
 
 - `gate_version: 0`：仅用于已确认的 legacy 里程碑（0.1.1—0.1.3），只执行元数据、
   状态唯一性、路径、链接与现有 traceability 校验。**新建或回退到 v0 必须失败。**
+- legacy `done` 若仍有未勾任务，spec 必须声明 `legacy_open_tasks_migrated_to`，且每项任务
+  用 `[migrated-to: <milestone>/<task>]` 唯一映射到真实后继任务；不得伪造勾选。
 - `gate_version: 1`：新里程碑（0.1.4 起）必选。额外校验三件套齐全、顶层结构与模板
-  完全一致、Q/DQ 全部关闭、AC 引用真实存在的 requirement 与仓库内测试路径。
+  完全一致、Q/DQ 全部关闭、AC 引用真实存在的 requirement 与仓库内测试路径；标记
+  `done` 时 tasks 与 AC 必须全部完成。
 
 ### 固定顶层章节
 

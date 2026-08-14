@@ -10,7 +10,8 @@
     "0.1.1": "docs/features/0.1/0.1.1-minimal-kernel",
     "0.1.2": "docs/features/0.1/0.1.2-leverage-and-first-experiment",
     "0.1.3": "docs/features/0.1/0.1.3-robustness",
-    "0.1.4": "docs/features/0.1/0.1.4-replay-and-report"
+    "0.1.4": "docs/features/0.1/0.1.4-replay-and-report",
+    "0.1.5": "docs/features/0.1/0.1.5-goal-driven-flagship"
   },
   "requirements": {
     "US-1": {
@@ -391,6 +392,78 @@
       ],
       "note": "K 线视图"
     },
+    "FR-021": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.5",
+          "exits": [
+            "E1"
+          ]
+        }
+      ],
+      "note": "目标形成与制度约束解耦"
+    },
+    "FR-022": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.5",
+          "exits": [
+            "E2"
+          ]
+        }
+      ],
+      "note": "逐代理公开事件游标与持久 EWMA"
+    },
+    "FR-023": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.5",
+          "exits": [
+            "E3"
+          ]
+        }
+      ],
+      "note": "三运行族与 fail-closed 门禁"
+    },
+    "FR-024": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.5",
+          "exits": [
+            "E5"
+          ]
+        }
+      ],
+      "note": "2x2 制度因子与三终点家族"
+    },
+    "FR-025": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.5",
+          "exits": [
+            "E4"
+          ]
+        }
+      ],
+      "note": "目标、约束与触发来源审计"
+    },
+    "FR-026": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.5",
+          "exits": [
+            "E6"
+          ]
+        }
+      ],
+      "note": "工程状态与研究声明证据门槛"
+    },
     "KR-001": {
       "status": "owned",
       "owners": [
@@ -527,6 +600,21 @@
       ],
       "note": "分层解耦"
     },
+    "NFR-005": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.5",
+          "exits": [
+            "E1",
+            "E2",
+            "E3",
+            "E4"
+          ]
+        }
+      ],
+      "note": "目标、信息与运行族确定性及 fail-closed"
+    },
     "SC-001": {
       "status": "owned",
       "owners": [
@@ -632,6 +720,43 @@
         }
       ],
       "note": "逐帧回放一致"
+    },
+    "SC-009": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.5",
+          "exits": [
+            "E1",
+            "E2"
+          ]
+        }
+      ],
+      "note": "目标约束解耦与信息合同"
+    },
+    "SC-010": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.5",
+          "exits": [
+            "E5"
+          ]
+        }
+      ],
+      "note": "四 cell 三终点正式推断"
+    },
+    "SC-011": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.5",
+          "exits": [
+            "E6"
+          ]
+        }
+      ],
+      "note": "正式研究证据与结论权限"
     }
   },
   "tracked_id_families": [

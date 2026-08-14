@@ -4,9 +4,12 @@ id: 0.1.2
 parent: v0.1-belief-testing-laboratory
 version: "0.1"
 status: done
+research_claim_status: not-established
+evidence_class: engineering-demonstration
+legacy_open_tasks_migrated_to: 0.1.5
 gate_version: 0
 created: 2026-08-01
-updated: 2026-08-09
+updated: 2026-08-14
 prerequisites:
   - 0.1.1
 ---
@@ -21,7 +24,7 @@ prerequisites:
 在 0.1.1 的确定性内核上加杠杆，并跑通**第一个端到端的预注册实验**——从配置、运行、
 原始证据一路追溯到条件性结论。
 
-本阶段回答旗舰问题的第一半：**杠杆上限分布与维持保证金率，是否足以产生自我强化的
+本阶段原计划回答旗舰问题的第一半：**杠杆上限分布与维持保证金率，是否足以产生自我强化的
 价格崩盘？**
 
 ## 2. 范围

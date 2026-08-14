@@ -51,6 +51,8 @@
 
 - **状态唯一真源**是各版本/里程碑 `spec.md` 的 frontmatter `status`；`design.md`、
   `tasks.md`、README、CLAUDE 不得声明第二份独立状态。
+- `research_claim_status` 与工程 `status` 正交，只表示研究声明是否建立，不得被解释为
+  第二份工程状态；合法值与证据门槛见 `docs/features/README.md`。
 - 状态机：`draft → ready-for-development → in-progress → review → done`。
 - 前置条件用结构化 `prerequisites` ID，前置未达成时实施入口由门禁判定 blocked。
 - 进入 `ready-for-development` 前：spec 覆盖负责的 requirement；前置为存在且无循环的
@@ -58,6 +60,8 @@
   scope/exit 与 spec 一致。
 - `done` 时：tasks、AC 与退出条件非空且全部完成，每条 AC 引用存在的仓库内测试路径；
   不因 checkbox 反向推断状态。
+- legacy gate v0 的历史未完成任务只允许通过显式、逐项且机器可验的迁移映射保留，不能
+  事后伪勾；gate v1 不设例外。
 
 ## 4. 实施禁止项（原则 6 的阻断规则）
 

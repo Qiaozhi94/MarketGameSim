@@ -15,6 +15,8 @@ import pathlib
 import re
 
 STATUSES = {"draft", "ready-for-development", "in-progress", "review", "done"}
+RESEARCH_CLAIM_STATUSES = {"not-applicable", "not-established", "established"}
+EVIDENCE_CLASSES = {"engineering-demonstration", "formal-research"}
 KINDS = {"version-spec", "milestone"}
 
 # spec.md / design.md / tasks.md 的固定顶层章节（§2.3.1）。
@@ -135,6 +137,16 @@ def validate_frontmatter_meta(front: dict, errors: list[str], where: str) -> Non
     status = front.get("status")
     if status not in STATUSES:
         fail(errors, f"{where}: status={status!r} 非法")
+    research_claim_status = front.get("research_claim_status")
+    if research_claim_status not in RESEARCH_CLAIM_STATUSES:
+        fail(
+            errors,
+            f"{where}: research_claim_status={research_claim_status!r} 非法"
+            "（应为 not-applicable/not-established/established）",
+        )
+    evidence_class = front.get("evidence_class")
+    if evidence_class is not None and evidence_class not in EVIDENCE_CLASSES:
+        fail(errors, f"{where}: evidence_class={evidence_class!r} 非法")
     if not front.get("id"):
         fail(errors, f"{where}: 缺 id")
     if not front.get("version"):
@@ -155,6 +167,52 @@ def check_status_uniqueness(
         fail(errors, f"{where} design.md 不得声明独立 status")
     if "status" in parse_frontmatter(tasks_text):
         fail(errors, f"{where} tasks.md 不得声明独立 status")
+    if "research_claim_status" in parse_frontmatter(design_text):
+        fail(errors, f"{where} design.md 不得声明独立 research_claim_status")
+    if "research_claim_status" in parse_frontmatter(tasks_text):
+        fail(errors, f"{where} tasks.md 不得声明独立 research_claim_status")
+
+
+def validate_research_claim(
+    front: dict,
+    root: pathlib.Path,
+    errors: list[str],
+    where: str,
+    *,
+    is_version: bool = False,
+) -> None:
+    """研究声明与工程生命周期正交，但 established 必须有正式仓库内证据。"""
+    claim = front.get("research_claim_status")
+    if claim == "established":
+        if front.get("status") != "done":
+            fail(errors, f"{where}: research_claim_status=established 但 status 不是 done")
+        if front.get("evidence_class") != "formal-research":
+            fail(errors, f"{where}: established 必须声明 evidence_class=formal-research")
+        refs = front.get("research_evidence")
+        if not isinstance(refs, list) or not refs:
+            fail(errors, f"{where}: established 但缺 research_evidence 列表")
+        else:
+            for ref in refs:
+                candidate = pathlib.Path(ref)
+                if candidate.is_absolute():
+                    fail(errors, f"{where}: research_evidence 必须是仓库内相对路径：{ref!r}")
+                    continue
+                resolved = (root / candidate).resolve()
+                try:
+                    resolved.relative_to(root.resolve())
+                except ValueError:
+                    fail(errors, f"{where}: research_evidence 逃逸出仓库：{ref!r}")
+                    continue
+                if not resolved.is_file():
+                    fail(errors, f"{where}: research_evidence 不存在：{ref!r}")
+    if (
+        front.get("status") == "done"
+        and front.get("research_claim_required") == "true"
+        and claim != "established"
+    ):
+        fail(errors, f"{where}: 该规格要求正式研究声明，status=done 时必须 established")
+    if is_version and front.get("status") == "done" and claim == "not-established":
+        fail(errors, f"{where}: 版本 status=done 时研究声明不得仍为 not-established")
 
 
 # --------------------------------------------------------------------------- #
@@ -491,6 +549,101 @@ def validate_gate1(
     _check_ac_range_completeness(spec_text, tasks_text, errors, where)
 
 
+_TASK_DECL = re.compile(r"^- \[(?P<mark>[ x])\]\s+\*\*(?P<id>T\d+)\*\*", re.M)
+_MIGRATION_REF = re.compile(r"\[migrated-to:\s*([0-9.]+)/((?:T)\d+)\]")
+_OPEN_AC = re.compile(r"^- \[ \]\s+\*\*(AC-\d+)\*\*", re.M)
+
+
+def _without_fenced_code(md_text: str) -> str:
+    """移除 fenced code 内容，避免把格式示例当作真实 task/AC。"""
+    lines: list[str] = []
+    in_fence = False
+    fence_char = ""
+    for line in md_text.splitlines(keepends=True):
+        stripped = line.lstrip()
+        marker = stripped[:3]
+        if marker in {"```", "~~~"}:
+            if not in_fence:
+                in_fence = True
+                fence_char = marker
+            elif marker == fence_char:
+                in_fence = False
+                fence_char = ""
+            continue
+        if not in_fence:
+            lines.append(line)
+    # 未闭合围栏不能成为隐藏后续真实 task/AC 的旁路；按原文校验可保持 fail closed。
+    return md_text if in_fence else "".join(lines)
+
+
+def _task_blocks(tasks_text: str) -> list[tuple[str, str, str]]:
+    """返回 `(mark, task_id, block)`；block 延伸到下一个任务声明。"""
+    tasks_text = _without_fenced_code(tasks_text)
+    matches = list(_TASK_DECL.finditer(tasks_text))
+    out = []
+    for index, match in enumerate(matches):
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(tasks_text)
+        out.append((match.group("mark"), match.group("id"), tasks_text[match.start() : end]))
+    return out
+
+
+def validate_completion_state(
+    mid: str,
+    front: dict,
+    spec_text: str,
+    tasks_text: str,
+    all_ids: dict[str, tuple[pathlib.Path, dict]],
+    errors: list[str],
+) -> None:
+    """done 必须真实完成；legacy 开放任务只能逐项迁移，不能伪勾。"""
+    if front.get("status") != "done":
+        return
+
+    where = f"milestone {mid}"
+    open_tasks = [(tid, block) for mark, tid, block in _task_blocks(tasks_text) if mark == " "]
+    if front.get("gate_version") == 1:
+        if open_tasks:
+            fail(
+                errors, f"{where}: gate v1 status=done 但 tasks 未完成 {[x[0] for x in open_tasks]}"
+            )
+        open_acs = _OPEN_AC.findall(_without_fenced_code(spec_text))
+        if open_acs:
+            fail(errors, f"{where}: gate v1 status=done 但 AC 未完成 {open_acs}")
+        return
+
+    if not open_tasks:
+        return
+    target_mid = front.get("legacy_open_tasks_migrated_to")
+    if not target_mid:
+        fail(errors, f"{where}: legacy done 含未完成任务但缺 legacy_open_tasks_migrated_to")
+        return
+    if target_mid not in all_ids:
+        fail(errors, f"{where}: legacy 迁移目标 {target_mid!r} 不存在")
+        return
+
+    target_dir = all_ids[target_mid][0]
+    target_tasks_path = target_dir / "tasks.md"
+    if not target_tasks_path.is_file():
+        fail(errors, f"{where}: legacy 迁移目标 {target_mid} 缺 tasks.md")
+        return
+    target_ids = {tid for _mark, tid, _block in _task_blocks(target_tasks_path.read_text("utf-8"))}
+    used_targets: set[str] = set()
+    for source_tid, block in open_tasks:
+        refs = _MIGRATION_REF.findall(block)
+        if len(refs) != 1:
+            fail(errors, f"{where}: {source_tid} 必须恰有一个 [migrated-to: milestone/task] 映射")
+            continue
+        mapped_mid, mapped_tid = refs[0]
+        if mapped_mid != target_mid:
+            fail(errors, f"{where}: {source_tid} 映射到 {mapped_mid}，与声明目标 {target_mid} 不同")
+        if mapped_tid not in target_ids:
+            fail(errors, f"{where}: {source_tid} 映射到不存在的 {target_mid}/{mapped_tid}")
+        target_key = f"{mapped_mid}/{mapped_tid}"
+        if target_key in used_targets:
+            fail(errors, f"{where}: 多个遗留任务重复映射到 {target_key}")
+        used_targets.add(target_key)
+
+
 # --------------------------------------------------------------------------- #
 # 统一入口
 # --------------------------------------------------------------------------- #
@@ -507,6 +660,7 @@ def validate_versions(
         where = f"version {vdir.name}"
         front = parse_frontmatter(spec_path.read_text(encoding="utf-8"))
         validate_frontmatter_meta(front, errors, where)
+        validate_research_claim(front, root, errors, where, is_version=True)
         if front.get("kind") != "version-spec":
             fail(errors, f"{where}: kind 必须为 version-spec")
         if front.get("gate_version") not in (None, 0):
@@ -696,6 +850,7 @@ def validate_spec_lifecycle(
     for mid, (mdir, front) in all_ids.items():
         where = f"milestone {mid}"
         validate_frontmatter_meta(front, errors, where)
+        validate_research_claim(front, root, errors, where)
         spec_path = mdir / "spec.md"
         design_path = mdir / "design.md"
         tasks_path = mdir / "tasks.md"
@@ -714,6 +869,8 @@ def validate_spec_lifecycle(
             validate_gate1(
                 spec_text, design_text, tasks_text, errors, where, front.get("status", "")
             )
+
+        validate_completion_state(mid, front, spec_text, tasks_text, all_ids, errors)
 
         # 状态唯一性：design/tasks 独立检查，不依赖 design 存在
         check_status_uniqueness(design_text, tasks_text, errors, where)

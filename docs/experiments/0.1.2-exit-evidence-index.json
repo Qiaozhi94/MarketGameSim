@@ -1,9 +1,10 @@
 {
   "_meta": {
+    "evidence_class": "engineering-demonstration",
     "purpose": "T705: 0.1.2 退出检查清单（E1-E7 + 附加门槛）的机器可读证据索引",
     "spec": "docs/features/0.1/0.1.2-leverage-and-first-experiment/tasks.md",
     "generated": "2026-08-08",
-    "last_updated": "2026-08-09",
+    "last_updated": "2026-08-14",
     "generated_by": "第17轮修复报告 docs/reviews/2026-08-08j-v0.1.2-fix-verification-round17.md 之后的核查；第18/19/20/21轮补充E5标定与E6达标",
     "overall_status": "0.1.2 全部退出条件（E1-E7 + 附加门槛）已勾选，2026-08-09 达成",
     "note": "status=met 表示已有可重复运行的测试/机制证据；status=not_met 表示机制可能存在但尚无真实运行的达标结果；status=partially_met 表示复合条件中部分子项已达标、部分仍未（见该条目notes的具体拆分）；本索引只记录已验证事实，不预判未做的工作"

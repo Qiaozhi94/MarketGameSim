@@ -24,7 +24,8 @@ frontmatter**；本文只做入口与收口提示，不复制状态或需求正�
 | [`0.1.1-minimal-kernel/`](0.1.1-minimal-kernel/spec.md) | done | 0 |
 | [`0.1.2-leverage-and-first-experiment/`](0.1.2-leverage-and-first-experiment/spec.md) | done | 0 |
 | [`0.1.3-robustness/`](0.1.3-robustness/spec.md) | done | 0 |
-| [`0.1.4-replay-and-report/`](0.1.4-replay-and-report/spec.md) | ready-for-development | 1 |
+| [`0.1.4-replay-and-report/`](0.1.4-replay-and-report/spec.md) | done | 1 |
+| [`0.1.5-goal-driven-flagship/`](0.1.5-goal-driven-flagship/spec.md) | draft | 1 |
 
 ## Legacy design 规则
 
@@ -34,8 +35,9 @@ frontmatter**；本文只做入口与收口提示，不复制状态或需求正�
 
 ## 收口提示
 
-**完整 v0.1 签收 = 0.1.1—0.1.4 全部退出条件通过**，且版本根 `spec.md` 状态转为
-`done`。收口时在 [`docs/features/releases/`](../releases/README.md) 下新增 `0.1.md`
+**完整 v0.1 签收 = 0.1.1—0.1.5 全部退出条件通过，且 0.1.5 的研究声明建立**，随后
+版本根 `spec.md` 才能转为 `done / established`。收口时在
+[`docs/features/releases/`](../releases/README.md) 下新增 `0.1.md`
 记录不可变签收信息；本目录路径保持不变，不做物理 archive。
 
 ## 相关入口

@@ -128,6 +128,90 @@ def test_gate_missing(sv):
     assert any("gate_version" in e for e in errors)
 
 
+def test_research_claim_status_required_and_closed_enum(sv):
+    errors: list[str] = []
+    sv.validate_frontmatter_meta(
+        {
+            "kind": "milestone",
+            "id": "0.1.5",
+            "version": "0.1",
+            "status": "draft",
+            "research_claim_status": "maybe",
+            "gate_version": 1,
+        },
+        errors,
+        "x",
+    )
+    assert any("research_claim_status" in e and "非法" in e for e in errors)
+
+
+def test_missing_research_claim_status_fails(sv):
+    errors: list[str] = []
+    sv.validate_frontmatter_meta(
+        {
+            "kind": "milestone",
+            "id": "0.1.5",
+            "version": "0.1",
+            "status": "draft",
+            "gate_version": 1,
+        },
+        errors,
+        "x",
+    )
+    assert any("research_claim_status=None" in e for e in errors)
+
+
+def test_established_requires_done_formal_evidence(sv, tmp_path):
+    errors: list[str] = []
+    sv.validate_research_claim(
+        {
+            "status": "review",
+            "research_claim_status": "established",
+            "evidence_class": "engineering-demonstration",
+        },
+        tmp_path,
+        errors,
+        "x",
+    )
+    assert any("status 不是 done" in e for e in errors)
+    assert any("formal-research" in e for e in errors)
+    assert any("research_evidence" in e for e in errors)
+
+
+def test_established_with_repository_evidence_passes(sv, tmp_path):
+    evidence = tmp_path / "docs" / "experiments" / "evidence.json"
+    evidence.parent.mkdir(parents=True)
+    evidence.write_text("{}", encoding="utf-8")
+    errors: list[str] = []
+    sv.validate_research_claim(
+        {
+            "status": "done",
+            "research_claim_status": "established",
+            "evidence_class": "formal-research",
+            "research_evidence": ["docs/experiments/evidence.json"],
+        },
+        tmp_path,
+        errors,
+        "x",
+    )
+    assert errors == []
+
+
+def test_research_spec_cannot_close_as_not_applicable_when_claim_required(sv, tmp_path):
+    errors: list[str] = []
+    sv.validate_research_claim(
+        {
+            "status": "done",
+            "research_claim_status": "not-applicable",
+            "research_claim_required": "true",
+        },
+        tmp_path,
+        errors,
+        "milestone 0.1.5",
+    )
+    assert any("必须 established" in e for e in errors)
+
+
 # --------------------------------------------------------------------------- #
 # 状态唯一性
 # --------------------------------------------------------------------------- #
@@ -144,6 +228,13 @@ def test_design_no_status_passes(sv):
     errors: list[str] = []
     sv.check_status_uniqueness("# no frontmatter", "# no frontmatter", errors, "m")
     assert errors == []
+
+
+def test_tasks_declares_research_claim_status_fails(sv):
+    errors: list[str] = []
+    tasks = "---\nresearch_claim_status: established\n---\n"
+    sv.check_status_uniqueness("", tasks, errors, "m")
+    assert any("tasks.md" in e and "research_claim_status" in e for e in errors)
 
 
 # --------------------------------------------------------------------------- #
@@ -380,6 +471,95 @@ def test_closed_question_ok(sv):
     assert errors == []
 
 
+def test_gate1_done_rejects_open_tasks_and_ac(sv):
+    errors: list[str] = []
+    sv.validate_completion_state(
+        "0.1.5",
+        {"status": "done", "gate_version": 1},
+        "- [ ] **AC-001** (`FR-001`): pending\n",
+        "- [ ] **T001** (`FR-001`): pending\n",
+        {},
+        errors,
+    )
+    assert any("tasks 未完成" in e and "T001" in e for e in errors)
+    assert any("AC 未完成" in e and "AC-001" in e for e in errors)
+
+
+def test_gate1_done_ignores_open_task_and_ac_examples_in_fences(sv):
+    errors: list[str] = []
+    sv.validate_completion_state(
+        "0.1.5",
+        {"status": "done", "gate_version": 1},
+        "```markdown\n- [ ] **AC-001** (`FR-001`): example\n```\n",
+        "~~~markdown\n- [ ] **T001** (`FR-001`): example\n~~~\n",
+        {},
+        errors,
+    )
+    assert errors == []
+
+
+def test_gate1_done_unclosed_fence_cannot_hide_open_task(sv):
+    errors: list[str] = []
+    sv.validate_completion_state(
+        "0.1.5",
+        {"status": "done", "gate_version": 1},
+        "",
+        "```markdown\nexample\n- [ ] **T001** (`FR-001`): hidden after unclosed fence\n",
+        {},
+        errors,
+    )
+    assert any("tasks 未完成" in e and "T001" in e for e in errors)
+
+
+def test_legacy_done_open_tasks_require_exact_migration(sv, tmp_path):
+    target = tmp_path / "0.1.5-target"
+    target.mkdir()
+    (target / "tasks.md").write_text(
+        "- [ ] **T203** (`FR-001`): replacement\n- [ ] **T204** (`FR-002`): replacement\n",
+        encoding="utf-8",
+    )
+    all_ids = {"0.1.5": (target, {"id": "0.1.5"})}
+    errors: list[str] = []
+    sv.validate_completion_state(
+        "0.1.2",
+        {
+            "status": "done",
+            "gate_version": 0,
+            "legacy_open_tasks_migrated_to": "0.1.5",
+        },
+        "",
+        "- [ ] **T404** `[migrated-to: 0.1.5/T203]` old\n"
+        "- [ ] **T405** `[migrated-to: 0.1.5/T204]` old\n",
+        all_ids,
+        errors,
+    )
+    assert errors == []
+
+
+def test_legacy_done_rejects_missing_or_duplicate_target(sv, tmp_path):
+    target = tmp_path / "0.1.5-target"
+    target.mkdir()
+    (target / "tasks.md").write_text("- [ ] **T203** (`FR-001`): replacement\n", encoding="utf-8")
+    all_ids = {"0.1.5": (target, {"id": "0.1.5"})}
+    errors: list[str] = []
+    sv.validate_completion_state(
+        "0.1.2",
+        {
+            "status": "done",
+            "gate_version": 0,
+            "legacy_open_tasks_migrated_to": "0.1.5",
+        },
+        "",
+        "- [ ] **T404** old without mapping\n"
+        "- [ ] **T405** `[migrated-to: 0.1.5/T203]` old\n"
+        "- [ ] **T406** `[migrated-to: 0.1.5/T203]` old\n",
+        all_ids,
+        errors,
+    )
+    assert any("T404" in e and "恰有一个" in e for e in errors)
+    assert any("重复映射" in e for e in errors)
+
+
 # --------------------------------------------------------------------------- #
 # 全树批量：多里程碑共存
 # --------------------------------------------------------------------------- #
@@ -394,14 +574,15 @@ def test_batch_multiple_milestones(sv, tmp_path):
         mdir.mkdir(parents=True)
         (mdir / "spec.md").write_text(
             "---\nkind: milestone\n"
-            f'id: {mid}\nversion: "0.1"\nstatus: done\n'
+            f'id: {mid}\nversion: "0.1"\nstatus: done\nresearch_claim_status: not-applicable\n'
             "gate_version: 0\ncreated: 2026-08-01\nprerequisites: []\n"
             f"---\n# {mid}\n",
             encoding="utf-8",
         )
         (mdir / "tasks.md").write_text("# tasks\n", encoding="utf-8")
     (features / "0.1" / "spec.md").write_text(
-        '---\nkind: version-spec\nid: v0.1\nversion: "0.1"\nstatus: in-progress\n---\n# v\n',
+        '---\nkind: version-spec\nid: v0.1\nversion: "0.1"\nstatus: in-progress\n'
+        "research_claim_status: not-applicable\n---\n# v\n",
         encoding="utf-8",
     )
     (tmp_path / "docs" / "README.md").write_text("map\n", encoding="utf-8")
@@ -441,12 +622,14 @@ def _write_version_forest(tmp_path, version_status="in-progress"):
     (features / "0.1" / "0.1.1-minimal-kernel").mkdir(parents=True)
     (features / "0.1" / "0.1.1-minimal-kernel" / "spec.md").write_text(
         '---\nkind: milestone\nid: 0.1.1\nversion: "0.1"\nstatus: done\n'
+        "research_claim_status: not-applicable\n"
         "gate_version: 0\ncreated: 2026-08-01\nprerequisites: []\n---\n# m\n",
         encoding="utf-8",
     )
     (features / "0.1" / "0.1.1-minimal-kernel" / "tasks.md").write_text("# t\n", encoding="utf-8")
     (features / "0.1" / "spec.md").write_text(
-        f'---\nkind: version-spec\nid: v0.1\nversion: "0.1"\nstatus: {version_status}\n---\n# v\n',
+        f'---\nkind: version-spec\nid: v0.1\nversion: "0.1"\nstatus: {version_status}\n'
+        "research_claim_status: not-applicable\n---\n# v\n",
         encoding="utf-8",
     )
     return features
@@ -543,6 +726,7 @@ def test_version_done_with_pending_milestone_fails(sv, tmp_path):
     # 把 0.1.1 改成 in-progress
     (features / "0.1" / "0.1.1-minimal-kernel" / "spec.md").write_text(
         '---\nkind: milestone\nid: 0.1.1\nversion: "0.1"\nstatus: in-progress\n'
+        "research_claim_status: not-applicable\n"
         "gate_version: 0\ncreated: 2026-08-01\nprerequisites: []\n---\n# m\n",
         encoding="utf-8",
     )
