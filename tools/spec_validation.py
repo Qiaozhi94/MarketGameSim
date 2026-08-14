@@ -573,6 +573,84 @@ def validate_gate1(
     _check_ac_range_completeness(spec_text, tasks_text, errors, where)
 
 
+# 阶段成果门（features/README.md §阶段成果门）。规则 2026-08-14 引入；此前 created 的
+# 里程碑不追溯执法——0.1.4 在规则存在之前就已 done，事后判它违规只会让门禁失去可信度。
+OUTCOME_GATE_RULE_DATE = "2026-08-14"
+_OUTCOME_GATE_MARK = re.compile(r"`\[成果门:(?P<gate>[A-Za-z0-9][A-Za-z0-9-]*)\]`")
+_BARE_OUTCOME_GATE = re.compile(r"`\[成果门\]`")
+_PHASE_HEADING = re.compile(r"^###\s+(?P<title>Phase[^\n]*)$", re.M)
+
+
+def _implementation_section(tasks_text: str) -> str:
+    """截出 tasks.md 第 2 节「实现任务」正文，Phase 只在这一节里合法。"""
+    start = re.search(r"^##\s+2\.\s+实现任务\s*$", tasks_text, re.M)
+    if not start:
+        return ""
+    rest = tasks_text[start.end() :]
+    end = re.search(r"^##\s+\d+\.\s", rest, re.M)
+    return rest[: end.start()] if end else rest
+
+
+def validate_outcome_gates(
+    front: dict, tasks_text: str, errors: list[str], where: str, *, today: str | None = None
+) -> None:
+    """每个 Phase 末尾必须有一项 `[成果门:<ID>]` 任务，且标记格式统一。
+
+    规则本身早就写在 `features/README.md` 与模板里，但一直只靠人工检视执行——
+    本仓库的历史（RETROSPECTIVE 循环 1、8）反复证明：只能靠人工发现违反的规则，
+    在下一次忙碌的提交里一定会被违反。
+    """
+    del today  # 保留参数位以便测试注入；当前只依赖 created
+    if front.get("gate_version") != 1:
+        return
+    created = front.get("created", "")
+    if not isinstance(created, str) or created < OUTCOME_GATE_RULE_DATE:
+        return
+
+    body = _implementation_section(tasks_text)
+    if not body:
+        return
+    if _BARE_OUTCOME_GATE.search(body):
+        fail(errors, f"{where}: 成果门标记必须带 ID（`[成果门:R1]`），不接受裸 `[成果门]`")
+
+    headings = list(_PHASE_HEADING.finditer(body))
+    if not headings:
+        return
+    for index, heading in enumerate(headings):
+        end = headings[index + 1].start() if index + 1 < len(headings) else len(body)
+        block = body[heading.start() : end]
+        gates = _OUTCOME_GATE_MARK.findall(block)
+        title = heading.group("title").strip()
+        if not gates:
+            fail(errors, f"{where}: 「{title}」没有成果门任务，阶段完成后无用户可打开产物")
+            continue
+        tasks_in_phase = _task_blocks(block)
+        if tasks_in_phase and not _OUTCOME_GATE_MARK.search(tasks_in_phase[-1][2]):
+            fail(errors, f"{where}: 「{title}」的成果门不是本阶段最后一项任务")
+
+
+def validate_task_id_order(front: dict, tasks_text: str, errors: list[str], where: str) -> None:
+    """任务 ID 全文件唯一且按文档顺序递增（模板 §2）。
+
+    编号顺序与执行顺序背离时，"依赖节说先做 T200、但 T200 排在 T202 后面"这类矛盾
+    只能靠人读出来；递增是可机器判定的最弱约束，先把它焊死。
+    """
+    if front.get("gate_version") != 1:
+        return
+    seen: dict[str, int] = {}
+    previous = -1
+    previous_id = ""
+    for _mark, tid, _block in _task_blocks(tasks_text):
+        number = int(tid[1:])
+        if tid in seen:
+            fail(errors, f"{where}: 任务 ID {tid} 重复出现")
+            continue
+        seen[tid] = number
+        if number <= previous:
+            fail(errors, f"{where}: 任务 ID 未按文档顺序递增：{previous_id} 之后出现 {tid}")
+        previous, previous_id = number, tid
+
+
 _TASK_DECL = re.compile(r"^- \[(?P<mark>[ x])\]\s+\*\*(?P<id>T\d+)\*\*", re.M)
 _MIGRATION_REF = re.compile(r"\[migrated-to:\s*([0-9.]+)/((?:T)\d+)\]")
 _OPEN_AC = re.compile(r"^- \[ \]\s+\*\*(AC-\d+)\*\*", re.M)
@@ -895,6 +973,8 @@ def validate_spec_lifecycle(
             )
 
         validate_completion_state(mid, front, spec_text, tasks_text, all_ids, errors)
+        validate_outcome_gates(front, tasks_text, errors, where)
+        validate_task_id_order(front, tasks_text, errors, where)
 
         # 状态唯一性：design/tasks 独立检查，不依赖 design 存在
         check_status_uniqueness(design_text, tasks_text, errors, where)

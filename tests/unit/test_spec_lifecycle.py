@@ -701,6 +701,119 @@ def test_legacy_done_rejects_missing_or_duplicate_target(sv, tmp_path):
 
 
 # --------------------------------------------------------------------------- #
+# 阶段成果门与任务 ID 顺序
+# --------------------------------------------------------------------------- #
+
+
+def _tasks_with_phases(*phases: str) -> str:
+    """拼一份只含第 2 节的 tasks.md；phases 逐段给出 Phase 正文。"""
+    return "## 2. 实现任务\n\n" + "\n".join(phases) + "\n\n## 3. 验证与验收任务\n"
+
+
+_GATE_FRONT = {"gate_version": 1, "created": "2026-08-20"}
+
+
+def test_phase_without_outcome_gate_fails(sv):
+    tasks = _tasks_with_phases(
+        "### Phase 1：基线\n\n- [ ] **T001** (`FR-001`): 做事 — verify: `tests/a.py`\n",
+        "### Phase 2：扩展\n\n- [ ] **T002** (`FR-002`): 又做事 — verify: `tests/b.py`\n",
+    )
+    errors: list[str] = []
+    sv.validate_outcome_gates(_GATE_FRONT, tasks, errors, "m")
+    assert any("Phase 2" in e and "成果门" in e for e in errors)
+    assert any("Phase 1" in e for e in errors)
+
+
+def test_every_phase_with_trailing_gate_passes(sv):
+    tasks = _tasks_with_phases(
+        "### Phase 1：基线\n\n- [ ] **T001** (`FR-001`): 做事 — verify: `tests/a.py`\n"
+        "- [ ] **T002** `[成果门:R1]` (`FR-002`): 产出成果包 — verify: `tests/b.py`\n",
+        "### Phase 2：扩展\n\n"
+        "- [ ] **T003** `[成果门:R2]` (`FR-003`): 产出预览 — verify: `tests/c.py`\n",
+    )
+    errors: list[str] = []
+    sv.validate_outcome_gates(_GATE_FRONT, tasks, errors, "m")
+    assert errors == []
+
+
+def test_outcome_gate_must_be_last_task_in_phase(sv):
+    """成果门排在阶段中间等于阶段末尾仍无可展示产物，属于同一个缺陷。"""
+    tasks = _tasks_with_phases(
+        "### Phase 1：基线\n\n"
+        "- [ ] **T001** `[成果门:R1]` (`FR-001`): 产出成果包 — verify: `tests/a.py`\n"
+        "- [ ] **T002** (`FR-002`): 收尾 — verify: `tests/b.py`\n",
+    )
+    errors: list[str] = []
+    sv.validate_outcome_gates(_GATE_FRONT, tasks, errors, "m")
+    assert any("最后一项" in e for e in errors)
+
+
+def test_bare_outcome_gate_marker_rejected(sv):
+    """`[成果门]` 无 ID：将来按 ID 聚合成果门时会静默漏掉，必须当场拒绝。"""
+    tasks = _tasks_with_phases(
+        "### Phase 1：基线\n\n- [ ] **T001** `[成果门]` (`FR-001`): 产出 — verify: `tests/a.py`\n",
+    )
+    errors: list[str] = []
+    sv.validate_outcome_gates(_GATE_FRONT, tasks, errors, "m")
+    assert any("必须带 ID" in e for e in errors)
+
+
+def test_outcome_gate_rule_not_applied_before_its_introduction(sv):
+    """规则 2026-08-14 引入，此前 created 的里程碑不追溯执法。"""
+    tasks = _tasks_with_phases(
+        "### Phase 1：基线\n\n- [ ] **T001** (`FR-001`): 做事 — verify: `tests/a.py`\n",
+    )
+    errors: list[str] = []
+    sv.validate_outcome_gates({"gate_version": 1, "created": "2026-08-09"}, tasks, errors, "m")
+    assert errors == []
+
+
+def test_outcome_gate_ignores_phase_headings_outside_section_two(sv):
+    """Phase 只在第 2 节合法；别处出现的同名标题不触发成果门要求。"""
+    tasks = (
+        "## 2. 实现任务\n\n### Phase 1：基线\n\n"
+        "- [ ] **T001** `[成果门:R1]` (`FR-001`): 产出 — verify: `tests/a.py`\n\n"
+        "## 4. 依赖与并行关系\n\n### Phase 9：只是叙述\n\n说明文字。\n"
+    )
+    errors: list[str] = []
+    sv.validate_outcome_gates(_GATE_FRONT, tasks, errors, "m")
+    assert errors == []
+
+
+def test_task_ids_must_increase_in_document_order(sv):
+    tasks = (
+        "## 2. 实现任务\n\n"
+        "- [ ] **T202** (`FR-001`): 后面的编号 — verify: `tests/a.py`\n"
+        "- [ ] **T200** (`FR-002`): 却排在前面 — verify: `tests/b.py`\n"
+    )
+    errors: list[str] = []
+    sv.validate_task_id_order({"gate_version": 1}, tasks, errors, "m")
+    assert any("递增" in e and "T200" in e for e in errors)
+
+
+def test_duplicate_task_id_rejected(sv):
+    tasks = (
+        "## 2. 实现任务\n\n"
+        "- [ ] **T201** (`FR-001`): 一 — verify: `tests/a.py`\n"
+        "- [ ] **T201** (`FR-002`): 二 — verify: `tests/b.py`\n"
+    )
+    errors: list[str] = []
+    sv.validate_task_id_order({"gate_version": 1}, tasks, errors, "m")
+    assert any("重复" in e for e in errors)
+
+
+def test_sequential_task_ids_pass(sv):
+    tasks = (
+        "## 2. 实现任务\n\n"
+        "- [ ] **T201** (`FR-001`): 一 — verify: `tests/a.py`\n"
+        "- [ ] **T203** (`FR-002`): 二（允许跳号，只要递增） — verify: `tests/b.py`\n"
+    )
+    errors: list[str] = []
+    sv.validate_task_id_order({"gate_version": 1}, tasks, errors, "m")
+    assert errors == []
+
+
+# --------------------------------------------------------------------------- #
 # 全树批量：多里程碑共存
 # --------------------------------------------------------------------------- #
 
