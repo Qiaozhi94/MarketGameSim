@@ -696,13 +696,14 @@ def validate_outcome_gates(
     for index, heading in enumerate(headings):
         end = headings[index + 1].start() if index + 1 < len(headings) else len(body)
         block = body[heading.start() : end]
-        gates = _OUTCOME_GATE_MARK.findall(block)
         title = heading.group("title").strip()
-        if not gates:
+        # 只认任务块里的标记：写在散文里的 `[成果门:R1]` 不是一项可勾选、可验证的任务，
+        # 把它算作成果门等于让一句话就能满足整个阶段的交付要求。
+        tasks_in_phase = _task_blocks(block)
+        if not any(_OUTCOME_GATE_MARK.search(b) for _mark, _tid, b in tasks_in_phase):
             fail(errors, f"{where}: 「{title}」没有成果门任务，阶段完成后无用户可打开产物")
             continue
-        tasks_in_phase = _task_blocks(block)
-        if tasks_in_phase and not _OUTCOME_GATE_MARK.search(tasks_in_phase[-1][2]):
+        if not _OUTCOME_GATE_MARK.search(tasks_in_phase[-1][2]):
             fail(errors, f"{where}: 「{title}」的成果门不是本阶段最后一项任务")
 
 

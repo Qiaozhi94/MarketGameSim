@@ -868,6 +868,20 @@ def test_bare_outcome_gate_marker_rejected(sv):
     assert any("必须带 ID" in e for e in errors)
 
 
+def test_prose_outcome_gate_marker_does_not_satisfy_a_phase(sv):
+    """散文里提一句 `[成果门:R1]` 不是可勾选、可验证的任务。
+
+    round 2 的变异探测发现：Phase 里一个任务都没有、只在说明文字里出现标记时，门禁
+    原本直接放行——一句话就能满足整个阶段的交付要求。
+    """
+    tasks = _tasks_with_phases(
+        "### Phase 1：基线\n\n本阶段产物由 `[成果门:R1]` 覆盖，具体任务见别处。\n",
+    )
+    errors: list[str] = []
+    sv.validate_outcome_gates(_GATE_FRONT, tasks, errors, "m")
+    assert any("没有成果门任务" in e for e in errors)
+
+
 def test_outcome_gate_rule_not_applied_before_its_introduction(sv):
     """规则 2026-08-14 引入，此前 created 的里程碑不追溯执法。"""
     tasks = _tasks_with_phases(
