@@ -472,3 +472,50 @@ D017 的 updated 字段）：规则写在 README/模板里但没有机器校验�
 **`validator-crashes-instead-of-reporting`（新模式）**：校验器崩溃在可用性上等价于
 校验缺失——CI 打出的是堆栈，读的人得先判断"是校验器坏了还是规格写错了"，定位成本
 完全不同。所有闭集判定都应先做类型收敛（`isinstance(value, str)`）再查集合。
+
+---
+
+## 循环 9: `rule-without-gate` 三条并案——把写着但没执行的规则变成门禁
+
+- **report_type**: fix-verification
+- **周期**: 2026-08-15（同日，2 轮）
+- **构成**: 承接循环 8 的 carried-forward（D005/D006/D007/C003）→ 3 个修复提交 → round 2 变异探测
+- **回归测试**: `tests/unit/test_spec_lifecycle.py` 由 81 增至 100 passed（净增 19）
+- **收尾状态**: 四条 carried-forward 全部 fixed；新发现 2 条（1 High、1 fix-regression）当轮关闭
+- **触发方式**: 用户在循环 8 汇报后直接要求"现在开"，不是等到下次检视顺带发现
+
+### issue 表
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| R015-D005 | Phase 2 没有成果门，且三处规则口径互不相同 | Medium | correctness | root-cause | spec-drift | fixed | 新增 validate_outcome_gates；R3 预览门移到 Phase 2 末尾；规则收归 features/README 唯一拥有 | `test_phase_without_outcome_gate_fails`、`test_every_phase_with_trailing_gate_passes`、`test_outcome_gate_must_be_last_task_in_phase` | 循环8/1 | 循环9/1 | rule-without-gate |
+| R015-D006 | 成果门标记格式未统一（`[成果门]` vs `[成果门:R1]`）且无机器校验 | Medium | test-coverage | root-cause | process-gap | fixed | 统一为 `[成果门:<ID>]`，裸标记拒绝；模板同步 | `test_bare_outcome_gate_marker_rejected` | 循环8/1 | 循环9/1 | rule-without-gate |
+| R015-D007 | 任务 ID 不连续，T200 排在 T202 之后 | Medium | quality | root-cause | original-coding | fixed | 新增 validate_task_id_order；0.1.5 全文重排为 T201—T221，0.1.2 的四条 migrated-to 同步更新 | `test_task_ids_must_increase_in_document_order`、`test_duplicate_task_id_rejected`、`test_sequential_task_ids_pass` | 循环8/1 | 循环9/1 | rule-without-gate |
+| R015-C003 | features/README 声称 gate v1 校验 AC 引用的 requirement 与测试路径，实现不存在 | Medium | test-coverage | root-cause | process-gap | fixed | 实现 _check_ac_references：ID 存在性（本 spec/版本根/PRD/退出条件表四类来源）+ AC 必须被任务引用 + ready 起要求真实测试路径，draft 放宽 | `test_ac_referencing_undeclared_requirement_fails` 等 6 条 | 循环8/1 | 循环9/1 | rule-without-gate |
+| R016-C001 | `_TASK_DECL` 只认加粗任务声明，0.1.4 的全部任务对三个门禁隐形 | High | correctness | root-cause | original-coding | fixed | 正则改为加粗/不加粗都认 | `test_task_declaration_recognised_in_both_written_forms`、`test_gate1_done_with_unchecked_non_bold_task_is_rejected` | 循环9/1 | 循环9/1 | silent-no-op-gate |
+| R016-C002 | 散文里的 `[成果门:R1]` 能满足整个 Phase 的交付要求 | Medium | correctness | root-cause | fix-regression | fixed | 只从任务块采集成果门标记 | `test_prose_outcome_gate_marker_does_not_satisfy_a_phase` | 循环9/2 | 循环9/2 | rule-without-gate |
+
+### 模式教训
+
+**新门禁上线的第一件事是抓自己人**：`validate_outcome_gates` 与
+`validate_task_id_order` 接上的当次运行就报出 0.1.5 的两条真实违规（Phase 2 无成果门、
+T200 排在 T202 后）。这两条在循环 8 是人工检视发现的 carried-forward——**同一个问题
+被人工发现过一次，才有人去写门禁；而门禁一写好，立刻证明人工那次不是偶然**。
+
+**`silent-no-op-gate`（新模式，R016-C001）**：本轮最贵的发现不是新规则缺失，而是
+**既有规则在特定文件上从未执行过**。`_TASK_DECL` 只匹配加粗的 `**T404**`，而 0.1.4
+与模板写的是不加粗形态——于是"gate v1 标记 done 时 tasks 必须全部完成""legacy 迁移
+映射必须唯一""任务 ID 必须递增"三个门禁在 0.1.4 上全是空转。**它比 fail-open 更隐蔽：
+fail-open 至少还跑了逻辑，空转是连输入都没采集到，全绿且零错误。** 判据：任何靠正则
+从 Markdown 采集条目的门禁，都必须有一条测试断言"在真实仓库文件上采集到的条目数 > 0"，
+否则它的绿灯只证明它什么都没看见。
+
+**`rule-without-gate` 一次清掉 4 条**：循环 8 识别出这个模式复现 3 次并把它们打包
+carried-forward，循环 9 并案处理。对比循环 1（同一模式的 `marked-done-not-implemented`
+反复 3 次、每次都是深挖别的任务时意外撞见），**把同模式的发现聚合成一个专门循环，比
+每次遇到时顺手修一条更快也更彻底**——因为写门禁的边际成本在第二条之后急剧下降。
+
+**round 2 用变异探测代替重读**：本轮 round 2 没有重读 `spec_validation.py`，而是对新
+门禁做了 4 组构造输入（散文标记、多路径 verify、fenced code 里的 AC 与任务），命中 1 条
+fail-open。**对"新写的校验器"这类改动，diff-only 复核的正确形态是喂变异输入，不是再读
+一遍代码**——读代码只会重新采样出风格意见。
