@@ -42,8 +42,14 @@ docs/features/
 - `research_claim_status: established` 只允许与 `status: done`、
   `evidence_class: formal-research` 和存在的 `research_evidence` 路径同时出现；版本根
   `done` 时不得仍为 `not-established`。
-- 需要以研究声明作为退出条件的 spec 必须声明 `research_claim_required: true`；此时
-  `status: done` 与 `research_claim_status: established` 必须同时成立。
+- 需要以研究声明作为退出条件的 spec 必须声明 `research_claim_required: true`（合法值
+  只有 `true`/`false`，其它写法一律拒绝）；此时 `status: done` 与
+  `research_claim_status: established` 必须同时成立，且 `not-applicable` 与
+  `required: true` 并存在任何状态下都是矛盾配置。
+- `evidence_class` 合法值为 `engineering-demonstration`、`experiment-preview`、
+  `formal-research` 三类；其中只有 `formal-research` 能建立研究声明，`experiment-preview`
+  声明 `established` 会被门禁拒绝。标签语义由 [`PRD §15`](../market-game-sim-prd.md#15-交付路线图)
+  唯一拥有，本文只规定它在 frontmatter 里的取值与组合约束。
 
 ## 三件套职责
 
