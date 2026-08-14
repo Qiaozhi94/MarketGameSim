@@ -7,7 +7,7 @@
 
 | 信息 | 唯一拥有者 |
 |---|---|
-| 产品目标、范围、安全边界 | [`docs/market-game-sim-prd.md`](market-game-sim-prd.md) |
+| 产品目标、范围、安全边界、阶段成果与交易者介入顺序 | [`docs/market-game-sim-prd.md`](market-game-sim-prd.md) |
 | 全局模块边界与技术不变量 | [`docs/market-game-sim-architecture.md`](market-game-sim-architecture.md) |
 | 指标、研究方法与解释边界 | [`docs/research/`](research/methodology.md)（methodology、metrics-dictionary） |
 | 跨 Feature 实现合同 | [`docs/contracts/`](contracts/matching.md) |
