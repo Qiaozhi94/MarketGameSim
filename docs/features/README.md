@@ -88,8 +88,13 @@ docs/features/
 - legacy `done` 若仍有未勾任务，spec 必须声明 `legacy_open_tasks_migrated_to`，且每项任务
   用 `[migrated-to: <milestone>/<task>]` 唯一映射到真实后继任务；不得伪造勾选。
 - `gate_version: 1`：新里程碑（0.1.4 起）必选。额外校验三件套齐全、顶层结构与模板
-  完全一致、Q/DQ 全部关闭、AC 引用真实存在的 requirement 与仓库内测试路径；标记
-  `done` 时 tasks 与 AC 必须全部完成。
+  完全一致、Q/DQ 全部关闭；标记 `done` 时 tasks 与 AC 必须全部完成。
+- AC 校验（gate v1）的具体口径：
+  - 每条 AC 括号内引用的 ID 必须真实存在——`FR/NFR/SC/DR/TR/IR/US` 在本 spec 或版本根
+    spec 声明过，`PR/KPI` 在 PRD 声明过，`E<n>` 在本 spec 的退出条件表里；
+  - 每条 AC 必须被至少一个任务引用（`` `AC-001`—`AC-012` `` 这类范围声明会展开计入）；
+  - `ready-for-development` 及以上，覆盖该 AC 的任务里至少有一条 `verify:` 指向仓库内
+    真实存在的路径；`draft` 阶段允许测试尚未创建，只要求引用关系成立。
 
 ### 固定顶层章节
 

@@ -701,6 +701,116 @@ def test_legacy_done_rejects_missing_or_duplicate_target(sv, tmp_path):
 
 
 # --------------------------------------------------------------------------- #
+# AC 引用：requirement 存在性与测试路径
+# --------------------------------------------------------------------------- #
+
+
+_SPEC_HEAD = "## 6. 成功与验收\n\n### 退出条件\n\n| ID | 条件 |\n|---|---|\n| E1 | 条件一。 |\n\n"
+
+
+def _spec_with_ac(ac_line: str, declarations: str = "- **FR-001**：需求一。\n") -> str:
+    return f"## 4. 需求\n\n{declarations}\n{_SPEC_HEAD}### 验收清单\n\n{ac_line}\n"
+
+
+def test_ac_referencing_undeclared_requirement_fails(sv, tmp_path):
+    spec = _spec_with_ac("- [ ] **AC-001** (`FR-999`): 做到某事。")
+    tasks = "## 2. 实现任务\n\n- [ ] **T001** (`AC-001`): 实施 — verify: `tools/verify.py`\n"
+    errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "draft")
+    assert any("AC-001" in e and "FR-999" in e for e in errors)
+
+
+def test_ac_referencing_version_root_or_prd_id_passes(sv, tmp_path):
+    """AC 可以引用版本根 requirement 与 PRD 编号——0.1.4 就是这么写的。"""
+    spec = _spec_with_ac("- [ ] **AC-001** (`SC-008`, `PR-018`, `E1`): 做到某事。", "")
+    tasks = "## 2. 实现任务\n\n- [ ] **T001** (`AC-001`): 实施 — verify: `tools/verify.py`\n"
+    errors: list[str] = []
+    sv._check_ac_references(
+        spec,
+        tasks,
+        "- **SC-008**：逐帧一致。\n",
+        "- **PR-018**：回放器。\n",
+        tmp_path,
+        errors,
+        "m",
+        "draft",
+    )
+    assert errors == []
+
+
+def test_ac_referencing_unknown_exit_fails(sv, tmp_path):
+    spec = _spec_with_ac("- [ ] **AC-001** (`FR-001`, `E9`): 做到某事。")
+    tasks = "## 2. 实现任务\n\n- [ ] **T001** (`AC-001`): 实施 — verify: `tools/verify.py`\n"
+    errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "draft")
+    assert any("E9" in e and "退出条件" in e for e in errors)
+
+
+def test_ac_without_any_task_reference_fails(sv, tmp_path):
+    spec = _spec_with_ac("- [ ] **AC-001** (`FR-001`): 无人认领。")
+    tasks = "## 2. 实现任务\n\n- [ ] **T001** (`FR-001`): 实施 — verify: `tools/verify.py`\n"
+    errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "draft")
+    assert any("AC-001" in e and "没有任何任务引用" in e for e in errors)
+
+
+def test_ac_range_declaration_counts_as_coverage(sv, tmp_path):
+    spec = _spec_with_ac("- [ ] **AC-001** (`FR-001`): 一。\n- [ ] **AC-002** (`FR-001`): 二。")
+    tasks = (
+        "## 2. 实现任务\n\n"
+        "- [ ] **T001** (`AC-001`—`AC-002`): 统一质量门 — verify: `tools/verify.py`\n"
+    )
+    errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "draft")
+    assert errors == []
+
+
+def test_missing_test_path_blocks_only_after_draft(sv, tmp_path):
+    """draft 阶段允许测试尚不存在；ready-for-development 起必须指向真实路径。"""
+    spec = _spec_with_ac("- [ ] **AC-001** (`FR-001`): 做到某事。")
+    tasks = "## 2. 实现任务\n\n- [ ] **T001** (`AC-001`): 实施 — verify: `tests/unit/not_yet/`\n"
+    draft_errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, draft_errors, "m", "draft")
+    assert draft_errors == []
+
+    ready_errors: list[str] = []
+    sv._check_ac_references(
+        spec, tasks, "", "", tmp_path, ready_errors, "m", "ready-for-development"
+    )
+    assert any("真实存在的路径" in e for e in ready_errors)
+
+    (tmp_path / "tests" / "unit" / "not_yet").mkdir(parents=True)
+    fixed_errors: list[str] = []
+    sv._check_ac_references(
+        spec, tasks, "", "", tmp_path, fixed_errors, "m", "ready-for-development"
+    )
+    assert fixed_errors == []
+
+
+@pytest.mark.parametrize(
+    "decl", ["- [x] **T001** (`FR-001`): 加粗", "- [x] T001 (`FR-001`): 不加粗"]
+)
+def test_task_declaration_recognised_in_both_written_forms(sv, decl):
+    """仓库里加粗与不加粗两种任务写法都在用。
+
+    只认加粗形态时，0.1.4 的全部任务对 completion/migration/ID 顺序三个门禁都是隐形的
+    ——`done` 时"tasks 必须全部完成"在那份文件上从未真正执行过。
+    """
+    blocks = sv._task_blocks(f"## 2. 实现任务\n\n{decl} — verify: `tools/verify.py`\n")
+    assert [tid for _mark, tid, _block in blocks] == ["T001"]
+
+
+def test_gate1_done_with_unchecked_non_bold_task_is_rejected(sv, tmp_path):
+    """上一条的直接后果：非加粗未勾任务必须能挡住 gate v1 的 done。"""
+    tasks = "## 2. 实现任务\n\n- [ ] T001 (`FR-001`): 还没做 — verify: `tools/verify.py`\n"
+    errors: list[str] = []
+    sv.validate_completion_state(
+        "0.1.9", {"status": "done", "gate_version": 1}, "", tasks, {}, errors
+    )
+    assert any("tasks 未完成" in e and "T001" in e for e in errors)
+
+
+# --------------------------------------------------------------------------- #
 # 阶段成果门与任务 ID 顺序
 # --------------------------------------------------------------------------- #
 
