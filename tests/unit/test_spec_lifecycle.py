@@ -787,6 +787,30 @@ def test_missing_test_path_blocks_only_after_draft(sv, tmp_path):
     assert fixed_errors == []
 
 
+def test_markdown_collectors_are_not_silently_empty_on_real_specs(sv):
+    """采集器在真实仓库文件上必须真的采到东西。
+
+    循环 9 的 `silent-no-op-gate`：`_TASK_DECL` 曾只认加粗写法，于是 0.1.4 的全部任务
+    对三个门禁隐形——全绿、零错误，因为连输入都没采集到。空转比 fail-open 更隐蔽，
+    所以每个基于正则的采集器都要有一条"在真实文件上 > 0"的断言，而不是只测构造字符串。
+    """
+    milestones = sorted((ROOT / "docs" / "features" / "0.1").glob("0.1.*/spec.md"))
+    assert milestones, "前提失效：找不到任何里程碑 spec"
+    checked = 0
+    for spec_path in milestones:
+        front = sv.parse_frontmatter(spec_path.read_text(encoding="utf-8"))
+        if front.get("gate_version") != 1:
+            continue
+        checked += 1
+        spec_body = sv._without_fenced_code(spec_path.read_text(encoding="utf-8"))
+        tasks_text = (spec_path.parent / "tasks.md").read_text(encoding="utf-8")
+        where = spec_path.parent.name
+        assert sv._task_blocks(tasks_text), f"{where}: 任务采集器采到 0 条"
+        assert list(sv._AC_DECL.finditer(spec_body)), f"{where}: AC 采集器采到 0 条"
+        assert sv._declared_ids(spec_body), f"{where}: 需求声明采集器采到 0 条"
+    assert checked >= 2, "前提失效：gate v1 里程碑少于 2 个，覆盖面不足以证明采集器有效"
+
+
 def test_declared_requirement_without_ac_fails(sv):
     """IR/DR/TR 这类里程碑本地需求最容易漏——D009 就是一次写下 6 条却一条 AC 都没有。"""
     spec = _spec_with_ac(
