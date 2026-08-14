@@ -1,7 +1,7 @@
 # ADR-003：目标驱动代理、杠杆约束解耦与旗舰实验识别
 
 日期：2026-08-11  
-状态：Accepted
+状态：Accepted  
 关联规格：[`../features/0.1/spec.md`](../features/0.1/spec.md)  
 解决问题：旗舰问题的代理架构与因果识别是否匹配  
 关联文档：[PRD §3.1](../market-game-sim-prd.md#31-第一版的旗舰问题)、

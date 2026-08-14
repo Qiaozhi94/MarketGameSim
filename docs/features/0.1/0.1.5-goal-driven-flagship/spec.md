@@ -8,7 +8,7 @@ research_claim_status: not-established
 research_claim_required: true
 gate_version: 1
 created: 2026-08-14
-updated: 2026-08-14
+updated: 2026-08-15
 prerequisites:
   - 0.1.4
 ---

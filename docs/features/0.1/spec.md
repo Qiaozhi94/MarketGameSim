@@ -6,17 +6,17 @@ status: in-progress
 research_claim_status: not-established
 research_claim_required: true
 created: 2026-07-31
-updated: 2026-08-14
+updated: 2026-08-15
 ---
 
 # Feature Specification: Belief Testing Laboratory
 
 **规格编号**：v0.1-belief-testing-laboratory  
 **状态**：工程生命周期与研究声明见 frontmatter。0.1.1—0.1.4 已达成工程退出；根规格
-只有在 **0.1.5** 完成且研究声明建立后才能签收。
-**创建日期**：2026-07-31　**更新日期**：2026-08-14
+只有在 **0.1.5** 完成且研究声明建立后才能签收。  
+**创建日期**：2026-07-31　**更新日期**：2026-08-15  
 **关联 PRD**：[`../../market-game-sim-prd.md`](../../market-game-sim-prd.md) v0.4.0  
-**架构**：[`design.md`](design.md)　**里程碑**：[`0.1.1`](0.1.1-minimal-kernel/spec.md) · [`0.1.2`](0.1.2-leverage-and-first-experiment/spec.md) · [`0.1.3`](0.1.3-robustness/spec.md) · [`0.1.4`](0.1.4-replay-and-report/spec.md) · [`0.1.5`](0.1.5-goal-driven-flagship/spec.md)
+**架构**：[`design.md`](design.md)　**里程碑**：[`0.1.1`](0.1.1-minimal-kernel/spec.md) · [`0.1.2`](0.1.2-leverage-and-first-experiment/spec.md) · [`0.1.3`](0.1.3-robustness/spec.md) · [`0.1.4`](0.1.4-replay-and-report/spec.md) · [`0.1.5`](0.1.5-goal-driven-flagship/spec.md)  
 **已生效决策**：[ADR-001](../../decisions/001-numeric-and-serialization-contract.md)
 （数值与序列化口径）、
 [ADR-002](../../decisions/002-same-timestamp-event-scheduling.md)（事件调度与因果链）、
