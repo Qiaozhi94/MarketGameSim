@@ -18,6 +18,8 @@ updated: YYYY-MM-DD
 - 行为与验收真相源：`spec.md`。
 - 技术方案与边界：`design.md`。
 - 每项任务只描述一个可验证动作，并引用合法的 US/需求/AC ID。
+- 预计超过 8 个工程小时的 Feature，每个 Phase 末尾必须有一项 `[成果门]` 任务：写明
+  用户可打开的产物、生成入口、验收动作和证据标签。
 - 完成且验证后立即把 `[ ]` 改为 `[x]`，不得最后统一补勾。
 - `[P]` 只用于修改不同文件、没有显式前置依赖且不会争用同一状态的任务。
 - 实现中若任务顺序或契约失效，先修订三件套，再继续编码。
@@ -41,19 +43,21 @@ updated: YYYY-MM-DD
 
 - [ ] T003 (`FR-001`, `AC-001`): ... — verify: `path/to/test.ts`
 - [ ] T004 [P] (`FR-002`, `AC-002`): ... — verify: `path/to/test.ts`
+- [ ] T005 `[成果门]` (`AC-001`, `AC-002`): 生成 <可打开产物>，标记为
+      `<engineering-demonstration|experiment-preview|formal-research>` — verify: <命令/证据路径>
 
 ### Phase 2：<下一个独立切片>
 
-- [ ] T005 (`US-002`, `FR-003`): ... — verify: `path/to/test.ts`
+- [ ] T006 (`US-002`, `FR-003`): ... — verify: `path/to/test.ts`
 
 按需要增删 Phase；Phase 只能是本节的三级标题，任务 ID 必须全文件连续且唯一。
 
 ## 3. 验证与验收任务
 
-- [ ] T006 (`AC-001`): 运行对应单元/集成测试 — verify: `path/to/test.ts`
-- [ ] T007 (`AC-002`): 运行 UI/E2E 或真实环境验证 — verify: <命令或证据路径>
-- [ ] T008 (`AC-001`, `AC-002`): 运行项目统一质量门 — verify: `<project verify command>`
-- [ ] T009: 回写 spec 验收证据、活跃索引和状态 — verify: `<feature gate command>`
+- [ ] T007 (`AC-001`): 运行对应单元/集成测试 — verify: `path/to/test.ts`
+- [ ] T008 (`AC-002`): 运行 UI/E2E 或真实环境验证 — verify: <命令或证据路径>
+- [ ] T009 (`AC-001`, `AC-002`): 运行项目统一质量门 — verify: `<project verify command>`
+- [ ] T010: 回写 spec 验收证据、活跃索引和状态 — verify: `<feature gate command>`
 
 仅保留与本 Feature 适用的验证层级；客观无法执行的真实环境验证必须记录原因与补跑方式。
 

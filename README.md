@@ -15,6 +15,13 @@
 项目采用规格驱动开发（Specification-Driven Development，SDD），版本与里程碑三件套
 （spec/design/tasks）生命周期见 [`docs/features/README.md`](docs/features/README.md)。
 
+## 下一批看得见的成果
+
+当前底层工程、工程示范、回放与报告能力已经存在；下一步先把它们包装成一条命令可生成的
+`replay.html + summary.md + manifest` 成果包，然后依次交付新代理单次运行、`2 × 2`
+实验预览和正式研究结果。各阶段产物、预计投入与交易者介入顺序见
+[`PRD §15 交付路线图`](docs/market-game-sim-prd.md#15-交付路线图)。
+
 ## 当前规格
 
 - `docs/features/0.1/`：含杠杆与强制平仓的市场实验环境，用于把交易信念改写成可证伪
@@ -24,6 +31,7 @@
   - `0.1.2-leverage-and-first-experiment/` 杠杆实验闭环
   - `0.1.3-robustness/` 模型稳健性
   - `0.1.4-replay-and-report/` 回放与报告
+  - `0.1.5-goal-driven-flagship/` 目标驱动代理与正式旗舰实验
 
 每个里程碑目录下各有 `spec.md` 与 `tasks.md`。
 **完整 v0.1 签收 = 0.1.1—0.1.5 全部退出条件通过，且 0.1.5 研究声明建立**；需求归属见版本根 `spec.md`

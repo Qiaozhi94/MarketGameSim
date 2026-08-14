@@ -53,6 +53,18 @@ docs/features/
 | `design.md` | 怎么实现、边界与取舍。固定 11 个顶层章节；不写逐步编码任务。 |
 | `tasks.md` | 按什么顺序实施。固定 6 个顶层章节；Phase 只作为第 2 节动态三级标题。 |
 
+### 阶段成果门
+
+- 预计超过 **8 个工程小时**的 Feature/里程碑，`tasks.md` 第 2 节必须按可独立演示的
+  Phase 切分；每个 Phase 结束都要写明用户可打开的产物、生成入口、验收动作与证据标签。
+- Phase 的完成标准不能只是“若干 task/测试通过”；没有 `replay.html`、报告、可调用接口、
+  可观察行为或同等可消费产物，就不算阶段成果。
+- 研究项目的中间产物必须标记 `engineering-demonstration`、`experiment-preview` 或
+  `formal-research`，不得把 smoke run 或预览升级成正式结论。
+- 项目级成果顺序、投入估算与交易者介入边界由
+  [`PRD §15`](../market-game-sim-prd.md#15-交付路线图) 唯一拥有；Feature 文档只说明
+  本 Feature 如何满足对应成果门。
+
 ### gate 规则
 
 - `gate_version: 0`：仅用于已确认的 legacy 里程碑（0.1.1—0.1.3），只执行元数据、
