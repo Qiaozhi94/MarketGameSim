@@ -1,4 +1,5 @@
 {
+  "evidence_class": "engineering-demonstration",
   "comparison": {
     "n_seeds": 5,
     "treatment_field": "leverage_tier",

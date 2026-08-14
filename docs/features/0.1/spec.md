@@ -3,23 +3,25 @@ kind: version-spec
 id: v0.1-belief-testing-laboratory
 version: "0.1"
 status: in-progress
+research_claim_status: not-established
+research_claim_required: true
 created: 2026-07-31
-updated: 2026-08-12
+updated: 2026-08-14
 ---
 
 # Feature Specification: Belief Testing Laboratory
 
 **规格编号**：v0.1-belief-testing-laboratory  
-**状态**：见 frontmatter（唯一状态真源）。当前里程碑 0.1.3 在研，0.1.1—0.1.2 已
-达成退出。根规格转 Stable 的条件是 **0.1.4** 退出（完整 v0.1 签收）**——该条件待
-[ADR-003](../../decisions/003-goal-driven-agents-and-flagship-identification.md)
-定案；若 Accepted，条件调整为新增里程碑 0.1.5 退出，见本文「未闭合事项」**。  
-**创建日期**：2026-07-31　**更新日期**：2026-08-02  
+**状态**：工程生命周期与研究声明见 frontmatter。0.1.1—0.1.4 已达成工程退出；根规格
+只有在 **0.1.5** 完成且研究声明建立后才能签收。
+**创建日期**：2026-07-31　**更新日期**：2026-08-14
 **关联 PRD**：[`../../market-game-sim-prd.md`](../../market-game-sim-prd.md) v0.4.0  
-**架构**：[`design.md`](design.md)　**里程碑**：[`0.1.1`](0.1.1-minimal-kernel/spec.md) · [`0.1.2`](0.1.2-leverage-and-first-experiment/spec.md) · [`0.1.3`](0.1.3-robustness/spec.md) · [`0.1.4`](0.1.4-replay-and-report/spec.md)  
+**架构**：[`design.md`](design.md)　**里程碑**：[`0.1.1`](0.1.1-minimal-kernel/spec.md) · [`0.1.2`](0.1.2-leverage-and-first-experiment/spec.md) · [`0.1.3`](0.1.3-robustness/spec.md) · [`0.1.4`](0.1.4-replay-and-report/spec.md) · [`0.1.5`](0.1.5-goal-driven-flagship/spec.md)
 **已生效决策**：[ADR-001](../../decisions/001-numeric-and-serialization-contract.md)
 （数值与序列化口径）、
-[ADR-002](../../decisions/002-same-timestamp-event-scheduling.md)（事件调度与因果链）；
+[ADR-002](../../decisions/002-same-timestamp-event-scheduling.md)（事件调度与因果链）、
+[ADR-003](../../decisions/003-goal-driven-agents-and-flagship-identification.md)
+（目标驱动代理与旗舰识别）；
 其余设计决策见本文 §「设计决策与理由」  
 **实现合同**：[撮合](../../contracts/matching.md)、
 [事件 Schema](../../contracts/event-schema.md)、
@@ -151,6 +153,22 @@ updated: 2026-08-12
   代理状态与**强平事件**，支持拖拽、变速与暂停。回放与报告同源，仿真内核不依赖
   呈现层。
 - **FR-020**：提供 K 线视图，周期定义见指标字典 §1.9。
+
+### 目标驱动代理与旗舰识别
+
+- **FR-021**：目标形成与制度可行域必须分层；`desired_position` 不得读取杠杆、保证金、
+  实验臂或制度 cell，主模型为 `risk_budget_linear_v1`，稳健性模型为
+  `risk_budget_threshold_v1`。
+- **FR-022**：代理信息集使用全局公开成交 tape、逐代理事件游标、已完成全局 K 线与逐代理
+  持久 EWMA；`information_set` 与 `internal_state` 使用版本化封闭 Schema。
+- **FR-023**：运行入口必须把 `SPONTANEOUS`、`STRESS`、`BENCHMARK` 作为互斥运行族并
+  fail closed；触发来源必须可审计，工程示范证据不得进入研究结论。
+- **FR-024**：旗舰实验采用杠杆上限分布 `L` × 维持保证金率 `M` 的 `2 × 2` 制度因子，
+  崩盘、暴涨、流动性枯竭作为三个独立终点家族分别推断和报告。
+- **FR-025**：每次代理决策记录目标模型、约束前后仓位、约束原因与触发 provenance，且
+  成交可回溯至观察、目标、约束、订单、成交与强平链。
+- **FR-026**：工程生命周期 `status` 与 `research_claim_status` 正交；正式研究声明只允许
+  由版本化预注册和 `formal-research` 证据建立。
 
 ## 设计决策与理由
 
@@ -396,6 +414,8 @@ ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的
 - **NFR-002**：订单簿、账本与强平逻辑的分支覆盖率不低于 90%。
 - **NFR-003**：基准配置在参考硬件上的单核运行时间满足 `benchmarks/` 声明的门槛。
 - **NFR-004**：核心领域层不依赖 UI、数据库或机器学习框架。
+- **NFR-005**：相同代码、配置、种子与公开事件序列产生逐代理相同的信息游标、内部状态、
+  目标、约束结果与运行族判定；未知 Schema 字段或禁用输入必须拒绝，不能静默忽略。
 
 ## 成功指标
 
@@ -419,6 +439,12 @@ ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的
 - **SC-007**：每条信念检验结论以条件性命题表达，含效应量、置信区间与失效边界；
   每条能力维度归因由只改变该维度的配对对照支撑。
 - **SC-008**：回放器仅以事件日志为输入还原整段仿真，与原运行逐帧一致。
+- **SC-009**：架构测试证明两个目标模型不依赖 `L/M`、杠杆、保证金或实验臂；正反例证明
+  非绑定约束不改订单意图、绑定约束只裁剪可执行目标。
+- **SC-010**：`SPONTANEOUS` 的 `2 × 2` 配对运行分别产出崩盘、暴涨、流动性枯竭三个
+  终点家族的效应量、不确定性和失效边界，不使用合成冲击或预置仓位。
+- **SC-011**：每个研究结论可追溯到 Accepted ADR、版本化预注册、正式运行 manifest、
+  证据索引和结论判定；`STRESS`/`BENCHMARK` 产物无法越权进入旗舰结论。
 
 ## 边界情况
 
@@ -435,13 +461,9 @@ ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的
 
 ## 未闭合事项
 
-**实现合同已全部闭合**：产品决策（Q-001—Q-016）、
-[代理策略合同](../../contracts/agent-strategy.md)（信息集→因子→信号→目标仓位
-→意图→准入）与 PnL 会计桥接（指标字典 §5.2）均已写定。**0.1.1 可以开工。**
-
-仍未闭合的是**预注册研究设计**（PRD §17.2 C），须在正式实验前完成，可与 0.1.1 并行
-准备：0.1.2 验证协议的数值门槛与统计判定、旗舰实验的处理与终点定义、校准区/验证区/
-实验区的划分。
+0.1.1—0.1.4 的工程合同已经闭合。ADR-003 接受后，目标驱动代理、信息游标、三运行族、
+`2 × 2` 制度因子与三终点家族由 0.1.5 承接；0.1.2/0.1.3 的旧证据只属于
+`engineering-demonstration`，不建立旗舰研究声明。
 
 ### P-3 的已知缺陷（后移前记录）
 
@@ -453,17 +475,11 @@ ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的
 （`latency_ns > 0` 恰好制造了这个窗口）。这样可见集合与预知者的当前决策无关，自指
 消解。P-3 中「强平单同样在可见范围内」一句须删除。
 
-### 根规格 Stable 条件待 ADR-003 定案
+### 根规格收口条件
 
-[ADR-003](../../decisions/003-goal-driven-agents-and-flagship-identification.md)
-（Proposed）指出当前目标仓位公式把 `leverage_tier` 直接写进了代理的目标仓位计算，
-使旗舰问题（PRD §3.1：杠杆/保证金是否足以自发产生涌现式崩盘、暴涨或流动性枯竭）
-的因果识别不成立——0.1.2/0.1.3 现有证据只验证了工程链路，不构成旗舰结论。
-
-若 ADR-003 转为 Accepted，本文头部「根规格转 Stable 的条件是 0.1.4 退出」须改为
-新增里程碑（暂定 0.1.5：目标驱动代理与旗舰实验识别）退出，且该里程碑需求须先补入
-下方追踪矩阵。若 ADR-003 被 Reject 或改写，本节随之更新或删除。**在此之前，0.1.4
-退出不得被解读为 v0.1 已完整签收。**
+[ADR-003](../../decisions/003-goal-driven-agents-and-flagship-identification.md) 已 Accepted。
+0.1.5 必须达到 `status: done` 与 `research_claim_status: established`；随后版本根才可达到
+相同收口状态并生成 `docs/features/releases/0.1.md`。0.1.4 的工程退出不等于 v0.1 已签收。
 
 ## 需求追踪矩阵（唯一真源）
 
@@ -498,6 +514,7 @@ JSON 的每条 requirement 恰有三种 `status` 之一：`owned`（含 `owners`
 | FR-018 退化状态 | 0.1.1（簿侧）/ 0.1.2（穿仓） | 0.1.1 E3；0.1.2 E1 |
 | **FR-019 单文件 HTML 回放器** | **0.1.4** | 0.1.4 E1、E2 |
 | **FR-020 K 线视图** | **0.1.4** | 0.1.4 E3 |
+| **FR-021—FR-026 目标驱动代理与旗舰识别** | **0.1.5** | 0.1.5 E1—E6 |
 | KR-001—KR-003 时间内核与定序 | 0.1.1 | E5 |
 | KR-004 分流 RNG | 0.1.1（均匀）/ 0.1.2（完整分布） | 0.1.1 E4；0.1.2 E3 |
 | KR-005 核心层无第三方依赖 | 0.1.1 | E8 |
@@ -506,6 +523,7 @@ JSON 的每条 requirement 恰有三种 `status` 之一：`owned`（含 `owners`
 | NFR-002 覆盖率 | 各里程碑各自 | 0.1.1 E9；0.1.2 附加门槛 |
 | NFR-003 性能 | 0.1.2（需代理产生负载） | 0.1.2 E5 |
 | NFR-004 分层解耦 | 0.1.1（L1）/ 0.1.4（L4） | 0.1.1 E8；0.1.4 E5 |
+| NFR-005 目标与运行族确定性/fail-closed | 0.1.5 | 0.1.5 E1—E4 |
 | SC-001 撮合与守恒 | 0.1.1 | E1、E2、E3 |
 | SC-002 确定性哈希 | 0.1.1 | E4 |
 | SC-003—SC-004 | 0.1.2 | 0.1.2 E3、E5 |
@@ -513,6 +531,7 @@ JSON 的每条 requirement 恰有三种 `status` 之一：`owned`（含 `owners`
 | SC-006 日志自包含 | 0.1.1（账户）/ **0.1.4（订单簿逐帧）** | 0.1.1 E6；0.1.4 E1 |
 | SC-007 条件性结论 | 0.1.2 | 0.1.2 E6 |
 | **SC-008 逐帧回放一致** | **0.1.4** | 0.1.4 E1 |
+| **SC-009—SC-011 识别、三终点与研究证据** | **0.1.5** | 0.1.5 E1—E6 |
 
 **明确后移（非 v0.1 范围）**：股票式制度（收盘、T+2、熔断）、大资金执行者、
 订单流预知者（P-3，含因果自指缺陷）、人在环交互——全部 v0.2+，理由见 PRD §15。

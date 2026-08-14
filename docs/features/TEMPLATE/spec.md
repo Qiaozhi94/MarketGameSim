@@ -3,6 +3,7 @@ kind: feature
 id: Fxxx
 version: "0.x"
 status: draft
+research_claim_status: not-applicable
 gate_version: 1
 related_features: []
 topics: []

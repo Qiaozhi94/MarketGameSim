@@ -4,9 +4,11 @@ id: 0.1.3
 parent: v0.1-belief-testing-laboratory
 version: "0.1"
 status: done
+research_claim_status: not-established
+evidence_class: engineering-demonstration
 gate_version: 0
 created: 2026-08-01
-updated: 2026-08-10
+updated: 2026-08-14
 prerequisites:
   - 0.1.2
 ---
@@ -18,7 +20,7 @@ prerequisites:
 
 ## 1. 目标
 
-证明旗舰结论**不是实现的性质，而是市场的性质**——它不依赖单一行为映射、单一参数
+本阶段原计划证明旗舰结论**不是实现的性质，而是市场的性质**——它不依赖单一行为映射、单一参数
 点或单一模型族。
 
 方法论 §10.5 与检视报告反复强调的同一件事：只在一种设定下成立的结论，说明的是设定
