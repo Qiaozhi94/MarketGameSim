@@ -530,3 +530,41 @@ fail-open。**对"新写的校验器"这类改动，diff-only 复核的正确形
 版本），但消解方向不是——"让交易者早 28–52 小时上手"与"v0.1 签收路径上不放任何与
 旗舰问题无关的工作"是两个都成立的目标，取舍属于产品决策。检视人的职责到"指出两处
 表述不能同时为真、列出选项与各自代价"为止，替用户选一个再写进 PRD 就越权了。
+
+---
+
+## 循环 10: 清空全部 carried-forward 遗留
+
+- **report_type**: fix-verification
+- **周期**: 2026-08-15（同日，2 轮）
+- **构成**: 承接循环 8 剩余的 D009/D011/D012/D014（D008 已由用户决策单独关闭）→ 2 个修复提交 → round 2 变异探测
+- **回归测试**: `tests/unit/test_spec_lifecycle.py` 由 100 增至 105 passed
+- **收尾状态**: 循环 8 的 16 条发现全部关闭，无 carried-forward 结转
+
+### issue 表
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| R015-D009 | IR/DR/TR 六条需求没有任何 AC 或退出条件引用 | Medium | test-coverage | root-cause | original-coding | fixed | 逐条并入既有 AC（AC-002/003/004/005/008/009）；新增 _check_requirement_ac_coverage 防复发 | `test_declared_requirement_without_ac_fails`、`test_all_declared_requirements_covered_passes`、`test_us_and_sc_are_not_required_to_have_ac`、`test_ac_coverage_rule_not_applied_before_its_introduction` | 循环8/1 | 循环10/1 | acceptance-mapping-gap |
+| R015-D011 | established 所需的 evidence_class / research_evidence 字段名未写入 spec 生命周期块 | Medium | correctness | root-cause | spec-drift | fixed | §5 生命周期块改为写出真实 frontmatter key，与门禁实际要求一致 | —（由 validate_research_claim 的既有测试锁定字段语义） | 循环8/1 | 循环10/1 | — |
+| R015-D012 | EV 判据到三终点家族的映射未定义重叠归属与多重比较校正 | Medium | correctness | root-cause | original-coding | fixed | degenerate-states §4.1 补归属表与"同时计入、不互斥归一"规则；methodology §10.6 定多重比较口径（家族内 BH、家族间不合并） | —（研究口径，进入 0.1.5 预注册后由 T202 冻结） | 循环8/1 | 循环10/1 | — |
+| R015-D014 | PRD「技术里程碑与范围」与后续里程碑同级，形成空章节 | Low | quality | root-cause | original-coding | fixed | 改为引导句，说明成果门与里程碑是同一条路线的两种切法 | — | 循环8/1 | 循环10/1 | — |
+| R016-C003 | 采集器"空转"缺少真实文件断言 | Medium | test-coverage | root-cause | process-gap | fixed | 新增在真实 gate v1 里程碑文件上断言任务/AC/需求采集数 > 0；反向确认退回旧正则会红 | `test_markdown_collectors_are_not_silently_empty_on_real_specs` | 循环10/2 | 循环10/2 | silent-no-op-gate |
+
+### 模式教训
+
+**把上一轮的教训写成测试，而不是只写成结论**：循环 9 记下了 `silent-no-op-gate`
+的判据（"基于正则的采集器必须有一条在真实文件上 > 0 的断言"），但当时没有落成测试。
+循环 10 的 round 2 补上了它，并反向确认——把 `_TASK_DECL` 退回旧写法，0.1.4 采集数
+归零、测试立刻红。**教训停留在 RETROSPECTIVE 里只能靠人记得去查，落成测试才有执法者。
+这本身就是 `rule-without-gate` 在检视流程自身上的一次复现。**
+
+**D009 的修复分两层**：既有 AC 补引用（治当前）+ 新门禁强制每条 FR/NFR/DR/TR/IR 都被
+AC 认领（治复发）。只做第一层的话，下一个里程碑写 IR-601 时会再犯一次——D009 本身就是
+"0.1.5 一次写下 6 条 IR/DR/TR，AC 却只引用 FR/NFR/SC"造成的，属于顺手漏掉而非有意
+不覆盖，这类漏掉靠自觉记不住。
+
+**三个"规则引入日"常量已经形成同一套模式**：`gate_version 0` 的 2026-08-09、成果门的
+2026-08-14、AC 覆盖的 2026-08-15。新规则一律不追溯执法，理由一致：事后判已 done 的
+里程碑违规，只会让人开始怀疑门禁本身而不是去修问题。代价是必须显式记录引入日，
+不能靠"反正现在都过了"糊过去。
