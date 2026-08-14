@@ -552,6 +552,83 @@ def _check_ac_range_completeness(
             )
 
 
+_AC_DECL = re.compile(r"^- \[[ x]\]\s+\*\*(?P<ac>AC-\d+)\*\*\s*\((?P<refs>[^)]*)\)", re.M)
+_BACKTICKED_ID = re.compile(r"`((?:US|FR|NFR|SC|KR|DR|TR|IR|PR|KPI|E)-?\d+)`")
+_DECLARED_ID = re.compile(r"^- \*\*((?:US|FR|NFR|SC|KR|DR|TR|IR|PR|KPI)-\d+)\*\*", re.M)
+_DECLARED_HEADING_ID = re.compile(r"^### ((?:US)-\d+)[：:]", re.M)
+_EXIT_ROW = re.compile(r"^\|\s*(E\d+)\s*\|", re.M)
+_VERIFY_TOKENS = re.compile(r"—\s*verify:\s*(?P<verify>[^\n]*(?:\n\s{6,}[^\n]*)*)", re.M)
+
+
+def _declared_ids(text: str) -> set[str]:
+    return set(_DECLARED_ID.findall(text)) | set(_DECLARED_HEADING_ID.findall(text))
+
+
+def _ac_task_coverage(tasks_text: str) -> dict[int, list[str]]:
+    """AC 编号 -> 覆盖它的任务块列表；范围声明 `AC-001`—`AC-012` 会被展开。"""
+    coverage: dict[int, list[str]] = {}
+    for _mark, _tid, block in _task_blocks(tasks_text):
+        numbers: set[int] = set()
+        for start, end in re.findall(r"`AC-(\d+)`—`AC-(\d+)`", block):
+            numbers.update(range(int(start), int(end) + 1))
+        numbers.update(int(n) for n in re.findall(r"`AC-(\d+)`", block))
+        for number in numbers:
+            coverage.setdefault(number, []).append(block)
+    return coverage
+
+
+def _block_has_existing_path(block: str, root: pathlib.Path) -> bool:
+    """任务的 verify 段是否指向仓库内真实存在的路径。"""
+    match = _VERIFY_TOKENS.search(block)
+    if not match:
+        return False
+    for token in re.findall(r"`([^`]+)`", match.group("verify")):
+        for candidate in token.split():
+            candidate = candidate.strip().rstrip("；,，")
+            if "/" not in candidate:
+                continue
+            if (root / candidate).exists():
+                return True
+    return False
+
+
+def _check_ac_references(
+    spec_text: str,
+    tasks_text: str,
+    version_spec_text: str,
+    prd_text: str,
+    root: pathlib.Path,
+    errors: list[str],
+    where: str,
+    status: str,
+) -> None:
+    """AC 必须引用真实存在的 requirement，且被至少一个任务的测试路径覆盖。
+
+    `features/README.md` 的 gate v1 规则一直这样写着，但实现里只有 AC 范围上界检查——
+    规则存在、执法者不存在。0.1.5 的 AC-001—AC-012 一条测试路径都没写，照样通过。
+    """
+    known = _declared_ids(spec_text) | _declared_ids(version_spec_text) | _declared_ids(prd_text)
+    exits = set(_EXIT_ROW.findall(spec_text))
+    coverage = _ac_task_coverage(tasks_text)
+    path_required = status in ("ready-for-development", "in-progress", "review", "done")
+
+    for match in _AC_DECL.finditer(_without_fenced_code(spec_text)):
+        ac = match.group("ac")
+        for rid in _BACKTICKED_ID.findall(match.group("refs")):
+            if rid.startswith("E") and rid[1:].isdigit():
+                if rid not in exits:
+                    fail(errors, f"{where}: {ac} 引用的退出条件 {rid} 不在本 spec 退出条件表")
+            elif rid not in known:
+                fail(errors, f"{where}: {ac} 引用了未声明的 requirement {rid}")
+
+        blocks = coverage.get(int(ac.split("-")[1]), [])
+        if not blocks:
+            fail(errors, f"{where}: {ac} 没有任何任务引用，验收无实施锚点")
+            continue
+        if path_required and not any(_block_has_existing_path(b, root) for b in blocks):
+            fail(errors, f"{where}: {ac} 的覆盖任务没有一条 verify 指向仓库内真实存在的路径")
+
+
 def validate_gate1(
     spec_text: str,
     design_text: str,
@@ -651,7 +728,10 @@ def validate_task_id_order(front: dict, tasks_text: str, errors: list[str], wher
         previous, previous_id = number, tid
 
 
-_TASK_DECL = re.compile(r"^- \[(?P<mark>[ x])\]\s+\*\*(?P<id>T\d+)\*\*", re.M)
+# 任务声明有加粗（0.1.5、模板 §2）与不加粗（0.1.4）两种写法，历史上都在用。
+# 只认加粗形态时，0.1.4 的全部任务对 completion/migration/ID 顺序三个门禁都是隐形的
+# ——"done 时 tasks 必须全部完成"在那份文件上从未真正执行过（fail-open）。
+_TASK_DECL = re.compile(r"^- \[(?P<mark>[ x])\]\s+(?:\*\*)?(?P<id>T\d+)(?:\*\*)?(?=[\s(`])", re.M)
 _MIGRATION_REF = re.compile(r"\[migrated-to:\s*([0-9.]+)/((?:T)\d+)\]")
 _OPEN_AC = re.compile(r"^- \[ \]\s+\*\*(AC-\d+)\*\*", re.M)
 
@@ -970,6 +1050,18 @@ def validate_spec_lifecycle(
                 continue
             validate_gate1(
                 spec_text, design_text, tasks_text, errors, where, front.get("status", "")
+            )
+            version_spec = mdir.parent / "spec.md"
+            prd = root / "docs" / "market-game-sim-prd.md"
+            _check_ac_references(
+                spec_text,
+                tasks_text,
+                version_spec.read_text(encoding="utf-8") if version_spec.is_file() else "",
+                prd.read_text(encoding="utf-8") if prd.is_file() else "",
+                root,
+                errors,
+                where,
+                front.get("status", ""),
             )
 
         validate_completion_state(mid, front, spec_text, tasks_text, all_ids, errors)
