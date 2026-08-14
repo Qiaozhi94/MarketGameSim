@@ -197,7 +197,29 @@ def test_established_with_repository_evidence_passes(sv, tmp_path):
     assert errors == []
 
 
-@pytest.mark.parametrize("value", ["True", "yes", "TRUE", "1", ""])
+@pytest.mark.parametrize(
+    "field",
+    ["kind", "status", "research_claim_status", "evidence_class", "research_claim_required"],
+)
+def test_empty_frontmatter_value_is_reported_not_crashed(sv, field):
+    """`key:`（空值）在 parse_frontmatter 里是 `[]`，闭集判定不得抛 TypeError。
+
+    校验器崩溃与校验放行同样糟：CI 只会打出堆栈，看的人得先判断"是校验器坏了还是
+    规格写错了"。这条锁定所有闭集字段都走 in_enum，报错而不是崩。
+    """
+    text = (
+        '---\nkind: milestone\nid: 0.1.5\nversion: "0.1"\nstatus: draft\n'
+        "research_claim_status: not-established\ngate_version: 1\n"
+        f"{field}:\n---\n# x\n"
+    )
+    front = sv.parse_frontmatter(text)
+    assert front[field] == [], "前提失效：空值不再解析为空列表，本测试需重写"
+    errors: list[str] = []
+    sv.validate_frontmatter_meta(front, errors, "x")
+    assert any(field in e and "非法" in e for e in errors)
+
+
+@pytest.mark.parametrize("value", ["True", "yes", "TRUE", "1"])
 def test_research_claim_required_rejects_non_canonical_boolean(sv, value):
     """`parse_frontmatter` 只产字符串：非闭集写法必须报错，不能静默当成 false。
 
