@@ -464,6 +464,18 @@
       ],
       "note": "工程状态与研究声明证据门槛"
     },
+    "FR-027": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.1.5",
+          "exits": [
+            "E7"
+          ]
+        }
+      ],
+      "note": "成果门产物与成果包 manifest"
+    },
     "KR-001": {
       "status": "owned",
       "owners": [
