@@ -511,3 +511,43 @@ def test_multi_digit_requirement_ids_are_extracted(validator):
     families = ["US", "FR"]
     text = "### US-10：某个场景\n\n- **FR-021**：某条需求\n"
     assert validator.spec_validation.declared_ids(text, families) == {"US-10", "FR-021"}
+
+
+# --------------------------------------------------------------------------- #
+# v2 目标模型合同：跨文档单一真源
+# --------------------------------------------------------------------------- #
+
+GOAL_MODEL_IDS = ("risk_budget_linear_v1", "risk_budget_threshold_v1")
+GOAL_MODEL_DOCS = (
+    "docs/contracts/agent-strategy.md",
+    "docs/features/0.1/0.1.5-goal-driven-flagship/spec.md",
+    "docs/features/0.1/spec.md",
+    "docs/decisions/003-goal-driven-agents-and-flagship-identification.md",
+)
+
+
+@pytest.mark.parametrize("doc", GOAL_MODEL_DOCS)
+@pytest.mark.parametrize("model_id", GOAL_MODEL_IDS)
+def test_goal_model_ids_are_consistent_across_docs(doc, model_id):
+    """两个目标模型 ID 必须在合同、里程碑 spec、版本根与 ADR 里写法完全一致。
+
+    `cross-feature-contract-drift` 在本仓库已复现三次（RETROSPECTIVE 循环 8/9/11）：
+    一处改名、别处不改，机器无从发现，直到实现者按哪份文档写都对不上。
+    """
+    text = (ROOT / doc).read_text(encoding="utf-8")
+    assert model_id in text, f"{doc} 未提及 {model_id}"
+
+
+def test_v2_goal_contract_freezes_the_decisions_design_defers_to_it():
+    """design 把语义"已冻结"的部分指向合同，合同就必须真的写着这些语义。
+
+    这条挡的是反向漂移：design 说"见合同 §5.2.3"，而合同里那一节被删掉或改名——
+    读者会以为决策已定，实际实现者仍要自己发明。
+    """
+    contract = (ROOT / "docs" / "contracts" / "agent-strategy.md").read_text(encoding="utf-8")
+    for section in ("5.2.1", "5.2.2", "5.2.3", "5.2.4"):
+        assert f"#### {section}" in contract, f"合同缺 §{section}"
+    # 三条被 design 明确标记为「已冻结」的决策，必须在合同里有对应文字
+    assert "risk_appetite" in contract, "风险预算来源未冻结"
+    assert "只允许减仓" in contract, "equity ≤ 0 的行为未冻结"
+    assert "不改方向" in contract, "约束层只裁剪规模的边界未冻结"
