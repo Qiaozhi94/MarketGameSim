@@ -1023,28 +1023,20 @@ def test_prose_about_done_no_longer_false_positives(sv):
     assert errors == []
 
 
-def test_missing_status_gate_is_rejected_for_active_milestone(sv):
-    tasks = "## 3.\n\n- [ ] **T220** (`FR-026`): 回写并推进 `done` — verify: `x`\n"
-    errors: list[str] = []
-    sv.validate_status_writeback_is_last(_ACTIVE, tasks, errors, "m")
-    assert any("缺少 `[状态门]`" in e for e in errors)
+@pytest.mark.parametrize("status", ["draft", "in-progress", "review", "done"])
+@pytest.mark.parametrize("created", ["2026-08-09", "2026-08-14", "2026-08-20"])
+def test_missing_status_gate_is_rejected_regardless_of_status_or_created(sv, status, created):
+    """缺 `[状态门]` 一律失败——不按 created 或 status 推断"是否规则前已关闭"。
 
-
-def test_missing_status_gate_exempts_milestones_closed_before_the_rule(sv):
-    """豁免条件是"规则出现时已经 done"，不是"created 早于规则日"。
-
-    按 created 豁免会把 0.1.5 这种规则前创建、仍在开发中的里程碑一并放过——
-    而它恰恰是最需要这道门的那个。
+    前两版豁免都栽在这里：`created` 不是"何时关闭"的代理。第二版
+    （`status == done and created < 规则日`）更是定时炸弹——0.1.5 创建于规则日前，
+    将来转 `done` 时会自动落入豁免，那一刻删掉标记就静默放行。
     """
-    tasks = "## 3.\n\n- [ ] **T404** (`FR-019`): 回写状态 — verify: `x`\n"
-    closed = {"gate_version": 1, "status": "done", "created": "2026-08-09"}
+    tasks = "## 3.\n\n- [x] **T404** (`FR-019`): 回写状态 — verify: `x`\n"
     errors: list[str] = []
-    sv.validate_status_writeback_is_last(closed, tasks, errors, "m")
-    assert errors == []
-
-    still_open = {"gate_version": 1, "status": "draft", "created": "2026-08-09"}
-    errors = []
-    sv.validate_status_writeback_is_last(still_open, tasks, errors, "m")
+    sv.validate_status_writeback_is_last(
+        {"gate_version": 1, "status": status, "created": created}, tasks, errors, "m"
+    )
     assert any("缺少 `[状态门]`" in e for e in errors)
 
 

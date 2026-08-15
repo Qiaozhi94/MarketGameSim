@@ -87,7 +87,7 @@ prerequisites:
       verify: `tools/t403_offline_check.js`（2026-08-12 真实 Chrome 离线验证通过：零外部
       请求、零控制台错误、暂停/变速/拖拽生效、强平帧标注 LIQUIDATION 可见、四 canvas 渲染）
 - [x] T404 (`AC-001`—`AC-006`): 运行项目统一质量门 — verify: `python tools/verify.py`
-- [x] T405: 回写 spec 验收证据、活跃索引和状态 — verify: `python tools/validate_spec_lifecycle.py`
+- [x] T405 `[状态门]`: 回写 spec 验收证据、活跃索引和状态 — verify: `python tools/validate_spec_lifecycle.py`
 
 ## 4. 依赖与并行关系
 
