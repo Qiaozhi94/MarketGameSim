@@ -19,6 +19,7 @@ import copy
 import importlib.util
 import json
 import pathlib
+import re
 import sys
 
 import pytest
@@ -551,3 +552,21 @@ def test_v2_goal_contract_freezes_the_decisions_design_defers_to_it():
     assert "risk_appetite" in contract, "风险预算来源未冻结"
     assert "只允许减仓" in contract, "equity ≤ 0 的行为未冻结"
     assert "不改方向" in contract, "约束层只裁剪规模的边界未冻结"
+
+
+def test_constraint_layer_uses_the_single_admission_formula():
+    """约束层不得自立一套准入式——`equity − reserved` 是账户合同 §3.3 明令禁止的写法。
+
+    它已含当前持仓保证金，再从权益里减一次就是重复扣除，会让合法目标被错误裁剪；
+    §3.3 为此专门写了反例。这条锁定两份合同同口径，防止 v2 约束层再漂回旧式。
+    """
+    contract = (ROOT / "docs" / "contracts" / "agent-strategy.md").read_text(encoding="utf-8")
+    margin = (ROOT / "docs" / "contracts" / "margin-and-account.md").read_text(encoding="utf-8")
+    section = contract.split("#### 5.2.4")[1].split("## 6")[0]
+    assert "reserved_after <= risk_equity" in section, "v2 约束层未使用统一准入式"
+    assert "reserved_after > risk_equity" in margin, "账户合同的准入式被改动，本测试需同步"
+    assert "不得写成 `equity − reserved_units` 形式" in section, "缺少对旧式的显式禁止"
+    # 只禁「把可行域*定义*成减法」，不能简单查子串——禁止句本身就含这个公式，
+    # 按子串判会把正确的警示文字当成违规（本测试第一版就是这样自己踩进去的）。
+    assert not re.search(r"可行域\s*=\s*权益\s*[−-]", section), "可行域被重新定义成减法形式"
+    assert "减仓永不因保证金被裁剪" in section, "减仓豁免未写入 v2 约束层"
