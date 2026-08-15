@@ -740,11 +740,14 @@ def validate_outcome_gates(
 # 绕过（"更新为 done"、"设为 done"），而一句"核对 `done / established` 的前置证据"
 # 又会被误判成状态转换。措辞是人写的，标记才是可判定的——与 `[成果门:R1]` 同构。
 _STATUS_GATE_MARK = re.compile(r"`\[状态门\]`")
-# 「必须存在 `[状态门]`」的规则引入日。豁免条件是**规则出现时已经 done**（如 0.1.4），
-# 不是「created 早于规则日」——后者会把 0.1.5 这种规则出现前创建、但还在开发中的
-# 里程碑一并放过，而它恰恰是最需要这条门的那个。只要标记出现了，唯一性与末项位置
-# 对所有 gate v1 里程碑一律执法。
-STATUS_GATE_RULE_DATE = "2026-08-15"
+# 没有豁免：所有 gate v1 里程碑都必须有 `[状态门]`。
+#
+# 前两版都试图从 frontmatter 推断"这个里程碑是不是规则出现前就关闭了"：先按 created
+# 早于规则日，后按 `status == done 且 created < 规则日`。两版都错，第二版还是定时炸弹
+# ——0.1.5 创建于规则日前，将来一旦转 done 就自动落入豁免，那时删掉标记会静默放行。
+# 根因是 **frontmatter 里根本没有"何时关闭"这个事实**，`created` 不是它的代理。
+# 与其继续猜，不如取消豁免：0.1.4 的 T405 本来就是状态回写任务，回填标记是如实标注，
+# 不是伪造完成。
 
 
 def validate_status_writeback_is_last(
@@ -767,12 +770,7 @@ def validate_status_writeback_is_last(
         if _STATUS_GATE_MARK.search(block)
     ]
     if not marked:
-        created = front.get("created", "")
-        closed_before_rule = front.get("status") == "done" and (
-            isinstance(created, str) and created < STATUS_GATE_RULE_DATE
-        )
-        if not closed_before_rule:
-            fail(errors, f"{where}: tasks 缺少 `[状态门]` 任务，生命周期回写没有可判定的位置")
+        fail(errors, f"{where}: tasks 缺少 `[状态门]` 任务，生命周期回写没有可判定的位置")
         return
     if len(marked) > 1:
         fail(errors, f"{where}: `[状态门]` 必须唯一，实际出现在 {[tid for _i, tid in marked]}")
