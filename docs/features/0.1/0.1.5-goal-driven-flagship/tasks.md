@@ -76,10 +76,11 @@ updated: 2026-08-15
 
 - [ ] **T218** (`AC-001`—`AC-012`): 逐项核对退出条件、批量回归与正式证据路径 — verify: `python tools/verify.py`
 - [ ] **T219** (`AC-001`—`AC-012`): 运行项目统一质量门和确定性复现 — verify: `python tools/verify.py`
-- [ ] **T220** `[成果门:R5]` (`FR-027`, `AC-009`, `AC-012`): 生成 v0.1 研究交付入口——把总结
-      报告、限制说明、evidence index 与代表性回放提交进 `docs/experiments/`，README 两次
-      点击内可达；集成测试在 clean checkout（不含 `artifacts/`）中断言四条链接全部有效且
-      回放离线可开 — verify: `tests/integration/test_delivery_entry.py`
+- [ ] **T220** `[成果门:R5]` (`FR-027`, `AC-011`, `AC-012`): 生成 v0.1 研究交付入口——
+      **单条命令**同时产出 R5 成果包与仓库内交付物（总结报告、限制说明、evidence index、
+      代表性回放提交进 `docs/experiments/`），README 两次点击内可达；集成测试在 clean
+      checkout（不含 `artifacts/`）中执行该命令，再断言四条链接全部有效且回放离线可开
+      — verify: `tests/integration/test_delivery_entry.py`
 - [ ] **T221** `[状态门]` (`FR-026`, `AC-009`, `AC-010`): **全部任务与 AC 勾完后**，在同一次变更里回写
       验收证据并推进 `done / established`；必须是本文件最后一项 — verify:
       `tools/validate_spec_lifecycle.py`
