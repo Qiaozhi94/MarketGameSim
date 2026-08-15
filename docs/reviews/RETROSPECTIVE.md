@@ -568,3 +568,52 @@ AC 认领（治复发）。只做第一层的话，下一个里程碑写 IR-601 
 2026-08-14、AC 覆盖的 2026-08-15。新规则一律不追溯执法，理由一致：事后判已 done 的
 里程碑违规，只会让人开始怀疑门禁本身而不是去修问题。代价是必须显式记录引入日，
 不能靠"反正现在都过了"糊过去。
+
+---
+
+## 循环 11: 0.1.5 进入开发前终检（跨会话交接）
+
+- **report_type**: doc-review → fix-verification
+- **周期**: 2026-08-15（同日，2 轮）
+- **构成**: round 1 全量扫描由**另一份会话**完成并留下未提交的 `CURRENT-doc.md`（5 条 High，只报告不修改）→ 本会话逐条独立复核 → 4 个修复提交 → round 2 变异探测
+- **回归测试**: `tests/unit/test_spec_lifecycle.py` 由 105 增至 111 passed
+- **收尾状态**: 5 条 High 全部 fixed；round 2 新增 1 条 fix-regression 当轮关闭
+
+### issue 表
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| R017-D001 | T201 的目标/约束数学合同、V1 Schema 与运行族字段矩阵尚未冻结 | High | correctness | root-cause | process-gap | fixed | design §4 新增「T201 必须冻结的清单」5 组（目标模型数学/退化输入行为/约束边界/四个 V1 Schema/三族逐字段 allow-deny 矩阵），要求产出可被参数化测试消费的 golden vector | 待补（T201 落地时） | 1 | 1 | contract-name-without-semantics |
+| R017-D002 | T202 预注册不存在，2×2 的估计量、样本量与停止规则尚未冻结 | High | test-coverage | root-cause | process-gap | fixed | experiment-template 新增制度因子实验必填清单 8 项；T202 逐项填满，冻结前不得开始 T213 与正式运行 | 待补（T202 落地时） | 1 | 1 | implementation-before-preregistration |
+| R017-D003 | 游标在消费前推进，异常重试会跳过尚未消费的公开事件 | High | correctness | root-cause | spec-drift | fixed | design §5 改为先消费后原子推进的四步顺序并写明回滚/幂等；FR-022、AC-002、T206 同步 | 待补（T206 故障注入测试） | 1 | 1 | cursor-commit-before-consume |
+| R017-D004 | T220 先推进 done/established，随后才执行 T221，必然违反 gate v1 的 done 门 | High | correctness | root-cause | process-gap | fixed | R5 成果门提到 T220、状态回写降为 T221；新增 validate_status_writeback_is_last 门禁 | `test_status_writeback_before_other_tasks_is_rejected`（5 种措辞）、`::test_status_writeback_as_final_task_passes` | 1 | 1 | lifecycle-transition-before-final-task |
+| R017-D005 | R5 要求 README 链接代表性回放，但回放只落被忽略目录 | High | test-coverage | root-cause | spec-drift | fixed | R5 四类产物固定为 docs/experiments/ 下已提交路径（回放 ≤5 MB 并标注降采样）；AC-012/T220 改为 clean checkout 断言 | 待补（T220 集成测试） | 1 | 1 | delivery-artifact-not-ci-reachable |
+| R017-D006 | 状态回写门禁只认"推进"一种措辞，"标记为 done" 可无声绕过 | Medium | correctness | root-cause | fix-regression | fixed | 正则扩为推进/标记/转为/改为/置为/切换到 六类动词 | 同 D004 参数化测试（新增 3 种措辞） | 2 | 2 | — |
+
+### 模式教训
+
+**跨会话交接的检视报告要先复核再修**：round 1 由另一份会话产出，本会话拿到的是一份
+未提交的 `CURRENT-doc.md`。协议要求"不总是把其他 agent 的结论当既成事实"，因此本轮
+先对 5 条逐一独立取证（读原文、比对合同、查 `.gitignore`）再动手。结果 5 条全为真、
+无误报——但**这不构成"下次可以直接照单全收"的理由**：复核成本远低于按错误报告改坏
+文档的成本，而且复核过程本身产出了 D001/D002 的处理方式调整（见下条）。
+
+**"缺少决定"与"决定错了"要用不同修法**：D001/D002 指出的是实现者必须自行发明数学
+与统计口径。修法**不是**替用户把方程和样本量定下来——那是研究设计决策，写进去就等于
+用实现细节定义研究对象；而是把"必须决定什么"列成可判定的清单，让 T201/T202 有完成
+标准。检视人越权替产品做决定，和检视人漏掉问题一样有害，只是更隐蔽。
+
+**D004 是我自己上一轮埋的**：循环 9 重排 0.1.5 任务 ID 时，原样保留了"状态回写在
+R5 成果门之前"的既有顺序，没意识到它与 gate v1 的 done 门构成死锁。**重排顺序时只
+检查了编号递增（当时新写的门禁），没检查语义顺序**——门禁只能挡住它被设计来挡的那
+一类问题，新增门禁反而会让人误以为"顺序问题已经有人管了"。
+
+**变异探测再次抓到自己的 fix-regression（D006）**：新写的状态回写门禁只认"推进"一
+词，"把里程碑标记为 done"直接漏检。连续三个循环（9、10、11）的 round 2 都靠变异探测
+抓到当轮修复引入的问题，命中率 100%——**对"新写的校验器"这类改动，diff-only 复核的
+正确形态就是喂变异输入，读代码抓不到这类漏洞**。
+
+**一次流程违规记录**：提交 33a548c 时用 `verify.py ... | tail -2 && git commit` 串联，
+`tail` 的退出码掩盖了 verify 的失败，导致在 ruff 红的状态下完成了提交（当场发现并
+amend 修正）。**管道会吞掉前一个命令的退出码**——门禁命令不能接在管道后面当作条件判断，
+这是 CLAUDE.md"提交前必须本地跑通"在具体命令写法上的一个盲区。
