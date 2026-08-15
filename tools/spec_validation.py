@@ -735,8 +735,11 @@ def validate_outcome_gates(
             fail(errors, f"{where}: 「{title}」的成果门不是本阶段最后一项任务")
 
 
+# 状态转换的写法在仓库里不止一种（"推进 done"/"标记为 done"/"转为 done / established"）。
+# 只认一种措辞的话，换个说法就绕过门禁——而绕过是无声的，没人会知道死锁又回来了。
 _STATUS_WRITEBACK = re.compile(
-    r"推进\s*`?(?:done|status)\b|`done / established`|`done/established`"
+    r"(?:推进|标记|转为|改为|置为|切换到)[^\n]{0,24}`?(?:done|established)\b"
+    r"|`done\s*/\s*established`"
 )
 
 

@@ -971,11 +971,25 @@ def test_outcome_gate_ignores_phase_headings_outside_section_two(sv):
     assert errors == []
 
 
-def test_status_writeback_before_other_tasks_is_rejected(sv):
-    """`done` 要求全部任务勾完，状态回写又排在别的任务前面 → 不可满足顺序。"""
+@pytest.mark.parametrize(
+    "wording",
+    [
+        "回写验收证据并推进 `done / established`",
+        "推进 status 到 done",
+        "把里程碑标记为 done",
+        "将 0.1.5 转为 `done`",
+        "在证据成立后置为 established",
+    ],
+)
+def test_status_writeback_before_other_tasks_is_rejected(sv, wording):
+    """`done` 要求全部任务勾完，状态回写又排在别的任务前面 → 不可满足顺序。
+
+    措辞变体全部要认：只认一种说法的话，换个写法就无声绕过门禁，而绕过的代价是
+    死锁在真正收口那天才重新出现。
+    """
     tasks = (
         "## 3. 验证与验收任务\n\n"
-        "- [ ] **T220** (`FR-026`): 回写验收证据并推进 `done / established` — verify: `x`\n"
+        f"- [ ] **T220** (`FR-026`): {wording} — verify: `x`\n"
         "- [ ] **T221** `[成果门:R5]` (`FR-027`): 生成交付入口 — verify: `y`\n"
     )
     errors: list[str] = []
