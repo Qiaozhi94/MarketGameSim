@@ -116,7 +116,9 @@ prerequisites:
 - **FR-027**：R1—R5 每个成果门都必须由单条命令生成成果包（`RUN.md`、`manifest.json`、
   `replay.html`、`summary.md`），manifest 记录代码版本、配置哈希、种子计划与
   `evidence_class`；`engineering-demonstration` 与 `experiment-preview` 成果包的报告
-  必须携带“不可作结论”声明，且不得写入正式 evidence index。
+  必须携带“不可作结论”声明，且不得写入正式 evidence index。**R5 的总结报告、限制说明、
+  evidence index 与代表性回放必须提交进 `docs/experiments/`**，不得只存在于被 git 忽略
+  的 `artifacts/`。
 
 ### 数据 / 实体需求
 
@@ -201,7 +203,8 @@ not-established -> established  status=done 且 evidence_class: formal-research
 - [ ] **AC-011** (`FR-027`, `NFR-005`): R1—R4 每个成果包可由单条命令重建，manifest 的
       `evidence_class` 与运行族一致，示范/预览报告携带“不可作结论”声明。
 - [ ] **AC-012** (`FR-027`, `SC-011`): R5 交付入口存在，非开发者从 README 两次点击内
-      到达总结报告、代表性回放、限制说明与 evidence index，且全部链接有效。
+      到达总结报告、代表性回放、限制说明与 evidence index；**四者均为仓库内已提交路径，
+      在 clean checkout（不含 `artifacts/`）中链接全部有效**，且回放离线可开。
 
 ## 7. 测试、依赖与决策
 
