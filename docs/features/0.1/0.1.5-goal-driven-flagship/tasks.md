@@ -80,7 +80,7 @@ updated: 2026-08-15
       报告、限制说明、evidence index 与代表性回放提交进 `docs/experiments/`，README 两次
       点击内可达；集成测试在 clean checkout（不含 `artifacts/`）中断言四条链接全部有效且
       回放离线可开 — verify: `tests/integration/test_delivery_entry.py`
-- [ ] **T221** (`FR-026`, `AC-009`, `AC-010`): **全部任务与 AC 勾完后**，在同一次变更里回写
+- [ ] **T221** `[状态门]` (`FR-026`, `AC-009`, `AC-010`): **全部任务与 AC 勾完后**，在同一次变更里回写
       验收证据并推进 `done / established`；必须是本文件最后一项 — verify:
       `tools/validate_spec_lifecycle.py`
 

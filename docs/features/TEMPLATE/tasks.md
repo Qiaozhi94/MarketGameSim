@@ -58,7 +58,7 @@ updated: YYYY-MM-DD
 - [ ] T007 (`AC-001`): 运行对应单元/集成测试 — verify: `path/to/test.ts`
 - [ ] T008 (`AC-002`): 运行 UI/E2E 或真实环境验证 — verify: <命令或证据路径>
 - [ ] T009 (`AC-001`, `AC-002`): 运行项目统一质量门 — verify: `<project verify command>`
-- [ ] T010: 回写 spec 验收证据、活跃索引和状态 — verify: `<feature gate command>`
+- [ ] T010 `[状态门]`: 回写 spec 验收证据、活跃索引和状态；必须是本文件最后一项 — verify: `<feature gate command>`
 
 仅保留与本 Feature 适用的验证层级；客观无法执行的真实环境验证必须记录原因与补跑方式。
 

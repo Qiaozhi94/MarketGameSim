@@ -735,18 +735,22 @@ def validate_outcome_gates(
             fail(errors, f"{where}: 「{title}」的成果门不是本阶段最后一项任务")
 
 
-# 状态转换的写法在仓库里不止一种（"推进 done"/"标记为 done"/"转为 done / established"）。
-# 只认一种措辞的话，换个说法就绕过门禁——而绕过是无声的，没人会知道死锁又回来了。
-_STATUS_WRITEBACK = re.compile(
-    r"(?:推进|标记|转为|改为|置为|切换到)[^\n]{0,24}`?(?:done|established)\b"
-    r"|`done\s*/\s*established`"
-)
+# 状态回写任务用显式标记声明，不从自然语言推断。
+# 上一版靠正则猜措辞（"推进 done"/"标记为 done"…），两头都不成立：换个说法就能无声
+# 绕过（"更新为 done"、"设为 done"），而一句"核对 `done / established` 的前置证据"
+# 又会被误判成状态转换。措辞是人写的，标记才是可判定的——与 `[成果门:R1]` 同构。
+_STATUS_GATE_MARK = re.compile(r"`\[状态门\]`")
+# 「必须存在 `[状态门]`」的规则引入日。豁免条件是**规则出现时已经 done**（如 0.1.4），
+# 不是「created 早于规则日」——后者会把 0.1.5 这种规则出现前创建、但还在开发中的
+# 里程碑一并放过，而它恰恰是最需要这条门的那个。只要标记出现了，唯一性与末项位置
+# 对所有 gate v1 里程碑一律执法。
+STATUS_GATE_RULE_DATE = "2026-08-15"
 
 
 def validate_status_writeback_is_last(
     front: dict, tasks_text: str, errors: list[str], where: str
 ) -> None:
-    """推进 `done` 的任务必须是全文件最后一项。
+    """`[状态门]` 任务必须存在、唯一，且是全文件最后一项。
 
     否则形成不可满足顺序：gate v1 的 `done` 要求全部任务已勾完，而排在状态回写之后的
     任务又要求先 `done` 才轮到它。这类死锁只有在真正收口那天才会撞上——那时改的人
@@ -757,13 +761,29 @@ def validate_status_writeback_is_last(
     blocks = _task_blocks(tasks_text)
     if not blocks:
         return
-    for index, (_mark, tid, block) in enumerate(blocks):
-        if _STATUS_WRITEBACK.search(block) and index != len(blocks) - 1:
-            fail(
-                errors,
-                f"{where}: {tid} 推进生命周期状态但不是最后一项任务，"
-                f"与 gate v1 的 done 门形成不可满足顺序",
-            )
+    marked = [
+        (index, tid)
+        for index, (_mark, tid, block) in enumerate(blocks)
+        if _STATUS_GATE_MARK.search(block)
+    ]
+    if not marked:
+        created = front.get("created", "")
+        closed_before_rule = front.get("status") == "done" and (
+            isinstance(created, str) and created < STATUS_GATE_RULE_DATE
+        )
+        if not closed_before_rule:
+            fail(errors, f"{where}: tasks 缺少 `[状态门]` 任务，生命周期回写没有可判定的位置")
+        return
+    if len(marked) > 1:
+        fail(errors, f"{where}: `[状态门]` 必须唯一，实际出现在 {[tid for _i, tid in marked]}")
+        return
+    index, tid = marked[0]
+    if index != len(blocks) - 1:
+        fail(
+            errors,
+            f"{where}: {tid} 是 `[状态门]` 但不是最后一项任务，"
+            f"与 gate v1 的 done 门形成不可满足顺序",
+        )
 
 
 def validate_task_id_order(front: dict, tasks_text: str, errors: list[str], where: str) -> None:

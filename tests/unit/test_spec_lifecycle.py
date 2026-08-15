@@ -971,41 +971,92 @@ def test_outcome_gate_ignores_phase_headings_outside_section_two(sv):
     assert errors == []
 
 
+_ACTIVE = {"gate_version": 1, "status": "draft", "created": "2026-08-16"}
+
+
 @pytest.mark.parametrize(
     "wording",
     [
         "回写验收证据并推进 `done / established`",
-        "推进 status 到 done",
+        "更新为 done",
+        "设为 done",
         "把里程碑标记为 done",
-        "将 0.1.5 转为 `done`",
-        "在证据成立后置为 established",
     ],
 )
-def test_status_writeback_before_other_tasks_is_rejected(sv, wording):
-    """`done` 要求全部任务勾完，状态回写又排在别的任务前面 → 不可满足顺序。
+def test_status_gate_before_other_tasks_is_rejected(sv, wording):
+    """`done` 要求全部任务勾完，状态门又排在别的任务前面 → 不可满足顺序。
 
-    措辞变体全部要认：只认一种说法的话，换个写法就无声绕过门禁，而绕过的代价是
-    死锁在真正收口那天才重新出现。
+    判定只看 `[状态门]` 标记，与措辞无关：上一版用正则猜自然语言，"更新为 done"、
+    "设为 done" 都能无声绕过，而"核对 `done / established` 的前置证据"又会被误报。
     """
     tasks = (
         "## 3. 验证与验收任务\n\n"
-        f"- [ ] **T220** (`FR-026`): {wording} — verify: `x`\n"
+        f"- [ ] **T220** `[状态门]` (`FR-026`): {wording} — verify: `x`\n"
         "- [ ] **T221** `[成果门:R5]` (`FR-027`): 生成交付入口 — verify: `y`\n"
     )
     errors: list[str] = []
-    sv.validate_status_writeback_is_last({"gate_version": 1}, tasks, errors, "m")
+    sv.validate_status_writeback_is_last(_ACTIVE, tasks, errors, "m")
     assert any("不可满足顺序" in e and "T220" in e for e in errors)
 
 
-def test_status_writeback_as_final_task_passes(sv):
+def test_status_gate_as_final_task_passes(sv):
     tasks = (
         "## 3. 验证与验收任务\n\n"
         "- [ ] **T220** `[成果门:R5]` (`FR-027`): 生成交付入口 — verify: `y`\n"
-        "- [ ] **T221** (`FR-026`): 全部勾完后回写并推进 `done / established` — verify: `x`\n"
+        "- [ ] **T221** `[状态门]` (`FR-026`): 全部勾完后回写并推进 `done / established`"
+        " — verify: `x`\n"
     )
     errors: list[str] = []
-    sv.validate_status_writeback_is_last({"gate_version": 1}, tasks, errors, "m")
+    sv.validate_status_writeback_is_last(_ACTIVE, tasks, errors, "m")
     assert errors == []
+
+
+def test_prose_about_done_no_longer_false_positives(sv):
+    """只提到 `done / established` 但没标 `[状态门]` 的任务不该被判成状态转换。"""
+    tasks = (
+        "## 3. 验证与验收任务\n\n"
+        "- [ ] **T220** (`FR-026`): 核对 `done / established` 的前置证据 — verify: `x`\n"
+        "- [ ] **T221** `[状态门]` (`FR-026`): 回写并推进 — verify: `y`\n"
+    )
+    errors: list[str] = []
+    sv.validate_status_writeback_is_last(_ACTIVE, tasks, errors, "m")
+    assert errors == []
+
+
+def test_missing_status_gate_is_rejected_for_active_milestone(sv):
+    tasks = "## 3.\n\n- [ ] **T220** (`FR-026`): 回写并推进 `done` — verify: `x`\n"
+    errors: list[str] = []
+    sv.validate_status_writeback_is_last(_ACTIVE, tasks, errors, "m")
+    assert any("缺少 `[状态门]`" in e for e in errors)
+
+
+def test_missing_status_gate_exempts_milestones_closed_before_the_rule(sv):
+    """豁免条件是"规则出现时已经 done"，不是"created 早于规则日"。
+
+    按 created 豁免会把 0.1.5 这种规则前创建、仍在开发中的里程碑一并放过——
+    而它恰恰是最需要这道门的那个。
+    """
+    tasks = "## 3.\n\n- [ ] **T404** (`FR-019`): 回写状态 — verify: `x`\n"
+    closed = {"gate_version": 1, "status": "done", "created": "2026-08-09"}
+    errors: list[str] = []
+    sv.validate_status_writeback_is_last(closed, tasks, errors, "m")
+    assert errors == []
+
+    still_open = {"gate_version": 1, "status": "draft", "created": "2026-08-09"}
+    errors = []
+    sv.validate_status_writeback_is_last(still_open, tasks, errors, "m")
+    assert any("缺少 `[状态门]`" in e for e in errors)
+
+
+def test_duplicate_status_gate_is_rejected(sv):
+    tasks = (
+        "## 3.\n\n"
+        "- [ ] **T220** `[状态门]` (`FR-026`): 回写 — verify: `x`\n"
+        "- [ ] **T221** `[状态门]` (`FR-026`): 又回写 — verify: `y`\n"
+    )
+    errors: list[str] = []
+    sv.validate_status_writeback_is_last(_ACTIVE, tasks, errors, "m")
+    assert any("必须唯一" in e for e in errors)
 
 
 def test_task_ids_must_increase_in_document_order(sv):
