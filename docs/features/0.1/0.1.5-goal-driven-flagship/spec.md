@@ -100,6 +100,8 @@ prerequisites:
   `maint_bp` 或实验臂 ID；当前权益只作为私有状态参与风险预算。
 - **FR-022**：每代理只消费 `(last_seen_market_event_id, market_data_event_id]` 内的公开
   成交与已完成全局 K 线，维护自己的持久 EWMA；信息集和内部状态 Schema 版本化且封闭。
+  **游标只在该区间被完整消费且内部状态与证据事件成功提交后才原子推进**；中途失败时
+  游标保持旧值，重试重新消费同一区间且对该区间幂等。
 - **FR-023**：运行配置必须声明且只声明一个运行族。`SPONTANEOUS` 拒绝
   `agent_signals`、`extra_positions`、`extra_events`、合成冲击账户和结果条件化订单；
   `STRESS` 只接受有限、版本化、四 cell 相同的 `StressProtocol`；`BENCHMARK` 证据不可
@@ -181,7 +183,8 @@ not-established -> established  status=done 且 evidence_class: formal-research
 
 - [ ] **AC-001** (`FR-021`, `SC-009`): 目标层没有制度字段依赖，约束正反测试通过。
 - [ ] **AC-002** (`FR-022`, `DR-501`, `TR-501`, `NFR-005`, `SC-009`): 信息游标、K 线与
-      EWMA 确定性通过；观察/决策事件记录游标边界与封闭 Schema 版本。
+      EWMA 确定性通过；观察/决策事件记录游标边界与封闭 Schema 版本；**故障注入测试证明
+      消费中途失败后重试不丢公开事件、不产生重复决策证据**。
 - [ ] **AC-003** (`FR-023`, `IR-501`, `NFR-005`): 三运行族非法输入和未知字段均 fail
       closed，且拒绝信息包含字段路径与原因。
 - [ ] **AC-004** (`FR-023`, `DR-501`): `StressProtocolV1` 有限、版本化、确定性序列化，
