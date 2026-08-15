@@ -79,8 +79,9 @@ public market tape + completed bars + private state
    在 T202 预注册冻结。
 2. ~~**退化输入的确定行为**~~ — **已冻结**于 `agent-strategy.md §5.2.3`：mark 未定义
    跳过决策、`equity ≤ 0` 只允许减仓、EWMA 样本不足时目标为 0。
-3. ~~**约束层边界**~~ — **已冻结**于 `agent-strategy.md §5.2.4`：挂单与预留费用计入
-   占用、绑定判定用观察时刻快照、只裁剪规模不改方向（含穿零边界算例）。
+3. ~~**约束层边界**~~ — **已冻结**于 `agent-strategy.md §5.2.4`：与账户合同 §3.3 同口径
+   的 `reserved_after <= risk_equity`（**不得写成 `equity − reserved`**，那是重复扣除）、
+   减仓豁免、翻仓拆两段、绑定用观察时刻快照、只裁剪规模不改方向（含三条边界算例）。
 4. **四个 V1 Schema**：`InformationSetV1`、`AgentInternalStateV1`、`DecisionEvidenceV1`、
    `StressProtocolV1` 的逐字段类型、可空性、取值域、版本字段与确定性序列化顺序。
    **序列化口径已定**：字段按名称字典序、整数不带前导零、`null` 显式写出、哈希复用
