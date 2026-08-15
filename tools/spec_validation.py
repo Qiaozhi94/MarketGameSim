@@ -735,6 +735,34 @@ def validate_outcome_gates(
             fail(errors, f"{where}: 「{title}」的成果门不是本阶段最后一项任务")
 
 
+_STATUS_WRITEBACK = re.compile(
+    r"推进\s*`?(?:done|status)\b|`done / established`|`done/established`"
+)
+
+
+def validate_status_writeback_is_last(
+    front: dict, tasks_text: str, errors: list[str], where: str
+) -> None:
+    """推进 `done` 的任务必须是全文件最后一项。
+
+    否则形成不可满足顺序：gate v1 的 `done` 要求全部任务已勾完，而排在状态回写之后的
+    任务又要求先 `done` 才轮到它。这类死锁只有在真正收口那天才会撞上——那时改的人
+    通常已经不是写任务清单的人。
+    """
+    if front.get("gate_version") != 1:
+        return
+    blocks = _task_blocks(tasks_text)
+    if not blocks:
+        return
+    for index, (_mark, tid, block) in enumerate(blocks):
+        if _STATUS_WRITEBACK.search(block) and index != len(blocks) - 1:
+            fail(
+                errors,
+                f"{where}: {tid} 推进生命周期状态但不是最后一项任务，"
+                f"与 gate v1 的 done 门形成不可满足顺序",
+            )
+
+
 def validate_task_id_order(front: dict, tasks_text: str, errors: list[str], where: str) -> None:
     """任务 ID 全文件唯一且按文档顺序递增（模板 §2）。
 
@@ -1097,6 +1125,7 @@ def validate_spec_lifecycle(
         validate_completion_state(mid, front, spec_text, tasks_text, all_ids, errors)
         validate_outcome_gates(front, tasks_text, errors, where)
         validate_task_id_order(front, tasks_text, errors, where)
+        validate_status_writeback_is_last(front, tasks_text, errors, where)
 
         # 状态唯一性：design/tasks 独立检查，不依赖 design 存在
         check_status_uniqueness(design_text, tasks_text, errors, where)

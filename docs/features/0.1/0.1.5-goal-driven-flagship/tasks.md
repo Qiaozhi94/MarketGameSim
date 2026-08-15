@@ -67,10 +67,12 @@ updated: 2026-08-15
 
 - [ ] **T218** (`AC-001`—`AC-012`): 逐项核对退出条件、批量回归与正式证据路径 — verify: `python tools/verify.py`
 - [ ] **T219** (`AC-001`—`AC-012`): 运行项目统一质量门和确定性复现 — verify: `python tools/verify.py`
-- [ ] **T220** (`FR-026`, `AC-009`, `AC-010`): 回写验收证据并仅在正式证据成立后推进 `done / established` — verify: `tools/validate_spec_lifecycle.py`
-- [ ] **T221** `[成果门:R5]` (`FR-027`, `AC-009`, `AC-012`): 生成 v0.1 研究交付入口，确保非开发者从
+- [ ] **T220** `[成果门:R5]` (`FR-027`, `AC-009`, `AC-012`): 生成 v0.1 研究交付入口，确保非开发者从
       README 两次点击内到达总结报告、代表性回放、限制说明与 evidence index — verify:
       `python tools/verify.py`
+- [ ] **T221** (`FR-026`, `AC-009`, `AC-010`): **全部任务与 AC 勾完后**，在同一次变更里回写
+      验收证据并推进 `done / established`；必须是本文件最后一项 — verify:
+      `tools/validate_spec_lifecycle.py`
 
 ## 4. 依赖与并行关系
 
@@ -81,6 +83,8 @@ updated: 2026-08-15
 - `T209—T213 -> T214`：四 cell 预览只使用已验证的新路径。
 - `T214 -> T215 -> T216 -> T217 -> T218 -> T219 -> T220 -> T221`：预览、正式运行、
   证据与状态顺序不可逆。
+- `T221` 必须排在最后：gate v1 的 `done` 要求全部任务与 AC 已完成，若状态回写排在任何
+  任务之前，就形成"`done` 要求该任务完成、该任务又要求先 `done`"的不可满足顺序。
 
 ## 5. 明确后移
 
