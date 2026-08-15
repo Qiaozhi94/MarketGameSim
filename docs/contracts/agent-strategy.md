@@ -230,6 +230,70 @@ preferences + private state + permitted observations
 - 非绑定约束不得改变订单意图，绑定约束只裁剪可执行目标；
 - 每次决策同时记录 `desired_position_units`、`executable_position_units`、绑定状态与原因。
 
+#### 5.2.1 风险预算与两个目标模型
+
+v1 的 `max_notional = equity × leverage_tier` 把处理变量直接写进了行为公式。v2 换成
+**代理自己的偏好**，制度上限退回约束层：
+
+```text
+risk_appetite   ∈ 偏好分布，一次运行内固定（与信念权重 w 同批抽取，D-3）
+max_notional    = equity × risk_appetite              # equity 为私有状态，允许
+max_position    = floor(max_notional / mark)          # 单位：min_quantity 整数
+```
+
+`risk_appetite` 与 `leverage_tier` 在数值上可能落在同一量级，但**语义完全不同**：前者是
+"我愿意把权益放大多少倍"（行为），后者是"制度允许我放大多少倍"（处理）。二者独立抽取，
+代理不知道后者的取值。
+
+**主模型 `risk_budget_linear_v1`**：
+
+```text
+desired_position_units = trunc(signal_bp × max_position / 10000)     # 向零取整
+```
+
+**稳健性模型 `risk_budget_threshold_v1`**（带滞回的阶梯映射）：
+
+```text
+若 |signal_bp| ≥ θ_in                        → 目标为 sign(signal_bp) × trunc(k × max_position)
+若 |signal_bp| ≤ θ_out 且当前有仓            → 目标为 0
+其余（θ_out < |signal_bp| < θ_in）           → 维持当前仓位不变
+约束：0 < θ_out < θ_in ≤ 10000，0 < k ≤ 1
+```
+
+滞回（`θ_out < θ_in`）是必须的：没有它，信号在阈值附近抖动会让代理反复全额进出，
+制造出与市场无关的成交量与撤单率。**`θ_in`、`θ_out`、`k` 的具体取值属于实验设计，
+在预注册里冻结，不在本合同写死**——它们会直接改变结果。
+
+两个模型必须结构性不同（线性 vs 阈值），否则稳健性检验只是换了一组系数。
+
+#### 5.2.2 取整、饱和与标准化
+
+- 取整一律 `trunc` 向零（ADR-001）；饱和在可行域边界**截断**，不报错、不跳过。
+- signal 标准化沿用 §4 的固定尺度截断，v2 不改——改标准化会同时改变因子行为，
+  与本轮要识别的制度效应混在一起。
+
+#### 5.2.3 退化输入的确定行为
+
+| 情形 | 行为 |
+|---|---|
+| `valuation_mark` 未定义（两侧簿空且无成交） | 跳过本次决策，不下单（同 §5.1） |
+| `equity ≤ 0` | `desired_position_units = 0`，且**只允许减仓**，不得开新仓 |
+| EWMA 样本不足（少于该代理半衰期的 2 倍） | 用冷启动价格作锚，`desired_position_units = 0` |
+
+`equity ≤ 0` 选"只允许减仓"而不是"跳过决策"：跳过会让濒临强平的账户表现为呆滞，
+与强平链的真实动态不符——而强平链正是旗舰问题的观察对象。
+
+#### 5.2.4 制度约束层的边界
+
+- **可行域** = 权益 − 已挂未成交单占用的保证金 − 预留手续费。挂单与预留费用**计入**
+  占用，否则同一份权益会被重复承诺。
+- **绑定判定时点**取本次观察时刻的保证金率快照，决策过程中不重算。
+- **绑定只裁剪规模，不改方向**。若目标与当前仓位反向且超出可行域，裁剪到可行域边界
+  即可，允许穿过 0。
+
+边界算例（必须进 golden vector）：持多仓 `+100`，`desired = -80`，可行域只够承担
+`90` 单位的调整量 → `executable = +10`（平掉 90），**不是**"不动"，也不是 `-80`。
+
 ## 6. 订单意图
 
 ```text
