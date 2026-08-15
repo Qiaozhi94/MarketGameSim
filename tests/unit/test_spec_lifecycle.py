@@ -971,6 +971,29 @@ def test_outcome_gate_ignores_phase_headings_outside_section_two(sv):
     assert errors == []
 
 
+def test_status_writeback_before_other_tasks_is_rejected(sv):
+    """`done` 要求全部任务勾完，状态回写又排在别的任务前面 → 不可满足顺序。"""
+    tasks = (
+        "## 3. 验证与验收任务\n\n"
+        "- [ ] **T220** (`FR-026`): 回写验收证据并推进 `done / established` — verify: `x`\n"
+        "- [ ] **T221** `[成果门:R5]` (`FR-027`): 生成交付入口 — verify: `y`\n"
+    )
+    errors: list[str] = []
+    sv.validate_status_writeback_is_last({"gate_version": 1}, tasks, errors, "m")
+    assert any("不可满足顺序" in e and "T220" in e for e in errors)
+
+
+def test_status_writeback_as_final_task_passes(sv):
+    tasks = (
+        "## 3. 验证与验收任务\n\n"
+        "- [ ] **T220** `[成果门:R5]` (`FR-027`): 生成交付入口 — verify: `y`\n"
+        "- [ ] **T221** (`FR-026`): 全部勾完后回写并推进 `done / established` — verify: `x`\n"
+    )
+    errors: list[str] = []
+    sv.validate_status_writeback_is_last({"gate_version": 1}, tasks, errors, "m")
+    assert errors == []
+
+
 def test_task_ids_must_increase_in_document_order(sv):
     tasks = (
         "## 2. 实现任务\n\n"
