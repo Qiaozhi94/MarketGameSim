@@ -200,11 +200,12 @@ not-established -> established  status=done 且 evidence_class: formal-research
 - [ ] **AC-009** (`FR-026`, `DR-502`, `SC-011`): 正式 evidence index 完整（配置哈希、
       代码版本、种子计划、预注册引用、三终点结果与 evidence class）且所有路径存在。
 - [ ] **AC-010** (`NFR-005`): `python tools/verify.py` 全绿且正式运行可由 manifest 复现。
-- [ ] **AC-011** (`FR-027`, `NFR-005`): R1—R4 每个成果包可由单条命令重建，manifest 的
+- [ ] **AC-011** (`FR-027`, `NFR-005`): R1—R5 每个成果包可由单条命令重建，manifest 的
       `evidence_class` 与运行族一致，示范/预览报告携带“不可作结论”声明。
-- [ ] **AC-012** (`FR-027`, `SC-011`): R5 交付入口存在，非开发者从 README 两次点击内
-      到达总结报告、代表性回放、限制说明与 evidence index；**四者均为仓库内已提交路径，
-      在 clean checkout（不含 `artifacts/`）中链接全部有效**，且回放离线可开。
+- [ ] **AC-012** (`FR-027`, `SC-011`): **同一条命令**在 clean checkout（不含
+      `artifacts/`）中同时生成 R5 成果包与仓库内交付入口；生成后非开发者从 README 两次
+      点击内到达总结报告、代表性回放、限制说明与 evidence index，四者均为仓库内已提交
+      路径、链接全部有效、回放离线可开。
 
 ## 7. 测试、依赖与决策
 

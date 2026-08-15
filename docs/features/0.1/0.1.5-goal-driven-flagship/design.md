@@ -163,8 +163,8 @@ evidence class 与研究声明资格；缺项时报告生成失败。
 | `AC-003`—`AC-004` | unit | `tests/unit/experiment/` | 三族允许/拒绝矩阵；协议有限且 cell 相同 |
 | `AC-005` | integration | `tests/integration/` | 多成交链全部外键存在且顺序合法 |
 | `AC-006`—`AC-010` | integration + formal run | `tests/integration/`、`docs/experiments/` | 四 cell、三家族、证据权限与复现闭环 |
-| `AC-011` | integration | `tests/integration/test_showcase_bundle.py`、`test_goal_driven_showcase.py`、`test_flagship_preview.py` | 单命令重建成果包；manifest `evidence_class` 与运行族一致；预览/示范带“不可作结论”声明 |
-| `AC-012` | integration | `tests/integration/test_delivery_entry.py` | clean checkout（不含 `artifacts/`）中 README → 报告/回放/限制说明/evidence index 深度 ≤ 2、链接全部有效、回放离线可开且 ≤ 5 MB |
+| `AC-011` | integration | `tests/integration/test_showcase_bundle.py`、`test_goal_driven_showcase.py`、`test_flagship_preview.py`、`test_delivery_entry.py` | R1—R5 单命令重建成果包；manifest `evidence_class` 与运行族一致；预览/示范带“不可作结论”声明 |
+| `AC-012` | integration | `tests/integration/test_delivery_entry.py` | clean checkout 中执行**同一条命令**产出成果包与交付物，随后 README → 报告/回放/限制说明/evidence index 深度 ≤ 2、链接全部有效、回放离线可开且 ≤ 5 MB |
 
 ## 9. 已确认决策与残余风险
 
