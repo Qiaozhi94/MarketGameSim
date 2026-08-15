@@ -94,10 +94,25 @@ public market tape + completed bars + private state
 不新增 UI。离线报告必须展示运行族、目标模型版本、`L/M` cell、三终点家族、排除原因、
 evidence class 与研究声明资格；缺项时报告生成失败。
 
-成果包（`FR-027`）落在被 git 忽略的 `artifacts/showcase/<gate>/`，固定包含 `RUN.md`
-（重建命令与边界声明）、`manifest.json`（代码版本、配置哈希、种子计划、
-`evidence_class`）、`replay.html` 与 `summary.md`；只有正式摘要与 evidence index 进入
-`docs/experiments/`。`evidence_class` 取值与生命周期约束由
+成果包（`FR-027`）默认落在被 git 忽略的 `artifacts/showcase/<gate>/`（`<gate>` 为
+`R1`—`R5`，另有 `latest` 符号别名指向最近一次运行），固定包含 `RUN.md`（重建命令与
+边界声明）、`manifest.json`（代码版本、配置哈希、种子计划、`evidence_class`）、
+`replay.html` 与 `summary.md`。
+
+**R5 交付入口不得链接被忽略目录**：`artifacts/` 在 clean checkout 里不存在，README
+指过去必然断链，而断链只有在别人克隆仓库时才会发现。因此 R5 必须把三类产物提交进
+仓库：
+
+| 产物 | 仓库内路径 | 说明 |
+|---|---|---|
+| 总结报告与限制说明 | `docs/experiments/0.1.5-flagship-report.md` | 正式结论、效应量、失效边界 |
+| evidence index | `docs/experiments/0.1.5-evidence-index.json` | `formal-research` 证据清单 |
+| 代表性回放 | `docs/experiments/0.1.5-representative-replay.html` | 单文件、离线可开、降采样后 ≤ 5 MB |
+
+代表性回放**提交进仓库**而不是只留重建命令：R5 的受众按定义是非开发者，"先装依赖再
+跑一条命令"对他们等于不可达。5 MB 上限由生成器在 R4 阶段校验，超限时降采样并在页面
+上标注降采样比例（0.1.4 §3.3 已有该机制）。其余成果包（R1—R4）仍只留在 `artifacts/`，
+以 `RUN.md` 的单命令重建。`evidence_class` 取值与生命周期约束由
 [`docs/features/README.md`](../../README.md) 拥有，成果包只引用不重定义；
 `engineering-demonstration` 与 `experiment-preview` 的报告必须由生成器写入
 “不可作结论”声明，缺失即生成失败，不允许仅在人工措辞上约束。
@@ -119,7 +134,7 @@ evidence class 与研究声明资格；缺项时报告生成失败。
 | `AC-005` | integration | `tests/integration/` | 多成交链全部外键存在且顺序合法 |
 | `AC-006`—`AC-010` | integration + formal run | `tests/integration/`、`docs/experiments/` | 四 cell、三家族、证据权限与复现闭环 |
 | `AC-011` | integration | `tests/integration/test_showcase_bundle.py`、`test_goal_driven_showcase.py`、`test_flagship_preview.py` | 单命令重建成果包；manifest `evidence_class` 与运行族一致；预览/示范带“不可作结论”声明 |
-| `AC-012` | integration | `tests/integration/test_delivery_entry.py` | README → 报告/回放/限制说明/evidence index 的链接深度 ≤ 2 且全部有效 |
+| `AC-012` | integration | `tests/integration/test_delivery_entry.py` | clean checkout（不含 `artifacts/`）中 README → 报告/回放/限制说明/evidence index 深度 ≤ 2、链接全部有效、回放离线可开且 ≤ 5 MB |
 
 ## 9. 已确认决策与残余风险
 
