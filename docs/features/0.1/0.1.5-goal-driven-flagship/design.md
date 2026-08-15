@@ -66,6 +66,27 @@ public market tape + completed bars + private state
 观察、决策、订单、成交、风险与强平事件以稳定外键相连。`trigger_provenance` 为闭集；
 `SPONTANEOUS` 中发现 `EXOGENOUS_STRESS` 时整次运行无资格进入研究证据。
 
+### T201 必须冻结的清单（代码前置，不得边实现边定）
+
+上面两个 Adapter 签名只给出**接口形状**，不构成可实现的语义。以下每一项都会直接改变
+实验结果，因此必须在 T201 里写进版本化 Contract 并配 golden vector，**不能留给实现者
+在写代码时顺手决定**——那等于让实现细节反过来定义研究对象：
+
+1. **目标模型数学**：输入量纲与单位、风险预算的来源与上界、`risk_budget_linear_v1`
+   与 `risk_budget_threshold_v1` 的方程形态与参数、threshold 的阈值与滞回（若有）、
+   取整/饱和的方向与时机。
+2. **退化输入的确定行为**：冷启动无成交、权益为负或为零、`valuation_mark` 未定义、
+   EWMA 历史不足时各返回什么，以及是否跳过本次决策。
+3. **约束层边界**：已挂未成交订单与预留手续费是否计入可行域、绑定判定用哪个时点的
+   保证金率、绑定时只裁剪规模还是也改方向（合同已定"只裁剪"，需给出边界算例）。
+4. **四个 V1 Schema**：`InformationSetV1`、`AgentInternalStateV1`、`DecisionEvidenceV1`、
+   `StressProtocolV1` 的逐字段类型、可空性、取值域、版本字段与确定性序列化顺序。
+5. **三运行族逐字段 allow/deny 矩阵**：每个配置字段在 `SPONTANEOUS`/`STRESS`/
+   `BENCHMARK` 下是必需、可选还是禁止，以及拒绝信息里的字段路径格式。
+
+golden vector 与 allow/deny 矩阵都是参数化测试的直接输入，因此 T201 的产出是可被
+`tests/unit/agent/`、`tests/unit/experiment/` 消费的数据，而不只是散文。
+
 ## 5. Runtime、Workflow 与并发
 
 每次观察的顺序是**先消费、后推进游标**（与

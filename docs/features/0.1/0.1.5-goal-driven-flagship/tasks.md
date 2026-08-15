@@ -22,8 +22,15 @@ updated: 2026-08-15
 
 ## 1. 前置条件
 
-- [ ] **T201** (`FR-021`—`FR-027`): 更新代理、事件、实验与证据 Contract，并冻结 Schema 版本 — verify: `python tools/verify.py`
-- [ ] **T202** (`FR-024`, `SC-010`): 冻结 `2 × 2`、三终点家族、seed plan 与排除规则预注册 — verify: `docs/experiments/`
+- [ ] **T201** (`FR-021`—`FR-027`): 更新代理、事件、实验与证据 Contract，并冻结 Schema 版本；
+      必须逐项覆盖 [`design.md §4`](design.md) 的 T201 冻结清单（目标模型数学、退化输入行为、
+      约束边界、四个 V1 Schema、三族逐字段 allow/deny 矩阵），产出可被参数化测试直接消费的
+      golden vector 与矩阵数据 — verify: `python tools/verify.py`
+- [ ] **T202** (`FR-024`, `SC-010`): 冻结 0.1.5 预注册，逐项填满
+      [`experiment-template.md` §预注册分析](../../../experiments/experiment-template.md) 的
+      必填清单（`L/M` 水平取值、主效应与交互估计量、三家族终点指标定义、样本量与功效依据、
+      seed plan、排除与停止规则、BH 校正集合、校准/验证/实验区划分）；**冻结前不得开始 T213
+      的统计实现与任何正式运行** — verify: `docs/experiments/`
 
 ## 2. 实现任务
 
