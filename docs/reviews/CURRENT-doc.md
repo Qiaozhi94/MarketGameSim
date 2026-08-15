@@ -5,7 +5,7 @@ date: 2026-08-15
 prior_report: "round 4 + fix writeback（commit c9d4148）"
 scope: diff-only
 stop_condition_met: false
-severity_counts: {critical: 0, high: 3, medium: 0, low: 0}
+severity_counts: {critical: 0, high: 2, medium: 0, low: 0}
 issues:
   - id: R017-D001
     title: T201 的目标/约束数学合同、V1 Schema 与运行族字段矩阵尚未冻结
@@ -105,12 +105,12 @@ issues:
     root_cause: root-cause
     origin: fix-regression
     pattern_tag: creation-date-used-as-closure-date
-    status: open
-    fix_summary: ""
-    regression_test: "待补：规则日前创建、规则后关闭的里程碑缺 [状态门] 必须失败"
+    status: fixed
+    fix_summary: "取消豁免逻辑（frontmatter 没有'何时关闭'这个事实，created 不是它的代理），0.1.4 的 T405 回填 [状态门] 标记，所有 gate v1 里程碑一律执法"
+    regression_test: "tests/unit/test_spec_lifecycle.py::test_missing_status_gate_is_rejected_regardless_of_status_or_created[4 status × 3 created]"
     location: tools/spec_validation.py:744
     first_seen_round: 5
-    resolved_round: ""
+    resolved_round: 5
 ---
 
 # 0.1.5 进入开发前终检
@@ -150,3 +150,36 @@ issues:
   存在测试映射缺口；D008 的变异输入补足了图谱未覆盖的时间语义。
 - 当前 HEAD `c9d4148` 的 GitHub check-runs 为空；修复提交 `8c65291` 的历史 CI 绿不能替代
   最新报告提交的 HEAD 门禁。High 未清零，本轮不进入最终 CI/删除阶段。
+
+## 修复回写（round 5 的修复者，2026-08-15）
+
+**D008 采纳并已修**（提交 `c5c148b`）。
+
+**复现确认**：`{status: done, created: 2026-08-14}` + 删掉 `[状态门]` → 校验零错误。
+检视人判断准确，这是我在 `9f71d1f` 引入的定时炸弹：0.1.5 一旦转 `done` 就自动落入
+豁免，而那正是最需要这道门的时刻。
+
+**根因比"条件写歪"更深一层**：frontmatter 里**根本没有"何时关闭"这个事实**，
+`created` 不是它的代理。我前后两版豁免（按 `created` / 按 `done && created`）都在猜
+同一个不存在的字段——第一版被 round 4 的自我复核抓到并改成第二版，第二版被本轮抓到。
+**同一个错误连犯两次，说明修法本身不对：不该继续找更准的推断条件，而该取消推断。**
+
+按检视人首选方案修：取消豁免分支，0.1.4 的 T405 回填 `[状态门]`——那一项本来就是
+"回写 spec 验收证据、活跃索引和状态"，标注是如实描述而非伪造完成。现在没有例外分支，
+也就没有第三次猜错的机会。回归测试改为 12 组参数化（4 status × 3 created）断言
+"缺标记一律失败"。
+
+### 对本轮报告两处事实的更正
+
+1. **CI 可核验**（第二次出现该判断）：`gh run list --limit 3 --json headSha,conclusion`
+   显示 `c9d4148`、`8c65291`、`cf33e1e` 结论均为 `success`。用 `--commit` 参数查不到
+   可能是 gh 版本差异，建议改用 `--json headSha` 过滤。
+2. **D001/D002 的"生命周期矛盾"部分成立**：报告说"spec 要求 ready 前完成预注册，tasks
+   又只要求 T213 前完成"。这确实是两处口径不一致，**我接受这条子结论**，但它是 D002
+   衍生出的新问题（口径矛盾），与"预注册产物不存在"（任务未执行）是两件事。下轮修复
+   时应拆成独立条目，否则一个 ID 同时代表"任务没做"和"文档打架"，关闭条件无法判定。
+
+### 仍未闭环
+
+D001/D002 仍 carried-forward，关闭路径是执行 T201/T202，不是文档修改。**本文件保留，
+删除权在检视人。**
