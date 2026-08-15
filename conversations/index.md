@@ -1,6 +1,6 @@
 # AI 对话归档索引
 
-> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 77
+> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 81
 
 ## 工具统计
 
@@ -8,8 +8,8 @@
 |---|---|
 
 | OpenCode | 46 |
-| Claude Code | 11 |
-| Codex CLI | 20 |
+| Claude Code | 12 |
+| Codex CLI | 23 |
 
 ## 会话血缘树
 
@@ -70,6 +70,7 @@
   - Fix report module review findings (@Sisyphus-Junior subagent) (`opencode` · 2026-08-11T14:45:57Z)
   - Fix replay round-2 findings (@Sisyphus-Junior subagent) (`opencode` · 2026-08-11T16:02:03Z)
   - Fix report round-2 findings (@Sisyphus-Junior subagent) (`opencode` · 2026-08-11T16:02:49Z)
+- **78674ea7-cfdb-40e3-9b51-62bdbe78ec08** (`claude` · 2026-08-14T16:11:39Z)
 
 ## 原始会话清单
 
@@ -152,3 +153,7 @@
 | 2026-08-11T15:21:27Z | Codex CLI | rollout-2026-08-11T23-21-20-019ff169-f21a-7461-8181-94fb49039800 | openai | `codex/rollout-2026-08-11T23-21-20-019ff169-f21a-7461-8181-94fb49039800.md` |
 | 2026-08-11T16:02:03Z | OpenCode | Fix replay round-2 findings (@Sisyphus-Junior subagent) | glm-5.2 | `opencode/ses_00e70c77fffeG49MMeMC15wp0C.md` |
 | 2026-08-11T16:02:49Z | OpenCode | Fix report round-2 findings (@Sisyphus-Junior subagent) | glm-5.2 | `opencode/ses_00e701278ffeNWtBUGE3fyTjDK.md` |
+| 2026-08-14T13:17:40Z | Codex CLI | rollout-2026-08-14T21-17-17-01a0006b-72dd-79b2-8159-e76a839b8686 | openai | `codex/rollout-2026-08-14T21-17-17-01a0006b-72dd-79b2-8159-e76a839b8686.md` |
+| 2026-08-14T13:23:02Z | Codex CLI | rollout-2026-08-14T21-22-59-01a00070-aa8e-71d0-ab12-76d5d8e9e6c0 | openai | `codex/rollout-2026-08-14T21-22-59-01a00070-aa8e-71d0-ab12-76d5d8e9e6c0.md` |
+| 2026-08-14T16:11:39Z | Claude Code | 78674ea7-cfdb-40e3-9b51-62bdbe78ec08 | claude-opus-5 | `claude/78674ea7-cfdb-40e3-9b51-62bdbe78ec08.md` |
+| 2026-08-15T02:47:51Z | Codex CLI | rollout-2026-08-15T10-47-24-01a00351-2353-75c3-a72b-a3db38628eab | openai | `codex/rollout-2026-08-15T10-47-24-01a00351-2353-75c3-a72b-a3db38628eab.md` |
