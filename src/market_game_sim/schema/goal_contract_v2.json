@@ -44,8 +44,8 @@
     "InformationSetV1": {
       "fields": {
         "schema_version": {"value_type": "int", "nullable": false, "required": "always"},
-        "cursor_from_event_id": {"value_type": "int", "nullable": false, "required": "always"},
-        "cursor_to_event_id": {"value_type": "int", "nullable": false, "required": "always"},
+        "cursor_from_event_id": {"value_type": "str", "nullable": false, "required": "always"},
+        "cursor_to_event_id": {"value_type": "str", "nullable": false, "required": "always"},
         "public_trades": {"value_type": "array", "nullable": false, "required": "always"},
         "completed_bars": {"value_type": "array", "nullable": false, "required": "always"},
         "book_top": {"value_type": "object", "nullable": true, "required": "always"},
@@ -55,7 +55,7 @@
     "AgentInternalStateV1": {
       "fields": {
         "schema_version": {"value_type": "int", "nullable": false, "required": "always"},
-        "last_seen_market_event_id": {"value_type": "int", "nullable": false, "required": "always"},
+        "last_seen_market_event_id": {"value_type": "str", "nullable": false, "required": "always"},
         "ewma_value_units": {"value_type": "int", "nullable": true, "required": "always"},
         "ewma_sample_count": {"value_type": "int", "nullable": false, "required": "always"},
         "model_private_state": {"value_type": "object", "nullable": false, "required": "always"}
@@ -81,7 +81,9 @@
           "required": "always",
           "enum": ["ENDOGENOUS_AGENT", "LIQUIDATION", "EXOGENOUS_STRESS"]
         },
-        "observation_event_id": {"value_type": "int", "nullable": false, "required": "always"}
+        "observation_event_id": {"value_type": "str", "nullable": false, "required": "always"},
+        "cursor_from_event_id": {"value_type": "str", "nullable": false, "required": "always"},
+        "cursor_to_event_id": {"value_type": "str", "nullable": false, "required": "always"}
       }
     },
     "StressProtocolV1": {

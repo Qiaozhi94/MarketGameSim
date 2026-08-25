@@ -590,6 +590,18 @@ def _model_reads_institutional_fields(d: dict) -> None:
     d["goal_models"]["risk_budget_linear_v1"]["reads_institutional_fields"] = True
 
 
+def _change_linear_equation(d: dict) -> None:
+    d["goal_models"]["risk_budget_linear_v1"]["equation"] = "desired = 0"
+
+
+def _change_threshold_bound(d: dict) -> None:
+    d["goal_models"]["risk_budget_threshold_v1"]["param_bounds"]["theta_in"]["max"] = 9999
+
+
+def _change_risk_appetite_bound(d: dict) -> None:
+    d["risk_appetite"]["bounds"]["max_x1000"] = 99999
+
+
 def _matrix_to_blacklist(d: dict) -> None:
     d["run_family_matrix"]["policy"] = "blacklist"
 
@@ -604,6 +616,54 @@ def _allow_injection_in_spontaneous(d: dict) -> None:
 
 def _illegal_family_verdict(d: dict) -> None:
     d["run_family_matrix"]["fields"]["seed_plan"]["STRESS"] = "maybe"
+
+
+def _add_unknown_run_family(d: dict) -> None:
+    d["run_family_matrix"]["families"].append("UNKNOWN")
+
+
+def _drop_run_family_cell(d: dict) -> None:
+    d["run_family_matrix"]["fields"]["seed_plan"].pop("BENCHMARK")
+
+
+def _change_declared_spontaneous_forbidden_set(d: dict) -> None:
+    d["run_family_matrix"]["spontaneous_forbidden_min_set"].pop()
+
+
+def _drop_required_decision_field(d: dict) -> None:
+    d["structures"]["DecisionEvidenceV1"]["fields"].pop("desired_position_units")
+
+
+def _drop_decision_cursor_boundary(d: dict) -> None:
+    d["structures"]["DecisionEvidenceV1"]["fields"].pop("cursor_from_event_id")
+
+
+def _drop_stress_events(d: dict) -> None:
+    d["structures"]["StressProtocolV1"]["fields"].pop("events")
+
+
+def _use_numeric_event_id(d: dict) -> None:
+    d["structures"]["DecisionEvidenceV1"]["fields"]["observation_event_id"]["value_type"] = "int"
+
+
+def _drop_seed_plan_matrix_row(d: dict) -> None:
+    d["run_family_matrix"]["fields"].pop("seed_plan")
+
+
+def _drop_degenerate_vectors(d: dict) -> None:
+    d["golden_vectors"].pop("degenerate")
+
+
+def _drop_linear_vector(d: dict) -> None:
+    d["golden_vectors"]["linear"].pop()
+
+
+def _break_degenerate_vector(d: dict) -> None:
+    d["golden_vectors"]["degenerate"][0]["expected_action"] = "emit_decision"
+
+
+def _drop_constraint_reason(d: dict) -> None:
+    d["structures"]["DecisionEvidenceV1"]["fields"]["constraint_reason"]["enum"].pop()
 
 
 def _break_linear_vector(d: dict) -> None:
@@ -640,6 +700,9 @@ GOAL_CONTRACT_MUTATIONS = [
         "reads_institutional_fields=false",
         id="目标模型读制度字段",
     ),
+    pytest.param(_change_linear_equation, "冻结属性 equation", id="主模型方程字符串漂移"),
+    pytest.param(_change_threshold_bound, "冻结属性 param_bounds", id="threshold 参数上界漂移"),
+    pytest.param(_change_risk_appetite_bound, "冻结属性 bounds", id="风险偏好上界漂移"),
     pytest.param(_matrix_to_blacklist, "必须是 whitelist", id="矩阵退回黑名单"),
     pytest.param(_unlisted_field_allowed, "未列字段的判定必须是 forbidden", id="未列字段默认放行"),
     pytest.param(
@@ -648,6 +711,54 @@ GOAL_CONTRACT_MUTATIONS = [
         id="自发族放行注入字段",
     ),
     pytest.param(_illegal_family_verdict, "非法", id="非法族判定"),
+    pytest.param(_add_unknown_run_family, "运行族闭集", id="增加未知运行族"),
+    pytest.param(_drop_run_family_cell, "逐格覆盖三个运行族", id="运行族矩阵缺一格"),
+    pytest.param(
+        _change_declared_spontaneous_forbidden_set,
+        "spontaneous_forbidden_min_set",
+        id="自发族禁用字段声明漂移",
+    ),
+    pytest.param(
+        _drop_required_decision_field,
+        "DecisionEvidenceV1 字段闭集不符",
+        id="决策证据必备字段被删除",
+    ),
+    pytest.param(
+        _drop_decision_cursor_boundary,
+        "DecisionEvidenceV1 字段闭集不符",
+        id="决策证据游标边界被删除",
+    ),
+    pytest.param(
+        _drop_stress_events,
+        "StressProtocolV1 字段闭集不符",
+        id="压力协议事件列表被删除",
+    ),
+    pytest.param(
+        _use_numeric_event_id,
+        "必须是 str",
+        id="事件外键退回数值类型",
+    ),
+    pytest.param(
+        _drop_seed_plan_matrix_row,
+        "运行族矩阵字段闭集不符",
+        id="运行族矩阵必备行被删除",
+    ),
+    pytest.param(
+        _drop_degenerate_vectors,
+        "golden_vectors 必须且只能包含",
+        id="退化状态向量族被删除",
+    ),
+    pytest.param(_drop_linear_vector, "linear golden vector ID 闭集", id="单条目标向量被删除"),
+    pytest.param(
+        _break_degenerate_vector,
+        "degenerate golden vector",
+        id="退化状态向量语义漂移",
+    ),
+    pytest.param(
+        _drop_constraint_reason,
+        "constraint_reason 枚举闭集不符",
+        id="约束原因枚举成员被删除",
+    ),
     pytest.param(_break_linear_vector, "linear golden vector", id="linear 向量与方程不符"),
     pytest.param(_break_trunc_direction, "linear golden vector", id="取整方向被改成向下"),
     pytest.param(
@@ -707,3 +818,11 @@ def test_four_v1_structures_are_declared_with_closed_fields(goal_contract):
             assert field["required"] == "always", f"{name}.{field_name} 必备性必须为 always"
             if field["value_type"] == "enum":
                 assert field.get("enum"), f"{name}.{field_name} 是 enum 但没有值域"
+
+
+def test_decision_evidence_records_both_cursor_boundaries(goal_contract):
+    """TR-501 要求决策事件直接记录消费区间，不能只靠 observation 外键间接推断。"""
+    fields = goal_contract["structures"]["DecisionEvidenceV1"]["fields"]
+    assert fields["cursor_from_event_id"]["value_type"] == "str"
+    assert fields["cursor_to_event_id"]["value_type"] == "str"
+    assert fields["observation_event_id"]["value_type"] == "str"

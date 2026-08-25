@@ -3,12 +3,12 @@ kind: milestone
 id: 0.1.5
 parent: v0.1-belief-testing-laboratory
 version: "0.1"
-status: draft
+status: ready-for-development
 research_claim_status: not-established
 research_claim_required: true
 gate_version: 1
 created: 2026-08-14
-updated: 2026-08-15
+updated: 2026-08-26
 prerequisites:
   - 0.1.4
 ---
