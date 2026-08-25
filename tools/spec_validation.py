@@ -1195,3 +1195,129 @@ def validate_preregistrations(root: pathlib.Path, errors: list[str]) -> None:
         if missing:
             rel = path.relative_to(root).as_posix()
             fail(errors, f"{rel}: 预注册缺少必填项 {missing}")
+
+
+# --------------------------------------------------------------------------- #
+# v2 目标合同：golden vector 重算 + 运行族矩阵 + 文档一致性
+# --------------------------------------------------------------------------- #
+
+GOAL_MODEL_IDS = ("risk_budget_linear_v1", "risk_budget_threshold_v1")
+FAMILY_VERDICTS = {"required", "optional", "forbidden"}
+# ADR-003 §3.1 点名的五类注入字段：`SPONTANEOUS` 下必须一律 forbidden。
+SPONTANEOUS_FORBIDDEN_MIN_SET = (
+    "agent_signals",
+    "extra_positions",
+    "extra_events",
+    "synthetic_shock_accounts",
+    "outcome_conditional_orders",
+)
+
+
+def _trunc_div(numerator: int, denominator: int) -> int:
+    """向零取整的整数除法（ADR-001）——Python 的 // 向下取整，负数会差一。"""
+    quotient = abs(numerator) // denominator
+    return quotient if numerator >= 0 else -quotient
+
+
+def _max_position(vector: dict) -> int:
+    max_notional = vector["equity_units"] * vector["risk_appetite_x1000"] // 1000
+    return max_notional // vector["mark"]
+
+
+def validate_goal_contract_data(d: dict, errors: list[str]) -> None:
+    """目标合同真源自校验：结构闭集、矩阵完备、golden vector 逐条重算。
+
+    重算是这份文件的意义所在——合同里的方程若被改动而向量没跟上（或反过来），
+    差异必须在 CI 上当场出现，而不是等到实现者按其中一份写完代码才发现两者不一致。
+    """
+    for model_id in GOAL_MODEL_IDS:
+        model = d.get("goal_models", {}).get(model_id)
+        if not isinstance(model, dict):
+            fail(errors, f"goal_contract: 缺目标模型 {model_id}")
+            continue
+        if model.get("reads_institutional_fields") is not False:
+            fail(errors, f"goal_contract: {model_id} 必须声明 reads_institutional_fields=false")
+        if model.get("rounding") != "trunc_toward_zero":
+            fail(errors, f"goal_contract: {model_id} 的取整必须是 trunc_toward_zero")
+
+    appetite = d.get("risk_appetite", {})
+    for forbidden in ("leverage_tier", "L", "M", "maint_bp", "initial_bp", "arm_id"):
+        if forbidden not in appetite.get("independent_of", []):
+            fail(errors, f"goal_contract: risk_appetite 必须声明独立于 {forbidden}")
+
+    matrix = d.get("run_family_matrix", {})
+    if matrix.get("policy") != "whitelist":
+        fail(errors, "goal_contract: 运行族矩阵必须是 whitelist——黑名单会默认放行新字段")
+    if matrix.get("unlisted_field_verdict") != "forbidden":
+        fail(errors, "goal_contract: 未列字段的判定必须是 forbidden")
+    families = matrix.get("families", [])
+    for field_name, verdicts in matrix.get("fields", {}).items():
+        for family in families:
+            verdict = verdicts.get(family)
+            if verdict not in FAMILY_VERDICTS:
+                fail(errors, f"goal_contract: {field_name} 在 {family} 下的判定 {verdict!r} 非法")
+    for field_name in SPONTANEOUS_FORBIDDEN_MIN_SET:
+        if matrix.get("fields", {}).get(field_name, {}).get("SPONTANEOUS") != "forbidden":
+            fail(errors, f"goal_contract: SPONTANEOUS 必须禁止 {field_name}（ADR-003 §3.1）")
+
+    vectors = d.get("golden_vectors", {})
+    for vector in vectors.get("linear", []):
+        got = _trunc_div(vector["signal_bp"] * _max_position(vector), 10000)
+        if got != vector["expected_desired"]:
+            fail(
+                errors,
+                f"goal_contract: linear golden vector {vector['id']} 重算得 {got}，"
+                f"声明为 {vector['expected_desired']}",
+            )
+    for vector in vectors.get("threshold", []):
+        signal = vector["signal_bp"]
+        if abs(signal) >= vector["theta_in"]:
+            magnitude = vector["k_x1000"] * _max_position(vector) // 1000
+            got = magnitude if signal > 0 else -magnitude
+        elif abs(signal) <= vector["theta_out"]:
+            got = 0
+        else:
+            got = vector["current_position"]
+        if got != vector["expected_desired"]:
+            fail(
+                errors,
+                f"goal_contract: threshold golden vector {vector['id']} 重算得 {got}，"
+                f"声明为 {vector['expected_desired']}",
+            )
+        if vector["theta_out"] >= vector["theta_in"]:
+            fail(errors, f"goal_contract: {vector['id']} 的 theta_out 必须小于 theta_in（滞回）")
+    for vector in vectors.get("constraint", []):
+        position, desired = vector["position"], vector["desired"]
+        reducing = abs(desired) < abs(position) and position * desired >= 0
+        if reducing:
+            got = desired
+        elif position * desired < 0:
+            got = -vector["feasible_new_open"] if desired < 0 else vector["feasible_new_open"]
+        else:
+            got = position + vector["feasible_new_open"] if desired > position else desired
+        if got != vector["expected_executable"]:
+            fail(
+                errors,
+                f"goal_contract: constraint golden vector {vector['id']} 重算得 {got}，"
+                f"声明为 {vector['expected_executable']}",
+            )
+        if reducing and not vector.get("margin_check_skipped"):
+            fail(errors, f"goal_contract: {vector['id']} 是纯减仓，必须声明跳过保证金检查")
+
+
+def validate_goal_contract_against_doc(d: dict, doc: str, errors: list[str]) -> None:
+    """合同文档必须与真源同步：模型 ID、白名单立场、三条边界算例都要在文档里。"""
+    for model_id in GOAL_MODEL_IDS:
+        if model_id not in doc:
+            fail(errors, f"goal_contract: agent-strategy.md 未提及 {model_id}")
+    if "reserved_after <= risk_equity" not in doc:
+        fail(errors, "goal_contract: 文档未使用统一准入式 reserved_after <= risk_equity")
+    if "减仓永不因保证金被裁剪" not in doc:
+        fail(errors, "goal_contract: 文档缺少减仓豁免")
+    for vector in d.get("golden_vectors", {}).get("constraint", []):
+        if str(vector["expected_executable"]) not in doc:
+            fail(
+                errors,
+                f"goal_contract: 边界算例 {vector['id']} 的期望值 "
+                f"{vector['expected_executable']} 未出现在文档算例表中",
+            )
