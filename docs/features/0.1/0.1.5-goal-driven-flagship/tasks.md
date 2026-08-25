@@ -50,7 +50,9 @@ updated: 2026-08-15
 - [ ] **T205** (`FR-021`, `AC-001`): 迁移库存型做市商目标与报价风险政策，承接 0.1.2 T405 — verify: `tests/unit/agent/`
 - [ ] **T206** (`FR-022`, `FR-025`, `AC-002`, `AC-005`): 实现公开 tape、逐代理游标、观察/决策
       证据链，承接 0.1.2 T406；游标先消费后原子推进，并补故障注入测试（中途失败重试不丢
-      事件、不重复写证据）— verify: `tests/integration/`
+      事件、不重复写证据）；**在同一次变更里**把 `DecisionEvidenceV1` 的审计字段与游标边界
+      接进 `AGENT_OBSERVE`/`AGENT_DECIDE`、同步 `event-schema.md` 并升 `schema_version`
+      ——生产者、Schema、文档、版本号必须一起动 — verify: `tests/integration/`
 - [ ] **T207** (`FR-022`, `NFR-005`, `AC-002`): 固化多代理构建、零仓位、K 线、EWMA 与确定性测试，承接 0.1.2 T407 — verify: `tests/unit/agent/`
 - [ ] **T208** `[成果门:R2]` (`FR-027`, `AC-001`, `AC-002`, `AC-005`): 用固定种子生成目标驱动代理
       单次运行成果包，回放至少一条“观察—目标—约束—订单—成交”链；证据级别固定为
