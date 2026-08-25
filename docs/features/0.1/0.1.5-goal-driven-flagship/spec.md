@@ -150,7 +150,7 @@ prerequisites:
 ## 5. 生命周期与不变量
 
 ```text
-draft -> ready-for-development  三件套、Contract 变更与预注册全部评审通过
+draft -> ready-for-development  三件套与 Contract 变更（T201）评审通过
 ready-for-development -> in-progress  0.1.4 已 done，按 tasks 顺序实施
 in-progress -> review  代码、正反回归测试、正式运行入口和证据 Schema 完成
 review -> done  E1—E7、全部 AC、统一门禁与正式证据复核通过
@@ -158,8 +158,18 @@ not-established -> established  status=done 且 evidence_class: formal-research
                                且 research_evidence 列出存在的正式证据路径
 ```
 
+**预注册门（T202）与生命周期门正交**：预注册冻结**不是**进入 `ready-for-development`
+的条件，但在它冻结之前，只允许产出 `engineering-demonstration`（R1—R2 与运行族/证据
+权限实现）；T213 起的统计实现、`experiment-preview`（R3）与任何 `formal-research`
+产物一律阻塞。两个门的作用域不同：生命周期门管"能不能开工"，预注册门管"能不能声称"。
+
+把预注册塞进 `ready-for-development` 会让 R1 这种纯工程包装也被研究前置卡住，与
+[`PRD §15`](../../../market-game-sim-prd.md#15-交付路线图) 的 `R1 → R5` 顺序直接冲突；
+而完全不设门则会让统计实现先看到模型行为再定口径。
+
 不变量：目标模型不读取制度处理；三运行族互斥；四 cell 仅 `L/M` 不同；三终点不合成；
-工程示范不建立研究声明；任何未知或越权输入 fail closed。
+工程示范不建立研究声明；预注册冻结前不产出预览或正式研究证据；任何未知或越权输入
+fail closed。
 
 ## 6. 成功与验收
 
