@@ -570,3 +570,140 @@ def test_constraint_layer_uses_the_single_admission_formula():
     # 按子串判会把正确的警示文字当成违规（本测试第一版就是这样自己踩进去的）。
     assert not re.search(r"可行域\s*=\s*权益\s*[−-]", section), "可行域被重新定义成减法形式"
     assert "减仓永不因保证金被裁剪" in section, "减仓豁免未写入 v2 约束层"
+
+
+# --------------------------------------------------------------------------- #
+# v2 目标合同：golden vector 重算与运行族矩阵
+# --------------------------------------------------------------------------- #
+
+
+@pytest.fixture(scope="module")
+def goal_contract(validator) -> dict:
+    return json.loads(validator.GOAL_CONTRACT.read_text(encoding="utf-8"))
+
+
+def _drop_institutional_independence(d: dict) -> None:
+    d["risk_appetite"]["independent_of"] = ["arm_id"]
+
+
+def _model_reads_institutional_fields(d: dict) -> None:
+    d["goal_models"]["risk_budget_linear_v1"]["reads_institutional_fields"] = True
+
+
+def _matrix_to_blacklist(d: dict) -> None:
+    d["run_family_matrix"]["policy"] = "blacklist"
+
+
+def _unlisted_field_allowed(d: dict) -> None:
+    d["run_family_matrix"]["unlisted_field_verdict"] = "optional"
+
+
+def _allow_injection_in_spontaneous(d: dict) -> None:
+    d["run_family_matrix"]["fields"]["agent_signals"]["SPONTANEOUS"] = "optional"
+
+
+def _illegal_family_verdict(d: dict) -> None:
+    d["run_family_matrix"]["fields"]["seed_plan"]["STRESS"] = "maybe"
+
+
+def _break_linear_vector(d: dict) -> None:
+    d["golden_vectors"]["linear"][0]["expected_desired"] += 1
+
+
+def _break_trunc_direction(d: dict) -> None:
+    # 向零取整被改成向下取整时，负数会差 1——这条专门锁 ADR-001 的取整方向
+    d["golden_vectors"]["linear"][3]["expected_desired"] = -6872
+
+
+def _break_threshold_vector(d: dict) -> None:
+    d["golden_vectors"]["threshold"][2]["expected_desired"] = 0
+
+
+def _remove_hysteresis(d: dict) -> None:
+    d["golden_vectors"]["threshold"][0]["theta_out"] = 3000
+
+
+def _break_pure_reduction(d: dict) -> None:
+    d["golden_vectors"]["constraint"][0]["margin_check_skipped"] = False
+
+
+def _break_flip_vector(d: dict) -> None:
+    d["golden_vectors"]["constraint"][1]["expected_executable"] = -80
+
+
+GOAL_CONTRACT_MUTATIONS = [
+    pytest.param(
+        _drop_institutional_independence, "独立于 leverage_tier", id="风险偏好不再独立于制度字段"
+    ),
+    pytest.param(
+        _model_reads_institutional_fields,
+        "reads_institutional_fields=false",
+        id="目标模型读制度字段",
+    ),
+    pytest.param(_matrix_to_blacklist, "必须是 whitelist", id="矩阵退回黑名单"),
+    pytest.param(_unlisted_field_allowed, "未列字段的判定必须是 forbidden", id="未列字段默认放行"),
+    pytest.param(
+        _allow_injection_in_spontaneous,
+        "SPONTANEOUS 必须禁止 agent_signals",
+        id="自发族放行注入字段",
+    ),
+    pytest.param(_illegal_family_verdict, "非法", id="非法族判定"),
+    pytest.param(_break_linear_vector, "linear golden vector", id="linear 向量与方程不符"),
+    pytest.param(_break_trunc_direction, "linear golden vector", id="取整方向被改成向下"),
+    pytest.param(
+        _break_threshold_vector, "threshold golden vector", id="threshold 保持区被改成清仓"
+    ),
+    pytest.param(_remove_hysteresis, "滞回", id="滞回被抹平"),
+    pytest.param(_break_pure_reduction, "纯减仓", id="纯减仓不再跳过保证金检查"),
+    pytest.param(_break_flip_vector, "constraint golden vector", id="翻仓向量不受新开仓段限制"),
+]
+
+
+@pytest.mark.parametrize("mutate, expected", GOAL_CONTRACT_MUTATIONS)
+def test_goal_contract_mutations_are_rejected(validator, goal_contract, mutate, expected):
+    mutated = copy.deepcopy(goal_contract)
+    mutate(mutated)
+    errors: list[str] = []
+    validator.spec_validation.validate_goal_contract_data(mutated, errors)
+    assert any(expected in e for e in errors), f"变异未被拒绝，实际错误：{errors}"
+
+
+def test_goal_contract_repository_data_is_self_consistent(validator, goal_contract):
+    """当前仓库的向量与方程互洽——重算无差异。"""
+    errors: list[str] = []
+    validator.spec_validation.validate_goal_contract_data(goal_contract, errors)
+    assert errors == []
+
+
+def test_goal_contract_boundary_examples_must_appear_in_doc(validator, goal_contract):
+    """文档算例表与真源向量脱节时必须失败——两处各写一份是漂移的起点。"""
+    doc = validator.AGENT_STRATEGY_DOC.read_text(encoding="utf-8")
+    errors: list[str] = []
+    validator.spec_validation.validate_goal_contract_against_doc(goal_contract, doc, errors)
+    assert errors == []
+
+    mutated = copy.deepcopy(goal_contract)
+    mutated["golden_vectors"]["constraint"][1]["expected_executable"] = -4242
+    errors = []
+    validator.spec_validation.validate_goal_contract_against_doc(mutated, doc, errors)
+    assert any("未出现在文档算例表" in e for e in errors)
+
+
+def test_four_v1_structures_are_declared_with_closed_fields(goal_contract):
+    """四个 V1 Schema 必须逐字段声明类型与可空性——DR-501 的机器形态。"""
+    expected = {
+        "InformationSetV1",
+        "AgentInternalStateV1",
+        "DecisionEvidenceV1",
+        "StressProtocolV1",
+    }
+    assert set(goal_contract["structures"]) == expected
+    allowed_types = set(goal_contract["meta"]["value_types"])
+    for name, structure in goal_contract["structures"].items():
+        assert "schema_version" in structure["fields"], f"{name} 缺 schema_version"
+        for field_name, field in structure["fields"].items():
+            assert field["value_type"] in allowed_types, f"{name}.{field_name} 类型非法"
+            assert isinstance(field["nullable"], bool), f"{name}.{field_name} 缺 nullable"
+            assert field["required"] == "always", f"{name}.{field_name} 必备性必须为 always"
+            if field["value_type"] == "enum":
+                assert field.get("enum"), f"{name}.{field_name} 是 enum 但没有值域"

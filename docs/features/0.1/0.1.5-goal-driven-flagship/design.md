@@ -82,19 +82,21 @@ public market tape + completed bars + private state
 3. ~~**约束层边界**~~ — **已冻结**于 `agent-strategy.md §5.2.4`：与账户合同 §3.3 同口径
    的 `reserved_after <= risk_equity`（**不得写成 `equity − reserved`**，那是重复扣除）、
    减仓豁免、翻仓拆两段、绑定用观察时刻快照、只裁剪规模不改方向（含三条边界算例）。
-4. **四个 V1 Schema**：`InformationSetV1`、`AgentInternalStateV1`、`DecisionEvidenceV1`、
-   `StressProtocolV1` 的逐字段类型、可空性、取值域、版本字段与确定性序列化顺序。
-   **序列化口径已定**：字段按名称字典序、整数不带前导零、`null` 显式写出、哈希复用
-   0.1.4 的 blake2b/64 位小写十六进制。**`DecisionEvidenceV1` 只存外键与游标边界，
-   不内嵌信息集副本**——内嵌会让日志体积随代理数增长，并制造第二份可能与 tape 不
-   一致的真相。剩余逐字段表由 T201 产出。
-5. **三运行族逐字段 allow/deny 矩阵**：每个配置字段在 `SPONTANEOUS`/`STRESS`/
-   `BENCHMARK` 下是必需、可选还是禁止，以及拒绝信息里的字段路径格式。
-   **立场已定：白名单**——未在矩阵中列出的字段一律拒绝。黑名单在新增配置字段时默认
-   放行，而"默认放行"正是 `SPONTANEOUS` 最怕的注入路径。
+4. ~~**四个 V1 Schema**~~ — **已冻结**于
+   [`goal_contract_v2.json`](../../../../src/market_game_sim/schema/goal_contract_v2.json)
+   的 `structures`：四个结构逐字段声明类型、可空性、枚举值域与 `schema_version`。
+   序列化口径：字段按名称字典序、整数不带前导零、`null` 显式写出、哈希复用 0.1.4 的
+   blake2b/64 位小写十六进制。`DecisionEvidenceV1` 只存外键与游标边界，不内嵌信息集
+   副本——内嵌会让日志体积随代理数增长，并制造第二份可能与 tape 不一致的真相。
+5. ~~**三运行族逐字段 allow/deny 矩阵**~~ — **已冻结**于同一份 JSON 的
+   `run_family_matrix`：`policy: whitelist`、`unlisted_field_verdict: forbidden`，
+   11 个配置字段 × 3 个运行族逐格判定，且 ADR-003 §3.1 点名的五类注入字段在
+   `SPONTANEOUS` 下强制 `forbidden`（校验器单独断言这一条）。
 
-第 1—3 项的语义已经冻结，T201 的剩余产出是**把它们变成参数化测试能直接消费的数据**：
-golden vector（含 §5.2.4 的穿零算例）、逐字段 Schema 表、allow/deny 矩阵。
+**T201 的剩余产出只剩事件侧**：`AGENT_OBSERVE`/`AGENT_DECIDE` 补 FR-025 的审计字段与
+游标边界，并同步 `event-schema.md` 与 Schema 版本。目标模型数学、退化行为、约束边界、
+四个 V1 结构、运行族矩阵与 golden vector 均已落进机器真源，由
+`tools/validate_contract_sources.py` 逐条重算校验。
 
 ## 5. Runtime、Workflow 与并发
 

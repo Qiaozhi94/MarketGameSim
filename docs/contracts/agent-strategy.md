@@ -230,6 +230,12 @@ preferences + private state + permitted observations
 - 非绑定约束不得改变订单意图，绑定约束只裁剪可执行目标；
 - 每次决策同时记录 `desired_position_units`、`executable_position_units`、绑定状态与原因。
 
+**机器真源**：本节的方程、参数边界、四个 V1 Schema、三运行族 allow/deny 矩阵与全部
+边界算例同时存在于 [`src/market_game_sim/schema/goal_contract_v2.json`](../../src/market_game_sim/schema/goal_contract_v2.json)。
+`tools/validate_contract_sources.py` 会**逐条重算 golden vector**并与本文的算例表比对：
+方程改了而向量没跟上（或反过来）会当场失败，不必等实现者按其中一份写完代码才发现两边
+对不上。散文解释语义，JSON 承担可执行判据，两者不得各写一份。
+
 #### 5.2.1 风险预算与两个目标模型
 
 v1 的 `max_notional = equity × leverage_tier` 把处理变量直接写进了行为公式。v2 换成

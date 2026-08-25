@@ -1,0 +1,149 @@
+{
+  "$comment": "v2 目标模型与制度约束的机器真源。散文语义在 docs/contracts/agent-strategy.md §5.2；本文件是它的可执行形态：golden_vectors 由校验器逐条重算，文档改了而数值没跟上会当场失败。",
+  "schema_version": 1,
+  "meta": {
+    "value_types": ["int", "str", "bool", "enum", "array", "object"],
+    "required_values": ["always"],
+    "family_verdicts": ["required", "optional", "forbidden"],
+    "note": "整数口径按 ADR-001：数量以最小单位整数承载；比例用 _x1000 后缀表示千分之一，避免浮点进入合同。"
+  },
+  "goal_models": {
+    "risk_budget_linear_v1": {
+      "role": "primary",
+      "equation": "desired = trunc(signal_bp * max_position / 10000)",
+      "max_notional": "equity_units * risk_appetite_x1000 / 1000",
+      "max_position": "floor(max_notional / mark)",
+      "rounding": "trunc_toward_zero",
+      "saturation": "clamp_to_feasible",
+      "reads_institutional_fields": false
+    },
+    "risk_budget_threshold_v1": {
+      "role": "robustness",
+      "equation": "abs(signal_bp) >= theta_in -> sign * trunc(k_x1000 * max_position / 1000); abs(signal_bp) <= theta_out -> 0; otherwise hold",
+      "hysteresis": true,
+      "params_frozen_in": "preregistration",
+      "param_bounds": {
+        "theta_in": {"min": 1, "max": 10000},
+        "theta_out": {"min": 1, "max": 10000, "must_be_less_than": "theta_in"},
+        "k_x1000": {"min": 1, "max": 1000}
+      },
+      "rounding": "trunc_toward_zero",
+      "reads_institutional_fields": false
+    }
+  },
+  "risk_appetite": {
+    "role": "agent_preference",
+    "unit": "x1000",
+    "drawn_once_per_run": true,
+    "independent_of": ["leverage_tier", "L", "M", "maint_bp", "initial_bp", "arm_id"],
+    "bounds": {"min_x1000": 500, "max_x1000": 20000},
+    "distribution_params_frozen_in": "preregistration",
+    "note": "语义是「我愿意把权益放大多少倍」，与制度允许放大多少倍（leverage_tier）独立抽取；代理不可见后者。"
+  },
+  "structures": {
+    "InformationSetV1": {
+      "fields": {
+        "schema_version": {"value_type": "int", "nullable": false, "required": "always"},
+        "cursor_from_event_id": {"value_type": "int", "nullable": false, "required": "always"},
+        "cursor_to_event_id": {"value_type": "int", "nullable": false, "required": "always"},
+        "public_trades": {"value_type": "array", "nullable": false, "required": "always"},
+        "completed_bars": {"value_type": "array", "nullable": false, "required": "always"},
+        "book_top": {"value_type": "object", "nullable": true, "required": "always"},
+        "own_account": {"value_type": "object", "nullable": false, "required": "always"}
+      }
+    },
+    "AgentInternalStateV1": {
+      "fields": {
+        "schema_version": {"value_type": "int", "nullable": false, "required": "always"},
+        "last_seen_market_event_id": {"value_type": "int", "nullable": false, "required": "always"},
+        "ewma_value_units": {"value_type": "int", "nullable": true, "required": "always"},
+        "ewma_sample_count": {"value_type": "int", "nullable": false, "required": "always"},
+        "model_private_state": {"value_type": "object", "nullable": false, "required": "always"}
+      }
+    },
+    "DecisionEvidenceV1": {
+      "fields": {
+        "schema_version": {"value_type": "int", "nullable": false, "required": "always"},
+        "goal_model_id": {"value_type": "str", "nullable": false, "required": "always"},
+        "goal_model_version": {"value_type": "int", "nullable": false, "required": "always"},
+        "desired_position_units": {"value_type": "int", "nullable": false, "required": "always"},
+        "executable_position_units": {"value_type": "int", "nullable": false, "required": "always"},
+        "constraint_binding": {"value_type": "bool", "nullable": false, "required": "always"},
+        "constraint_reason": {
+          "value_type": "enum",
+          "nullable": true,
+          "required": "always",
+          "enum": ["MARGIN_LIMIT", "MAX_ORDER_QTY", "MARK_UNDEFINED", "NON_POSITIVE_EQUITY", "EWMA_WARMUP"]
+        },
+        "trigger_provenance": {
+          "value_type": "enum",
+          "nullable": false,
+          "required": "always",
+          "enum": ["ENDOGENOUS_AGENT", "LIQUIDATION", "EXOGENOUS_STRESS"]
+        },
+        "observation_event_id": {"value_type": "int", "nullable": false, "required": "always"}
+      }
+    },
+    "StressProtocolV1": {
+      "fields": {
+        "schema_version": {"value_type": "int", "nullable": false, "required": "always"},
+        "protocol_id": {"value_type": "str", "nullable": false, "required": "always"},
+        "events": {"value_type": "array", "nullable": false, "required": "always"},
+        "reads_run_outcome": {"value_type": "bool", "nullable": false, "required": "always"}
+      },
+      "invariants": [
+        "events 有限且逐事件在四 cell 完全一致",
+        "reads_run_outcome 恒为 false"
+      ]
+    }
+  },
+  "run_family_matrix": {
+    "policy": "whitelist",
+    "unlisted_field_verdict": "forbidden",
+    "families": ["SPONTANEOUS", "STRESS", "BENCHMARK"],
+    "fields": {
+      "run_family": {"SPONTANEOUS": "required", "STRESS": "required", "BENCHMARK": "required"},
+      "seed_plan": {"SPONTANEOUS": "required", "STRESS": "required", "BENCHMARK": "required"},
+      "goal_model_id": {"SPONTANEOUS": "required", "STRESS": "required", "BENCHMARK": "required"},
+      "l_level": {"SPONTANEOUS": "required", "STRESS": "required", "BENCHMARK": "optional"},
+      "m_level": {"SPONTANEOUS": "required", "STRESS": "required", "BENCHMARK": "optional"},
+      "stress_protocol": {"SPONTANEOUS": "forbidden", "STRESS": "required", "BENCHMARK": "forbidden"},
+      "agent_signals": {"SPONTANEOUS": "forbidden", "STRESS": "forbidden", "BENCHMARK": "optional"},
+      "extra_positions": {"SPONTANEOUS": "forbidden", "STRESS": "optional", "BENCHMARK": "optional"},
+      "extra_events": {"SPONTANEOUS": "forbidden", "STRESS": "forbidden", "BENCHMARK": "optional"},
+      "synthetic_shock_accounts": {"SPONTANEOUS": "forbidden", "STRESS": "forbidden", "BENCHMARK": "optional"},
+      "outcome_conditional_orders": {"SPONTANEOUS": "forbidden", "STRESS": "forbidden", "BENCHMARK": "forbidden"}
+    },
+    "spontaneous_forbidden_min_set": [
+      "agent_signals",
+      "extra_positions",
+      "extra_events",
+      "synthetic_shock_accounts",
+      "outcome_conditional_orders"
+    ]
+  },
+  "golden_vectors": {
+    "linear": [
+      {"id": "linear_long", "equity_units": 1000000, "risk_appetite_x1000": 2000, "mark": 100, "signal_bp": 2500, "expected_desired": 5000},
+      {"id": "linear_short", "equity_units": 1000000, "risk_appetite_x1000": 2000, "mark": 100, "signal_bp": -2500, "expected_desired": -5000},
+      {"id": "linear_trunc_positive", "equity_units": 1000000, "risk_appetite_x1000": 2000, "mark": 97, "signal_bp": 3333, "expected_desired": 6871},
+      {"id": "linear_trunc_negative", "equity_units": 1000000, "risk_appetite_x1000": 2000, "mark": 97, "signal_bp": -3333, "expected_desired": -6871}
+    ],
+    "threshold": [
+      {"id": "threshold_enter_long", "equity_units": 1000000, "risk_appetite_x1000": 2000, "mark": 100, "signal_bp": 3500, "theta_in": 3000, "theta_out": 1200, "k_x1000": 600, "current_position": 0, "expected_desired": 12000},
+      {"id": "threshold_enter_short", "equity_units": 1000000, "risk_appetite_x1000": 2000, "mark": 100, "signal_bp": -3500, "theta_in": 3000, "theta_out": 1200, "k_x1000": 600, "current_position": 0, "expected_desired": -12000},
+      {"id": "threshold_hold_band", "equity_units": 1000000, "risk_appetite_x1000": 2000, "mark": 100, "signal_bp": 2000, "theta_in": 3000, "theta_out": 1200, "k_x1000": 600, "current_position": 7000, "expected_desired": 7000},
+      {"id": "threshold_exit", "equity_units": 1000000, "risk_appetite_x1000": 2000, "mark": 100, "signal_bp": 800, "theta_in": 3000, "theta_out": 1200, "k_x1000": 600, "current_position": 7000, "expected_desired": 0}
+    ],
+    "constraint": [
+      {"id": "pure_reduction_never_clipped", "position": 100, "desired": 20, "feasible_new_open": 0, "expected_executable": 20, "margin_check_skipped": true},
+      {"id": "flip_limits_only_new_leg", "position": 100, "desired": -80, "feasible_new_open": 30, "expected_executable": -30, "margin_check_skipped": false},
+      {"id": "add_beyond_limit_clipped_same_sign", "position": 100, "desired": 200, "feasible_new_open": 50, "expected_executable": 150, "margin_check_skipped": false}
+    ],
+    "degenerate": [
+      {"id": "mark_undefined_skips_decision", "condition": "MARK_UNDEFINED", "expected_desired": null, "expected_action": "skip_decision"},
+      {"id": "non_positive_equity_reduce_only", "condition": "NON_POSITIVE_EQUITY", "expected_desired": 0, "expected_action": "reduce_only"},
+      {"id": "ewma_warmup_zero_target", "condition": "EWMA_WARMUP", "expected_desired": 0, "expected_action": "emit_decision"}
+    ]
+  }
+}

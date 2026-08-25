@@ -40,6 +40,8 @@ ARTIFACT_SCHEMAS = ROOT / "src" / "market_game_sim" / "schema" / "report_artifac
 TRACE = ROOT / "docs" / "features" / "0.1" / "traceability.json"
 SPEC = ROOT / "docs" / "features" / "0.1" / "spec.md"
 EVENT_SCHEMA_DOC = ROOT / "docs" / "contracts" / "event-schema.md"
+GOAL_CONTRACT = ROOT / "src" / "market_game_sim" / "schema" / "goal_contract_v2.json"
+AGENT_STRATEGY_DOC = ROOT / "docs" / "contracts" / "agent-strategy.md"
 REPORT_SPEC = ROOT / "docs" / "features" / "0.1" / "0.1.4-replay-and-report" / "spec.md"
 
 ARTIFACT_FIELD_TYPES = {"string", "integer", "number", "boolean", "object", "array"}
@@ -584,6 +586,14 @@ def validate_schema(errors: list[str]) -> None:
     validate_schema_against_doc(d, EVENT_SCHEMA_DOC.read_text(encoding="utf-8"), errors)
 
 
+def validate_goal_contract(errors: list[str]) -> None:
+    d = json.loads(GOAL_CONTRACT.read_text(encoding="utf-8"))
+    spec_validation.validate_goal_contract_data(d, errors)
+    spec_validation.validate_goal_contract_against_doc(
+        d, AGENT_STRATEGY_DOC.read_text(encoding="utf-8"), errors
+    )
+
+
 def validate_artifact_schemas(errors: list[str]) -> None:
     d = json.loads(ARTIFACT_SCHEMAS.read_text(encoding="utf-8"))
     validate_artifact_schema_data(d, errors)
@@ -601,6 +611,7 @@ def main() -> int:
     errors: list[str] = []
     validate_schema(errors)
     validate_artifact_schemas(errors)
+    validate_goal_contract(errors)
     validate_trace(errors)
     if errors:
         print(f"真源自校验失败（{len(errors)} 项）：")
@@ -609,7 +620,7 @@ def main() -> int:
         return 1
     print(
         "真源自校验通过：event_fields.json + report_artifacts.json + "
-        "traceability.json（含跨真源比较）"
+        "goal_contract_v2.json + traceability.json（含跨真源比较）"
     )
     return 0
 
