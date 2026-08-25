@@ -21,15 +21,15 @@ issues:
     first_seen_round: 1
     resolved_round: ""
   - id: R017-D002
-    title: T202 预注册不存在，且生命周期门与任务依赖对预注册时点互相矛盾
+    title: T202 预注册产物不存在（口径矛盾部分已拆分为 D009）
     severity: high
-    category: correctness
+    category: test-coverage
     root_cause: root-cause
     origin: process-gap
     pattern_tag: implementation-before-preregistration
     status: carried-forward
-    fix_summary: "八项清单已进入模板，但真实 0.1.5 预注册尚未产出；spec 要求 ready 前完成预注册，tasks 又只要求 T213 前完成，口径仍未统一"
-    regression_test: "待补：0.1.5 预注册结构与冻结字段校验"
+    fix_summary: "本轮不修：属任务 T202 尚未执行。口径矛盾部分已拆出 D009 并修复；结构校验器已就位（validate_preregistrations），产物一出现即受检"
+    regression_test: "tests/unit/test_spec_lifecycle.py::test_preregistration_missing_item_is_rejected 等 5 条（门已就位，等产物）"
     location: docs/features/0.1/0.1.5-goal-driven-flagship/spec.md:153
     first_seen_round: 1
     resolved_round: ""
@@ -111,6 +111,19 @@ issues:
     location: tools/spec_validation.py:744
     first_seen_round: 5
     resolved_round: 5
+  - id: R017-D009
+    title: 生命周期门与任务依赖对预注册时点互相矛盾
+    severity: high
+    category: correctness
+    root_cause: root-cause
+    origin: spec-drift
+    pattern_tag: two-gates-one-fact
+    status: fixed
+    fix_summary: "拆成作用域不同的两个门：生命周期门只管能不能开工（ready 不再要求预注册），预注册门管能不能声称（T213 起的统计实现、experiment-preview 与 formal-research 一律阻塞）；tasks §1/§4 补前置条件作用域"
+    regression_test: "—（口径统一，无机器判据）；配套的产物结构校验见 D002"
+    location: docs/features/0.1/0.1.5-goal-driven-flagship/spec.md:161
+    first_seen_round: 5
+    resolved_round: 6
 ---
 
 # 0.1.5 进入开发前终检
@@ -183,3 +196,46 @@ issues:
 
 D001/D002 仍 carried-forward，关闭路径是执行 T201/T202，不是文档修改。**本文件保留，
 删除权在检视人。**
+
+## 修复回写（round 6 的修复者，2026-08-16）
+
+**D002 按 round 5 回写里的提议拆成两条**，并修掉其中可修的那半：
+
+| ID | 内容 | 状态 |
+|---|---|---|
+| **D009**（新拆出） | 生命周期门与任务依赖对预注册时点互相矛盾 | **fixed**（`c8d730e`） |
+| **D002**（本体） | 预注册产物本身不存在 | carried-forward——只能由执行 T202 关闭 |
+
+拆分理由：一个 ID 同时代表"任务没做"和"文档打架"时，关闭条件无法判定——修好文档它
+仍然开着，执行完任务又说不清哪部分算修完。
+
+### D009 的修法：两个门作用域不同，不是二选一
+
+报告给的选项是"ready 前完成真实预注册"或"把预注册门移到 T213 前"。两个都不采纳原样，
+因为它们默认这是**同一个门的两种放置**。实际是两件事：
+
+- **生命周期门**管"能不能开工"：`ready-for-development` 只要求三件套与 Contract（T201）
+  评审通过；
+- **预注册门**管"能不能声称"：T202 冻结前只允许 `engineering-demonstration`，T213 起
+  的统计实现、`experiment-preview`（R3）与任何 `formal-research` 一律阻塞。
+
+把预注册塞进 `ready` 会让 R1 这种纯工程包装被研究前置卡住，和 PRD §15 的 `R1 → R5`
+顺序直接冲突；完全不设门又会让统计实现先看到模型行为再定口径。两个门各管一件事，
+两个失败模式都被挡住。`tasks §1` 补了前置条件的作用域说明（`T201` 阻塞 T204—T212，
+`T202` 只阻塞 T213—T217，R1 都不阻塞），`§4` 补了 `T202` 不阻塞 `T203—T212` 的显式条目。
+
+### 顺带补上 D002 挂了两轮的 regression_test
+
+D002 的 `regression_test` 字段从 round 1 起一直写着"待补：0.1.5 预注册结构与冻结字段
+校验"。现已落地 `validate_preregistrations`：`docs/experiments/*preregistration*.md`
+必须覆盖八项必填内容，同时校验模板自身仍覆盖这八项——两边漂移立刻报错，而不是一边
+悄悄失效。
+
+产物尚不存在时校验静默通过，但**用 4 条构造测试证明它不是空转的门**（漏"停止规则"
+被拒、完整通过、模板漂移被拒、真实仓库模板覆盖八项）——这是循环 9 记下的
+`silent-no-op-gate` 判据的直接应用：一个当前没有输入的门，必须先证明它在有输入时会响。
+
+### 仍未闭环
+
+D001（T201 未执行）、D002（T202 未执行）仍 carried-forward，关闭路径是执行任务。
+**本文件保留，删除权在检视人。**
