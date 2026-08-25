@@ -1441,3 +1441,66 @@ def test_architecture_generic_equation_fails(sv, tmp_path):
     errors: list[str] = []
     sv.validate_spec_lifecycle(features, tmp_path, errors)
     assert any("architecture" in e and "C1" in e for e in errors)
+
+
+# --------------------------------------------------------------------------- #
+# 预注册结构：模板必填项 → 真实产物
+# --------------------------------------------------------------------------- #
+
+
+def _write_prereg(tmp_path, items):
+    exp = tmp_path / "docs" / "experiments"
+    exp.mkdir(parents=True, exist_ok=True)
+    (exp / "experiment-template.md").write_text(
+        "# 模板\n\n" + "\n".join(f"- [ ] {i}" for i in items) + "\n", encoding="utf-8"
+    )
+    return exp
+
+
+def test_preregistration_missing_item_is_rejected(sv, tmp_path):
+    """漏项不是格式问题：少一条停止规则，"何时停止收样"就变成看着结果决定的。"""
+    exp = _write_prereg(tmp_path, sv.PREREG_REQUIRED_ITEMS)
+    kept = [i for i in sv.PREREG_REQUIRED_ITEMS if i != "停止规则"]
+    (exp / "0.1.5-preregistration.md").write_text(
+        "# 预注册\n\n" + "\n".join(f"- [x] {i}" for i in kept) + "\n", encoding="utf-8"
+    )
+    errors: list[str] = []
+    sv.validate_preregistrations(tmp_path, errors)
+    assert any("停止规则" in e and "缺少必填项" in e for e in errors)
+
+
+def test_complete_preregistration_passes(sv, tmp_path):
+    exp = _write_prereg(tmp_path, sv.PREREG_REQUIRED_ITEMS)
+    (exp / "0.1.5-preregistration.md").write_text(
+        "# 预注册\n\n" + "\n".join(f"- [x] {i}" for i in sv.PREREG_REQUIRED_ITEMS) + "\n",
+        encoding="utf-8",
+    )
+    errors: list[str] = []
+    sv.validate_preregistrations(tmp_path, errors)
+    assert errors == []
+
+
+def test_template_drift_from_validator_is_rejected(sv, tmp_path):
+    """模板与校验器闭集漂移必须报错，而不是一边悄悄失效。"""
+    _write_prereg(tmp_path, [i for i in sv.PREREG_REQUIRED_ITEMS if i != "多重比较"])
+    errors: list[str] = []
+    sv.validate_preregistrations(tmp_path, errors)
+    assert any("模板与校验器已漂移" in e for e in errors)
+
+
+def test_absent_preregistration_is_silently_ok(sv, tmp_path):
+    """T202 尚未执行时不报错——但上面三条证明它不是空转的门。"""
+    _write_prereg(tmp_path, sv.PREREG_REQUIRED_ITEMS)
+    errors: list[str] = []
+    sv.validate_preregistrations(tmp_path, errors)
+    assert errors == []
+
+
+def test_repository_template_covers_all_required_items(sv):
+    """真实模板必须覆盖八项——防止本仓库的模板和闭集悄悄分家。"""
+    errors: list[str] = []
+    sv.validate_preregistrations(ROOT, errors)
+    assert errors == []
+    template = (ROOT / sv.PREREG_TEMPLATE).read_text(encoding="utf-8")
+    for item in sv.PREREG_REQUIRED_ITEMS:
+        assert item in template, f"模板缺 {item}"

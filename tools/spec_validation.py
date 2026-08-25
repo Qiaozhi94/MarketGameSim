@@ -1106,6 +1106,7 @@ def validate_spec_lifecycle(
     validate_versions(features_dir, root, errors)
     check_ownership_index(features_dir, root, errors)
     check_docs_links(root, errors)
+    validate_preregistrations(root, errors)
 
     for mid, (mdir, front) in all_ids.items():
         where = f"milestone {mid}"
@@ -1150,3 +1151,47 @@ def validate_spec_lifecycle(
 
         # 状态唯一性：design/tasks 独立检查，不依赖 design 存在
         check_status_uniqueness(design_text, tasks_text, errors, where)
+
+
+# --------------------------------------------------------------------------- #
+# 预注册结构：模板必填项 → 真实预注册产物
+# --------------------------------------------------------------------------- #
+
+# 预注册必填项的稳定短标签。**不从模板正文推断**——模板是散文，措辞会改；这里用显式
+# 闭集，并同时校验模板自己仍然覆盖这八项，让两边漂移时立刻报错而不是一边悄悄失效。
+PREREG_REQUIRED_ITEMS = (
+    "处理因子的水平取值",
+    "估计量定义",
+    "指标定义与判据",
+    "样本量与功效",
+    "seed plan",
+    "停止规则",
+    "多重比较",
+    "校准区",
+)
+PREREG_TEMPLATE = "docs/experiments/experiment-template.md"
+
+
+def validate_preregistrations(root: pathlib.Path, errors: list[str]) -> None:
+    """真实预注册产物必须覆盖模板声明的八项必填内容。
+
+    预注册的价值全在"看到结果之前写定"，因此漏项不是格式问题：少写一条停止规则，
+    "什么时候停止收样"就变成看着结果决定的——那和没有预注册没有区别。文件不存在时
+    本校验静默通过（T202 尚未执行），但缺项一旦出现必须当场失败。
+    """
+    template_path = root / PREREG_TEMPLATE
+    if template_path.is_file():
+        template = template_path.read_text(encoding="utf-8")
+        missing = [item for item in PREREG_REQUIRED_ITEMS if item not in template]
+        if missing:
+            fail(errors, f"{PREREG_TEMPLATE}: 必填清单缺失 {missing}，模板与校验器已漂移")
+
+    experiments = root / "docs" / "experiments"
+    if not experiments.is_dir():
+        return
+    for path in sorted(experiments.glob("*preregistration*.md")):
+        text = path.read_text(encoding="utf-8")
+        missing = [item for item in PREREG_REQUIRED_ITEMS if item not in text]
+        if missing:
+            rel = path.relative_to(root).as_posix()
+            fail(errors, f"{rel}: 预注册缺少必填项 {missing}")
