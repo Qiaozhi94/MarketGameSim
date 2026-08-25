@@ -93,10 +93,17 @@ public market tape + completed bars + private state
    11 个配置字段 × 3 个运行族逐格判定，且 ADR-003 §3.1 点名的五类注入字段在
    `SPONTANEOUS` 下强制 `forbidden`（校验器单独断言这一条）。
 
-**T201 的剩余产出只剩事件侧**：`AGENT_OBSERVE`/`AGENT_DECIDE` 补 FR-025 的审计字段与
-游标边界，并同步 `event-schema.md` 与 Schema 版本。目标模型数学、退化行为、约束边界、
-四个 V1 结构、运行族矩阵与 golden vector 均已落进机器真源，由
-`tools/validate_contract_sources.py` 逐条重算校验。
+**T201 的合同冻结部分到此完成**：目标模型数学、退化行为、约束边界、四个 V1 结构、
+运行族矩阵与 golden vector 均已落进机器真源，由 `tools/validate_contract_sources.py`
+逐条重算校验。
+
+**事件侧字段刻意留到 T205/T206 与生产者同批落地**，不在 T201 提前写进
+`event_fields.json`：那里的字段一律 `required: always`，一旦声明，任何 v3 日志都"必须"
+含有它们，而当前没有任何生产者会写——那就是本仓库代价最高的一类缺陷（声明了但没实现，
+RETROSPECTIVE 循环 1 的 `marked-done-not-implemented` 复现三次）。审计字段的**语义**
+已经冻结在 `goal_contract_v2.json` 的 `DecisionEvidenceV1` 里，T205/T206 把它们接进
+`AGENT_OBSERVE`/`AGENT_DECIDE` 时连同 `schema_version` 一起升版，生产者、Schema、
+文档与版本号在同一次变更里对齐。
 
 ## 5. Runtime、Workflow 与并发
 
