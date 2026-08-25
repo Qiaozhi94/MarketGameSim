@@ -4,7 +4,7 @@ id: 0.1.5
 version: "0.1"
 doc_kind: tasks
 created: 2026-08-14
-updated: 2026-08-15
+updated: 2026-08-26
 ---
 
 # 0.1.5：目标驱动代理与旗舰实验识别 - 任务
@@ -25,7 +25,8 @@ updated: 2026-08-15
 > 两项前置条件**各自 gate 不同的下游范围**（见 §4），不是"全部实现任务的共同前置"：
 > `T201` 阻塞 T204—T212，`T202` 只阻塞 T213—T217。R1（`T203`）不被两者阻塞。
 
-- [ ] **T201** (`FR-021`—`FR-027`): 更新代理、事件、实验与证据 Contract，并冻结 Schema 版本；
+- [x] **T201** (`FR-021`—`FR-027`): 冻结代理目标、实验运行族与决策证据语义 Contract；事件
+      生产者 Schema 的接线与升版按 design §4 的边界留在 T206，与生产者同批落地；
       必须逐项覆盖 [`design.md §4`](design.md) 的 T201 冻结清单（目标模型数学、退化输入行为、
       约束边界、四个 V1 Schema、三族逐字段 allow/deny 矩阵），产出可被参数化测试直接消费的
       golden vector 与矩阵数据 — verify: `python tools/verify.py`

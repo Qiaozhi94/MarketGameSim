@@ -1,11 +1,11 @@
 ---
 report_type: doc-review
-round: 5
-date: 2026-08-15
-prior_report: "round 4 + fix writeback（commit c9d4148）"
+round: 7
+date: 2026-08-26
+prior_report: "round 6 + T201 contract commits through 5c3fcaa"
 scope: diff-only
 stop_condition_met: false
-severity_counts: {critical: 0, high: 2, medium: 0, low: 0}
+severity_counts: {critical: 0, high: 1, medium: 0, low: 0}
 issues:
   - id: R017-D001
     title: T201 的目标/约束数学合同、V1 Schema 与运行族字段矩阵尚未冻结
@@ -14,23 +14,23 @@ issues:
     root_cause: root-cause
     origin: process-gap
     pattern_tag: contract-name-without-semantics
-    status: carried-forward
-    fix_summary: "数学主干已冻结；逐字段 Schema、运行族白名单、risk_appetite 分布/上界与 golden vectors 仍未产出，T201 仍未执行"
-    regression_test: "待补：数学 golden vectors、闭集 Schema 与三族允许/拒绝矩阵参数化测试"
-    location: docs/features/0.1/0.1.5-goal-driven-flagship/tasks.md:25
+    status: fixed
+    fix_summary: "目标数学、退化行为、约束边界、四个 V1 Schema、三族白名单与四类 golden vectors 已落入 goal_contract_v2.json；闭集与重算门禁已接入统一验证"
+    regression_test: "tests/unit/test_contract_sources.py::test_goal_contract_mutations_are_rejected、::test_decision_evidence_records_both_cursor_boundaries"
+    location: src/market_game_sim/schema/goal_contract_v2.json:1
     first_seen_round: 1
-    resolved_round: ""
+    resolved_round: 7
   - id: R017-D002
-    title: T202 预注册产物不存在（口径矛盾部分已拆分为 D009）
+    title: T202 预注册尚未冻结，且必填清单未覆盖模型参数
     severity: high
     category: test-coverage
     root_cause: root-cause
     origin: process-gap
     pattern_tag: implementation-before-preregistration
     status: carried-forward
-    fix_summary: "本轮不修：属任务 T202 尚未执行。口径矛盾部分已拆出 D009 并修复；结构校验器已就位（validate_preregistrations），产物一出现即受检"
-    regression_test: "tests/unit/test_spec_lifecycle.py::test_preregistration_missing_item_is_rejected 等 5 条（门已就位，等产物）"
-    location: docs/features/0.1/0.1.5-goal-driven-flagship/spec.md:153
+    fix_summary: "预注册结构门禁已就位；仍需执行 T202，并把 risk_appetite 分布与 threshold 参数加入冻结清单"
+    regression_test: "tests/unit/test_spec_lifecycle.py::test_preregistration_missing_item_is_rejected 等 5 条；模型参数项待 T202 补"
+    location: docs/features/0.1/0.1.5-goal-driven-flagship/tasks.md:33
     first_seen_round: 1
     resolved_round: ""
   - id: R017-D003
@@ -124,25 +124,54 @@ issues:
     location: docs/features/0.1/0.1.5-goal-driven-flagship/spec.md:161
     first_seen_round: 5
     resolved_round: 6
+  - id: R017-D010
+    title: 目标合同门禁允许必备字段、矩阵行与 vectors 被静默删除
+    severity: high
+    category: correctness
+    root_cause: root-cause
+    origin: original-coding
+    pattern_tag: silent-no-op-gate
+    status: fixed
+    fix_summary: "校验器锁定结构字段、枚举、三族矩阵、四类 vector ID 和退化语义闭集"
+    regression_test: "tests/unit/test_contract_sources.py::test_goal_contract_mutations_are_rejected（新增 15 组）"
+    location: tools/spec_validation.py:1203
+    first_seen_round: 7
+    resolved_round: 7
+  - id: R017-D011
+    title: DecisionEvidenceV1 缺游标边界且事件 ID 类型误写为 int
+    severity: high
+    category: correctness
+    root_cause: root-cause
+    origin: original-coding
+    pattern_tag: cross-contract-type-drift
+    status: fixed
+    fix_summary: "DecisionEvidenceV1 增加 from/to 游标；六个事件 ID 字段统一为 str"
+    regression_test: "tests/unit/test_contract_sources.py::test_decision_evidence_records_both_cursor_boundaries、事件 ID 反向变异"
+    location: src/market_game_sim/schema/goal_contract_v2.json:44
+    first_seen_round: 7
+    resolved_round: 7
 ---
 
 # 0.1.5 进入开发前终检
 
-**结论：完整开发仍未放行；D005/D006/D007 已关闭，剩余 3 条 High。** 本轮只复核
-`cf33e1e..c9d4148` 的 round 4 修复 diff 及相邻门禁，不重新扫描其他内容。
+**当前结论：T201 已收口，0.1.5 可进入工程开发；T202 仍阻塞 T213—T217 与所有研究声明。**
+下面保留各轮证据，round 7 的最新状态见文末。
 
 ## 发现
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| R017-D001 | T201 的目标/约束数学合同、V1 Schema 与运行族字段矩阵尚未冻结 | High | correctness | root-cause | process-gap | carried-forward | 执行 T201，产出并评审逐字段 Schema、白名单矩阵、risk_appetite 分布/上界与 golden vectors；或显式修改生命周期，说明哪些编码可在这些产物前进行 | 待补：golden vectors、Schema 与矩阵参数化测试 | 1 | — | contract-name-without-semantics |
-| R017-D002 | T202 预注册不存在，且生命周期门与任务依赖对预注册时点互相矛盾 | High | correctness | root-cause | process-gap | carried-forward | 二选一并统一三件套：ready 前完成真实预注册；或把预注册门明确移到 T213 前，并定义其前允许的 pilot/engineering 产物及 evidence class | 待补：0.1.5 预注册结构与冻结字段校验 | 1 | — | implementation-before-preregistration |
+| R017-D001 | T201 合同未冻结 | High | correctness | root-cause | process-gap | fixed | 机器合同、闭集、矩阵与 vectors 全部冻结 | 合同正反测试 | 1 | 7 | contract-name-without-semantics |
+| R017-D002 | T202 未冻结且漏模型参数 | High | test-coverage | root-cause | process-gap | carried-forward | T213 前冻结真实预注册、risk_appetite 分布和 threshold 参数 | 结构门禁已就位；参数项待补 | 1 | — | implementation-before-preregistration |
 | R017-D003 | 游标消费顺序错误 | High | correctness | root-cause | spec-drift | fixed | 已统一为先消费、成功提交后原子推进 | 待实现阶段补：T206 故障注入测试 | 1 | 2 | cursor-commit-before-consume |
 | R017-D004 | 状态回写任务早于最终成果门 | High | correctness | root-cause | process-gap | fixed | R5 为 T220，状态门为最后一项 T221 | `test_status_gate_as_final_task_passes` | 1 | 2 | lifecycle-transition-before-final-task |
 | R017-D005 | R5 clean-checkout 与单命令验收未统一 | High | test-coverage | root-cause | spec-drift | fixed | AC-011/012、design §8、T220 已同步同一命令生成后验链接 | 待实现阶段补：`test_delivery_entry.py` | 1 | 5 | partial-symmetric-fix |
 | R017-D006 | 状态回写门禁依赖自然语言 | Medium | correctness | root-cause | fix-regression | fixed | 显式 `[状态门]` 已替代自然语言正则 | 生命周期门禁 6 组测试 | 2 | 5 | prose-inferred-lifecycle-gate |
 | R017-D007 | 约束合同重复扣除 reserved | High | correctness | root-cause | fix-regression | fixed | 已统一 `reserved_after <= risk_equity`、减仓豁免与翻仓分段 | `test_constraint_layer_uses_the_single_admission_formula` | 4 | 5 | cross-contract-margin-double-count |
-| R017-D008 | legacy 豁免用 created 冒充关闭时间 | High | correctness | root-cause | fix-regression | open | 不用 created 推断历史状态；优先给 0.1.4 回填已完成的 `[状态门]` 并对所有 gate v1 一律执法，或使用机器可证的显式 legacy allowlist | 待补：规则前创建、规则后关闭缺标记失败 | 5 | — | creation-date-used-as-closure-date |
+| R017-D008 | legacy 豁免用 created 冒充关闭时间 | High | correctness | root-cause | fix-regression | fixed | 取消豁免并给 0.1.4 回填真实 `[状态门]` | 12 组状态门测试 | 5 | 5 | creation-date-used-as-closure-date |
+| R017-D009 | 生命周期门与预注册门混用 | High | correctness | root-cause | spec-drift | fixed | 两门按作用域拆分 | 预注册结构测试 | 5 | 6 | two-gates-one-fact |
+| R017-D010 | 合同门禁可静默漏检 | High | correctness | root-cause | original-coding | fixed | 锁定全部必备闭集和模型数值不变量 | 新增 15 组变异 | 7 | 7 | silent-no-op-gate |
+| R017-D011 | 决策游标与事件 ID 类型漂移 | High | correctness | root-cause | original-coding | fixed | 补游标并统一 str | 游标正向 + 类型反向测试 | 7 | 7 | cross-contract-type-drift |
 
 ## round 5 复核证据
 
@@ -239,3 +268,14 @@ D002 的 `regression_test` 字段从 round 1 起一直写着"待补：0.1.5 预�
 
 D001（T201 未执行）、D002（T202 未执行）仍 carried-forward，关闭路径是执行任务。
 **本文件保留，删除权在检视人。**
+
+## round 7 修复回写（2026-08-26）
+
+- **D001 已关闭**：T201 机器合同、字段闭集、三族矩阵与四类 golden vectors 均已冻结；
+  里程碑推进为 `ready-for-development`。
+- **D010 已关闭**：此前删除必备字段、`seed_plan` 矩阵行或整个退化 vector 家族仍会绿；
+  现在这些变异及模型方程、参数上界漂移全部被 `validate_goal_contract_data` 拒绝。
+- **D011 已关闭**：`DecisionEvidenceV1` 直接记录 from/to 游标，所有事件 ID 字段与
+  `event_fields.json` 统一为字符串。
+- **D002 保留**：T202 尚未执行，且关闭前还需把 `risk_appetite` 分布及
+  `theta_in/theta_out/k_x1000` 加入预注册必填项；因此本报告不删除、停止条件仍为 false。

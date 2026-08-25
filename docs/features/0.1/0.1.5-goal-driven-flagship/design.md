@@ -4,7 +4,7 @@ id: 0.1.5
 version: "0.1"
 doc_kind: design
 created: 2026-08-14
-updated: 2026-08-15
+updated: 2026-08-26
 ---
 
 # 0.1.5：目标驱动代理与旗舰实验识别 - 设计

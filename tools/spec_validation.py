@@ -1202,7 +1202,137 @@ def validate_preregistrations(root: pathlib.Path, errors: list[str]) -> None:
 # --------------------------------------------------------------------------- #
 
 GOAL_MODEL_IDS = ("risk_budget_linear_v1", "risk_budget_threshold_v1")
+GOAL_MODEL_FROZEN_VALUES = {
+    "risk_budget_linear_v1": {
+        "role": "primary",
+        "equation": "desired = trunc(signal_bp * max_position / 10000)",
+        "max_notional": "equity_units * risk_appetite_x1000 / 1000",
+        "max_position": "floor(max_notional / mark)",
+        "saturation": "clamp_to_feasible",
+    },
+    "risk_budget_threshold_v1": {
+        "role": "robustness",
+        "equation": (
+            "abs(signal_bp) >= theta_in -> sign * trunc(k_x1000 * max_position / 1000); "
+            "abs(signal_bp) <= theta_out -> 0; otherwise hold"
+        ),
+        "hysteresis": True,
+        "params_frozen_in": "preregistration",
+        "param_bounds": {
+            "theta_in": {"min": 1, "max": 10000},
+            "theta_out": {"min": 1, "max": 10000, "must_be_less_than": "theta_in"},
+            "k_x1000": {"min": 1, "max": 1000},
+        },
+    },
+}
+RISK_APPETITE_FROZEN_VALUES = {
+    "role": "agent_preference",
+    "unit": "x1000",
+    "drawn_once_per_run": True,
+    "bounds": {"min_x1000": 500, "max_x1000": 20000},
+    "distribution_params_frozen_in": "preregistration",
+}
 FAMILY_VERDICTS = {"required", "optional", "forbidden"}
+RUN_FAMILIES = ("SPONTANEOUS", "STRESS", "BENCHMARK")
+GOAL_STRUCTURE_FIELDS = {
+    "InformationSetV1": {
+        "schema_version",
+        "cursor_from_event_id",
+        "cursor_to_event_id",
+        "public_trades",
+        "completed_bars",
+        "book_top",
+        "own_account",
+    },
+    "AgentInternalStateV1": {
+        "schema_version",
+        "last_seen_market_event_id",
+        "ewma_value_units",
+        "ewma_sample_count",
+        "model_private_state",
+    },
+    "DecisionEvidenceV1": {
+        "schema_version",
+        "goal_model_id",
+        "goal_model_version",
+        "desired_position_units",
+        "executable_position_units",
+        "constraint_binding",
+        "constraint_reason",
+        "trigger_provenance",
+        "observation_event_id",
+        "cursor_from_event_id",
+        "cursor_to_event_id",
+    },
+    "StressProtocolV1": {
+        "schema_version",
+        "protocol_id",
+        "events",
+        "reads_run_outcome",
+    },
+}
+EVENT_ID_FIELDS = {
+    ("InformationSetV1", "cursor_from_event_id"),
+    ("InformationSetV1", "cursor_to_event_id"),
+    ("AgentInternalStateV1", "last_seen_market_event_id"),
+    ("DecisionEvidenceV1", "observation_event_id"),
+    ("DecisionEvidenceV1", "cursor_from_event_id"),
+    ("DecisionEvidenceV1", "cursor_to_event_id"),
+}
+RUN_FAMILY_FIELDS = {
+    "run_family",
+    "seed_plan",
+    "goal_model_id",
+    "l_level",
+    "m_level",
+    "stress_protocol",
+    "agent_signals",
+    "extra_positions",
+    "extra_events",
+    "synthetic_shock_accounts",
+    "outcome_conditional_orders",
+}
+GOLDEN_VECTOR_IDS = {
+    "linear": (
+        "linear_long",
+        "linear_short",
+        "linear_trunc_positive",
+        "linear_trunc_negative",
+    ),
+    "threshold": (
+        "threshold_enter_long",
+        "threshold_enter_short",
+        "threshold_hold_band",
+        "threshold_exit",
+    ),
+    "constraint": (
+        "pure_reduction_never_clipped",
+        "flip_limits_only_new_leg",
+        "add_beyond_limit_clipped_same_sign",
+    ),
+    "degenerate": (
+        "mark_undefined_skips_decision",
+        "non_positive_equity_reduce_only",
+        "ewma_warmup_zero_target",
+    ),
+}
+DEGENERATE_VECTORS = {
+    "mark_undefined_skips_decision": {
+        "condition": "MARK_UNDEFINED",
+        "expected_desired": None,
+        "expected_action": "skip_decision",
+    },
+    "non_positive_equity_reduce_only": {
+        "condition": "NON_POSITIVE_EQUITY",
+        "expected_desired": 0,
+        "expected_action": "reduce_only",
+    },
+    "ewma_warmup_zero_target": {
+        "condition": "EWMA_WARMUP",
+        "expected_desired": 0,
+        "expected_action": "emit_decision",
+    },
+}
 # ADR-003 §3.1 点名的五类注入字段：`SPONTANEOUS` 下必须一律 forbidden。
 SPONTANEOUS_FORBIDDEN_MIN_SET = (
     "agent_signals",
@@ -1230,6 +1360,12 @@ def validate_goal_contract_data(d: dict, errors: list[str]) -> None:
     重算是这份文件的意义所在——合同里的方程若被改动而向量没跟上（或反过来），
     差异必须在 CI 上当场出现，而不是等到实现者按其中一份写完代码才发现两者不一致。
     """
+    model_ids = set(d.get("goal_models", {}))
+    if model_ids != set(GOAL_MODEL_IDS):
+        fail(
+            errors,
+            f"goal_contract: 目标模型闭集应为 {list(GOAL_MODEL_IDS)}，实际为 {sorted(model_ids)}",
+        )
     for model_id in GOAL_MODEL_IDS:
         model = d.get("goal_models", {}).get(model_id)
         if not isinstance(model, dict):
@@ -1239,11 +1375,67 @@ def validate_goal_contract_data(d: dict, errors: list[str]) -> None:
             fail(errors, f"goal_contract: {model_id} 必须声明 reads_institutional_fields=false")
         if model.get("rounding") != "trunc_toward_zero":
             fail(errors, f"goal_contract: {model_id} 的取整必须是 trunc_toward_zero")
+        for key, expected in GOAL_MODEL_FROZEN_VALUES[model_id].items():
+            if model.get(key) != expected:
+                fail(errors, f"goal_contract: {model_id} 的冻结属性 {key} 不符")
 
     appetite = d.get("risk_appetite", {})
+    for key, expected in RISK_APPETITE_FROZEN_VALUES.items():
+        if appetite.get(key) != expected:
+            fail(errors, f"goal_contract: risk_appetite 的冻结属性 {key} 不符")
     for forbidden in ("leverage_tier", "L", "M", "maint_bp", "initial_bp", "arm_id"):
         if forbidden not in appetite.get("independent_of", []):
             fail(errors, f"goal_contract: risk_appetite 必须声明独立于 {forbidden}")
+
+    structures = d.get("structures", {})
+    actual_structures = set(structures)
+    expected_structures = set(GOAL_STRUCTURE_FIELDS)
+    if actual_structures != expected_structures:
+        fail(
+            errors,
+            "goal_contract: V1 结构闭集不符，"
+            f"缺少 {sorted(expected_structures - actual_structures)}，"
+            f"多出 {sorted(actual_structures - expected_structures)}",
+        )
+    allowed_types = set(d.get("meta", {}).get("value_types", []))
+    for structure_name, expected_fields in GOAL_STRUCTURE_FIELDS.items():
+        fields = structures.get(structure_name, {}).get("fields", {})
+        actual_fields = set(fields)
+        if actual_fields != expected_fields:
+            fail(
+                errors,
+                f"goal_contract: {structure_name} 字段闭集不符，"
+                f"缺少 {sorted(expected_fields - actual_fields)}，"
+                f"多出 {sorted(actual_fields - expected_fields)}",
+            )
+        for field_name, field in fields.items():
+            where = f"goal_contract: {structure_name}.{field_name}"
+            if field.get("value_type") not in allowed_types:
+                fail(errors, f"{where} 的 value_type {field.get('value_type')!r} 非法")
+            if not isinstance(field.get("nullable"), bool):
+                fail(errors, f"{where} 必须声明布尔 nullable")
+            if field.get("required") != "always":
+                fail(errors, f"{where} 的 required 必须为 always")
+            if field.get("value_type") == "enum" and not field.get("enum"):
+                fail(errors, f"{where} 是 enum 但没有值域")
+            if (structure_name, field_name) in EVENT_ID_FIELDS and field.get("value_type") != "str":
+                fail(errors, f"{where} 必须是 str，与 event_fields.json 的事件 ID 口径一致")
+
+    decision_fields = structures.get("DecisionEvidenceV1", {}).get("fields", {})
+    expected_reasons = {
+        "MARGIN_LIMIT",
+        "MAX_ORDER_QTY",
+        "MARK_UNDEFINED",
+        "NON_POSITIVE_EQUITY",
+        "EWMA_WARMUP",
+    }
+    actual_reasons = set(decision_fields.get("constraint_reason", {}).get("enum", []))
+    if actual_reasons != expected_reasons:
+        fail(errors, "goal_contract: DecisionEvidenceV1.constraint_reason 枚举闭集不符")
+    expected_provenance = {"ENDOGENOUS_AGENT", "LIQUIDATION", "EXOGENOUS_STRESS"}
+    actual_provenance = set(decision_fields.get("trigger_provenance", {}).get("enum", []))
+    if actual_provenance != expected_provenance:
+        fail(errors, "goal_contract: DecisionEvidenceV1.trigger_provenance 枚举闭集不符")
 
     matrix = d.get("run_family_matrix", {})
     if matrix.get("policy") != "whitelist":
@@ -1251,8 +1443,21 @@ def validate_goal_contract_data(d: dict, errors: list[str]) -> None:
     if matrix.get("unlisted_field_verdict") != "forbidden":
         fail(errors, "goal_contract: 未列字段的判定必须是 forbidden")
     families = matrix.get("families", [])
-    for field_name, verdicts in matrix.get("fields", {}).items():
-        for family in families:
+    if tuple(families) != RUN_FAMILIES:
+        fail(errors, f"goal_contract: 运行族闭集应为 {list(RUN_FAMILIES)}，实际为 {families}")
+    matrix_fields = matrix.get("fields", {})
+    actual_matrix_fields = set(matrix_fields)
+    if actual_matrix_fields != RUN_FAMILY_FIELDS:
+        fail(
+            errors,
+            "goal_contract: 运行族矩阵字段闭集不符，"
+            f"缺少 {sorted(RUN_FAMILY_FIELDS - actual_matrix_fields)}，"
+            f"多出 {sorted(actual_matrix_fields - RUN_FAMILY_FIELDS)}",
+        )
+    for field_name, verdicts in matrix_fields.items():
+        if set(verdicts) != set(RUN_FAMILIES):
+            fail(errors, f"goal_contract: {field_name} 必须逐格覆盖三个运行族")
+        for family in RUN_FAMILIES:
             verdict = verdicts.get(family)
             if verdict not in FAMILY_VERDICTS:
                 fail(errors, f"goal_contract: {field_name} 在 {family} 下的判定 {verdict!r} 非法")
@@ -1260,7 +1465,24 @@ def validate_goal_contract_data(d: dict, errors: list[str]) -> None:
         if matrix.get("fields", {}).get(field_name, {}).get("SPONTANEOUS") != "forbidden":
             fail(errors, f"goal_contract: SPONTANEOUS 必须禁止 {field_name}（ADR-003 §3.1）")
 
+    declared_forbidden = matrix.get("spontaneous_forbidden_min_set", [])
+    if tuple(declared_forbidden) != SPONTANEOUS_FORBIDDEN_MIN_SET:
+        fail(errors, "goal_contract: spontaneous_forbidden_min_set 与 ADR-003 §3.1 闭集不符")
+
     vectors = d.get("golden_vectors", {})
+    if set(vectors) != set(GOLDEN_VECTOR_IDS):
+        fail(
+            errors,
+            "goal_contract: golden_vectors 必须且只能包含 linear/threshold/constraint/degenerate",
+        )
+    for family, expected_ids in GOLDEN_VECTOR_IDS.items():
+        actual_ids = tuple(vector.get("id") for vector in vectors.get(family, []))
+        if actual_ids != expected_ids:
+            fail(
+                errors,
+                f"goal_contract: {family} golden vector ID 闭集应为 {list(expected_ids)}，"
+                f"实际为 {list(actual_ids)}",
+            )
     for vector in vectors.get("linear", []):
         got = _trunc_div(vector["signal_bp"] * _max_position(vector), 10000)
         if got != vector["expected_desired"]:
@@ -1303,6 +1525,11 @@ def validate_goal_contract_data(d: dict, errors: list[str]) -> None:
             )
         if reducing and not vector.get("margin_check_skipped"):
             fail(errors, f"goal_contract: {vector['id']} 是纯减仓，必须声明跳过保证金检查")
+    for vector in vectors.get("degenerate", []):
+        expected = DEGENERATE_VECTORS.get(vector.get("id"))
+        actual = {key: value for key, value in vector.items() if key != "id"}
+        if expected is not None and actual != expected:
+            fail(errors, f"goal_contract: degenerate golden vector {vector.get('id')} 语义不符")
 
 
 def validate_goal_contract_against_doc(d: dict, doc: str, errors: list[str]) -> None:
