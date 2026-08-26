@@ -223,7 +223,7 @@ class TestE002HashIncludeParity:
 
 class TestSchemaVersionAndKinds:
     def test_schema_version_is_3(self, raw_schema):
-        assert raw_schema["schema_version"] == 3
+        assert raw_schema["schema_version"] == 4
 
     def test_record_kinds_match(self, raw_schema):
         assert raw_schema["record_kinds"] == ["RUN_HEADER", "EVENT", "RUN_TRAILER"]

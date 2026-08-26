@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
-from decimal import Decimal
 
+from market_game_sim.agent.constraint import QuoteRiskPolicy
+from market_game_sim.agent.goal import MarketMakerGoal
 from market_game_sim.ledger.account import initial_margin_bp_for_tier
 
 # A target-position function has the BehaviorMapping contract (agent/mapping.py)
@@ -83,11 +84,42 @@ def order_intent_from_signal(
 
     Returns ``None`` if no actionable order.
     """
-    if best_bid is None or best_ask is None:
-        return None
     initial_bp = initial_margin_bp_for_tier(leverage_tier)
     target = target_fn(signal_bp, equity_units, valuation_mark_ticks, initial_bp, min_qty)
-    delta = target - current_position
+    return order_intent_from_target(
+        intent_id,
+        target,
+        current_position,
+        leverage_tier,
+        aggressiveness_bp,
+        best_bid,
+        best_ask,
+        max_order_qty,
+        min_qty,
+    )
+
+
+def order_intent_from_target(
+    intent_id: str,
+    target_position_units: int,
+    current_position: int,
+    leverage_tier: int,
+    aggressiveness_bp: int,
+    best_bid: int | None,
+    best_ask: int | None,
+    max_order_qty: int,
+    min_qty: int,
+) -> OrderIntent | None:
+    """§6 order intent from a *post-constraint* target position (v2 path).
+
+    The v2 goal+constraint pipeline (agent/goal.py + agent/constraint.py)
+    produces the executable target directly; this function turns it into the
+    §6 delta -> side -> price -> admission shared execution tail, identical to
+    :func:`order_intent_from_signal`'s tail so v1 and v2 do not diverge.
+    """
+    if best_bid is None or best_ask is None:
+        return None
+    delta = target_position_units - current_position
     if abs(delta) < min_qty:
         return None
     if delta > 0:
@@ -128,45 +160,59 @@ def market_maker_intents(
     best_ask: int | None,
     margin_ratio_bp: int | None = None,
     maint_bp: int = 500,
+    leverage_tier: int = 1,
 ) -> list[OrderIntent]:
     """Inventory market maker: bilateral quotes with skew (代理策略 §8).
 
-    When margin_ratio_bp < maint_bp, only quotes the position-reducing
-    direction (代理策略 §8 last bullet).
+    Migrated to the v2 goal + constraint architecture (T205, ADR-003): the
+    *goal* (:class:`market_game_sim.agent.goal.MarketMakerGoal`) computes the
+    raw skew/price quotes from permitted inputs only (inventory, half_spread,
+    skew, valuation_mark) -- it reads no institutional field; the *quote risk
+    policy* (:class:`market_game_sim.agent.constraint.QuoteRiskPolicy`) enforces
+    ``max_inventory`` and the ``margin_ratio_bp < maint_bp`` limit (the only
+    layer allowed to read ``maint_bp``).
+
+    ``leverage_tier`` is admission metadata only (matching.py reads initial_bp
+    from ``world["agent_initial_bp"]``, not from the intent) -- the quote
+    computation never derives from it, so it is no longer hardcoded to 1.
     """
     if valuation_mark_ticks is None or max_inventory <= 0:
         return []
-    inv_ratio = Decimal(inventory) / Decimal(max_inventory)
-    inv_ratio = max(Decimal(-1), min(Decimal(1), inv_ratio))
-    skew_ticks = int(inv_ratio * inventory_skew_k_bp * half_spread_ticks / Decimal(10_000))
-    bid = valuation_mark_ticks - half_spread_ticks - skew_ticks
-    ask = valuation_mark_ticks + half_spread_ticks - skew_ticks
-
-    margin_warning = margin_ratio_bp is not None and margin_ratio_bp < maint_bp
+    goal = MarketMakerGoal(
+        half_spread_ticks=half_spread_ticks,
+        quote_size=quote_size,
+        max_inventory=max_inventory,
+        inventory_skew_k_bp=inventory_skew_k_bp,
+    )
+    raw = goal.decide(inventory, valuation_mark_ticks)
+    if raw is None:
+        return []
+    policy = QuoteRiskPolicy(max_inventory=max_inventory, maint_bp=maint_bp)
+    out_bid, out_ask, _binding, _reason = policy.apply(raw.bid, raw.ask, inventory, margin_ratio_bp)
     intents: list[OrderIntent] = []
-    if inventory < max_inventory and (not margin_warning or inventory < 0):
+    if out_bid is not None:
         intents.append(
             OrderIntent(
                 intent_id=f"{agent_id}-mm-bid",
                 action="SUBMIT",
                 side="BUY",
                 order_type="LIMIT",
-                price_ticks=bid,
-                quantity_units=quote_size,
-                leverage_tier=1,
+                price_ticks=out_bid.price_ticks,
+                quantity_units=out_bid.quantity_units,
+                leverage_tier=leverage_tier,
                 aggressiveness_bp=0,
             )
         )
-    if inventory > -max_inventory and (not margin_warning or inventory > 0):
+    if out_ask is not None:
         intents.append(
             OrderIntent(
                 intent_id=f"{agent_id}-mm-ask",
                 action="SUBMIT",
                 side="SELL",
                 order_type="LIMIT",
-                price_ticks=ask,
-                quantity_units=quote_size,
-                leverage_tier=1,
+                price_ticks=out_ask.price_ticks,
+                quantity_units=out_ask.quantity_units,
+                leverage_tier=leverage_tier,
                 aggressiveness_bp=0,
             )
         )

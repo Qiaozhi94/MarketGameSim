@@ -1,11 +1,11 @@
 ---
 report_type: doc-review
-round: 7
-date: 2026-08-26
-prior_report: "round 6 + T201 contract commits through 5c3fcaa"
+round: 8
+date: 2026-08-27
+prior_report: "round 7 worktree state at 2026-08-26"
 scope: diff-only
 stop_condition_met: false
-severity_counts: {critical: 0, high: 1, medium: 0, low: 0}
+severity_counts: {critical: 0, high: 1, medium: 1, low: 0}
 issues:
   - id: R017-D001
     title: T201 的目标/约束数学合同、V1 Schema 与运行族字段矩阵尚未冻结
@@ -150,12 +150,25 @@ issues:
     location: src/market_game_sim/schema/goal_contract_v2.json:44
     first_seen_round: 7
     resolved_round: 7
+  - id: R017-D012
+    title: 事件合同对 decision_evidence 是否可为空给出互相矛盾的规则
+    severity: medium
+    category: correctness
+    root_cause: root-cause
+    origin: spec-drift
+    pattern_tag: cross-feature-contract-drift
+    status: open
+    fix_summary: ""
+    regression_test: "待补：tests/unit/test_contract_sources.py::test_event_schema_doc_decision_evidence_nullability_matches_registry"
+    location: docs/contracts/event-schema.md:681
+    first_seen_round: 8
+    resolved_round: ""
 ---
 
 # 0.1.5 进入开发前终检
 
-**当前结论：T201 已收口，0.1.5 可进入工程开发；T202 仍阻塞 T213—T217 与所有研究声明。**
-下面保留各轮证据，round 7 的最新状态见文末。
+**当前结论：T201 已收口，0.1.5 可进入工程开发；T202 仍阻塞 T213—T217 与所有研究声明；
+事件合同新增 1 条 Medium 矛盾待修。**下面保留各轮证据，round 8 的最新状态见文末。
 
 ## 发现
 
@@ -172,6 +185,7 @@ issues:
 | R017-D009 | 生命周期门与预注册门混用 | High | correctness | root-cause | spec-drift | fixed | 两门按作用域拆分 | 预注册结构测试 | 5 | 6 | two-gates-one-fact |
 | R017-D010 | 合同门禁可静默漏检 | High | correctness | root-cause | original-coding | fixed | 锁定全部必备闭集和模型数值不变量 | 新增 15 组变异 | 7 | 7 | silent-no-op-gate |
 | R017-D011 | 决策游标与事件 ID 类型漂移 | High | correctness | root-cause | original-coding | fixed | 补游标并统一 str | 游标正向 + 类型反向测试 | 7 | 7 | cross-contract-type-drift |
+| R017-D012 | decision_evidence 可空性规则互相矛盾 | Medium | correctness | root-cause | spec-drift | open | 删除 V1 可为 null 的旧规则并保留迁移说明，使文档与 JSON schema 一致 | 待补：合同文档与 registry 一致性测试 | 8 | — | cross-feature-contract-drift |
 
 ## round 5 复核证据
 

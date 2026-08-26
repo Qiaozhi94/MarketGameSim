@@ -1,6 +1,6 @@
 {
   "$comment": "事件日志字段的规范真源（合同产物，随 docs/contracts/event-schema.md 一同评审）。此文件不是实现细节：registry.py 只负责加载它，不得内嵌第二份声明。放在包内而非 docs/ 是因为 wheel 只打包 src/market_game_sim，装包后须能由 importlib.resources 读取。",
-  "schema_version": 3,
+  "schema_version": 4,
   "meta": {
     "field_metadata_keys": [
       "value_type",
@@ -1163,6 +1163,18 @@
           "required": "always",
           "hash": "HASH_EXCLUDE"
         },
+        "cursor_from_event_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
+        "cursor_to_event_id": {
+          "value_type": "str",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE"
+        },
         "information_set": {
           "value_type": "object",
           "nullable": false,
@@ -1203,6 +1215,21 @@
           "nullable": false,
           "required": "always",
           "hash": "HASH_EXCLUDE"
+        },
+        "decision_evidence": {
+          "value_type": "object",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE",
+          "constraints": [
+            {
+              "when": {
+                "always": true
+              },
+              "then": "non_null"
+            }
+          ],
+          "note": "每次 AGENT_DECIDE 必须携带 DecisionEvidenceV1（ADR-003 §4：每次代理决策至少记录目标模型、约束前后仓位、绑定原因与触发来源）。v2 目标驱动路径填写真实模型证据；v1 BENCHMARK 兼容路径与做市商路径构造带路径标记的最小证据（goal_model_id = \"v1_legacy\" / \"market_maker\"），不允许静默缺失"
         },
         "internal_state": {
           "value_type": "object",

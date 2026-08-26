@@ -44,7 +44,7 @@ def build_run_header(
     agent_initial_bp: dict[str, int],
     run_mode: str = "benchmark",
     information_set_mode: str = "full",
-    schema_version: int = 3,
+    schema_version: int = 4,
 ) -> dict[str, Any]:
     """Build a ``RUN_HEADER`` dict (§6.1).
 

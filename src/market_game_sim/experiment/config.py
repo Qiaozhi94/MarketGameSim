@@ -52,6 +52,11 @@ class ExperimentConfig:
     model_family: str = "belief_family"  # T006: belief_family | signal_family
     behavior_mapping: str = "linear"  # T102: linear | threshold
     disabled_factor: str | None = None  # T301: leave-one-out ablation switch
+    # 0.1.5 T209 (FR-023): the run family (SPONTANEOUS / STRESS / BENCHMARK).
+    # None = legacy config that predates the family declaration; run_one only
+    # enforces the allow/deny matrix once a family is explicitly declared
+    # (旧配置按 design.md §7 显式迁移为 BENCHMARK，不自动猜测).
+    run_family: str | None = None
 
 
 def compute_config_hash(config: ExperimentConfig) -> str:

@@ -50,7 +50,7 @@ def _make_fixture() -> dict:
     )
     trade_event = {
         "record_kind": "EVENT",
-        "schema_version": 3,
+        "schema_version": 4,
         "event_id": "e3_1",
         "run_id": "f2",
         "timestamp": 100,
@@ -114,7 +114,7 @@ def _make_fixture() -> dict:
     }
     margin_call_event = {
         "record_kind": "EVENT",
-        "schema_version": 3,
+        "schema_version": 4,
         "event_id": "e3_2",
         "run_id": "f2",
         "timestamp": 100,
