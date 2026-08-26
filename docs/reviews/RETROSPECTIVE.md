@@ -637,3 +637,34 @@ amend 修正）。**管道会吞掉前一个命令的退出码**——门禁命�
 一旦复核发现修复不完整就无据可查。判据很直接：**如果一次闭环里，写 `fix_summary` 的
 人和按下删除的人是同一个，那这次闭环没有被任何人复核过。** 与之配套的 `rule-without
 -gate` 教训在此处再次成立——skill 写了这条规则，但没有任何机器检查会拦住 `git rm`。
+
+
+---
+
+## 循环 18: 0.1.5 T203-T212 代码检视
+
+- **report_type**: code-review -> fix-verification
+- **周期**: 2026-08-27(round 1 全量扫描 -> round 2 diff-only 复核)
+- **复盘状态**: round 2 通过,12 条发现全部修复,CI 全绿(511a18d,4 job success)
+- **回归覆盖**: 12 条修复各配仓库内回归测试(见下表),本地 verify 全绿
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| R018-C001 | 后续观察始终引用初始市场事件 | High | correctness | root-cause | original-coding | fixed | kernel 记录最后提交市场发布 ID;observe 执行时快照边界 | test_tape_cursor.py::test_post_trade_observation_consumes_latest_market_interval | 1 | 2 | hardcoded-causal-anchor |
+| R018-C002 | 游标与 EWMA 在事务提交前修改 | High | correctness | root-cause | original-coding | fixed | staging 到 _pending_agent_state,提交后一次应用 | test_tape_cursor.py::test_observe_failure_rolls_back_cursor_and_ewma | 1 | 2 | cursor-commit-before-consume |
+| R018-C003 | V1 信息集未接入真实 tape 与闭合 K 线 | High | correctness | root-cause | original-coding | fixed | public_trades/completed_bars 真实传入 | test_tape_ewma.py::test_information_set_contains_global_trades_and_completed_zero_fill_bars | 1 | 2 | schema-defined-runtime-bypassed |
+| R018-C004 | 空头同向加仓绕过裁剪 | High | correctness | root-cause | original-coding | fixed | abs 比较 + sign 对称裁剪 | test_constraint.py::test_same_side_add_is_clipped_symmetrically_for_long_and_short | 1 | 2 | partial-symmetric-fix |
+| R018-C005 | 运行族矩阵未接入模拟入口 | High | correctness | root-cause | original-coding | fixed | run_one 构造前 validate_run_family | test_run_family_entrypoint.py | 1 | 2 | gate-not-wired-to-entrypoint |
+| R018-C006 | EXOGENOUS 与四宫格校验可接受非法值 | High | correctness | root-cause | original-coding | fixed | 强制 EXOGENOUS + 闭集 cell | test_stress_protocol.py::test_stress_provenance_requires_exogenous_stress | 1 | 2 | validator-accepts-forbidden-variants |
+| R018-C007 | 独立验证器未覆盖完整因果链 | High | correctness | root-cause | original-coding | fixed | 组合 + order->decide->observe 跳 | test_decision_chain_verifier.py::test_rejects_broken_order_trade_risk_and_liquidation_links | 1 | 2 | partial-chain-verifier |
+| R018-C008 | reserved 重复且遗漏候选手续费 | Medium | correctness | root-cause | original-coding | fixed | 委托 ledger + candidate fee | test_constraint.py::test_candidate_new_open_fee_is_reserved | 1 | 2 | duplicated-admission-formula |
+| R018-C009 | 嵌套证据无闭合校验 | Medium | correctness | root-cause | original-coding | fixed | validate_decision_evidence_v1 | test_event_schema.py | 1 | 2 | shallow-schema-validation |
+| R018-C010 | EWMA 依赖观察批次划分 | Medium | correctness | root-cause | original-coding | fixed | 每 fill 取整 | test_tape_ewma.py::test_ewma_is_invariant_to_observation_batch_partition | 1 | 2 | batch-partition-dependent-state |
+| R018-C011 | 证据守卫可被报告入口绕过 | Medium | test-coverage | root-cause | process-gap | fixed | run_paired 入口接线 | test_evidence_guard_entrypoint.py | 1 | 2 | gate-not-wired-to-entrypoint |
+| R018-C012 | manifest 未记录 seed_plan | Medium | correctness | root-cause | spec-drift | fixed | manifest 加 seed_plan | test_showcase_bundle.py::test_manifest_records_closed_seed_plan | 1 | 2 | manifest-contract-drift |
+
+**模式性教训**:
+- origin 分布:11 条 original-coding + 1 条 process-gap + 1 条 spec-drift(R018-C012 兼属 spec-drift)。绝大多数是首次实现带入的正确性缺陷,非修复引入——round 1 全量扫描的价值在此。
+- 存活轮数:全部 12 条 first_seen=1,resolved=2,单轮修复闭环。
+- **复现模式聚合**:gate-not-wired-to-entrypoint 出现 2 次(C005/C011)——独立校验器/守卫存在但未接入生产入口,是 0.1.5 实现的高频缺口,后续 feature 实现时应先查「校验器是否真的被入口调用」。
+- partial-symmetric-fix(C004)与 atch-partition-dependent-state(C010)都是「单侧/单批测试通过、另一侧/拆批暴露」的变体,印证批量场景强制测试的规则。
