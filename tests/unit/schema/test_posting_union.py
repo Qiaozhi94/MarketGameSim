@@ -107,7 +107,7 @@ class TestPostingsEmptyVsNonEmpty:
     def _margin_call_event(self, verdict: str, postings: list) -> dict:
         return {
             "event_type": "MARGIN_CALL",
-            "schema_version": 3,
+            "schema_version": 4,
             "timestamp": 100,
             "transaction_seq": 3,
             "record_index": 1,

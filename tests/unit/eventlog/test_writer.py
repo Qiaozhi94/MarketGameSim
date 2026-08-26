@@ -52,7 +52,7 @@ class TestRunHeader:
     def test_header_fields(self):
         h = _make_header()
         assert h["record_kind"] == "RUN_HEADER"
-        assert h["schema_version"] == 3
+        assert h["schema_version"] == 4
         assert h["tick_size"] == "0.01"
         assert h["min_quantity"] == "0.001"
         assert h["cash_unit"] == "0.01"

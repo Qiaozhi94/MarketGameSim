@@ -247,15 +247,15 @@ def _validate_trailer(
         )
 
 
-#: The only event log schema version this reader supports (ADR-004, v3).
-SUPPORTED_SCHEMA_VERSION = 3
+#: The only event log schema version this reader supports (ADR-004, v4).
+SUPPORTED_SCHEMA_VERSION = 4
 
 
 def _validate_supported_schema_version(header: dict[str, Any]) -> None:
-    """Reject logs whose schema_version is not exactly the supported v3.
+    """Reject logs whose schema_version is not exactly the supported v4.
 
-    ADR-004 policy: v2 logs are NOT replayable via the public path -- the
-    RUN_HEADER replay-critical fields are a v3 contract, and a v2 header
+    ADR-004 policy: v2/v3 logs are NOT replayable via the public path -- the
+    RUN_HEADER replay-critical fields are a v3+ contract, and an older header
     (even one that happens to carry the fields) is an unknown-format log.
     Unknown FUTURE versions are likewise rejected, never guessed.
     """

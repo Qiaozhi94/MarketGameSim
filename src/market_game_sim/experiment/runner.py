@@ -181,6 +181,26 @@ def run_paired(
     only one primary metric is compared; it is available for callers that
     add secondary metrics.
     """
+    # R018-C011 (IR-502): the aggregation entrypoint itself enforces the
+    # evidence permission -- a paired comparison may only aggregate runs of
+    # the same run family, and each side's evidence class must be authorized
+    # for that family.  A cross-family pair is rejected here rather than
+    # producing a report the caller could not legitimately aggregate.
+    from market_game_sim.evidence.evidence_guard import (
+        EvidenceClass,
+        EvidenceClassError,
+        guard_evidence_class,
+    )
+
+    families = {c.run_family for c in (control, treatment) if c.run_family is not None}
+    if len(families) > 1:
+        raise EvidenceClassError(
+            f"cross-family aggregation is forbidden (IR-502): paired run mixes "
+            f"families {sorted(families)}"
+        )
+    for cfg in (control, treatment):
+        if cfg.run_family is not None:
+            guard_evidence_class(cfg.run_family, EvidenceClass.ENGINEERING_DEMONSTRATION.value)
     parity_err = check_paired_parity(control, treatment, treatment_field)
     if parity_err:
         raise ValueError(f"run_paired: control/treatment parity violated: {parity_err}")
@@ -285,13 +305,18 @@ def _reschedule_next_observe(event: dict, world: dict, kernel: EventKernel) -> N
     if spec is None:
         return
     next_ts = event["timestamp"] + spec.observe_interval_ns
+    # R018-C001: snapshot the *latest* committed market-data boundary so the
+    # next observation consumes the fresh (last_seen, current] tape interval.
+    # Falls back to the bootstrap id when no MARKET_DATA_PUBLISH has been
+    # committed yet (cold start).
+    boundary = world.get("last_market_data_event_id", "e1_0")
     kernel.enqueue(
         {
             "event_type": "AGENT_OBSERVE",
             "timestamp": next_ts,
             "agent_id": agent_id,
             "observed_at": next_ts,
-            "market_data_event_id": "e1_0",
+            "market_data_event_id": boundary,
             "information_set": {},
         }
     )
@@ -315,6 +340,18 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
             protocol.record_calibration_trial(config)
         else:
             protocol.check_config(config)
+
+    # R018-C005 (FR-023 / IR-501): enforce the run-family allow/deny matrix
+    # BEFORE any simulator state is constructed -- a config that violates its
+    # declared family (e.g. SPONTANEOUS with injection fields) must fail here,
+    # not after a partial run.  Legacy configs (run_family=None) skip the gate.
+    if config.run_family is not None:
+        from market_game_sim.experiment.run_family import (
+            from_experiment_config,
+            validate_run_family,
+        )
+
+        validate_run_family(from_experiment_config(config))
 
     accounts: dict[str, Account] = {}
     for spec in config.agent_specs:
@@ -359,6 +396,9 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
         "agent_decision_index": {},
         "experiment_seed": config.seed,
         "trade_history": {},
+        "public_tape": [],
+        "agent_cursors": {},
+        "agent_ewma": {},
         "agent_initial_bp": {
             s.agent_id: _compute_initial_bp(s.leverage_tier) for s in config.agent_specs
         },

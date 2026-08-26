@@ -12,7 +12,7 @@ from market_game_sim.replay.reader import LogError, read_log
 def _snapshot(txn: int, kind: str) -> dict:
     return {
         "record_kind": "EVENT",
-        "schema_version": 3,
+        "schema_version": 4,
         "event_id": f"e{txn}_0",
         "run_id": "run-1",
         "timestamp": 0,
@@ -30,7 +30,7 @@ def _snapshot(txn: int, kind: str) -> dict:
 def _header() -> dict:
     return {
         "record_kind": "RUN_HEADER",
-        "schema_version": 3,
+        "schema_version": 4,
         "run_id": "run-1",
         "tick_size": "0.01",
         "min_quantity": "0.001",
@@ -183,7 +183,7 @@ def test_rejects_record_index_gap(tmp_path):
     e2 = _snapshot(2, "BOOK")
     e3 = {
         "record_kind": "EVENT",
-        "schema_version": 3,
+        "schema_version": 4,
         "run_id": "run-1",
         "timestamp": 10,
         "transaction_seq": 3,
@@ -205,7 +205,7 @@ def test_accepts_contiguous_record_index(tmp_path):
     e2 = _snapshot(2, "BOOK")
     e3a = {
         "record_kind": "EVENT",
-        "schema_version": 3,
+        "schema_version": 4,
         "event_id": "e3_0",
         "run_id": "run-1",
         "timestamp": 10,
@@ -216,7 +216,7 @@ def test_accepts_contiguous_record_index(tmp_path):
     }
     e3b = {
         "record_kind": "EVENT",
-        "schema_version": 3,
+        "schema_version": 4,
         "event_id": "e3_1",
         "run_id": "run-1",
         "timestamp": 10,
@@ -239,7 +239,7 @@ def test_rejects_last_committed_mismatch(tmp_path):
     e2 = _snapshot(2, "BOOK")
     e3 = {
         "record_kind": "EVENT",
-        "schema_version": 3,
+        "schema_version": 4,
         "run_id": "run-1",
         "timestamp": 10,
         "transaction_seq": 3,
@@ -279,7 +279,7 @@ def test_rejects_missing_replay_config_fields(tmp_path):
     """F1: header without replay-critical fields must be rejected."""
     h = {
         "record_kind": "RUN_HEADER",
-        "schema_version": 3,
+        "schema_version": 4,
         "run_id": "run-1",
         "tick_size": "0.01",
         "min_quantity": "0.001",
@@ -391,7 +391,7 @@ def test_rejects_missing_bootstrap_book(tmp_path):
         read_log(p)
 
 
-# --- F-H2 regression tests: schema_version must be exactly v3 ---
+# --- F-H2 regression tests: schema_version must be exactly v4 ---
 
 
 def test_rejects_v2_even_with_replay_fields(tmp_path):
@@ -406,21 +406,21 @@ def test_rejects_v2_even_with_replay_fields(tmp_path):
 
 
 def test_rejects_future_schema_version(tmp_path):
-    """F-H2 rejected: an unknown future schema_version (e.g. 4) must be refused."""
+    """F-H2 rejected: an unknown future schema_version (e.g. 5) must be refused."""
     h = dict(_header())
-    h["schema_version"] = 4
+    h["schema_version"] = 5
     records = [h, _snapshot(1, "ACCOUNT"), _snapshot(2, "BOOK"), _trailer(4)]
     p = _write_log(tmp_path, records)
     with pytest.raises(LogError, match="TI-5.*schema_version"):
         read_log(p)
 
 
-def test_accepts_v3(tmp_path):
-    """F-H2 accepted: a v3 header parses successfully."""
+def test_accepts_v4(tmp_path):
+    """F-H2 accepted: a v4 header parses successfully."""
     records = [_header(), _snapshot(1, "ACCOUNT"), _snapshot(2, "BOOK"), _trailer(4)]
     p = _write_log(tmp_path, records)
     log = read_log(p)
-    assert log.header["schema_version"] == 3
+    assert log.header["schema_version"] == 4
 
 
 # --- F-C2 regression tests: EVENT / trailer required fields ---

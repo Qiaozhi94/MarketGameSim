@@ -13,7 +13,7 @@ from decimal import Decimal
 from market_game_sim.agent.scheduler import AgentSpec
 from market_game_sim.config.parser import ParsedConfig
 from market_game_sim.ledger.account import initial_margin_bp_for_tier
-from market_game_sim.rng.distributions import discrete_choice, uniform_range
+from market_game_sim.rng.distributions import discrete_choice, lognormal_draw, uniform_range
 
 _MARKET_MAKER_ROLE = "inventory_market_maker"
 
@@ -64,6 +64,23 @@ def build_population(config: ParsedConfig) -> list[AgentSpec]:
                 agg, _ = uniform_range(
                     Decimal(0), Decimal(10_000), seed, agent_id, "bench_aggressiveness", 0, 0
                 )
+                # risk_appetite_x1000: drawn once per run via a NEW mechanism
+                # string (KR-004: reusing noise_factor/belief_weights breaks
+                # determinism).  Bounds [500, 20000] x1000, independent of tier.
+                appetite, _ = uniform_range(
+                    Decimal(500), Decimal(20_000), seed, agent_id, "risk_appetite", 0, 0
+                )
+                # EWMA half-life (代理策略 §2): lognormal per agent, in fills.
+                half_life_dec, _ = lognormal_draw(
+                    center=20,
+                    dispersion=Decimal("0.5"),
+                    master_seed=seed,
+                    agent_id=agent_id,
+                    mechanism="ewma_half_life",
+                    decision_index=0,
+                    draw_index=0,
+                )
+                half_life = max(int(half_life_dec), 1)
                 specs.append(
                     AgentSpec(
                         agent_id=agent_id,
@@ -74,6 +91,9 @@ def build_population(config: ParsedConfig) -> list[AgentSpec]:
                         initial_bp=initial_bp,
                         aggressiveness_bp=int(agg),
                         max_order_qty=group.max_order_qty_units or 0,
+                        goal_model_id=group.goal_model_id,
+                        risk_appetite_x1000=int(appetite),
+                        ewma_half_life_trades=half_life,
                     )
                 )
     return specs

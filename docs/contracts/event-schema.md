@@ -265,7 +265,7 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 
 事件日志顶层必须携带 `schema_version` 字段。
 
-**当前 `schema_version = 3`。** 版本 2 将原单一 `(timestamp, priority_class, seq)`
+**当前 `schema_version = 4`。** 版本 2 将原单一 `(timestamp, priority_class, seq)`
 替换为 queue/log 双键，并把 class 1—2 明确为事务记录。2026-07-31 的方向重置新增了
 `MARGIN_CALL`（§4.2.2）与杠杆相关字段；2026-08-01 关闭 P0-K01/K03 时新增
 `ORDER_CANCELLED`（§4.7）、冻结了事务内记录顺序（§1.4）并改写 E-002 为按事件类型的
@@ -276,6 +276,14 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 不参与事件摘要哈希（§7），因此 v3 的哈希输入与 v2 相同。**v2 日志（缺四个回放字段）
 不可通过公开回放路径回放**：回放读取器对缺失字段抛 `LogError`（TI-5），显式拒绝、
 不静默降级——回放一致性的前提是配置在日志内自包含。
+
+**版本 4**（0.1.5 T206）按 ADR-003 / 代理策略 §5.2 的 v2 目标驱动代理契约扩展
+`AGENT_OBSERVE` / `AGENT_DECIDE`：观察事件新增逐代理游标边界
+`cursor_from_event_id` / `cursor_to_event_id`（半开区间 `(from, to]`，先消费后原子
+推进，代理策略 §1），决策事件新增 `decision_evidence`（`DecisionEvidenceV1` 审计字段，
+含目标模型、约束前后仓位、绑定原因与触发来源）。这些字段一律
+`HASH_EXCLUDE`——它们承载的是 KPI-006 追溯链的环节标识与实现证据，不参与市场结果
+的确定性哈希（E-002 排除原则与既有因果外键一致）。
 
 **首次正式运行之后，任何字段、class 或哈希字段集合的变更都必须提升版本号。**
 「首次正式运行」指第一次产出被 `docs/experiments/` 引用的事件日志。
@@ -644,6 +652,8 @@ MARGIN_CALL(chain_id, chain_depth)
 | `agent_id` | 观察方 |
 | `market_data_event_id` | 所观察的 `MARKET_DATA_PUBLISH` 事件（因果外键） |
 | `observed_at` | 所观察行情的产生时刻 |
+| `cursor_from_event_id` | 本次观察的游标下界（上一观察的 `market_data_event_id`，半开区间起点） |
+| `cursor_to_event_id` | 本次观察的游标上界（即本事件的 `market_data_event_id`，区间终点） |
 | `information_set` | 该代理本次可见内容的快照或其摘要哈希 |
 
 `timestamp - observed_at` 即观察延迟。`information_set` 是 KPI-006 追溯链的起点。
@@ -653,6 +663,13 @@ MARGIN_CALL(chain_id, chain_depth)
 只能回答「代理看到了什么」，不能机器验证「看到的是哪一次发布」——同一纳秒可能有
 多条发布，digest 模式下更无从比对。
 
+**游标边界**（0.1.5 T206，代理策略 §1）：`cursor_from_event_id` 是该代理上一次观察
+的 `market_data_event_id`（首次观察为 bootstrap `ACCOUNT` 快照的 `event_id`）；
+`cursor_to_event_id` 恒等于本事件的 `market_data_event_id`。二者界定该代理本次消费的
+**半开区间** `(from, to]` 内的公开成交——**先消费、后原子推进**（代理策略 §1），
+中途失败时游标保持旧值，重试重新消费同一区间且对该区间幂等。批量代理各自游标独立，
+公开 tape 全局共享。
+
 ### 4.5 AGENT_DECIDE（class 4）
 
 | 字段 | 说明 |
@@ -661,6 +678,7 @@ MARGIN_CALL(chain_id, chain_depth)
 | `observation_event_id` | 本次决策所依据的 `AGENT_OBSERVE`（因果外键） |
 | `rule_id` | 触发的决策规则标识 |
 | `intents` | 产生的订单意图列表，可为空 |
+| `decision_evidence` | `DecisionEvidenceV1` 审计字段（0.1.5 T206；恒非空，v1/MM 路径用路径标记） |
 | `internal_state` | 决策相关的内部状态（如均值回复代理的当前锚值与半衰期） |
 
 `intents` 的每个元素必须携带 **`intent_id`**（本次运行内唯一的稳定标识），以及
@@ -669,6 +687,19 @@ MARGIN_CALL(chain_id, chain_depth)
 的唯一依据——仅靠「同代理、时间相近」无法区分，且这种不可靠无法被检出。
 
 `rule_id` 与 `internal_state` 使「为什么下这一单」可解释，支撑 US-3 与 KPI-006。
+
+**`decision_evidence`**（0.1.5 T206，ADR-003 §4 / 代理策略 §5.2）：**每次**决策必须记录
+`DecisionEvidenceV1`——`goal_model_id` / `goal_model_version`、
+`desired_position_units`（约束前）、`executable_position_units`（约束后）、
+`constraint_binding` / `constraint_reason`、`trigger_provenance`
+（`ENDOGENOUS_AGENT` \| `LIQUIDATION` \| `EXOGENOUS_STRESS`），以及
+`observation_event_id` / `cursor_from_event_id` / `cursor_to_event_id`（决策依据的观察
+及其游标区间）。字段语义见
+[`goal_contract_v2.json`](../../src/market_game_sim/schema/goal_contract_v2.json)
+`structures.DecisionEvidenceV1`。**v1 历史路径（BENCHMARK 兼容）与做市商路径不运行
+目标模型，但字段不允许静默缺失**——它们构造带路径标记的最小证据
+（`goal_model_id = "v1_legacy"` / `"market_maker"`，目标为 0），使「代理想做什么」
+与「走的是哪条路径」在日志内自解释。
 
 ### 4.6 SNAPSHOT（class 5）
 
@@ -963,7 +994,7 @@ RUN_TRAILER         至多一条，文件最后一行
 | 字段 | 类型 | 可空 | 说明 |
 |---|---|---|---|
 | `record_kind` | 枚举 | 否 | 恒为 `"RUN_HEADER"` |
-| `schema_version` | 整数 | 否 | 事件日志格式版本，当前为 `3`（§2） |
+| `schema_version` | 整数 | 否 | 事件日志格式版本，当前为 `4`（§2） |
 | `run_id` | 字符串 | 否 | 本次运行的唯一标识 |
 | `code_version` | 字符串 | 否 | Git commit SHA，工作区不干净时追加 `-dirty` |
 | `config_hash` | 字符串 | 否 | 规范化配置的 `blake2b` 摘要（十六进制） |

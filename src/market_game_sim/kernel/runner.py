@@ -57,7 +57,7 @@ class EventKernel:
     def __init__(
         self,
         run_id: str = "run",
-        schema_version: int = 3,
+        schema_version: int = 4,
     ) -> None:
         self._run_id = run_id
         self._schema_version = schema_version
@@ -288,6 +288,45 @@ class EventKernel:
         self._committed_records.extend(buffer)
         self._last_committed_transaction_seq = txn_seq
         self._processed_transactions += 1
+
+        # 0.1.5 T206/T207: maintain the global public tape + the latest market
+        # data boundary.  The kernel is the only place that knows each record's
+        # final event_id, so TRADE_SETTLE records are projected here into
+        # ``world["public_tape"]`` (an ordered list of {event_id, price_ticks,
+        # quantity_units, timestamp, taker_agent_id}) that every agent consumes
+        # via its own cursor (代理策略 §1), and the last committed
+        # MARKET_DATA_PUBLISH event_id is recorded so the observe scheduler
+        # can snapshot a *fresh* cursor boundary for the next observation
+        # (R018-C001: previously the scheduler hardcoded the bootstrap id).
+        # Absent from ``world`` (legacy callers) -> no-op.
+        tape = world.get("public_tape")
+        if tape is not None:
+            for r in buffer:
+                if r.get("event_type") == "TRADE_SETTLE":
+                    tape.append(
+                        {
+                            "event_id": r["event_id"],
+                            "price_ticks": r["price_ticks"],
+                            "quantity_units": r["quantity_units"],
+                            "timestamp": r["timestamp"],
+                            "taker_agent_id": r["taker_agent_id"],
+                        }
+                    )
+                elif r.get("event_type") == "MARKET_DATA_PUBLISH":
+                    world["last_market_data_event_id"] = r["event_id"]
+
+        # R018-C002: apply the observe transaction's staged cursor / EWMA
+        # advance now that the transaction has committed (the handler staged
+        # it in ``_pending_agent_state`` precisely so a fail-stop abort drops
+        # it instead of advancing the live cursors past uncommitted events).
+        pending = world.get("_pending_agent_state")
+        if pending:
+            cursors = world.setdefault("agent_cursors", {})
+            ewma = world.setdefault("agent_ewma", {})
+            for agent_id, state in pending.items():
+                cursors[agent_id] = state["cursor"]
+                ewma[agent_id] = {"value": state["ewma_value"], "count": state["ewma_count"]}
+            world["_pending_agent_state"] = {}
 
     # ------------------------------------------------------------------ #
     # Record construction

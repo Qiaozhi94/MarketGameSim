@@ -31,6 +31,9 @@ class AgentSpec:
     quote_size: int = 0
     max_inventory: int = 0
     inventory_skew_k_bp: int = 0
+    goal_model_id: str | None = None
+    risk_appetite_x1000: int = 2000
+    ewma_half_life_trades: int = 0
 
 
 def initial_observe_events(agents: list[AgentSpec]) -> list[dict]:

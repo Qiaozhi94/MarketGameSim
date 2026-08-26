@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from decimal import Decimal
 
+from market_game_sim.agent.constraint import (
+    ConstraintAccountView,
+    ConstraintPolicy,
+    MarginConstraint,
+)
 from market_game_sim.agent.factors import book as book_factor
 from market_game_sim.agent.factors import herding as herding_factor
 from market_game_sim.agent.factors import momentum as momentum_factor
@@ -14,14 +20,28 @@ from market_game_sim.agent.families import (
     apply_ablation_named,
     family_signal,
 )
+from market_game_sim.agent.goal import (
+    AgentInternalStateV1,
+    AgentPreferences,
+    BookTop,
+    CompletedBar,
+    DecisionEvidenceV1,
+    InformationSetV1,
+    OwnAccountView,
+    TriggerProvenance,
+    build_decision_evidence,
+    get_goal_model,
+)
 from market_game_sim.agent.observation import Bar, InformationSet
 from market_game_sim.agent.scheduler import AgentSpec
 from market_game_sim.agent.strategy import (
     TargetFn,
     market_maker_intents,
     order_intent_from_signal,
+    order_intent_from_target,
     target_position,
 )
+from market_game_sim.agent.tape import tape_interval, update_ewma
 from market_game_sim.book.orderbook import Book
 from market_game_sim.kernel.runner import EventKernel
 from market_game_sim.ledger.account import Account, risk_equity
@@ -149,7 +169,162 @@ def _market_maker_intents(
         best_ask=iset["best_ask"],
         margin_ratio_bp=iset.get("margin_ratio_bp"),
         maint_bp=maint_bp,
+        leverage_tier=spec.leverage_tier,
     )
+
+
+def _legacy_evidence(
+    path_id: str,
+    decision_index: int,
+    cursor_from_event_id: str = "e1_0",
+    cursor_to_event_id: str = "e1_0",
+) -> DecisionEvidenceV1:
+    """Path-tagged minimal evidence for the v1 / market-maker paths.
+
+    These paths run no goal model, but every AGENT_DECIDE must carry a
+    DecisionEvidenceV1 (ADR-003 §4; event_fields.json note on
+    decision_evidence forbids silent absence).  The target is a no-op
+    (desired == executable == 0) and ``goal_model_id`` marks the source path
+    (``v1_legacy`` / ``market_maker``).  The cursor boundaries are the
+    decision's own observation boundaries (R018-C007: the full-chain verifier
+    requires evidence cursors to equal the referenced observation's cursors,
+    for legacy paths too -- hardcoding e1_0 would mismatch once the cursor
+    advances past a trade).
+    """
+    return DecisionEvidenceV1(
+        schema_version=1,
+        goal_model_id=path_id,
+        goal_model_version=0,
+        desired_position_units=0,
+        executable_position_units=0,
+        constraint_binding=False,
+        constraint_reason=None,
+        trigger_provenance=TriggerProvenance.ENDOGENOUS_AGENT,
+        observation_event_id="",
+        cursor_from_event_id=cursor_from_event_id,
+        cursor_to_event_id=cursor_to_event_id,
+    )
+
+
+def _belief_intent_v2(
+    spec: AgentSpec,
+    iset: dict,
+    decision_index: int,
+    signal_bp: int,
+    min_qty: int,
+    mult: int,
+    maint_bp: int,
+    maker_bps: int,
+    taker_bps: int,
+    cursor_from_event_id: str = "e1_0",
+    cursor_to_event_id: str = "e1_0",
+    ewma_value: int | None = None,
+    ewma_count: int = 0,
+    public_trades: tuple = (),
+    completed_bars: tuple = (),
+) -> tuple[dict | None, dict, DecisionEvidenceV1]:
+    """v2 goal + constraint pipeline (代理策略 §5.2, ADR-003).
+
+    GoalModel.decide -> desired_position_units -> InstitutionalConstraint.apply
+    -> executable_position_units -> §6 order intent.  Returns the populated
+    DecisionEvidenceV1 (T206: real cursor boundaries from the observe event).
+    Only runs when ``spec.goal_model_id`` is set; otherwise the v1 linear
+    path is used (BENCHMARK historical-compat, 代理策略 §5.1).
+    """
+    assert spec.goal_model_id is not None  # caller guards the v2 switch
+    model = get_goal_model(spec.goal_model_id)
+    if spec.ewma_half_life_trades > 0:
+        # Per-agent EWMA half-life (代理策略 §2: 半衰期逐代理抽取): the goal
+        # model is a shared frozen instance, so the per-agent half-life is
+        # applied via dataclasses.replace (frozen dataclass copy).
+        model = replace(model, half_life_in_trades=spec.ewma_half_life_trades)
+    own = OwnAccountView(
+        wallet_units=iset["wallet_units"],
+        position_units=iset["position_units"],
+        entry_notional_units=iset["entry_notional_units"],
+    )
+    book = BookTop(
+        best_bid=iset["best_bid"],
+        best_ask=iset["best_ask"],
+        valuation_mark_half_ticks=iset.get("valuation_mark_half_ticks"),
+    )
+    info_v2 = InformationSetV1(
+        schema_version=1,
+        cursor_from_event_id=cursor_from_event_id,
+        cursor_to_event_id=cursor_to_event_id,
+        public_trades=public_trades,
+        completed_bars=completed_bars,
+        book_top=book,
+        own_account=own,
+    )
+    state = AgentInternalStateV1(
+        schema_version=1,
+        last_seen_market_event_id=cursor_from_event_id,
+        ewma_value_units=ewma_value,
+        ewma_sample_count=ewma_count,
+        model_private_state={"signal_bp": signal_bp},
+    )
+    prefs = AgentPreferences(risk_appetite_x1000=spec.risk_appetite_x1000)
+    goal_decision = model.decide(info_v2, state, prefs)
+
+    risk_mark = iset.get("last_ticks") or iset.get("initial_price_ticks", 0)
+    account = ConstraintAccountView(
+        wallet_units=iset["wallet_units"],
+        position_units=iset["position_units"],
+        entry_notional_units=iset["entry_notional_units"],
+        reserved_units=0,
+    )
+    policy = ConstraintPolicy(
+        leverage_tier=spec.leverage_tier,
+        initial_bp=spec.initial_bp,
+        maint_bp=maint_bp,
+        max_order_qty=spec.max_order_qty,
+        fee_bps=max(maker_bps, taker_bps, 0),
+        mult=mult,
+        risk_mark_ticks=risk_mark,
+    )
+    executable = MarginConstraint().apply(
+        goal_decision.desired_position_units,
+        goal_decision.action,
+        goal_decision.degenerate_reason,
+        account,
+        [],
+        policy,
+    )
+    evidence = build_decision_evidence(
+        model,
+        goal_decision,
+        executable,
+        TriggerProvenance.ENDOGENOUS_AGENT,
+        observation_event_id="",
+        cursor_from_event_id=cursor_from_event_id,
+        cursor_to_event_id=cursor_to_event_id,
+    )
+
+    intent = None
+    if goal_decision.action != "skip_decision" and goal_decision.desired_position_units is not None:
+        intent = order_intent_from_target(
+            intent_id=f"{spec.agent_id}-dec{decision_index}",
+            target_position_units=executable.executable_position_units,
+            current_position=iset["position_units"],
+            leverage_tier=spec.leverage_tier,
+            aggressiveness_bp=spec.aggressiveness_bp,
+            best_bid=iset["best_bid"],
+            best_ask=iset["best_ask"],
+            max_order_qty=spec.max_order_qty,
+            min_qty=min_qty,
+        )
+    internal_state = {
+        "signal_bp": signal_bp,
+        "goal_model_id": model.id,
+        "desired_position_units": evidence.desired_position_units,
+        "executable_position_units": evidence.executable_position_units,
+        "constraint_binding": evidence.constraint_binding,
+        "constraint_reason": (
+            str(evidence.constraint_reason) if evidence.constraint_reason is not None else None
+        ),
+    }
+    return intent, internal_state, evidence
 
 
 def _belief_weights(spec: AgentSpec, world: dict) -> list[Decimal]:
@@ -335,11 +510,66 @@ def handle_agent_decide(
             "margin_ratio_bp": iset.get("margin_ratio_bp"),
             "valuation_mark_half_ticks": iset.get("valuation_mark_half_ticks"),
         }
+        cursor_boundary = world.get("agent_cursors", {}).get(agent_id, "e1_0")
+        cursor_from = world.get("agent_cursor_from", {}).get(agent_id, "e1_0")
+        evidence = _legacy_evidence(
+            "market_maker",
+            decision_index,
+            cursor_from_event_id=cursor_from,
+            cursor_to_event_id=cursor_boundary,
+        )
     else:
         signal_bp = _compute_belief_signal(spec, iset, world, decision_index)
-        intent = _belief_intent(spec, iset, decision_index, signal_bp, min_qty, target_fn)
-        intents = [intent] if intent else []
-        internal_state = {"signal_bp": signal_bp}
+        if spec.goal_model_id is not None:
+            cursors = world.get("agent_cursors", {})
+            cursor_to = cursors.get(agent_id, "e1_0")
+            ewma_state = world.get("agent_ewma", {}).get(agent_id, {})
+            # R018-C003: feed the goal model the REAL observed market data --
+            # the public trades this agent consumed since its last cursor plus
+            # the completed bars aggregated from them (empty interval -> empty
+            # inputs, matching 代理策略 §3.1 cold-start / zero-fill bars).
+            public_trades = tuple(iset.get("public_trades", ()))
+            completed_bars = tuple(
+                CompletedBar(
+                    open=b.open,
+                    high=b.high,
+                    low=b.low,
+                    close=b.close,
+                    volume=b.volume,
+                    trade_count=b.trade_count,
+                )
+                for b in _bars_from_history(list(public_trades), bar_ns=60_000_000_000)
+            )
+            intent, internal_state, evidence = _belief_intent_v2(
+                spec,
+                iset,
+                decision_index,
+                signal_bp,
+                min_qty,
+                mult,
+                world.get("maint_bp", 500),
+                world.get("maker_bps", 0),
+                world.get("taker_bps", 0),
+                cursor_from_event_id="e1_0",
+                cursor_to_event_id=cursor_to,
+                ewma_value=ewma_state.get("value"),
+                ewma_count=ewma_state.get("count", 0),
+                public_trades=public_trades,
+                completed_bars=completed_bars,
+            )
+            intents = [intent] if intent else []
+        else:
+            intent = _belief_intent(spec, iset, decision_index, signal_bp, min_qty, target_fn)
+            intents = [intent] if intent else []
+            internal_state = {"signal_bp": signal_bp}
+            cursor_boundary = world.get("agent_cursors", {}).get(agent_id, "e1_0")
+            cursor_from = world.get("agent_cursor_from", {}).get(agent_id, "e1_0")
+            evidence = _legacy_evidence(
+                "v1_legacy",
+                decision_index,
+                cursor_from_event_id=cursor_from,
+                cursor_to_event_id=cursor_boundary,
+            )
 
     decide_event_id = f"e{kernel.current_transaction_seq}_0"
     arrival_ts = event["timestamp"] + spec.latency_ns
@@ -378,6 +608,25 @@ def handle_agent_decide(
     event["accepted"] = True
     event["reject_reason"] = None
     event["internal_state"] = internal_state
+    # 0.1.5 T206 (ADR-003 §4): every AGENT_DECIDE carries DecisionEvidenceV1.
+    # The v1 BENCHMARK and market-maker paths produce a path-tagged minimal
+    # evidence (event_fields.json note on decision_evidence) so the field is
+    # never silently absent -- only the v2 goal path fills real model fields.
+    event["decision_evidence"] = {
+        "schema_version": evidence.schema_version,
+        "goal_model_id": evidence.goal_model_id,
+        "goal_model_version": evidence.goal_model_version,
+        "desired_position_units": evidence.desired_position_units,
+        "executable_position_units": evidence.executable_position_units,
+        "constraint_binding": evidence.constraint_binding,
+        "constraint_reason": (
+            str(evidence.constraint_reason) if evidence.constraint_reason is not None else None
+        ),
+        "trigger_provenance": str(evidence.trigger_provenance),
+        "observation_event_id": event.get("observation_event_id", ""),
+        "cursor_from_event_id": evidence.cursor_from_event_id,
+        "cursor_to_event_id": evidence.cursor_to_event_id,
+    }
     return []
 
 
@@ -392,7 +641,7 @@ def handle_agent_observe(
     # §2.13: record what the agent actually saw at this observation, per
     # event-schema.md §4.4 ("information_set 是 KPI-006 追溯链的起点") --
     # previously always the literal {} passed in at enqueue time.
-    event["information_set"] = _build_information_set(
+    iset = _build_information_set(
         agent_id,
         world["accounts"],
         world["book"],
@@ -400,6 +649,52 @@ def handle_agent_observe(
         min_qty,
         mult,
     )
+    event["information_set"] = iset
+
+    # 0.1.5 T206 (代理策略 §1): consume the public tape through this agent's
+    # cursor (half-open interval (last_seen, current]), then advance the
+    # cursor atomically.  Consumption is a pure function of the tape (agent/
+    # tape.py) so a retry re-consumes the same interval idempotently.
+    #
+    # R018-C001: the cursor upper bound is the LATEST committed market-data
+    # boundary at observation-execution time, not the boundary the scheduler
+    # snapshotted at enqueue time (which may lag -- the publish commits after
+    # the observe transaction that rescheduled this one).  Falls back to the
+    # event's own market_data_event_id when no publish has been committed.
+    cursor_to = world.get("last_market_data_event_id") or event.get("market_data_event_id", "e1_0")
+    cursors = world.setdefault("agent_cursors", {})
+    cursor_from = cursors.get(agent_id, "e1_0")
+    tape = world.get("public_tape", [])
+    interval_fills = tape_interval(tape, cursor_from, cursor_to)
+    event["cursor_from_event_id"] = cursor_from
+    event["cursor_to_event_id"] = cursor_to
+    event["market_data_event_id"] = cursor_to
+    iset["public_trades"] = interval_fills
+    # R018-C002: the cursor / EWMA advance must NOT mutate the live world
+    # state inside the transaction -- if the transaction later aborts
+    # (fail-stop, §1.5) the live cursors would have advanced past events that
+    # were never committed, losing them forever.  Stage the update in
+    # ``world["_pending_agent_state"]``; the kernel applies it to the live
+    # state only after the transaction commits (runner.py commit projection).
+    pending = world.setdefault("_pending_agent_state", {})
+    ewma_state = world.get("agent_ewma", {}).get(agent_id, {"value": None, "count": 0})
+    new_value, new_count = update_ewma(
+        ewma_state["value"],
+        ewma_state["count"],
+        interval_fills,
+        spec.ewma_half_life_trades,
+    )
+    pending[agent_id] = {
+        "cursor": cursor_to,
+        "ewma_value": new_value,
+        "ewma_count": new_count,
+    }
+    # R018-C007: record the observation's lower cursor boundary so legacy
+    # (v1 / market-maker) decisions can tag their evidence with the same
+    # cursor_from the observe event recorded (the chain verifier requires
+    # evidence cursors == observation cursors).
+    world.setdefault("agent_cursor_from", {})[agent_id] = cursor_from
+
     decision_index = world.get("agent_decision_index", {}).get(agent_id, 0)
     world.setdefault("agent_decision_index", {})[agent_id] = decision_index + 1
     decide = {

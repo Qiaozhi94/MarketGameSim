@@ -79,6 +79,7 @@ class AgentConfig:
     quote_size_units: int | None = None
     half_spread_ticks: int | None = None
     inventory_skew_k: int | None = None
+    goal_model_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -311,6 +312,8 @@ def _parse_agent(raw: dict[str, Any], market: MarketConfig) -> AgentConfig:
     if "inventory_skew_k" in raw:
         inventory_skew_k = _to_int_via_decimal(raw["inventory_skew_k"], "agents[].inventory_skew_k")
 
+    goal_model_id: str | None = raw.get("goal_model_id")
+
     return AgentConfig(
         role=role,
         count=count,
@@ -324,6 +327,7 @@ def _parse_agent(raw: dict[str, Any], market: MarketConfig) -> AgentConfig:
         quote_size_units=quote_size_units,
         half_spread_ticks=half_spread_ticks,
         inventory_skew_k=inventory_skew_k,
+        goal_model_id=goal_model_id,
     )
 
 

@@ -471,5 +471,69 @@
         }
       }
     }
+  },
+  "showcase_manifest_schema": {
+    "description": "T203 (FR-027): showcase bundle manifest schema. Separate from the closed report manifest_schema (which stays locked to its 3 top-level fields). The showcase manifest carries provenance (code_version/config_hash/seed/evidence_class/gate) plus an artifact list of the bundle's non-manifest files.",
+    "top_level_fields": {
+      "manifest_version": {
+        "type": "integer"
+      },
+      "artifact_root": {
+        "type": "string"
+      },
+      "artifacts": {
+        "type": "array",
+        "item_type": "object",
+        "item_fields": {
+          "artifact_id": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "format": {
+            "type": "string"
+          },
+          "producer": {
+            "type": "string"
+          },
+          "hash_algorithm": {
+            "type": "string",
+            "enum": [
+              "blake2b"
+            ]
+          },
+          "hash": {
+            "type": "string",
+            "hex_length": 64,
+            "charset": "lowercase_hex"
+          }
+        }
+      },
+      "code_version": {
+        "type": "string"
+      },
+      "config_hash": {
+        "type": "string"
+      },
+      "seed": {
+        "type": "integer"
+      },
+      "seed_plan": {
+        "type": "object",
+        "optional": true
+      },
+      "evidence_class": {
+        "type": "string",
+        "enum": [
+          "engineering-demonstration",
+          "experiment-preview",
+          "formal-research"
+        ]
+      },
+      "gate": {
+        "type": "string"
+      }
+    }
   }
 }
