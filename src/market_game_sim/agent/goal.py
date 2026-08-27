@@ -113,6 +113,14 @@ class InformationSetV1:
     book_top: BookTop | None
     own_account: OwnAccountView
 
+    def __post_init__(self) -> None:
+        # R018-C009 (Round 3): the versioned closed schema rejects unknown
+        # versions fail-closed.
+        if type(self.schema_version) is not int or self.schema_version != 1:
+            raise ValueError(
+                f"InformationSetV1.schema_version must be 1, got {self.schema_version!r}"
+            )
+
 
 @dataclass(frozen=True)
 class AgentInternalStateV1:
@@ -130,6 +138,13 @@ class AgentInternalStateV1:
     ewma_sample_count: int
     model_private_state: Mapping[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        # R018-C009 (Round 3): versioned closed schema rejects unknown versions.
+        if type(self.schema_version) is not int or self.schema_version != 1:
+            raise ValueError(
+                f"AgentInternalStateV1.schema_version must be 1, got {self.schema_version!r}"
+            )
+
 
 @dataclass(frozen=True)
 class AgentPreferences:
@@ -141,6 +156,15 @@ class AgentPreferences:
     """
 
     risk_appetite_x1000: int
+
+    def __post_init__(self) -> None:
+        # R018-C009 (Round 3): validate the frozen bounds + reject bool
+        # (type(x) is int excludes bool, which isinstance would accept).
+        value = self.risk_appetite_x1000
+        if type(value) is not int:
+            raise ValueError(f"risk_appetite_x1000 must be an int, got {type(value).__name__}")
+        if not 500 <= value <= 20_000:
+            raise ValueError(f"risk_appetite_x1000 must be in [500, 20000], got {value}")
 
 
 class GoalRng(Protocol):

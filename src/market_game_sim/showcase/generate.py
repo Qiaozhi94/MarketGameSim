@@ -212,7 +212,14 @@ def build_showcase_bundle(
         code_version=__version__,
         config_hash=compute_config_hash(config),
         seed=config.seed,
-        seed_plan=getattr(config, "seed_plan", None),
+        # R018-C012 (Round 3): FR-027 requires the frozen seed plan in the
+        # manifest.  A single-seed showcase states it explicitly instead of
+        # pretending the scalar seed is the whole design.
+        seed_plan=getattr(config, "seed_plan", None)
+        or {
+            "n_seeds": 1,
+            "seeds": [config.seed],
+        },
         evidence_class=EVIDENCE_CLASS,
         gate=gate,
     )

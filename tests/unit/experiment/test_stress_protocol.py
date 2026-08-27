@@ -53,6 +53,38 @@ def test_protocol_rejects_negative_timestamp():
         _protocol((StressEvent("MARKET_ORDER", timestamp_ns=-1),))
 
 
+def test_protocol_rejects_wrong_schema_version():
+    """R018-C006 (Round 3): schema_version must be exactly 1."""
+    with pytest.raises(StressProtocolError, match="schema_version"):
+        StressProtocolV1(
+            protocol_id="p1",
+            events=(),
+            schema_version=99,
+        )
+
+
+def test_protocol_rejects_unknown_event_type():
+    """R018-C006 (Round 3): event_type must be from the closed set."""
+    with pytest.raises(StressProtocolError, match="event_type"):
+        _protocol((StressEvent("ALIEN_EVENT", timestamp_ns=1_000),))
+
+
+def test_protocol_rejects_unknown_params():
+    """R018-C006 (Round 3): params keys must be closed per event type."""
+    with pytest.raises(StressProtocolError, match="params"):
+        _protocol((StressEvent("MARKET_ORDER", timestamp_ns=1_000, params={"smuggle": 1}),))
+
+
+def test_protocol_accepts_closed_params():
+    _protocol(
+        (
+            StressEvent(
+                "MARKET_ORDER", timestamp_ns=1_000, params={"side": "SELL", "quantity_units": 100}
+            ),
+        )
+    )
+
+
 def test_protocol_rejects_empty_id():
     with pytest.raises(StressProtocolError, match="protocol_id"):
         StressProtocolV1(protocol_id="", events=())

@@ -1,6 +1,9 @@
 """R018-C011 regression: the report/aggregation entrypoint enforces the
 evidence-class permission (IR-502) -- a cross-family paired run is rejected
-by run_paired itself, not bypassable by calling the aggregator directly.
+by run_paired itself, the report's actual evidence_class must be authorized
+for the declared family, and legacy (None) is its own family that cannot
+mix with a declared one (Round 3: the guard hardcoded engineering-demo and
+let None + declared mix through).
 """
 
 from __future__ import annotations
@@ -13,7 +16,7 @@ from market_game_sim.experiment.config import ExperimentConfig
 from market_game_sim.experiment.runner import run_paired
 
 
-def _cfg(run_family: str) -> ExperimentConfig:
+def _cfg(run_family: str | None) -> ExperimentConfig:
     return ExperimentConfig(
         seed=1,
         max_transactions=60,
@@ -40,8 +43,42 @@ def test_run_paired_rejects_cross_family():
         run_paired(control, treatment, seeds=[1, 2, 3])
 
 
-def test_run_paired_accepts_same_family():
+def test_run_paired_requires_evidence_class_for_declared_family():
+    """R018-C011 (Round 3): a declared family without the report's
+    evidence_class is rejected -- no implicit downgrade."""
     control = _cfg("BENCHMARK")
     treatment = _cfg("BENCHMARK")
+    with pytest.raises(EvidenceClassError, match="evidence_class"):
+        run_paired(control, treatment, seeds=[1, 2, 3])
+
+
+def test_run_paired_accepts_same_family_with_authorized_class():
+    control = _cfg("BENCHMARK")
+    treatment = _cfg("BENCHMARK")
+    results = run_paired(
+        control, treatment, seeds=[1, 2, 3], evidence_class="engineering-demonstration"
+    )
+    assert results
+
+
+def test_run_paired_rejects_unauthorized_evidence_class():
+    control = _cfg("BENCHMARK")
+    treatment = _cfg("BENCHMARK")
+    with pytest.raises(EvidenceClassError, match="not allowed"):
+        run_paired(control, treatment, seeds=[1, 2, 3], evidence_class="formal-research")
+
+
+def test_run_paired_rejects_legacy_and_declared_mix():
+    """R018-C011 (Round 3): legacy (None) is its own family -- mixing it with
+    a declared family is cross-family aggregation."""
+    control = _cfg(None)
+    treatment = _cfg("BENCHMARK")
+    with pytest.raises(EvidenceClassError, match="cross-family"):
+        run_paired(control, treatment, seeds=[1, 2, 3])
+
+
+def test_run_paired_accepts_legacy_pair():
+    control = _cfg(None)
+    treatment = _cfg(None)
     results = run_paired(control, treatment, seeds=[1, 2, 3])
     assert results

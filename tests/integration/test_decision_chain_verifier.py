@@ -143,3 +143,36 @@ def test_rejects_broken_order_trade_risk_and_liquidation_links_in_multi_record_l
     orders[0]["decision_event_id"] = "e999_0"
     with pytest.raises(ChainVerificationError):
         verify_decision_evidence_chain(events, run_family="SPONTANEOUS")
+
+
+def test_multi_interval_goal_chain_passes_and_all_trade_hops_resolve():
+    """R018-C007 (Round 3): a long run with multiple observation intervals
+    must pass the full-chain verifier -- the V2 evidence cursor_from must be
+    the observation's own (advancing) lower boundary, not a hardcoded e1_0.
+    Round 2's 60-transaction test never advanced past the first interval, so
+    the e1_0 hardcode slipped through."""
+    cfg = ExperimentConfig(
+        seed=11,
+        max_transactions=240,
+        agent_specs=_specs(),
+        agent_signals={"agent-0": 10_000},
+    )
+    result = run_one(cfg)
+    assert result.terminated == "COMPLETED", f"aborted: {result.abort_code}"
+    events = result.events
+
+    # Precondition: the belief agent observed MORE than once, and at least one
+    # observation's cursor advanced past e1_0.
+    observes = [
+        r
+        for r in events
+        if r.get("event_type") == "AGENT_OBSERVE" and r.get("agent_id") == "agent-0"
+    ]
+    assert len(observes) >= 2, "long run must produce multiple observations"
+    assert any(r.get("cursor_to_event_id") != "e1_0" for r in observes), (
+        "cursor must advance past the bootstrap boundary in a long run"
+    )
+
+    # No exception = full chain (observe->decide->order->trade + evidence
+    # cursors) resolves for every decision, including later intervals.
+    verify_decision_evidence_chain(events, run_family="SPONTANEOUS")

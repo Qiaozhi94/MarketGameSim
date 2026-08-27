@@ -55,7 +55,7 @@ def build_showcase_manifest(
     code_version: str,
     config_hash: str,
     seed: int,
-    seed_plan: dict[str, Any] | None = None,
+    seed_plan: dict[str, Any],
     evidence_class: str,
     gate: str,
 ) -> dict[str, Any]:
@@ -68,11 +68,15 @@ def build_showcase_manifest(
     ``"."`` so the bundle is portable) and is decoupled from ``bundle_dir``
     so hashing never depends on the process CWD.
 
-    ``seed_plan`` (R018-C012): the frozen seed plan this bundle derives from
-    (e.g. ``{"n_seeds": N, "cells": [...]}``), recorded so a single-seed
-    showcase bundle's provenance states its place in the plan rather than
-    pretending the scalar ``seed`` is the whole design.
+    ``seed_plan`` (R018-C012, Round 3): REQUIRED by FR-027 -- the manifest
+    must record the frozen seed plan, not just a scalar seed.  A single-seed
+    showcase states its plan as ``{"n_seeds": 1, "seeds": [seed]}``.  The
+    plan's shape is closed (``n_seeds`` int + ``seeds`` list).
     """
+    if not isinstance(seed_plan, dict) or "n_seeds" not in seed_plan:
+        raise ShowcaseManifestError(
+            "seed_plan is required (FR-027) and must be a dict with 'n_seeds'"
+        )
     manifest_dir = pathlib.Path(bundle_dir)
     entries: list[dict[str, Any]] = []
     for entry in artifact_entries:
@@ -88,19 +92,17 @@ def build_showcase_manifest(
                 "hash": _blake2b_hex(fpath.read_bytes()),
             }
         )
-    manifest = {
+    return {
         "manifest_version": 1,
         "artifact_root": artifact_root,
         "artifacts": entries,
         "code_version": code_version,
         "config_hash": config_hash,
         "seed": seed,
+        "seed_plan": dict(seed_plan),
         "evidence_class": evidence_class,
         "gate": gate,
     }
-    if seed_plan is not None:
-        manifest["seed_plan"] = seed_plan
-    return manifest
 
 
 def _check_type(value: Any, type_spec: dict[str, Any]) -> bool:
@@ -129,11 +131,9 @@ def validate_showcase_manifest(manifest: dict[str, Any]) -> None:
     """
     schema = load_showcase_schema()
     top_spec: dict[str, Any] = schema["top_level_fields"]
-    # R018-C012: ``seed_plan`` is optional (present only when the bundle
-    # derives from a frozen plan); the other top-level fields are required.
-    optional_fields = {k for k, v in top_spec.items() if v.get("optional")}
-    expected_top = set(top_spec.keys()) - optional_fields
-    actual_top = set(manifest.keys()) - optional_fields
+    # No optional top-level fields (Round 3: seed_plan is REQUIRED by FR-027).
+    expected_top = set(top_spec.keys())
+    actual_top = set(manifest.keys())
     if actual_top != expected_top:
         missing = sorted(expected_top - actual_top)
         extra = sorted(actual_top - expected_top)
@@ -142,12 +142,15 @@ def validate_showcase_manifest(manifest: dict[str, Any]) -> None:
         )
 
     for fname, fspec in top_spec.items():
-        if fname not in manifest:
-            continue
         if not _check_type(manifest[fname], fspec):
             raise ShowcaseManifestError(
                 f"showcase manifest field '{fname}' must be {fspec['type']}"
             )
+
+    # R018-C012 (Round 3): closed seed_plan shape -- n_seeds must be an int.
+    sp = manifest["seed_plan"]
+    if not isinstance(sp, dict) or "n_seeds" not in sp or type(sp["n_seeds"]) is not int:
+        raise ShowcaseManifestError("seed_plan must be an object with integer 'n_seeds' (FR-027)")
 
     ev_spec = top_spec["evidence_class"]
     allowed = set(ev_spec.get("enum", []))

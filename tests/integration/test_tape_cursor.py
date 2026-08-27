@@ -396,7 +396,7 @@ def _bad_tape_world(specs: dict[str, AgentSpec], accounts: dict[str, Account]) -
 def test_observe_failure_rolls_back_cursor_and_ewma():
     """A corrupt tape entry that breaks interval consumption must abort the
     observe transaction WITHOUT advancing the live cursor -- the staged
-    update lives in _pending_agent_state and is dropped on fail-stop."""
+    update lives on the event (r0) and is dropped with the buffer on abort."""
     agent = _belief_spec("agent-0")
     accounts = {"agent-0": Account(agent_id="agent-0", wallet_units=10**14)}
     world = _bad_tape_world({"agent-0": agent}, accounts)
@@ -420,3 +420,75 @@ def test_observe_failure_rolls_back_cursor_and_ewma():
     # the corrupted fill (R018-C002: staged state dropped with the buffer).
     assert world["agent_cursors"].get("agent-0", "e1_0") == "e1_0"
     assert kernel.terminated == "ABORTED"
+
+
+def test_failure_after_staging_does_not_leak_into_next_transaction():
+    """R018-C002 (Round 3): a transaction that stages its cursor/EWMA update
+    and THEN aborts must not leak the staged state into a later successful
+    transaction on the same world -- the stage lives on the event (r0) and
+    is dropped with the buffer, not in a shared world dict."""
+    agent = _belief_spec("agent-0")
+    accounts = {"agent-0": Account(agent_id="agent-0", wallet_units=10**14)}
+    world = _world({"agent-0": agent}, accounts)
+    # The observe will stage cursor=e5_0 (from a fake last_market_data), then
+    # the injected failure aborts the transaction.
+    world["last_market_data_event_id"] = "e5_0"
+
+    fail_dispatch_calls = {"n": 0}
+
+    def fail_after_staging(event, w, kernel):
+        et = event["event_type"]
+        if et == "AGENT_OBSERVE":
+            handle_agent_observe(event, w, kernel)
+            # Staging is done (event["_pending_agent_state"] set); now abort.
+            fail_dispatch_calls["n"] += 1
+            raise RuntimeError("simulated abort after staging")
+        return []
+
+    k1 = EventKernel(run_id="leak1")
+    k1.bootstrap(
+        build_account_payload_from_accounts(accounts, mult=1000),
+        build_book_payload(last_ticks=None),
+    )
+    k1.enqueue(
+        {
+            "event_type": "AGENT_OBSERVE",
+            "timestamp": 0,
+            "agent_id": "agent-0",
+            "observed_at": 0,
+            "market_data_event_id": "e5_0",
+            "information_set": {},
+        }
+    )
+    k1.run(fail_after_staging, world, max_transactions=3)
+    assert k1.terminated == "ABORTED"
+    assert fail_dispatch_calls["n"] == 1
+    # Live cursor must NOT have advanced to the failed observation's e5_0.
+    assert world["agent_cursors"].get("agent-0", "e1_0") == "e1_0", (
+        "failed observe leaked its staged cursor into the live world"
+    )
+
+    # Reuse the SAME world for a fresh successful run: the failed stage must
+    # not resurface and push the cursor.  Remove the fake boundary so this
+    # run's own observation targets e1_0 -- if k1's e5_0 stage leaked, the
+    # cursor would jump to e5_0 despite this run staging e1_0.
+    world.pop("last_market_data_event_id", None)
+    k2 = EventKernel(run_id="leak2")
+    k2.bootstrap(
+        build_account_payload_from_accounts(accounts, mult=1000),
+        build_book_payload(last_ticks=None),
+    )
+    k2.enqueue(
+        {
+            "event_type": "AGENT_OBSERVE",
+            "timestamp": 0,
+            "agent_id": "agent-0",
+            "observed_at": 0,
+            "market_data_event_id": "e1_0",
+            "information_set": {},
+        }
+    )
+    k2.run(_dispatch, world, max_transactions=3)
+    assert k2.terminated == "COMPLETED"
+    # Still at e1_0: the failed e5_0 stage did not leak into this run.
+    assert world["agent_cursors"].get("agent-0", "e1_0") == "e1_0"

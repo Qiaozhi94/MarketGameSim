@@ -214,6 +214,7 @@ def test_manifest_rejects_wrong_evidence_class():
         "code_version": "0.1.0",
         "config_hash": "abc",
         "seed": 1,
+        "seed_plan": {"n_seeds": 1, "seeds": [1]},
         "evidence_class": "bogus-class",
         "gate": "R1",
     }
@@ -259,13 +260,14 @@ def test_manifest_records_closed_seed_plan(tmp_path):
         "cells": ["L_low_M_low", "L_high_M_high"],
     }
     assert manifest["seed"] == config.seed
-    # The optional field validates when present.
+    # seed_plan validates when present.
     validate_showcase_manifest(manifest)
 
 
-def test_manifest_without_seed_plan_still_valid(tmp_path):
-    """seed_plan is optional: a bundle without one (scalar seed only) is a
-    valid manifest -- existing single-seed showcases keep working."""
+def test_manifest_requires_seed_plan_even_for_single_seed(tmp_path):
+    """R018-C012 (Round 3): FR-027 requires the frozen seed plan in the
+    manifest -- a single-seed showcase states it explicitly as
+    {"n_seeds": 1, "seeds": [seed]} rather than omitting it."""
     config = _small_config()
     build_showcase_bundle(
         config,
@@ -277,5 +279,38 @@ def test_manifest_without_seed_plan_still_valid(tmp_path):
         rebuild_command=REBUILD_CMD,
     )
     manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
-    assert "seed_plan" not in manifest
+    assert manifest["seed_plan"] == {"n_seeds": 1, "seeds": [config.seed]}
     validate_showcase_manifest(manifest)
+
+
+def test_manifest_rejects_missing_seed_plan():
+    """R018-C012 (Round 3): a manifest without seed_plan must fail closed."""
+    bad = {
+        "manifest_version": 1,
+        "artifact_root": ".",
+        "artifacts": [],
+        "code_version": "0.1.0",
+        "config_hash": "abc",
+        "seed": 1,
+        "evidence_class": "engineering-demonstration",
+        "gate": "R1",
+    }
+    with pytest.raises(ShowcaseManifestError, match="seed_plan"):
+        validate_showcase_manifest(bad)
+
+
+def test_manifest_rejects_malformed_seed_plan():
+    """R018-C012 (Round 3): seed_plan must be a closed object with int n_seeds."""
+    bad = {
+        "manifest_version": 1,
+        "artifact_root": ".",
+        "artifacts": [],
+        "code_version": "0.1.0",
+        "config_hash": "abc",
+        "seed": 1,
+        "seed_plan": {"n_seeds": "8"},
+        "evidence_class": "engineering-demonstration",
+        "gate": "R1",
+    }
+    with pytest.raises(ShowcaseManifestError, match="seed_plan"):
+        validate_showcase_manifest(bad)

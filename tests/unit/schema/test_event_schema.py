@@ -106,3 +106,59 @@ def test_schema_version_mismatch_rejected():
     ev["schema_version"] = 2
     with pytest.raises(EvidenceClassError, match="schema_version"):
         validate_decision_evidence_v1(ev)
+
+
+@pytest.mark.parametrize(
+    "field",
+    ["schema_version", "goal_model_version", "desired_position_units", "executable_position_units"],
+)
+def test_integer_fields_reject_bool(field):
+    """R018-C009 (Round 3): isinstance(True, int) is True, so the previous
+    check silently accepted bools in integer fields -- must be rejected."""
+    ev = _valid_evidence()
+    ev[field] = True
+    with pytest.raises(EvidenceClassError, match=field):
+        validate_decision_evidence_v1(ev)
+
+
+def test_v1_structures_reject_unknown_version():
+    """R018-C009 (Round 3): the versioned V1 schemas fail closed on unknown
+    schema_version."""
+    from market_game_sim.agent.goal import (
+        AgentInternalStateV1,
+        BookTop,
+        InformationSetV1,
+        OwnAccountView,
+    )
+
+    with pytest.raises(ValueError, match="schema_version"):
+        InformationSetV1(
+            schema_version=99,
+            cursor_from_event_id="e1_0",
+            cursor_to_event_id="e1_0",
+            public_trades=(),
+            completed_bars=(),
+            book_top=BookTop(best_bid=1, best_ask=2, valuation_mark_half_ticks=3),
+            own_account=OwnAccountView(wallet_units=1, position_units=0, entry_notional_units=0),
+        )
+    with pytest.raises(ValueError, match="schema_version"):
+        AgentInternalStateV1(
+            schema_version=99,
+            last_seen_market_event_id="e1_0",
+            ewma_value_units=None,
+            ewma_sample_count=0,
+        )
+
+
+def test_risk_appetite_bounds_fail_closed():
+    """R018-C009 (Round 3): risk_appetite_x1000 is frozen to [500, 20000] and
+    must reject bools and out-of-range values."""
+    from market_game_sim.agent.goal import AgentPreferences
+
+    with pytest.raises(ValueError, match="500, 20000"):
+        AgentPreferences(risk_appetite_x1000=499)
+    with pytest.raises(ValueError, match="500, 20000"):
+        AgentPreferences(risk_appetite_x1000=20_001)
+    with pytest.raises(ValueError, match="int"):
+        AgentPreferences(risk_appetite_x1000=True)
+    AgentPreferences(risk_appetite_x1000=2000)

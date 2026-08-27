@@ -41,12 +41,25 @@ class StressEvent:
     params: dict[str, Any] = field(default_factory=dict)
 
 
+#: Closed set of stress event types the runner can execute (R018-C006:
+#: unknown event types must be rejected, not silently ignored).
+STRESS_EVENT_TYPES = frozenset({"MARKET_ORDER"})
+
+#: Closed params keys per event type (R018-C006: params must be closed so a
+#: typo'd or injected key cannot smuggle behavior into the protocol).
+_STRESS_EVENT_PARAMS: dict[str, frozenset[str]] = {
+    "MARKET_ORDER": frozenset({"side", "quantity_units"}),
+}
+
+
 @dataclass(frozen=True)
 class StressProtocolV1:
     """StressProtocolV1 (goal_contract_v2.json::structures).
 
     ``reads_run_outcome`` is frozen to ``False`` (ADR-003 §3.2: the protocol
     must not read the running result).  ``events`` is a finite ordered list.
+    ``schema_version`` must be exactly 1 and each event's type + params must
+    be from the closed sets (R018-C006).
     """
 
     protocol_id: str
@@ -55,6 +68,8 @@ class StressProtocolV1:
     reads_run_outcome: bool = False
 
     def __post_init__(self) -> None:
+        if self.schema_version != 1:
+            raise StressProtocolError(f"schema_version must be 1, got {self.schema_version}")
         if not self.protocol_id:
             raise StressProtocolError("protocol_id must be non-empty")
         if self.reads_run_outcome:
@@ -65,6 +80,18 @@ class StressProtocolV1:
         for i, ev in enumerate(self.events):
             if ev.timestamp_ns < 0:
                 raise StressProtocolError(f"events[{i}].timestamp_ns must be >= 0")
+            if ev.event_type not in STRESS_EVENT_TYPES:
+                raise StressProtocolError(
+                    f"events[{i}].event_type {ev.event_type!r} not in closed set "
+                    f"{sorted(STRESS_EVENT_TYPES)}"
+                )
+            allowed = _STRESS_EVENT_PARAMS[ev.event_type]
+            unknown = set(ev.params) - allowed
+            if unknown:
+                raise StressProtocolError(
+                    f"events[{i}].params has unknown keys {sorted(unknown)}; "
+                    f"allowed: {sorted(allowed)}"
+                )
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -137,6 +164,7 @@ def validate_stress_exogenous_provenance(evidence_list: list[dict]) -> None:
 
 
 __all__ = [
+    "STRESS_EVENT_TYPES",
     "StressEvent",
     "StressProtocolV1",
     "StressProtocolError",
