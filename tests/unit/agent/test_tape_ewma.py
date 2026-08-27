@@ -263,3 +263,34 @@ def test_completed_bars_with_zero_fill_pads_empty_bars():
     assert bars[2].close == 100
     assert bars[3].close == 110
     assert bars[3].open == 110
+
+
+def test_observed_public_trades_covers_full_history():
+    """R018-C003 (Round 5): the decision must see the FULL tape history up to
+    its observation boundary (not just the latest interval) so the completed
+    K-line sequence is complete across observations."""
+    from market_game_sim.agent.handler import (
+        _completed_bars_with_zero_fill,
+    )
+    from market_game_sim.agent.tape import INITIAL_CURSOR_EVENT_ID, tape_interval
+
+    tape = [
+        {"event_id": "e2_1", "price_ticks": 100, "quantity_units": 10, "timestamp": 0},
+        {"event_id": "e3_0", "price_ticks": 110, "quantity_units": 5, "timestamp": 30_000_000_000},
+        # A later observation interval's boundary (cursor_to = e5_0) must still
+        # see the earlier trades.
+        {
+            "event_id": "e5_0",
+            "price_ticks": 120,
+            "quantity_units": 7,
+            "timestamp": 4 * 60_000_000_000,
+        },
+    ]
+    # The decision at cursor_to=e5_0 sees ALL trades since genesis.
+    full = tape_interval(tape, INITIAL_CURSOR_EVENT_ID, "e5_0")
+    assert len(full) == 3, "decision must see the full tape history, not just the last interval"
+    bars = _completed_bars_with_zero_fill(
+        list(full), bar_ns=60_000_000_000, up_to_ts=5 * 60_000_000_000
+    )
+    # Bars 0 (2 trades) and 4 (1 trade); 1-3 zero-filled.
+    assert [b.trade_count for b in bars] == [2, 0, 0, 0, 1]

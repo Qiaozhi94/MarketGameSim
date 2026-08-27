@@ -162,6 +162,7 @@ def run_paired(
     n_resamples: int = 10_000,
     bootstrap_seed: int = 0,
     evidence_class: str | None = None,
+    preregistered: bool = False,
 ) -> tuple[list[RunResult], list[RunResult], dict]:
     """Run control and treatment groups with the same seeds (方法论 §10.5
     single-dimension paired control).
@@ -192,6 +193,7 @@ def run_paired(
     from market_game_sim.evidence.evidence_guard import (
         EvidenceClassError,
         guard_evidence_class,
+        guard_formal_research,
     )
 
     families = {c.run_family for c in (control, treatment)}
@@ -207,6 +209,10 @@ def run_paired(
                 f"run_paired: evidence_class must be provided for declared family {family!r}"
             )
         guard_evidence_class(family, evidence_class)
+        # R018-C011 (Round 5): formal-research additionally requires a frozen
+        # preregistration -- previously only the class was checked, so an
+        # unpreregistered run could emit a formal-research conclusion.
+        guard_formal_research(family, evidence_class, preregistered=preregistered)
     parity_err = check_paired_parity(control, treatment, treatment_field)
     if parity_err:
         raise ValueError(f"run_paired: control/treatment parity violated: {parity_err}")
@@ -231,6 +237,11 @@ def run_paired(
     comparison = {
         "n_seeds": len(seeds),
         "treatment_field": treatment_field,
+        # R018-C011 (Round 5): the report records the evidence_class it was
+        # authorized for -- a conclusion without its evidence tag cannot be
+        # traced back to the run-family permission that allowed it.
+        "evidence_class": evidence_class,
+        "run_family": family,
         # E3 (0.1.2 退出条件): traces this conditional_conclusion back to the
         # exact ExperimentConfig that produced it -- without this, "预注册
         # 实验可从配置哈希追溯到条件性结论" has no machine-checkable link.
@@ -434,6 +445,32 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
     for event in config.extra_events:
         kernel.enqueue(event)
 
+    # R018-C006 (Round 5): a declared stress protocol must actually be
+    # EXECUTED -- its finite typed events are injected as EXOGENOUS_STRESS
+    # market orders (ADR-003 §3.2), not silently ignored.
+    if config.stress_protocol is not None:
+        protocol = config.stress_protocol
+        for i, sev in enumerate(protocol.events):
+            side = sev.params["side"]
+            qty = sev.params["quantity_units"]
+            kernel.enqueue(
+                {
+                    "event_type": "ORDER_ARRIVAL",
+                    "timestamp": sev.timestamp_ns,
+                    "agent_id": f"stress-{protocol.protocol_id}",
+                    "order_id": f"stress-{protocol.protocol_id}-{i}",
+                    "action": "SUBMIT",
+                    "side": side,
+                    "order_type": "MARKET",
+                    "price_ticks": None,
+                    "quantity_units": qty,
+                    "intent_id": f"stress-{protocol.protocol_id}-{i}",
+                    "decision_event_id": "e0_0",
+                    "submitted_at": sev.timestamp_ns,
+                    "origin": "EXOGENOUS_STRESS",
+                }
+            )
+
     kernel.run(_dispatch_agents, world, max_transactions=config.max_transactions)
 
     events = kernel.committed_records
@@ -491,28 +528,16 @@ def run_multi_seed(
     protocol: ExperimentProtocol | None = None,
 ) -> list[RunResult]:
     """Run the same config across multiple seeds."""
+    from dataclasses import replace
+
     results: list[RunResult] = []
     for seed in seeds:
-        cfg = ExperimentConfig(
-            seed=seed,
-            max_transactions=base_config.max_transactions,
-            initial_price_ticks=base_config.initial_price_ticks,
-            mult=base_config.mult,
-            maker_bps=base_config.maker_bps,
-            taker_bps=base_config.taker_bps,
-            maint_bp=base_config.maint_bp,
-            target_bp=base_config.target_bp,
-            liquidation_latency_ns=base_config.liquidation_latency_ns,
-            agent_specs=list(base_config.agent_specs),
-            agent_signals=dict(base_config.agent_signals),
-            group_label=base_config.group_label,
-            extra_accounts=dict(base_config.extra_accounts),
-            extra_events=list(base_config.extra_events),
-            extra_positions={k: dict(v) for k, v in base_config.extra_positions.items()},
-            model_family=base_config.model_family,
-            behavior_mapping=base_config.behavior_mapping,
-            disabled_factor=base_config.disabled_factor,
-        )
+        # R018-C005 (Round 5): use dataclasses.replace so EVERY field
+        # (including the run-family matrix fields) survives the per-seed
+        # clone -- the previous hand-rolled reconstruction silently dropped
+        # run_family/seed_plan/l_level/m_level/stress_protocol, letting the
+        # family gate be bypassed at the per-seed level.
+        cfg = replace(base_config, seed=seed)
         results.append(run_one(cfg, protocol=protocol))
     return results
 

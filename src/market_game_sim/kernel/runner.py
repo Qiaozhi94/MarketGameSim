@@ -254,10 +254,18 @@ class EventKernel:
         self._current_event = event
 
         buffer: list[dict] = []
+        pending_state: dict | None = None
         try:
             # Handler mutates ``event`` (sets accepted etc.) and returns
             # transaction records (NOT including r0).
             records = handler(event, world, self)
+
+            # R018-C002: the observe handler stages its cursor/EWMA/
+            # decision-index advance on the EVENT; extract it NOW (after the
+            # handler, before _build_record strips underscore-internal keys)
+            # so the staged state is applied only on commit and never leaks
+            # into the formal log.
+            pending_state = event.get("_pending_agent_state")
 
             # Transaction records inherit the parent event's timestamp.
             parent_ts = event["timestamp"]
@@ -289,6 +297,27 @@ class EventKernel:
         self._last_committed_transaction_seq = txn_seq
         self._processed_transactions += 1
 
+        # R018-C002: apply the observe transaction's staged cursor / EWMA /
+        # decision-index advance now that the transaction has committed.  The
+        # stage was captured from the event pre-strip, so a fail-stop abort
+        # drops it with the buffer (Round 3/5: a shared-world-dict or
+        # post-strip-read stage leaked a failed observation's state into a
+        # later successful transaction).
+        if pending_state:
+            cursors = world.setdefault("agent_cursors", {})
+            ewma = world.setdefault("agent_ewma", {})
+            cursors[pending_state["agent_id"]] = pending_state["cursor"]
+            ewma[pending_state["agent_id"]] = {
+                "value": pending_state["ewma_value"],
+                "count": pending_state["ewma_count"],
+            }
+            if "decision_index" in pending_state:
+                di = world.setdefault("agent_decision_index", {})
+                di[pending_state["agent_id"]] = pending_state["decision_index"]
+            if "cursor_from" in pending_state:
+                cf = world.setdefault("agent_cursor_from", {})
+                cf[pending_state["agent_id"]] = pending_state["cursor_from"]
+
         # 0.1.5 T206/T207: maintain the global public tape + the latest market
         # data boundary.  The kernel is the only place that knows each record's
         # final event_id, so TRADE_SETTLE records are projected here into
@@ -315,25 +344,6 @@ class EventKernel:
                 elif r.get("event_type") == "MARKET_DATA_PUBLISH":
                     world["last_market_data_event_id"] = r["event_id"]
 
-        # R018-C002: apply the observe transaction's staged cursor / EWMA
-        # advance now that the transaction has committed.  The handler staged
-        # it on r0 (``event["_pending_agent_state"]``) so it commits with THIS
-        # transaction and is dropped with the buffer on abort -- Round 3 found
-        # the previous shared-world-dict staging leaked a failed observation's
-        # cursor into a later successful transaction.
-        r0 = buffer[0]
-        pending = r0.get("_pending_agent_state")
-        if pending:
-            cursors = world.setdefault("agent_cursors", {})
-            ewma = world.setdefault("agent_ewma", {})
-            cursors[pending["agent_id"]] = pending["cursor"]
-            ewma[pending["agent_id"]] = {
-                "value": pending["ewma_value"],
-                "count": pending["ewma_count"],
-            }
-        # The staged state is a transaction-internal channel, not a log field.
-        r0.pop("_pending_agent_state", None)
-
     # ------------------------------------------------------------------ #
     # Record construction
     # ------------------------------------------------------------------ #
@@ -347,15 +357,19 @@ class EventKernel:
     ) -> dict:
         """Merge EVENT_COMMON fields with event-specific fields (T204e shape).
 
-        Strips internal keys (``_enqueue_seq``) and fills system fields
-        (``record_kind``, ``schema_version``, ``event_id``, ``run_id``,
-        ``transaction_seq``, ``record_index``, ``priority_class``,
-        ``enqueue_seq``).  Event-specific fields from the event dict
-        are preserved.
+        Strips internal keys (``_enqueue_seq``, ``_decision_index``,
+        ``_observed_*``, ``_pending_agent_state`` -- R018-C014: transaction
+        internal channels must never leak into the formal log) and fills
+        system fields (``record_kind``, ``schema_version``, ``event_id``,
+        ``run_id``, ``transaction_seq``, ``record_index``,
+        ``priority_class``, ``enqueue_seq``).  Event-specific fields from
+        the event dict are preserved.
         """
         event_type = event["event_type"]
         record: dict[str, Any] = dict(event)
-        record.pop("_enqueue_seq", None)
+        for key in list(record):
+            if key.startswith("_"):
+                del record[key]
         record["record_kind"] = "EVENT"
         record["schema_version"] = self._schema_version
         record["event_id"] = f"e{txn_seq}_{record_idx}"

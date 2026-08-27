@@ -147,10 +147,27 @@ def validate_showcase_manifest(manifest: dict[str, Any]) -> None:
                 f"showcase manifest field '{fname}' must be {fspec['type']}"
             )
 
-    # R018-C012 (Round 3): closed seed_plan shape -- n_seeds must be an int.
+    # R018-C012 (Round 3/5): closed seed_plan shape -- keys exactly
+    # {n_seeds, seeds}, n_seeds a positive int, seeds a list of ints whose
+    # length equals n_seeds (FR-027 provenance must be self-consistent).
     sp = manifest["seed_plan"]
-    if not isinstance(sp, dict) or "n_seeds" not in sp or type(sp["n_seeds"]) is not int:
-        raise ShowcaseManifestError("seed_plan must be an object with integer 'n_seeds' (FR-027)")
+    if not isinstance(sp, dict):
+        raise ShowcaseManifestError("seed_plan must be an object (FR-027)")
+    allowed_keys = {"n_seeds", "seeds"}
+    unknown = set(sp) - allowed_keys
+    if unknown:
+        raise ShowcaseManifestError(
+            f"seed_plan has unknown keys {sorted(unknown)}; allowed: {sorted(allowed_keys)}"
+        )
+    if "n_seeds" not in sp or type(sp["n_seeds"]) is not int or sp["n_seeds"] <= 0:
+        raise ShowcaseManifestError("seed_plan.n_seeds must be a positive integer (FR-027)")
+    seeds = sp.get("seeds")
+    if not isinstance(seeds, list) or not all(type(s) is int for s in seeds):
+        raise ShowcaseManifestError("seed_plan.seeds must be a list of integers (FR-027)")
+    if len(seeds) != sp["n_seeds"]:
+        raise ShowcaseManifestError(
+            f"seed_plan.seeds length {len(seeds)} != n_seeds {sp['n_seeds']}"
+        )
 
     ev_spec = top_spec["evidence_class"]
     allowed = set(ev_spec.get("enum", []))

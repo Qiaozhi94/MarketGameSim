@@ -26,7 +26,15 @@ def _protocol(events: tuple[StressEvent, ...]) -> StressProtocolV1:
 
 
 def _one_event_protocol() -> StressProtocolV1:
-    return _protocol((StressEvent("MARKET_ORDER", timestamp_ns=1_000, params={"side": "SELL"}),))
+    return _protocol(
+        (
+            StressEvent(
+                "MARKET_ORDER",
+                timestamp_ns=1_000,
+                params={"side": "SELL", "quantity_units": 100},
+            ),
+        )
+    )
 
 
 def test_protocol_shape_matches_frozen_contract():
@@ -97,8 +105,20 @@ def test_digest_deterministic():
 
 
 def test_digest_differs_when_events_differ():
-    a = _protocol((StressEvent("MARKET_ORDER", timestamp_ns=1_000, params={"side": "SELL"}),))
-    b = _protocol((StressEvent("MARKET_ORDER", timestamp_ns=1_000, params={"side": "BUY"}),))
+    a = _protocol(
+        (
+            StressEvent(
+                "MARKET_ORDER", timestamp_ns=1_000, params={"side": "SELL", "quantity_units": 100}
+            ),
+        )
+    )
+    b = _protocol(
+        (
+            StressEvent(
+                "MARKET_ORDER", timestamp_ns=1_000, params={"side": "BUY", "quantity_units": 100}
+            ),
+        )
+    )
     assert a.digest() != b.digest()
 
 
@@ -125,7 +145,11 @@ def test_four_cell_missing_cell_fails():
 def test_four_cell_mismatch_fails_whole_evidence():
     protocols = _all_four(_one_event_protocol())
     protocols["L_high_M_high"] = _protocol(
-        (StressEvent("MARKET_ORDER", timestamp_ns=9_999, params={"side": "BUY"}),)
+        (
+            StressEvent(
+                "MARKET_ORDER", timestamp_ns=9_999, params={"side": "BUY", "quantity_units": 100}
+            ),
+        )
     )
     with pytest.raises(StressProtocolError, match="identical"):
         validate_four_cell_same_path(protocols)
@@ -137,6 +161,54 @@ def test_four_cell_rejects_extra_cell():
     protocols["L_low_M_extra"] = _one_event_protocol()
     with pytest.raises(StressProtocolError, match="unexpected cells"):
         validate_four_cell_same_path(protocols)
+
+
+def test_protocol_rejects_missing_required_param():
+    """R018-C006 (Round 5): a MARKET_ORDER without quantity_units is invalid."""
+    with pytest.raises(StressProtocolError, match="quantity_units"):
+        _protocol((StressEvent("MARKET_ORDER", timestamp_ns=1_000, params={"side": "SELL"}),))
+
+
+def test_protocol_rejects_wrong_param_type():
+    """R018-C006 (Round 5): quantity_units must be an int (bool excluded)."""
+    with pytest.raises(StressProtocolError, match="quantity_units"):
+        _protocol(
+            (
+                StressEvent(
+                    "MARKET_ORDER",
+                    timestamp_ns=1_000,
+                    params={"side": "SELL", "quantity_units": True},
+                ),
+            )
+        )
+
+
+def test_protocol_rejects_bad_enum_value():
+    """R018-C006 (Round 5): side must be BUY or SELL."""
+    with pytest.raises(StressProtocolError, match="side"):
+        _protocol(
+            (
+                StressEvent(
+                    "MARKET_ORDER",
+                    timestamp_ns=1_000,
+                    params={"side": "HOLD", "quantity_units": 100},
+                ),
+            )
+        )
+
+
+def test_protocol_rejects_nonpositive_quantity():
+    """R018-C006 (Round 5): quantity_units must be >= 1."""
+    with pytest.raises(StressProtocolError, match="quantity_units"):
+        _protocol(
+            (
+                StressEvent(
+                    "MARKET_ORDER",
+                    timestamp_ns=1_000,
+                    params={"side": "SELL", "quantity_units": 0},
+                ),
+            )
+        )
 
 
 def test_stress_provenance_requires_exogenous_stress():

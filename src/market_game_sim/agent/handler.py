@@ -28,6 +28,7 @@ from market_game_sim.agent.goal import (
     DecisionEvidenceV1,
     InformationSetV1,
     OwnAccountView,
+    PublicTrade,
     TriggerProvenance,
     build_decision_evidence,
     get_goal_model,
@@ -41,7 +42,7 @@ from market_game_sim.agent.strategy import (
     order_intent_from_target,
     target_position,
 )
-from market_game_sim.agent.tape import tape_interval, update_ewma
+from market_game_sim.agent.tape import INITIAL_CURSOR_EVENT_ID, tape_interval, update_ewma
 from market_game_sim.book.orderbook import Book
 from market_game_sim.kernel.runner import EventKernel
 from market_game_sim.ledger.account import Account, risk_equity
@@ -442,7 +443,8 @@ def _completed_bars_with_zero_fill(
         return []
     by_bar: dict[int, list[dict]] = {}
     for tr in trades:
-        k = tr.get("timestamp", 0) // bar_ns
+        ts_val = tr.get("timestamp", 0) if isinstance(tr, dict) else tr.timestamp
+        k = ts_val // bar_ns
         by_bar.setdefault(k, []).append(tr)
     first_bar = min(by_bar)
     last_completed = up_to_ts // bar_ns - 1 if up_to_ts // bar_ns > first_bar else first_bar
@@ -451,13 +453,16 @@ def _completed_bars_with_zero_fill(
     for k in range(first_bar, last_completed + 1):
         ts = by_bar.get(k)
         if ts:
-            prices = [t.get("price_ticks", 0) for t in ts]
+            prices = [t.get("price_ticks", 0) if isinstance(t, dict) else t.price_ticks for t in ts]
+            volumes = [
+                t.get("quantity_units", 0) if isinstance(t, dict) else t.quantity_units for t in ts
+            ]
             bar = CompletedBar(
                 open=prices[0],
                 high=max(prices),
                 low=min(prices),
                 close=prices[-1],
-                volume=sum(t.get("quantity_units", 0) for t in ts),
+                volume=sum(volumes),
                 trade_count=len(ts),
             )
             prev_close = bar.close
@@ -558,8 +563,14 @@ def handle_agent_decide(
             "margin_ratio_bp": iset.get("margin_ratio_bp"),
             "valuation_mark_half_ticks": iset.get("valuation_mark_half_ticks"),
         }
-        cursor_boundary = world.get("agent_cursors", {}).get(agent_id, "e1_0")
-        cursor_from = world.get("agent_cursor_from", {}).get(agent_id, "e1_0")
+        # R018-C007 (Round 5): evidence cursors come from the observation's
+        # own boundaries (carried on the event), not the live world.
+        cursor_boundary = event.get("_observed_cursor_to") or world.get("agent_cursors", {}).get(
+            agent_id, "e1_0"
+        )
+        cursor_from = event.get("_observed_cursor_from") or world.get("agent_cursor_from", {}).get(
+            agent_id, "e1_0"
+        )
         evidence = _legacy_evidence(
             "market_maker",
             decision_index,
@@ -569,14 +580,30 @@ def handle_agent_decide(
     else:
         signal_bp = _compute_belief_signal(spec, iset, world, decision_index)
         if spec.goal_model_id is not None:
-            cursors = world.get("agent_cursors", {})
-            cursor_to = cursors.get(agent_id, "e1_0")
+            # R018-C007 (Round 5): cursor_to must be the OBSERVATION's own
+            # upper boundary (carried on the event), not the live world cursor
+            # at decide-execution time -- under overlapping observations
+            # (latency > observe_interval) the live cursor may have advanced
+            # past the boundary this decision was based on, breaking the
+            # evidence-cursor == observation-cursor invariant.
+            cursor_to = event.get("_observed_cursor_to") or world.get("agent_cursors", {}).get(
+                agent_id, "e1_0"
+            )
             ewma_state = world.get("agent_ewma", {}).get(agent_id, {})
             # R018-C003 (Round 3): the public trades come from the OBSERVATION
             # snapshot the observe handler attached to this event -- the
             # rebuilt iset here has no public_trades.  Completed bars are
             # aggregated from them WITH zero-fill padding (代理策略 §3.1).
-            public_trades = tuple(event.get("_observed_public_trades", ()))
+            # R018-C009 (Round 5): tape entries are dicts; the closed
+            # InformationSetV1 requires typed PublicTrade objects.
+            public_trades = tuple(
+                PublicTrade(
+                    price_ticks=t["price_ticks"],
+                    quantity_units=t["quantity_units"],
+                    timestamp=t["timestamp"],
+                )
+                for t in event.get("_observed_public_trades", ())
+            )
             completed_bars = tuple(
                 _completed_bars_with_zero_fill(
                     list(public_trades),
@@ -613,8 +640,12 @@ def handle_agent_decide(
             intent = _belief_intent(spec, iset, decision_index, signal_bp, min_qty, target_fn)
             intents = [intent] if intent else []
             internal_state = {"signal_bp": signal_bp}
-            cursor_boundary = world.get("agent_cursors", {}).get(agent_id, "e1_0")
-            cursor_from = world.get("agent_cursor_from", {}).get(agent_id, "e1_0")
+            cursor_boundary = event.get("_observed_cursor_to") or world.get(
+                "agent_cursors", {}
+            ).get(agent_id, "e1_0")
+            cursor_from = event.get("_observed_cursor_from") or world.get(
+                "agent_cursor_from", {}
+            ).get(agent_id, "e1_0")
             evidence = _legacy_evidence(
                 "v1_legacy",
                 decision_index,
@@ -742,15 +773,25 @@ def handle_agent_observe(
         "cursor": cursor_to,
         "ewma_value": new_value,
         "ewma_count": new_count,
+        # R018-C002 (Round 5): cursor_from and the decision index are also
+        # transaction-scoped -- a failed observe must not consume the decision
+        # index or advance cursor_from (previously written straight to world).
+        "cursor_from": cursor_from,
+        "decision_index": world.get("agent_decision_index", {}).get(agent_id, 0) + 1,
     }
-    # R018-C007: record the observation's lower cursor boundary so legacy
-    # (v1 / market-maker) decisions can tag their evidence with the same
-    # cursor_from the observe event recorded (the chain verifier requires
-    # evidence cursors == observation cursors).
-    world.setdefault("agent_cursor_from", {})[agent_id] = cursor_from
+    # R018-C007: the observation's lower cursor boundary is carried on the
+    # event (not a world write) so legacy decisions can tag their evidence
+    # with the same cursor_from the observe event recorded, and it commits
+    # with the transaction (Round 5: the previous world write leaked on
+    # abort and the decide path read a stale value under overlapping
+    # observations).
+    event["_observed_cursor_from"] = cursor_from
 
+    # R018-C002: the decision index for THIS observation is read from the
+    # committed world (advance applied by the kernel after the previous
+    # successful observation); the next index is staged and applied only on
+    # commit -- a failed observe must not consume it.  No world write here.
     decision_index = world.get("agent_decision_index", {}).get(agent_id, 0)
-    world.setdefault("agent_decision_index", {})[agent_id] = decision_index + 1
     # R018-C003 (Round 3): hand the decision the OBSERVATION's snapshot --
     # the public trades this agent consumed since its last cursor plus the
     # cursor boundaries.  handle_agent_decide rebuilds its own iset via
@@ -766,7 +807,13 @@ def handle_agent_observe(
         "intents": [],
         "internal_state": {},
         "_decision_index": decision_index,
-        "_observed_public_trades": list(interval_fills),
+        # R018-C003 (Round 5): the decision sees the FULL tape history up to
+        # the observation boundary (not just this interval) so the completed
+        # K-line sequence is complete across observations -- an interval-only
+        # slice dropped earlier bars, mis-sizing momentum/herding lookbacks.
+        "_observed_public_trades": [
+            dict(t) for t in tape_interval(tape, INITIAL_CURSOR_EVENT_ID, cursor_to)
+        ],
         "_observed_cursor_from": cursor_from,
         "_observed_cursor_to": cursor_to,
     }
