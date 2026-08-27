@@ -668,3 +668,25 @@ amend 修正）。**管道会吞掉前一个命令的退出码**——门禁命�
 - 存活轮数:全部 12 条 first_seen=1,resolved=2,单轮修复闭环。
 - **复现模式聚合**:gate-not-wired-to-entrypoint 出现 2 次(C005/C011)——独立校验器/守卫存在但未接入生产入口,是 0.1.5 实现的高频缺口,后续 feature 实现时应先查「校验器是否真的被入口调用」。
 - partial-symmetric-fix(C004)与 atch-partition-dependent-state(C010)都是「单侧/单批测试通过、另一侧/拆批暴露」的变体,印证批量场景强制测试的规则。
+
+**Round 3 修正（2026-08-27）**:Round 2 错误关闭了 8 个未完整修复的问题(R018-C013
+self-approved-closure)。Round 3 检视人逐条用真实路径复现(C002 staging 泄漏到下一事务、
+C003 decide 信息集恒空、C005 构造器拒绝、C006 接受非法版本/事件、C007 cursor_from 硬编码
+e1_0、C009 bool 通过 int 校验、C011 硬编码 evidence class、C012 seed_plan 可缺失)。
+
+**Round 4 修复与复核**:8 条 carried-forward + C013 全部修复,每条配真实路径正反回归测试:
+- C002 staging 移到事件 r0(随事务提交/丢弃),泄漏测试复用 world 验证
+- C003 observe 把 public_trades/cursor 快照附到 decide;零成交 bar 填充
+- C005 矩阵字段成为一等构造参数;未知字段被 dataclass 构造器拒绝
+- C006 StressProtocolV1 闭合版本/事件/params
+- C007 V2 evidence cursor_from 读观察快照;240 事务多区间全链验证
+- C009 int 用 type is int 排除 bool;V1 版本/偏好边界闭合
+- C011 run_paired 接收 evidence_class;legacy 独立族
+- C012 seed_plan 必填闭合结构(FR-027)
+
+**检视人独立复核(非自证)**:C007 反向变异(强制旧 e1_0 硬编码)被 chain_verifier 拒绝;
+C002 静态确认 handler 不再触碰 world staging 通道。CI 对 3de200c 全绿。
+
+**模式教训(第二轮)**:self-approved-closure 复现——Round 2 的回归测试测了自己实现的辅助
+函数而非真实路径(C003 直接测 _bars_from_history 而非 decide 路径),导致 8 个问题误判为
+fixed。修复:每条回归测试必须走真实生产路径,或对关键路径做反向变异验证。
