@@ -218,3 +218,25 @@ def test_public_trade_rejects_bool_price():
 
     with pytest.raises(ValueError, match="price_ticks"):
         PublicTrade(price_ticks=True, quantity_units=1, timestamp=0)
+
+
+def test_internal_state_rejects_non_mapping_private_state():
+    """R018-C009 (Round 7): model_private_state must be a Mapping."""
+    from market_game_sim.agent.goal import AgentInternalStateV1
+
+    with pytest.raises(ValueError, match="model_private_state"):
+        AgentInternalStateV1(
+            schema_version=1,
+            last_seen_market_event_id="e1_0",
+            ewma_value_units=None,
+            ewma_sample_count=0,
+            model_private_state=[],
+        )
+    # A valid Mapping is accepted.
+    AgentInternalStateV1(
+        schema_version=1,
+        last_seen_market_event_id="e1_0",
+        ewma_value_units=None,
+        ewma_sample_count=0,
+        model_private_state={"signal_bp": 100},
+    )

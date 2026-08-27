@@ -44,14 +44,22 @@ def test_spontaneous_allows_all_classes():
 
 def test_formal_research_requires_preregistration():
     with pytest.raises(EvidenceClassError, match="preregistration"):
-        guard_formal_research("SPONTANEOUS", "formal-research", preregistered=False)
-    # No exception when preregistered.
-    guard_formal_research("SPONTANEOUS", "formal-research", preregistered=True)
+        guard_formal_research("SPONTANEOUS", "formal-research", preregistration=None)
+    # A frozen preregistration reference is accepted.
+    guard_formal_research("SPONTANEOUS", "formal-research", preregistration="prereg-1")
+
+
+def test_formal_research_rejects_bare_bool():
+    """R018-C011 (Round 7): a bare True is not a preregistration reference --
+    only a traceable frozen preregistration id/digest may authorize a formal
+    conclusion."""
+    with pytest.raises(EvidenceClassError, match="preregistration"):
+        guard_formal_research("SPONTANEOUS", "formal-research", preregistration=True)
 
 
 def test_formal_research_rejected_for_benchmark_even_if_preregistered():
     with pytest.raises(EvidenceClassError, match="not allowed"):
-        guard_formal_research("BENCHMARK", "formal-research", preregistered=True)
+        guard_formal_research("BENCHMARK", "formal-research", preregistration="prereg-1")
 
 
 def test_unknown_evidence_class_fails_closed():

@@ -344,7 +344,7 @@ class 0/3/4/5 决定**队列事件**在同一时间戳的弹出顺序。class 1�
 | `accepted` | 是否通过准入校验 |
 | `reject_reason` | 拒绝原因，未拒绝为 null |
 | `reserved_delta_units` | 保证金占用变动：下单预冻结为正，撤单/拒绝释放为负（§4.2.1） |
-| `origin` | `AGENT` \| `LIQUIDATION`——强平单由风控产生，不来自代理决策 |
+| `origin` | `AGENT` \| `LIQUIDATION` \| `EXOGENOUS_STRESS`——`LIQUIDATION` 强平单由风控产生、`EXOGENOUS_STRESS` 压力冲击单由 `StressProtocol` 产生，二者都不来自代理决策（TR-502） |
 | `trigger_ratio_bp` | `origin=LIQUIDATION` 时的触发保证金率（整数万分数），否则 null |
 | `liquidation_generation` | `origin=LIQUIDATION` 时携带调度它的那一代次；否则 null。到达时与账户当前代次比对，不等即拒（§4.2.2「恢复后的失效」） |
 

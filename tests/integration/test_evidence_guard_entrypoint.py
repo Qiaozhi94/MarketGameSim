@@ -34,13 +34,13 @@ def _cfg(run_family: str | None) -> ExperimentConfig:
     if run_family is not None:
         # Declared families require seed_plan (C005: the gate now actually
         # enforces the matrix, so valid configs must carry it).
-        cfg.seed_plan = {"n_seeds": 4}
+        cfg.seed_plan = {"n_seeds": 3, "seeds": [1, 2, 3]}
     return cfg
 
 
 def test_run_paired_rejects_cross_family():
     control = _cfg("SPONTANEOUS")
-    control.seed_plan = {"n_seeds": 4}
+    control.seed_plan = {"n_seeds": 3, "seeds": [1, 2, 3]}
     control.l_level = "low"
     control.m_level = "high"
     treatment = _cfg("BENCHMARK")
@@ -93,11 +93,11 @@ def test_unpreregistered_formal_research_rejected():
     """R018-C011 (Round 5): formal-research requires a frozen preregistration
     -- an unpreregistered SPONTANEOUS pair must not emit a formal conclusion."""
     control = _cfg("SPONTANEOUS")
-    control.seed_plan = {"n_seeds": 4}
+    control.seed_plan = {"n_seeds": 3, "seeds": [1, 2, 3]}
     control.l_level = "low"
     control.m_level = "high"
     treatment = _cfg("SPONTANEOUS")
-    treatment.seed_plan = {"n_seeds": 4}
+    treatment.seed_plan = {"n_seeds": 3, "seeds": [1, 2, 3]}
     treatment.l_level = "low"
     treatment.m_level = "high"
     with pytest.raises(EvidenceClassError, match="preregistration"):
@@ -108,11 +108,11 @@ def test_preregistered_formal_research_accepted_and_recorded():
     """R018-C011 (Round 5): a preregistered SPONTANEOUS pair may emit
     formal-research, and the report records the evidence_class."""
     control = _cfg("SPONTANEOUS")
-    control.seed_plan = {"n_seeds": 4}
+    control.seed_plan = {"n_seeds": 3, "seeds": [1, 2, 3]}
     control.l_level = "low"
     control.m_level = "high"
     treatment = _cfg("SPONTANEOUS")
-    treatment.seed_plan = {"n_seeds": 4}
+    treatment.seed_plan = {"n_seeds": 3, "seeds": [1, 2, 3]}
     treatment.l_level = "low"
     treatment.m_level = "high"
     _, _, comparison = run_paired(
@@ -120,7 +120,23 @@ def test_preregistered_formal_research_accepted_and_recorded():
         treatment,
         seeds=[1, 2, 3],
         evidence_class="formal-research",
-        preregistered=True,
+        preregistration="prereg-2026-08-27-v1",
     )
     assert comparison["evidence_class"] == "formal-research"
     assert comparison["run_family"] == "SPONTANEOUS"
+    assert comparison["preregistration"] == "prereg-2026-08-27-v1"
+
+
+def test_declared_seed_plan_must_match_actual_seeds():
+    """R018-C005 (Round 7): a seed plan declaring seeds=[11,12,13,14] but a
+    run using [1] must be rejected, not silently under-powered."""
+    control = _cfg("SPONTANEOUS")
+    control.seed_plan = {"n_seeds": 4, "seeds": [11, 12, 13, 14]}
+    control.l_level = "low"
+    control.m_level = "high"
+    treatment = _cfg("SPONTANEOUS")
+    treatment.seed_plan = {"n_seeds": 4, "seeds": [11, 12, 13, 14]}
+    treatment.l_level = "low"
+    treatment.m_level = "high"
+    with pytest.raises(ValueError, match="seed plan"):
+        run_paired(control, treatment, seeds=[1], evidence_class="experiment-preview")

@@ -42,7 +42,7 @@ from market_game_sim.agent.strategy import (
     order_intent_from_target,
     target_position,
 )
-from market_game_sim.agent.tape import INITIAL_CURSOR_EVENT_ID, tape_interval, update_ewma
+from market_game_sim.agent.tape import tape_interval, update_ewma
 from market_game_sim.book.orderbook import Book
 from market_game_sim.kernel.runner import EventKernel
 from market_game_sim.ledger.account import Account, risk_equity
@@ -606,7 +606,10 @@ def handle_agent_decide(
             )
             completed_bars = tuple(
                 _completed_bars_with_zero_fill(
-                    list(public_trades),
+                    # R018-C003 (Round 7): aggregate from the agent's CUMULATIVE
+                    # history (committed per observation into world["agent_bars"]),
+                    # so the closed K-line sequence spans all observations.
+                    list(world.get("agent_bars", {}).get(agent_id, ())),
                     bar_ns=60_000_000_000,
                     up_to_ts=event["timestamp"],
                 )
@@ -778,6 +781,12 @@ def handle_agent_observe(
         # index or advance cursor_from (previously written straight to world).
         "cursor_from": cursor_from,
         "decision_index": world.get("agent_decision_index", {}).get(agent_id, 0) + 1,
+        # R018-C003 (Round 7): the agent's INCREMENTAL trades for this
+        # interval commit with the observation; the kernel extends the
+        # accumulated world["agent_bars"] history with them.  public_trades
+        # stays the incremental interval (代理策略 §1: 上次观察以来的增量),
+        # while completed bars aggregate the accumulated history.
+        "agent_trades": list(interval_fills),
     }
     # R018-C007: the observation's lower cursor boundary is carried on the
     # event (not a world write) so legacy decisions can tag their evidence
@@ -807,13 +816,11 @@ def handle_agent_observe(
         "intents": [],
         "internal_state": {},
         "_decision_index": decision_index,
-        # R018-C003 (Round 5): the decision sees the FULL tape history up to
-        # the observation boundary (not just this interval) so the completed
-        # K-line sequence is complete across observations -- an interval-only
-        # slice dropped earlier bars, mis-sizing momentum/herding lookbacks.
-        "_observed_public_trades": [
-            dict(t) for t in tape_interval(tape, INITIAL_CURSOR_EVENT_ID, cursor_to)
-        ],
+        # R018-C003 (Round 7): public_trades is the INCREMENTAL interval
+        # (last_seen, current] -- 代理策略 §1.  The completed K-line sequence
+        # is built separately from the agent's cumulative history (see
+        # handle_agent_decide via world["agent_bars"]), NOT from this slice.
+        "_observed_public_trades": [dict(t) for t in interval_fills],
         "_observed_cursor_from": cursor_from,
         "_observed_cursor_to": cursor_to,
     }

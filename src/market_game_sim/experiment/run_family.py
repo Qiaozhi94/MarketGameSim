@@ -151,6 +151,32 @@ def validate_run_family(cfg: RunFamilyConfig, matrix: dict | None = None) -> Non
         )
 
 
+def validate_seed_plan(plan: object) -> dict:
+    """Validate a frozen seed plan structure (R018-C012: one shared validator
+    for the experiment entry, the report manifest and the Schema truth).
+
+    Closed shape: keys exactly ``{n_seeds, seeds}``, ``n_seeds`` a positive
+    int (bool excluded), ``seeds`` a list of ints whose length equals
+    ``n_seeds``.  Returns the validated dict (normalised).
+    """
+    if not isinstance(plan, dict):
+        raise RunFamilyError(f"seed_plan must be an object, got {type(plan).__name__}")
+    allowed = {"n_seeds", "seeds"}
+    unknown = set(plan) - allowed
+    if unknown:
+        raise RunFamilyError(
+            f"seed_plan has unknown keys {sorted(unknown)}; allowed: {sorted(allowed)}"
+        )
+    if "n_seeds" not in plan or type(plan["n_seeds"]) is not int or plan["n_seeds"] <= 0:
+        raise RunFamilyError("seed_plan.n_seeds must be a positive integer")
+    seeds = plan.get("seeds")
+    if not isinstance(seeds, list) or not all(type(s) is int for s in seeds):
+        raise RunFamilyError("seed_plan.seeds must be a list of integers")
+    if len(seeds) != plan["n_seeds"]:
+        raise RunFamilyError(f"seed_plan.seeds length {len(seeds)} != n_seeds {plan['n_seeds']}")
+    return {"n_seeds": plan["n_seeds"], "seeds": list(seeds)}
+
+
 __all__ = [
     "RunFamily",
     "RunFamilyConfig",
@@ -158,4 +184,5 @@ __all__ = [
     "from_experiment_config",
     "load_run_family_matrix",
     "validate_run_family",
+    "validate_seed_plan",
 ]

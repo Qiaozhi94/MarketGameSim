@@ -265,32 +265,24 @@ def test_completed_bars_with_zero_fill_pads_empty_bars():
     assert bars[3].open == 110
 
 
-def test_observed_public_trades_covers_full_history():
-    """R018-C003 (Round 5): the decision must see the FULL tape history up to
-    its observation boundary (not just the latest interval) so the completed
-    K-line sequence is complete across observations."""
-    from market_game_sim.agent.handler import (
-        _completed_bars_with_zero_fill,
-    )
-    from market_game_sim.agent.tape import INITIAL_CURSOR_EVENT_ID, tape_interval
+def test_accumulated_history_produces_complete_completed_bars():
+    """R018-C003 (Round 7): public_trades is the INCREMENTAL interval (last
+    interval only, 代理策略 §1), but completed bars aggregate the agent's
+    ACCUMULATED history (committed per observation) so the closed K-line
+    sequence spans all observations -- not just the latest interval."""
+    from market_game_sim.agent.handler import _completed_bars_with_zero_fill
 
-    tape = [
-        {"event_id": "e2_1", "price_ticks": 100, "quantity_units": 10, "timestamp": 0},
-        {"event_id": "e3_0", "price_ticks": 110, "quantity_units": 5, "timestamp": 30_000_000_000},
-        # A later observation interval's boundary (cursor_to = e5_0) must still
-        # see the earlier trades.
-        {
-            "event_id": "e5_0",
-            "price_ticks": 120,
-            "quantity_units": 7,
-            "timestamp": 4 * 60_000_000_000,
-        },
+    # Cumulative history across two observations: bar 0 (2 trades) + bar 4 (1).
+    cumulative = [
+        {"price_ticks": 100, "quantity_units": 10, "timestamp": 0},
+        {"price_ticks": 110, "quantity_units": 5, "timestamp": 30_000_000_000},
+        {"price_ticks": 120, "quantity_units": 7, "timestamp": 4 * 60_000_000_000},
     ]
-    # The decision at cursor_to=e5_0 sees ALL trades since genesis.
-    full = tape_interval(tape, INITIAL_CURSOR_EVENT_ID, "e5_0")
-    assert len(full) == 3, "decision must see the full tape history, not just the last interval"
     bars = _completed_bars_with_zero_fill(
-        list(full), bar_ns=60_000_000_000, up_to_ts=5 * 60_000_000_000
+        list(cumulative), bar_ns=60_000_000_000, up_to_ts=5 * 60_000_000_000
     )
     # Bars 0 (2 trades) and 4 (1 trade); 1-3 zero-filled.
     assert [b.trade_count for b in bars] == [2, 0, 0, 0, 1]
+    # The closed sequence spans the full history across observations.
+    assert bars[3].close == 110  # zero-filled before the bar-4 trade
+    assert bars[4].close == 120
