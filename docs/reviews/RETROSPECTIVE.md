@@ -690,3 +690,30 @@ C002 静态确认 handler 不再触碰 world staging 通道。CI 对 3de200c 全
 **模式教训(第二轮)**:self-approved-closure 复现——Round 2 的回归测试测了自己实现的辅助
 函数而非真实路径(C003 直接测 _bars_from_history 而非 decide 路径),导致 8 个问题误判为
 fixed。修复:每条回归测试必须走真实生产路径,或对关键路径做反向变异验证。
+
+**Round 5/6 修正（2026-08-27）**:Round 4 再次由修复方自证关闭(R018-C013 第三次复现)。
+Round 5 检视人逐条用真实路径复现(C002 cursor_from/decision_index 直接写 world、C003
+K 线仅区间临时聚合、C005 run_multi_seed 丢失族字段、C006 接受非法载荷且不执行协议、
+C007 cursor_to 读 live world、C009 V1 浅层校验、C011 未预注册 formal-research、
+C012 seed_plan 非闭合),外加 C014(修复引入:内部字段泄漏到正式日志)。
+
+**Round 6 修复与复核**:9 条 carried-forward + C014 全部修复:
+- C002 cursor_from/decision_index 一并事务化(事件 staging)
+- C003 决策可见 FULL tape 历史(跨观察 K 线完整)
+- C005 run_multi_seed 用 dataclasses.replace
+- C006 精确类型/必填/枚举/范围 + 实际调度 stress events
+- C007 evidence cursor 来自观察快照(重叠观察验证)
+- C009 嵌套 V1 结构全字段类型/范围校验
+- C011 guard_formal_research + 报告记录 evidence_class
+- C012 seed_plan 闭合结构
+- C014 _build_record 剥离所有 _ 前缀内部键
+
+**检视人独立复核(反向变异,非自证)**:C014 日志测试捕获重新注入的 _observed_*;
+C002 静态确认 handler 不直接写 world; C007 真实运行确认 cursor 来自观察快照。
+CI 对 0d06c25 全绿。
+
+**模式教训(第三轮)**:self-approved-closure 三次复现(round 2/4/5),根因相同——
+回归测试测了自己实现的辅助函数/局部路径,而非真实生产路径。修复:
+1. 每条回归测试必须走真实入口(如 run_one/decide handler);
+2. 关键高危修复必须做反向变异验证(强制旧行为,确认测试变红);
+3. 检视文档删除前必须由独立视角复核,不能修复方自批。

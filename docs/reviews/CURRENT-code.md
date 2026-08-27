@@ -4,7 +4,7 @@ round: 6
 date: 2026-08-27
 prior_report: "Round 5 (5 High + 4 Medium carried-forward + C014 new); CURRENT-code.md recreated by reviewer"
 scope: diff-only
-stop_condition_met: false
+stop_condition_met: true
 severity_counts: {critical: 0, high: 0, medium: 0, low: 0}
 issues:
   - id: R018-C001
