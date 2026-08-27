@@ -176,3 +176,55 @@ def test_multi_interval_goal_chain_passes_and_all_trade_hops_resolve():
     # No exception = full chain (observe->decide->order->trade + evidence
     # cursors) resolves for every decision, including later intervals.
     verify_decision_evidence_chain(events, run_family="SPONTANEOUS")
+
+
+def test_formal_log_has_no_transaction_internal_fields():
+    """R018-C014 (Round 5): transaction-internal channels (_decision_index,
+    _observed_*, _pending_agent_state) must never appear in the formal log."""
+    events = _run_events()
+    for e in events:
+        internal = [k for k in e if k.startswith("_")]
+        assert not internal, (
+            f"event {e.get('event_id')} leaks internal fields {internal} into the formal log"
+        )
+
+
+def test_overlapping_observations_chain_passes():
+    """R018-C007 (Round 5): with latency > observe_interval, a decide runs
+    after the NEXT observation has advanced the live cursor.  The evidence
+    cursors must still come from THIS decision's observation (carried on the
+    event), not the live world cursor -- otherwise the chain verifier rejects
+    a legitimate log."""
+    mm = AgentSpec(
+        agent_id="mm-0",
+        role="inventory_market_maker",
+        observe_interval_ns=100_000_000,
+        latency_ns=5_000_000,
+        is_market_maker=True,
+        half_spread_ticks=5,
+        quote_size=10_000,
+        max_inventory=100_000,
+        inventory_skew_k_bp=10_000,
+    )
+    agent = AgentSpec(
+        agent_id="agent-0",
+        role="retail",
+        observe_interval_ns=100_000_000,  # observe every 100ms
+        latency_ns=250_000_000,  # decide latency 250ms > observe interval
+        leverage_tier=10,
+        initial_bp=1000,
+        aggressiveness_bp=10_000,
+        max_order_qty=10_000,
+        goal_model_id="risk_budget_linear_v1",
+        risk_appetite_x1000=2000,
+    )
+    cfg = ExperimentConfig(
+        seed=11,
+        max_transactions=240,
+        agent_specs=[mm, agent],
+        agent_signals={"agent-0": 10_000},
+    )
+    result = run_one(cfg)
+    assert result.terminated == "COMPLETED", f"aborted: {result.abort_code}"
+    # Multiple overlapping observations must not break the chain.
+    verify_decision_evidence_chain(result.events, run_family="SPONTANEOUS")

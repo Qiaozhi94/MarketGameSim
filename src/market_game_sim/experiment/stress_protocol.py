@@ -40,16 +40,71 @@ class StressEvent:
     timestamp_ns: int
     params: dict[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        # R018-C006 (Round 5): exact type checks (int excludes bool), and
+        # params validated by the protocol's per-type spec.
+        if type(self.timestamp_ns) is not int or self.timestamp_ns < 0:
+            raise StressProtocolError(
+                f"timestamp_ns must be a non-negative int, got {self.timestamp_ns!r}"
+            )
+        if not isinstance(self.params, dict):
+            raise StressProtocolError(f"params must be a dict, got {type(self.params).__name__}")
+
 
 #: Closed set of stress event types the runner can execute (R018-C006:
 #: unknown event types must be rejected, not silently ignored).
 STRESS_EVENT_TYPES = frozenset({"MARKET_ORDER"})
 
-#: Closed params keys per event type (R018-C006: params must be closed so a
-#: typo'd or injected key cannot smuggle behavior into the protocol).
-_STRESS_EVENT_PARAMS: dict[str, frozenset[str]] = {
-    "MARKET_ORDER": frozenset({"side", "quantity_units"}),
+#: Per-type param spec: required keys, value types, enum / range (R018-C006,
+#: Round 5: precise type + required + enum/range validation).
+_STRESS_EVENT_PARAMS: dict[str, dict] = {
+    "MARKET_ORDER": {
+        "required": frozenset({"side", "quantity_units"}),
+        "types": {
+            "side": str,
+            "quantity_units": int,
+        },
+        "enums": {"side": frozenset({"BUY", "SELL"})},
+        "ranges": {"quantity_units": (1, None)},
+    },
 }
+
+
+def _validate_params(event_type: str, params: dict) -> None:
+    """Validate params against the per-type spec: closed keys, required
+    presence, exact types, enum values and numeric ranges."""
+    spec = _STRESS_EVENT_PARAMS[event_type]
+    allowed_keys = set(spec["types"])
+    unknown = set(params) - allowed_keys
+    if unknown:
+        raise StressProtocolError(
+            f"{event_type} params has unknown keys {sorted(unknown)}; "
+            f"allowed: {sorted(allowed_keys)}"
+        )
+    missing = spec["required"] - set(params)
+    if missing:
+        raise StressProtocolError(f"{event_type} params missing required keys {sorted(missing)}")
+    for key, value in params.items():
+        expected = spec["types"][key]
+        if expected is int:
+            if type(value) is not int:
+                raise StressProtocolError(
+                    f"{event_type}.params.{key} must be int, got {type(value).__name__}"
+                )
+            lo, hi = spec.get("ranges", {}).get(key, (None, None))
+            if lo is not None and value < lo:
+                raise StressProtocolError(f"{event_type}.params.{key} must be >= {lo}, got {value}")
+            if hi is not None and value > hi:
+                raise StressProtocolError(f"{event_type}.params.{key} must be <= {hi}, got {value}")
+        elif not isinstance(value, expected):
+            raise StressProtocolError(
+                f"{event_type}.params.{key} must be {expected}, got {type(value).__name__}"
+            )
+        enum = spec.get("enums", {}).get(key)
+        if enum is not None and value not in enum:
+            raise StressProtocolError(
+                f"{event_type}.params.{key} must be one of {sorted(enum)}, got {value!r}"
+            )
 
 
 @dataclass(frozen=True)
@@ -78,20 +133,12 @@ class StressProtocolV1:
                 "must not read the running result)"
             )
         for i, ev in enumerate(self.events):
-            if ev.timestamp_ns < 0:
-                raise StressProtocolError(f"events[{i}].timestamp_ns must be >= 0")
             if ev.event_type not in STRESS_EVENT_TYPES:
                 raise StressProtocolError(
                     f"events[{i}].event_type {ev.event_type!r} not in closed set "
                     f"{sorted(STRESS_EVENT_TYPES)}"
                 )
-            allowed = _STRESS_EVENT_PARAMS[ev.event_type]
-            unknown = set(ev.params) - allowed
-            if unknown:
-                raise StressProtocolError(
-                    f"events[{i}].params has unknown keys {sorted(unknown)}; "
-                    f"allowed: {sorted(allowed)}"
-                )
+            _validate_params(ev.event_type, ev.params)
 
     def to_dict(self) -> dict[str, Any]:
         return {

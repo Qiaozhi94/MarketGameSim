@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import pytest
 
+from market_game_sim.agent.goal import InformationSetV1
 from market_game_sim.evidence.evidence_guard import (
     EvidenceClassError,
     validate_decision_evidence_v1,
@@ -162,3 +163,58 @@ def test_risk_appetite_bounds_fail_closed():
     with pytest.raises(ValueError, match="int"):
         AgentPreferences(risk_appetite_x1000=True)
     AgentPreferences(risk_appetite_x1000=2000)
+
+
+def _v1_iset(**overrides) -> InformationSetV1:
+    from market_game_sim.agent.goal import BookTop, OwnAccountView
+
+    defaults = dict(
+        schema_version=1,
+        cursor_from_event_id="e1_0",
+        cursor_to_event_id="e5_0",
+        public_trades=(),
+        completed_bars=(),
+        book_top=BookTop(best_bid=1, best_ask=2, valuation_mark_half_ticks=3),
+        own_account=OwnAccountView(wallet_units=1, position_units=0, entry_notional_units=0),
+    )
+    defaults.update(overrides)
+    return InformationSetV1(**defaults)
+
+
+def test_information_set_rejects_bad_cursor_type():
+    """R018-C009 (Round 5): cursor ids must be strings."""
+    with pytest.raises(ValueError, match="cursor_from"):
+        _v1_iset(cursor_from_event_id=1)
+
+
+def test_information_set_rejects_untyped_public_trades():
+    """R018-C009 (Round 5): public_trades must be PublicTrade objects."""
+    with pytest.raises(ValueError, match="public_trades"):
+        _v1_iset(public_trades=[{"price_ticks": 1, "quantity_units": 1, "timestamp": 0}])
+
+
+def test_information_set_rejects_untyped_book_top():
+    """R018-C009 (Round 5): book_top must be BookTop or None."""
+    with pytest.raises(ValueError, match="book_top"):
+        _v1_iset(book_top={"best_bid": 1})
+
+
+def test_internal_state_rejects_negative_ewma_count():
+    """R018-C009 (Round 5): ewma_sample_count must be non-negative."""
+    from market_game_sim.agent.goal import AgentInternalStateV1
+
+    with pytest.raises(ValueError, match="ewma_sample_count"):
+        AgentInternalStateV1(
+            schema_version=1,
+            last_seen_market_event_id="e1_0",
+            ewma_value_units=None,
+            ewma_sample_count=-1,
+        )
+
+
+def test_public_trade_rejects_bool_price():
+    """R018-C009 (Round 5): PublicTrade fields must be ints (bool excluded)."""
+    from market_game_sim.agent.goal import PublicTrade
+
+    with pytest.raises(ValueError, match="price_ticks"):
+        PublicTrade(price_ticks=True, quantity_units=1, timestamp=0)

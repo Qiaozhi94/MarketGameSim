@@ -59,6 +59,16 @@ class BookTop:
     best_ask: int | None
     valuation_mark_half_ticks: int | None
 
+    def __post_init__(self) -> None:
+        # R018-C009 (Round 5): exact types; None allowed (empty side).
+        for fname, value in (
+            ("best_bid", self.best_bid),
+            ("best_ask", self.best_ask),
+            ("valuation_mark_half_ticks", self.valuation_mark_half_ticks),
+        ):
+            if value is not None and type(value) is not int:
+                raise ValueError(f"BookTop.{fname} must be int or None, got {type(value).__name__}")
+
 
 @dataclass(frozen=True)
 class OwnAccountView:
@@ -74,6 +84,16 @@ class OwnAccountView:
     position_units: int
     entry_notional_units: int
 
+    def __post_init__(self) -> None:
+        # R018-C009 (Round 5): exact types (bool excluded).
+        for fname, value in (
+            ("wallet_units", self.wallet_units),
+            ("position_units", self.position_units),
+            ("entry_notional_units", self.entry_notional_units),
+        ):
+            if type(value) is not int:
+                raise ValueError(f"OwnAccountView.{fname} must be int, got {type(value).__name__}")
+
 
 @dataclass(frozen=True)
 class PublicTrade:
@@ -82,6 +102,16 @@ class PublicTrade:
     price_ticks: int
     quantity_units: int
     timestamp: int
+
+    def __post_init__(self) -> None:
+        # R018-C009 (Round 5): exact types.
+        for fname, value in (
+            ("price_ticks", self.price_ticks),
+            ("quantity_units", self.quantity_units),
+            ("timestamp", self.timestamp),
+        ):
+            if type(value) is not int:
+                raise ValueError(f"PublicTrade.{fname} must be int, got {type(value).__name__}")
 
 
 @dataclass(frozen=True)
@@ -94,6 +124,21 @@ class CompletedBar:
     close: int
     volume: int
     trade_count: int
+
+    def __post_init__(self) -> None:
+        # R018-C009 (Round 5): exact types + non-negative volume/count.
+        for fname, value in (
+            ("open", self.open),
+            ("high", self.high),
+            ("low", self.low),
+            ("close", self.close),
+            ("volume", self.volume),
+            ("trade_count", self.trade_count),
+        ):
+            if type(value) is not int:
+                raise ValueError(f"CompletedBar.{fname} must be int, got {type(value).__name__}")
+        if self.volume < 0 or self.trade_count < 0:
+            raise ValueError("CompletedBar.volume / trade_count must be >= 0")
 
 
 @dataclass(frozen=True)
@@ -114,11 +159,36 @@ class InformationSetV1:
     own_account: OwnAccountView
 
     def __post_init__(self) -> None:
-        # R018-C009 (Round 3): the versioned closed schema rejects unknown
-        # versions fail-closed.
+        # R018-C009 (Round 3/5): versioned closed schema rejects unknown
+        # versions; cursor ids are strings; nested entries are typed objects.
         if type(self.schema_version) is not int or self.schema_version != 1:
             raise ValueError(
                 f"InformationSetV1.schema_version must be 1, got {self.schema_version!r}"
+            )
+        for fname, value in (
+            ("cursor_from_event_id", self.cursor_from_event_id),
+            ("cursor_to_event_id", self.cursor_to_event_id),
+        ):
+            if type(value) is not str:
+                raise ValueError(
+                    f"InformationSetV1.{fname} must be str, got {type(value).__name__}"
+                )
+        for fname, expected, value in (
+            ("public_trades", PublicTrade, self.public_trades),
+            ("completed_bars", CompletedBar, self.completed_bars),
+        ):
+            if not isinstance(value, Sequence) or not all(
+                isinstance(item, expected) for item in value
+            ):
+                raise ValueError(
+                    f"InformationSetV1.{fname} must be a sequence of {expected.__name__}"
+                )
+        if self.book_top is not None and not isinstance(self.book_top, BookTop):
+            raise ValueError("InformationSetV1.book_top must be BookTop or None")
+        if not isinstance(self.own_account, OwnAccountView):
+            raise ValueError(
+                f"InformationSetV1.own_account must be OwnAccountView, got "
+                f"{type(self.own_account).__name__}"
             )
 
 
@@ -139,11 +209,24 @@ class AgentInternalStateV1:
     model_private_state: Mapping[str, Any] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
-        # R018-C009 (Round 3): versioned closed schema rejects unknown versions.
+        # R018-C009 (Round 3/5): versioned closed schema rejects unknown
+        # versions; cursor str; EWMA types + non-negative count.
         if type(self.schema_version) is not int or self.schema_version != 1:
             raise ValueError(
                 f"AgentInternalStateV1.schema_version must be 1, got {self.schema_version!r}"
             )
+        if type(self.last_seen_market_event_id) is not str:
+            raise ValueError(
+                f"AgentInternalStateV1.last_seen_market_event_id must be str, got "
+                f"{type(self.last_seen_market_event_id).__name__}"
+            )
+        if self.ewma_value_units is not None and type(self.ewma_value_units) is not int:
+            raise ValueError(
+                f"AgentInternalStateV1.ewma_value_units must be int or None, got "
+                f"{type(self.ewma_value_units).__name__}"
+            )
+        if type(self.ewma_sample_count) is not int or self.ewma_sample_count < 0:
+            raise ValueError("AgentInternalStateV1.ewma_sample_count must be a non-negative int")
 
 
 @dataclass(frozen=True)

@@ -244,7 +244,7 @@ def test_manifest_rejects_missing_top_level_field():
 
 def test_manifest_records_closed_seed_plan(tmp_path):
     config = _small_config()
-    config.seed_plan = {"n_seeds": 8, "cells": ["L_low_M_low", "L_high_M_high"]}
+    config.seed_plan = {"n_seeds": 2, "seeds": [1, 7]}
     build_showcase_bundle(
         config,
         tmp_path,
@@ -255,10 +255,7 @@ def test_manifest_records_closed_seed_plan(tmp_path):
         rebuild_command=REBUILD_CMD,
     )
     manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
-    assert manifest["seed_plan"] == {
-        "n_seeds": 8,
-        "cells": ["L_low_M_low", "L_high_M_high"],
-    }
+    assert manifest["seed_plan"] == {"n_seeds": 2, "seeds": [1, 7]}
     assert manifest["seed"] == config.seed
     # seed_plan validates when present.
     validate_showcase_manifest(manifest)
@@ -314,3 +311,49 @@ def test_manifest_rejects_malformed_seed_plan():
     }
     with pytest.raises(ShowcaseManifestError, match="seed_plan"):
         validate_showcase_manifest(bad)
+
+
+def _manifest_with_seed_plan(sp) -> dict:
+    return {
+        "manifest_version": 1,
+        "artifact_root": ".",
+        "artifacts": [],
+        "code_version": "0.1.0",
+        "config_hash": "abc",
+        "seed": 1,
+        "seed_plan": sp,
+        "evidence_class": "engineering-demonstration",
+        "gate": "R1",
+    }
+
+
+def test_seed_plan_rejects_unknown_keys():
+    """R018-C012 (Round 5): seed_plan keys must be exactly {n_seeds, seeds}."""
+    with pytest.raises(ShowcaseManifestError, match="seed_plan"):
+        validate_showcase_manifest(
+            _manifest_with_seed_plan({"n_seeds": 1, "seeds": [1], "cells": []})
+        )
+
+
+def test_seed_plan_rejects_nonpositive_n_seeds():
+    """R018-C012 (Round 5): n_seeds must be positive."""
+    with pytest.raises(ShowcaseManifestError, match="seed_plan"):
+        validate_showcase_manifest(_manifest_with_seed_plan({"n_seeds": 0, "seeds": []}))
+
+
+def test_seed_plan_rejects_seed_count_mismatch():
+    """R018-C012 (Round 5): seeds length must equal n_seeds."""
+    with pytest.raises(ShowcaseManifestError, match="seed_plan"):
+        validate_showcase_manifest(_manifest_with_seed_plan({"n_seeds": 2, "seeds": [1]}))
+
+
+def test_seed_plan_rejects_missing_seeds():
+    """R018-C012 (Round 5): seeds list is required."""
+    with pytest.raises(ShowcaseManifestError, match="seed_plan"):
+        validate_showcase_manifest(_manifest_with_seed_plan({"n_seeds": 1}))
+
+
+def test_seed_plan_rejects_non_int_seed():
+    """R018-C012 (Round 5): each seed must be an int (bool excluded)."""
+    with pytest.raises(ShowcaseManifestError, match="seed_plan"):
+        validate_showcase_manifest(_manifest_with_seed_plan({"n_seeds": 1, "seeds": [True]}))

@@ -17,7 +17,7 @@ from market_game_sim.experiment.runner import run_paired
 
 
 def _cfg(run_family: str | None) -> ExperimentConfig:
-    return ExperimentConfig(
+    cfg = ExperimentConfig(
         seed=1,
         max_transactions=60,
         run_family=run_family,
@@ -31,6 +31,11 @@ def _cfg(run_family: str | None) -> ExperimentConfig:
             )
         ],
     )
+    if run_family is not None:
+        # Declared families require seed_plan (C005: the gate now actually
+        # enforces the matrix, so valid configs must carry it).
+        cfg.seed_plan = {"n_seeds": 4}
+    return cfg
 
 
 def test_run_paired_rejects_cross_family():
@@ -82,3 +87,40 @@ def test_run_paired_accepts_legacy_pair():
     treatment = _cfg(None)
     results = run_paired(control, treatment, seeds=[1, 2, 3])
     assert results
+
+
+def test_unpreregistered_formal_research_rejected():
+    """R018-C011 (Round 5): formal-research requires a frozen preregistration
+    -- an unpreregistered SPONTANEOUS pair must not emit a formal conclusion."""
+    control = _cfg("SPONTANEOUS")
+    control.seed_plan = {"n_seeds": 4}
+    control.l_level = "low"
+    control.m_level = "high"
+    treatment = _cfg("SPONTANEOUS")
+    treatment.seed_plan = {"n_seeds": 4}
+    treatment.l_level = "low"
+    treatment.m_level = "high"
+    with pytest.raises(EvidenceClassError, match="preregistration"):
+        run_paired(control, treatment, seeds=[1, 2, 3], evidence_class="formal-research")
+
+
+def test_preregistered_formal_research_accepted_and_recorded():
+    """R018-C011 (Round 5): a preregistered SPONTANEOUS pair may emit
+    formal-research, and the report records the evidence_class."""
+    control = _cfg("SPONTANEOUS")
+    control.seed_plan = {"n_seeds": 4}
+    control.l_level = "low"
+    control.m_level = "high"
+    treatment = _cfg("SPONTANEOUS")
+    treatment.seed_plan = {"n_seeds": 4}
+    treatment.l_level = "low"
+    treatment.m_level = "high"
+    _, _, comparison = run_paired(
+        control,
+        treatment,
+        seeds=[1, 2, 3],
+        evidence_class="formal-research",
+        preregistered=True,
+    )
+    assert comparison["evidence_class"] == "formal-research"
+    assert comparison["run_family"] == "SPONTANEOUS"
