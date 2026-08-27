@@ -426,6 +426,54 @@ def _bars_from_history(trades: list[dict], bar_ns: int) -> list:
     return out
 
 
+def _completed_bars_with_zero_fill(
+    trades: list[dict], bar_ns: int, up_to_ts: int
+) -> list[CompletedBar]:
+    """Build the completed-bar sequence up to (but excluding) the current
+    in-progress bar, padding any empty bar with the previous close + volume 0
+    (代理策略 §3.1: 零成交 K 线继承上一根 close 且 volume=0).
+
+    R018-C003 (Round 3): the v2 InformationSetV1.completed_bars must carry
+    the full closed sequence including zero-fill bars -- a sparse
+    trades-only aggregation would silently drop empty bars and mis-size
+    momentum/herding lookbacks.
+    """
+    if not trades:
+        return []
+    by_bar: dict[int, list[dict]] = {}
+    for tr in trades:
+        k = tr.get("timestamp", 0) // bar_ns
+        by_bar.setdefault(k, []).append(tr)
+    first_bar = min(by_bar)
+    last_completed = up_to_ts // bar_ns - 1 if up_to_ts // bar_ns > first_bar else first_bar
+    out: list[CompletedBar] = []
+    prev_close: int | None = None
+    for k in range(first_bar, last_completed + 1):
+        ts = by_bar.get(k)
+        if ts:
+            prices = [t.get("price_ticks", 0) for t in ts]
+            bar = CompletedBar(
+                open=prices[0],
+                high=max(prices),
+                low=min(prices),
+                close=prices[-1],
+                volume=sum(t.get("quantity_units", 0) for t in ts),
+                trade_count=len(ts),
+            )
+            prev_close = bar.close
+        else:
+            bar = CompletedBar(
+                open=prev_close or 0,
+                high=prev_close or 0,
+                low=prev_close or 0,
+                close=prev_close or 0,
+                volume=0,
+                trade_count=0,
+            )
+        out.append(bar)
+    return out
+
+
 def _cancel_stale_orders(
     spec: AgentSpec,
     world: dict,
@@ -524,22 +572,25 @@ def handle_agent_decide(
             cursors = world.get("agent_cursors", {})
             cursor_to = cursors.get(agent_id, "e1_0")
             ewma_state = world.get("agent_ewma", {}).get(agent_id, {})
-            # R018-C003: feed the goal model the REAL observed market data --
-            # the public trades this agent consumed since its last cursor plus
-            # the completed bars aggregated from them (empty interval -> empty
-            # inputs, matching 代理策略 §3.1 cold-start / zero-fill bars).
-            public_trades = tuple(iset.get("public_trades", ()))
+            # R018-C003 (Round 3): the public trades come from the OBSERVATION
+            # snapshot the observe handler attached to this event -- the
+            # rebuilt iset here has no public_trades.  Completed bars are
+            # aggregated from them WITH zero-fill padding (代理策略 §3.1).
+            public_trades = tuple(event.get("_observed_public_trades", ()))
             completed_bars = tuple(
-                CompletedBar(
-                    open=b.open,
-                    high=b.high,
-                    low=b.low,
-                    close=b.close,
-                    volume=b.volume,
-                    trade_count=b.trade_count,
+                _completed_bars_with_zero_fill(
+                    list(public_trades),
+                    bar_ns=60_000_000_000,
+                    up_to_ts=event["timestamp"],
                 )
-                for b in _bars_from_history(list(public_trades), bar_ns=60_000_000_000)
             )
+            # R018-C007 (Round 3): the evidence cursor_from must be the
+            # observation's own lower boundary, not a hardcoded e1_0 -- the
+            # chain verifier requires evidence cursors == observation cursors,
+            # and multi-interval runs advance past e1_0.
+            cursor_from = event.get("_observed_cursor_from") or world.get(
+                "agent_cursor_from", {}
+            ).get(agent_id, "e1_0")
             intent, internal_state, evidence = _belief_intent_v2(
                 spec,
                 iset,
@@ -550,7 +601,7 @@ def handle_agent_decide(
                 world.get("maint_bp", 500),
                 world.get("maker_bps", 0),
                 world.get("taker_bps", 0),
-                cursor_from_event_id="e1_0",
+                cursor_from_event_id=cursor_from,
                 cursor_to_event_id=cursor_to,
                 ewma_value=ewma_state.get("value"),
                 ewma_count=ewma_state.get("count", 0),
@@ -673,10 +724,12 @@ def handle_agent_observe(
     # R018-C002: the cursor / EWMA advance must NOT mutate the live world
     # state inside the transaction -- if the transaction later aborts
     # (fail-stop, §1.5) the live cursors would have advanced past events that
-    # were never committed, losing them forever.  Stage the update in
-    # ``world["_pending_agent_state"]``; the kernel applies it to the live
-    # state only after the transaction commits (runner.py commit projection).
-    pending = world.setdefault("_pending_agent_state", {})
+    # were never committed, losing them forever.  Stage the update ON THE
+    # EVENT (r0) so it commits with the transaction and is dropped with the
+    # buffer on abort; the kernel applies it to the live state only after
+    # commit.  (Round 3: staging in the shared world dict leaked on abort --
+    # a later successful transaction would apply a failed observation's
+    # cursor.  Staging on the event ties the update to this transaction.)
     ewma_state = world.get("agent_ewma", {}).get(agent_id, {"value": None, "count": 0})
     new_value, new_count = update_ewma(
         ewma_state["value"],
@@ -684,7 +737,8 @@ def handle_agent_observe(
         interval_fills,
         spec.ewma_half_life_trades,
     )
-    pending[agent_id] = {
+    event["_pending_agent_state"] = {
+        "agent_id": agent_id,
         "cursor": cursor_to,
         "ewma_value": new_value,
         "ewma_count": new_count,
@@ -697,6 +751,12 @@ def handle_agent_observe(
 
     decision_index = world.get("agent_decision_index", {}).get(agent_id, 0)
     world.setdefault("agent_decision_index", {})[agent_id] = decision_index + 1
+    # R018-C003 (Round 3): hand the decision the OBSERVATION's snapshot --
+    # the public trades this agent consumed since its last cursor plus the
+    # cursor boundaries.  handle_agent_decide rebuilds its own iset via
+    # _build_information_set (no public_trades), so without this the goal
+    # model could never see the real tape (Round 2 wired the field but the
+    # value was always empty).
     decide = {
         "event_type": "AGENT_DECIDE",
         "timestamp": event["timestamp"] + spec.latency_ns,
@@ -706,6 +766,9 @@ def handle_agent_observe(
         "intents": [],
         "internal_state": {},
         "_decision_index": decision_index,
+        "_observed_public_trades": list(interval_fills),
+        "_observed_cursor_from": cursor_from,
+        "_observed_cursor_to": cursor_to,
     }
     kernel.enqueue(decide)
     event["accepted"] = True

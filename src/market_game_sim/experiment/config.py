@@ -57,6 +57,14 @@ class ExperimentConfig:
     # enforces the allow/deny matrix once a family is explicitly declared
     # (旧配置按 design.md §7 显式迁移为 BENCHMARK，不自动猜测).
     run_family: str | None = None
+    # R018-C005 (Round 3): the run-family matrix's remaining fields are
+    # FIRST-CLASS config attributes (not test-injected dynamic properties), so
+    # a declared family's required fields can be constructed normally and the
+    # validator can reject unknown fields against the closed set.
+    seed_plan: dict | None = None
+    l_level: str | None = None
+    m_level: str | None = None
+    stress_protocol: object | None = None
 
 
 def compute_config_hash(config: ExperimentConfig) -> str:

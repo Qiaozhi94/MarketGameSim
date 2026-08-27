@@ -35,11 +35,14 @@ def _base_config(**overrides) -> ExperimentConfig:
 
 
 def _spontaneous_config() -> ExperimentConfig:
-    cfg = _base_config(run_family="SPONTANEOUS")
-    cfg.seed_plan = {"n_seeds": 4}
-    cfg.l_level = "low"
-    cfg.m_level = "high"
-    return cfg
+    # R018-C005 (Round 3): matrix fields are FIRST-CLASS constructor args,
+    # not test-injected dynamic properties.
+    return _base_config(
+        run_family="SPONTANEOUS",
+        seed_plan={"n_seeds": 4},
+        l_level="low",
+        m_level="high",
+    )
 
 
 def test_run_one_rejects_spontaneous_with_injection_fields():
@@ -62,12 +65,17 @@ def test_run_one_accepts_valid_spontaneous():
 
 
 def test_run_one_rejects_stress_without_protocol():
-    cfg = _base_config(run_family="STRESS")
-    cfg.seed_plan = {"n_seeds": 4}
-    cfg.l_level = "low"
-    cfg.m_level = "high"
+    cfg = _base_config(run_family="STRESS", seed_plan={"n_seeds": 4}, l_level="low", m_level="high")
     with pytest.raises(RunFamilyError, match="stress_protocol"):
         run_one(cfg)
+
+
+def test_unknown_field_rejected_by_constructor():
+    """R018-C005 (Round 3): a config carrying a field outside the frozen
+    matrix must fail closed at construction -- the dataclass constructor
+    rejects unknown kwargs rather than silently carrying an injection."""
+    with pytest.raises(TypeError, match="unknown_field"):
+        ExperimentConfig(seed=1, max_transactions=10, unknown_field=1)
 
 
 def test_legacy_config_without_family_still_runs():

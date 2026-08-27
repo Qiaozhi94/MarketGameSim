@@ -521,7 +521,11 @@
       },
       "seed_plan": {
         "type": "object",
-        "optional": true
+        "item_fields": {
+          "n_seeds": {
+            "type": "integer"
+          }
+        }
       },
       "evidence_class": {
         "type": "string",

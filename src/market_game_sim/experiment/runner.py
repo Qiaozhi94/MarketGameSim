@@ -161,6 +161,7 @@ def run_paired(
     param_range_desc: str = "",
     n_resamples: int = 10_000,
     bootstrap_seed: int = 0,
+    evidence_class: str | None = None,
 ) -> tuple[list[RunResult], list[RunResult], dict]:
     """Run control and treatment groups with the same seeds (方法论 §10.5
     single-dimension paired control).
@@ -183,24 +184,29 @@ def run_paired(
     """
     # R018-C011 (IR-502): the aggregation entrypoint itself enforces the
     # evidence permission -- a paired comparison may only aggregate runs of
-    # the same run family, and each side's evidence class must be authorized
-    # for that family.  A cross-family pair is rejected here rather than
-    # producing a report the caller could not legitimately aggregate.
+    # the same run family, and the report's actual evidence_class must be
+    # authorized for that family (no hardcoded downgrade).  ``None`` run
+    # family (legacy) is its own family: a legacy/legacy pair is fine, a
+    # legacy/declared mix is rejected (Round 3: the previous guard mixed
+    # None and a declared family and hardcoded engineering-demonstration).
     from market_game_sim.evidence.evidence_guard import (
-        EvidenceClass,
         EvidenceClassError,
         guard_evidence_class,
     )
 
-    families = {c.run_family for c in (control, treatment) if c.run_family is not None}
+    families = {c.run_family for c in (control, treatment)}
     if len(families) > 1:
+        label = sorted(f or "legacy" for f in families)
         raise EvidenceClassError(
-            f"cross-family aggregation is forbidden (IR-502): paired run mixes "
-            f"families {sorted(families)}"
+            f"cross-family aggregation is forbidden (IR-502): paired run mixes families {label}"
         )
-    for cfg in (control, treatment):
-        if cfg.run_family is not None:
-            guard_evidence_class(cfg.run_family, EvidenceClass.ENGINEERING_DEMONSTRATION.value)
+    family = next(iter(families))
+    if family is not None:
+        if evidence_class is None:
+            raise EvidenceClassError(
+                f"run_paired: evidence_class must be provided for declared family {family!r}"
+            )
+        guard_evidence_class(family, evidence_class)
     parity_err = check_paired_parity(control, treatment, treatment_field)
     if parity_err:
         raise ValueError(f"run_paired: control/treatment parity violated: {parity_err}")

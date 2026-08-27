@@ -168,7 +168,10 @@ def validate_decision_evidence_v1(ev: dict | None) -> None:
 
     for fname, expected in _DECISION_EVIDENCE_FIELDS.items():
         value = ev[fname]
-        if not isinstance(value, expected):
+        # R018-C009 (Round 3): isinstance(True, int) is True, so integer
+        # fields silently accepted bools.  Use an exact type check for int.
+        ok = type(value) is int if expected is int else isinstance(value, expected)
+        if not ok:
             raise EvidenceClassError(
                 f"decision_evidence.{fname} must be {expected}, got {type(value).__name__}"
             )

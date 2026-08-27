@@ -316,17 +316,23 @@ class EventKernel:
                     world["last_market_data_event_id"] = r["event_id"]
 
         # R018-C002: apply the observe transaction's staged cursor / EWMA
-        # advance now that the transaction has committed (the handler staged
-        # it in ``_pending_agent_state`` precisely so a fail-stop abort drops
-        # it instead of advancing the live cursors past uncommitted events).
-        pending = world.get("_pending_agent_state")
+        # advance now that the transaction has committed.  The handler staged
+        # it on r0 (``event["_pending_agent_state"]``) so it commits with THIS
+        # transaction and is dropped with the buffer on abort -- Round 3 found
+        # the previous shared-world-dict staging leaked a failed observation's
+        # cursor into a later successful transaction.
+        r0 = buffer[0]
+        pending = r0.get("_pending_agent_state")
         if pending:
             cursors = world.setdefault("agent_cursors", {})
             ewma = world.setdefault("agent_ewma", {})
-            for agent_id, state in pending.items():
-                cursors[agent_id] = state["cursor"]
-                ewma[agent_id] = {"value": state["ewma_value"], "count": state["ewma_count"]}
-            world["_pending_agent_state"] = {}
+            cursors[pending["agent_id"]] = pending["cursor"]
+            ewma[pending["agent_id"]] = {
+                "value": pending["ewma_value"],
+                "count": pending["ewma_count"],
+            }
+        # The staged state is a transaction-internal channel, not a log field.
+        r0.pop("_pending_agent_state", None)
 
     # ------------------------------------------------------------------ #
     # Record construction

@@ -16,7 +16,11 @@ from decimal import Decimal
 from market_game_sim.agent.factors import herding as herding_factor
 from market_game_sim.agent.factors import momentum as momentum_factor
 from market_game_sim.agent.factors import reversion as reversion_factor
-from market_game_sim.agent.handler import _bars_from_history, _belief_weights
+from market_game_sim.agent.handler import (
+    _bars_from_history,
+    _belief_weights,
+    _completed_bars_with_zero_fill,
+)
 from market_game_sim.agent.scheduler import AgentSpec
 from market_game_sim.agent.tape import ewma_alpha, tape_interval, update_ewma
 from market_game_sim.bench.population import build_population
@@ -231,3 +235,31 @@ def test_information_set_contains_global_trades_and_completed_zero_fill_bars():
     assert len(bars) == 1
     assert bars[0].volume == 15
     assert bars[0].close == 110
+
+
+def test_completed_bars_with_zero_fill_pads_empty_bars():
+    """R018-C003 (Round 3): the v2 completed-bar sequence must include
+    zero-fill bars (previous close, volume 0) for empty intervals -- a sparse
+    aggregation silently drops them and mis-sizes momentum/herding lookbacks.
+    Trades at bar 0 (price 100) and bar 3 (price 110); bars 1-2 are empty.
+    up_to_ts is the observation time, so bar 4 (in progress) is excluded."""
+    trades = [
+        {"event_id": "e2_1", "price_ticks": 100, "quantity_units": 10, "timestamp": 0},
+        {
+            "event_id": "e5_0",
+            "price_ticks": 110,
+            "quantity_units": 5,
+            "timestamp": 3 * 60_000_000_000,
+        },
+    ]
+    bars = _completed_bars_with_zero_fill(
+        list(trades), bar_ns=60_000_000_000, up_to_ts=4 * 60_000_000_000
+    )
+    # Bars 0..3 (bar 4 is the in-progress one, excluded).
+    assert [b.trade_count for b in bars] == [1, 0, 0, 1]
+    assert [b.volume for b in bars] == [10, 0, 0, 5]
+    # Zero-fill bars inherit the previous close.
+    assert bars[1].close == 100
+    assert bars[2].close == 100
+    assert bars[3].close == 110
+    assert bars[3].open == 110
