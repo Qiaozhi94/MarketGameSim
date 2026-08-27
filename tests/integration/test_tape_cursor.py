@@ -492,3 +492,50 @@ def test_failure_after_staging_does_not_leak_into_next_transaction():
     assert k2.terminated == "COMPLETED"
     # Still at e1_0: the failed e5_0 stage did not leak into this run.
     assert world["agent_cursors"].get("agent-0", "e1_0") == "e1_0"
+
+
+def test_decide_failure_aborts_and_no_interval_is_lost_to_retry():
+    """R018-C002 (Round 7): observe succeeds (cursor advances) but decide
+    fails -> the run ABORTS (fail-stop, §1.5).  Under design.md §5 the
+    observe->decide chain's atomicity is preserved by fail-stop: no
+    subsequent observation can 'miss' the consumed interval because the run
+    is not resumable.  This locks the fail-stop boundary so a future change
+    that silently swallows decide errors cannot reintroduce interval loss."""
+    agent = _belief_spec("agent-0")
+    accounts = {"agent-0": Account(agent_id="agent-0", wallet_units=10**14)}
+    world = _world({"agent-0": agent}, accounts)
+    world["last_market_data_event_id"] = "e5_0"
+
+    def fail_on_decide(event, w, kernel):
+        et = event["event_type"]
+        if et == "ORDER_ARRIVAL":
+            return match_order(event, w, kernel)
+        if et == "AGENT_OBSERVE":
+            return handle_agent_observe(event, w, kernel)
+        if et == "AGENT_DECIDE":
+            raise RuntimeError("simulated decide failure")
+        return []
+
+    k = EventKernel(run_id="decide-fail")
+    k.bootstrap(
+        build_account_payload_from_accounts(accounts, mult=1000),
+        build_book_payload(last_ticks=None),
+    )
+    k.enqueue(
+        {
+            "event_type": "AGENT_OBSERVE",
+            "timestamp": 0,
+            "agent_id": "agent-0",
+            "observed_at": 0,
+            "market_data_event_id": "e5_0",
+            "information_set": {},
+        }
+    )
+    k.run(fail_on_decide, world, max_transactions=10)
+    assert k.terminated == "ABORTED", (
+        "a decide failure must fail-stop the run (no silent interval loss)"
+    )
+    # The committed observe advanced the cursor (correct -- observe succeeded);
+    # but the run is aborted, so no later observation can re-consume or miss
+    # the interval (design.md §1.5: no resume).
+    assert world["agent_cursors"].get("agent-0") == "e5_0"

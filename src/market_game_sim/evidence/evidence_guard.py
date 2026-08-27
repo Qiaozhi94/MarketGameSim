@@ -71,15 +71,22 @@ def guard_evidence_class(family: str, evidence_class: str) -> EvidenceClass:
     return cls
 
 
-def guard_formal_research(family: str, evidence_class: str, preregistered: bool) -> None:
-    """Guard the formal-research gate: only a preregistered SPONTANEOUS run
-    may claim ``formal-research`` (FR-026 / docs/features/README.md:
-    ``formal-research`` 是唯一能建立研究声明的类别)."""
+def guard_formal_research(family: str, evidence_class: str, preregistration: str | None) -> None:
+    """Guard the formal-research gate: only a SPONTANEOUS run carrying a
+    frozen preregistration REFERENCE (id / digest, not a bare bool) may claim
+    ``formal-research`` (FR-026 / docs/features/README.md: ``formal-research``
+    是唯一能建立研究声明的类别).  A bare ``True`` is rejected -- the caller
+    must bind an actual frozen preregistration so the conclusion is
+    traceable (R018-C011, Round 7)."""
     cls = guard_evidence_class(family, evidence_class)
-    if cls == EvidenceClass.FORMAL_RESEARCH and not preregistered:
+    # R018-C011 (Round 7): only a non-empty string reference is a valid
+    # preregistration -- a bare True / non-str passes ``not`` but is not a
+    # traceable frozen-protocol reference.
+    valid = isinstance(preregistration, str) and bool(preregistration)
+    if cls == EvidenceClass.FORMAL_RESEARCH and not valid:
         raise EvidenceClassError(
             "formal-research evidence requires a frozen preregistration "
-            "(FR-026); a run without one may only produce "
+            "reference (FR-026); a run without one may only produce "
             "engineering-demonstration / experiment-preview"
         )
 

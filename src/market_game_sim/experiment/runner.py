@@ -162,7 +162,7 @@ def run_paired(
     n_resamples: int = 10_000,
     bootstrap_seed: int = 0,
     evidence_class: str | None = None,
-    preregistered: bool = False,
+    preregistration: str | None = None,
 ) -> tuple[list[RunResult], list[RunResult], dict]:
     """Run control and treatment groups with the same seeds (方法论 §10.5
     single-dimension paired control).
@@ -209,13 +209,26 @@ def run_paired(
                 f"run_paired: evidence_class must be provided for declared family {family!r}"
             )
         guard_evidence_class(family, evidence_class)
-        # R018-C011 (Round 5): formal-research additionally requires a frozen
-        # preregistration -- previously only the class was checked, so an
-        # unpreregistered run could emit a formal-research conclusion.
-        guard_formal_research(family, evidence_class, preregistered=preregistered)
+        # R018-C011 (Round 5/7): formal-research additionally requires a frozen
+        # preregistration REFERENCE (id/digest, not a bare bool) -- previously
+        # a caller-passed True was enough, untraceable to any frozen protocol.
+        guard_formal_research(family, evidence_class, preregistration=preregistration)
     parity_err = check_paired_parity(control, treatment, treatment_field)
     if parity_err:
         raise ValueError(f"run_paired: control/treatment parity violated: {parity_err}")
+
+    # R018-C005 (Round 7): a declared seed plan must match the seeds actually
+    # run -- declaring n_seeds=4 / seeds=[11,12,13,14] but only running [1]
+    # must fail, not silently produce an under-powered report.
+    for cfg in (control, treatment):
+        plan = cfg.seed_plan
+        if plan and isinstance(plan, dict) and plan.get("seeds") is not None:
+            planned = plan.get("seeds")
+            if set(seeds) != set(planned):
+                raise ValueError(
+                    f"run_paired: seeds {sorted(seeds)} do not match the declared "
+                    f"seed plan {sorted(planned)} (R018-C005)"
+                )
 
     c_results = run_multi_seed(control, seeds)
     t_results = run_multi_seed(treatment, seeds)
@@ -242,6 +255,9 @@ def run_paired(
         # traced back to the run-family permission that allowed it.
         "evidence_class": evidence_class,
         "run_family": family,
+        # R018-C011 (Round 7): the frozen preregistration reference this
+        # formal conclusion is bound to (null for non-formal evidence).
+        "preregistration": preregistration,
         # E3 (0.1.2 退出条件): traces this conditional_conclusion back to the
         # exact ExperimentConfig that produced it -- without this, "预注册
         # 实验可从配置哈希追溯到条件性结论" has no machine-checkable link.
@@ -366,15 +382,27 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
         from market_game_sim.experiment.run_family import (
             from_experiment_config,
             validate_run_family,
+            validate_seed_plan,
         )
 
         validate_run_family(from_experiment_config(config))
+        # R018-C012 (Round 7): the seed plan is validated by the same shared
+        # validator the manifest uses -- a malformed plan must fail here, not
+        # surface later as an inconsistent report.
+        if config.seed_plan is not None:
+            validate_seed_plan(config.seed_plan)
 
     accounts: dict[str, Account] = {}
     for spec in config.agent_specs:
         accounts[spec.agent_id] = Account(agent_id=spec.agent_id, wallet_units=10**14)
     for agent_id, wallet_units in config.extra_accounts.items():
         accounts[agent_id] = Account(agent_id=agent_id, wallet_units=wallet_units)
+    # R018-C006 (Round 7): a declared stress protocol gets a synthetic shock
+    # account so its EXOGENOUS_STRESS orders have a counterparty to fill
+    # against (matching's _get_account requires the agent to exist).
+    if config.stress_protocol is not None:
+        shock_id = f"stress-{config.stress_protocol.protocol_id}"
+        accounts.setdefault(shock_id, Account(agent_id=shock_id, wallet_units=10**14))
     for agent_id, state in config.extra_positions.items():
         accounts[agent_id] = Account(
             agent_id=agent_id,

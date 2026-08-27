@@ -317,6 +317,12 @@ class EventKernel:
             if "cursor_from" in pending_state:
                 cf = world.setdefault("agent_cursor_from", {})
                 cf[pending_state["agent_id"]] = pending_state["cursor_from"]
+            if "agent_trades" in pending_state:
+                # R018-C003 (Round 7): commit the agent's accumulated trade
+                # history so completed-bar aggregation spans all observations.
+                world.setdefault("agent_bars", {}).setdefault(pending_state["agent_id"], []).extend(
+                    pending_state["agent_trades"]
+                )
 
         # 0.1.5 T206/T207: maintain the global public tape + the latest market
         # data boundary.  The kernel is the only place that knows each record's

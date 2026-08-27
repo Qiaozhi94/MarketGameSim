@@ -640,7 +640,8 @@
           "value_type": "enum",
           "enum": [
             "AGENT",
-            "LIQUIDATION"
+            "LIQUIDATION",
+            "EXOGENOUS_STRESS"
           ],
           "nullable": false,
           "required": "always",

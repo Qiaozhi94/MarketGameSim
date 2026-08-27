@@ -227,6 +227,13 @@ class AgentInternalStateV1:
             )
         if type(self.ewma_sample_count) is not int or self.ewma_sample_count < 0:
             raise ValueError("AgentInternalStateV1.ewma_sample_count must be a non-negative int")
+        # R018-C009 (Round 7): model_private_state must be a Mapping, not a
+        # list / scalar (a list would break keyed access downstream).
+        if not isinstance(self.model_private_state, Mapping):
+            raise ValueError(
+                f"AgentInternalStateV1.model_private_state must be a Mapping, got "
+                f"{type(self.model_private_state).__name__}"
+            )
 
 
 @dataclass(frozen=True)

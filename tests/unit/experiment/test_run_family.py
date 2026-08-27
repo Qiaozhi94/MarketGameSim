@@ -152,3 +152,26 @@ def test_error_message_includes_field_path_and_reason():
     assert "extra_events" in msg
     assert "SPONTANEOUS" in msg
     assert "injected" in msg.lower() or "forbidden" in msg.lower()
+
+
+def test_validate_seed_plan_rejects_malformed():
+    """R018-C012 (Round 7): the shared seed-plan validator rejects unknown
+    keys, non-positive n_seeds, missing/invalid seeds, and seed-count
+    mismatch -- used by run_one, run_paired and the manifest."""
+    from market_game_sim.experiment.run_family import validate_seed_plan
+
+    with pytest.raises(RunFamilyError, match="seed_plan"):
+        validate_seed_plan({"n_seeds": 1})
+    with pytest.raises(RunFamilyError, match="seed_plan"):
+        validate_seed_plan({"n_seeds": 0, "seeds": []})
+    with pytest.raises(RunFamilyError, match="seed_plan"):
+        validate_seed_plan({"n_seeds": 1, "seeds": [1], "extra": 1})
+    with pytest.raises(RunFamilyError, match="seed_plan"):
+        validate_seed_plan({"n_seeds": 2, "seeds": [1]})
+    with pytest.raises(RunFamilyError, match="seed_plan"):
+        validate_seed_plan({"n_seeds": 1, "seeds": [True]})
+    # A valid plan normalises and returns.
+    assert validate_seed_plan({"n_seeds": 2, "seeds": [1, 2]}) == {
+        "n_seeds": 2,
+        "seeds": [1, 2],
+    }

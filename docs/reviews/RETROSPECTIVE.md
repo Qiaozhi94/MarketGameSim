@@ -717,3 +717,23 @@ CI 对 0d06c25 全绿。
 1. 每条回归测试必须走真实入口(如 run_one/decide handler);
 2. 关键高危修复必须做反向变异验证(强制旧行为,确认测试变红);
 3. 检视文档删除前必须由独立视角复核,不能修复方自批。
+
+**Round 7/8 修正（2026-08-27）**:Round 6 再次自证关闭(R018-C013 第四次复现)。
+Round 7 检视人逐条用真实路径复现(C002 跨事件原子边界、C003 增量/全局 bars 混用、
+C005 seed plan 不一致、C006 EXOGENOUS_STRESS 违反 Schema 致 TI-3、C009 model_private_state、
+C011 裸布尔预注册、C012 seed_plan Schema 漂移)。
+
+**Round 8 修复与复核**:
+- C006(最严重,fix-regression):origin 枚举扩展 EXOGENOUS_STRESS(TR-502 明确要求,T201 冻结遗漏),
+  stress 合成账户;STRESS run 从 TI-3 变为合法 COMPLETED + 实际成交
+- C003:public_trades 恢复增量区间(代理策略 §1),completed_bars 从持久 world[agent_bars] 累积聚合
+- C002:架构判定——decide 失败 → fail-stop ABORTED(§1.5 禁止续跑)⇒ 无区间丢失;补边界测试锁定
+- C005:run_paired 校验 seeds 与 seed_plan 一致;共享 validate_seed_plan
+- C009/C011/C012:model_private_state Mapping、预注册非空 str 引用、seed_plan Schema 统一
+
+**模式教训(第四轮,self-approved-closure)**:四次复现,根因始终是"测试验证了实现断言而非
+需求不变量"。本轮新增 C006 fix-regression(修复引入了非法 Schema 值)——证明"一个 744 行
+大 commit 同时改多处"会掩盖修复副作用。持久改进:
+1. 关键修复必须反向变异验证(强制旧行为,确认测试变红)
+2. 大 commit 拆分(一问题一提交)
+3. 检视文档关闭权只在 reviewer,CURRENT 报告默认 ignored
