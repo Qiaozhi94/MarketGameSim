@@ -38,10 +38,14 @@ from market_game_sim.experiment.runner import RunResult, run_one
 # different participant mix would need re-tuning, not just re-use.
 _CALIBRATED_VICTIM_KW = {
     "count": 20,
-    "wallet_human": 5_000,
-    "position_human": 500,
+    # R018-C003 snapshot semantics reduce the live-book feedback that the
+    # original 1x notional calibration relied on.  Scale wallet and position
+    # together (same 10x leverage / breach thresholds) so the first
+    # liquidation has enough depth impact to trigger the next victim.
+    "wallet_human": 25_000,
+    "position_human": 2_500,
     "entry_price_human": 100,
-    "stagger_position_step": 5,
+    "stagger_position_step": 25,
 }
 _CALIBRATED_SHOCK_KW = {
     "side": "SELL",
