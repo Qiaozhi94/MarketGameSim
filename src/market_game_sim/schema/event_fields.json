@@ -726,7 +726,7 @@
               "then": "non_null"
             }
           ],
-          "note": "origin=AGENT 时指向 AGENT_DECIDE；origin=LIQUIDATION 时指向 MARGIN_CALL（chain_depth 的唯一来源）"
+          "note": "origin=AGENT 或 EXOGENOUS_STRESS 时指向 AGENT_DECIDE；origin=LIQUIDATION 时指向 MARGIN_CALL（chain_depth 的唯一来源）"
         },
         "submitted_at": {
           "value_type": "int",

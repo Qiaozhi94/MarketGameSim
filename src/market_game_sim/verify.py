@@ -286,7 +286,7 @@ def _log_key(e: dict) -> tuple:
 
 
 def _check_kpi006(events: list[dict]) -> str | None:
-    """Verify KPI-006: every AGENT/LIQUIDATION order links to a valid,
+    """Verify KPI-006: every AGENT/EXOGENOUS_STRESS/LIQUIDATION order links to a valid,
     causally-ordered decision chain (event-schema.md §5.1/§5.2).
 
     ``origin=AGENT``: ORDER_ARRIVAL.decision_event_id -> AGENT_DECIDE ->
@@ -309,6 +309,9 @@ def _check_kpi006(events: list[dict]) -> str | None:
     (dangling or duplicate-matched references both fail) with a strictly
     smaller log_key (timestamp, transaction_seq, record_index) than the
     referencing event, per SC-006.
+
+    ``origin=EXOGENOUS_STRESS`` follows the AGENT_DECIDE -> AGENT_OBSERVE
+    shape, and the decision must explicitly carry matching provenance.
     """
     by_id: dict[str, dict] = {}
     dup_ids: set[str] = set()
@@ -341,7 +344,7 @@ def _check_kpi006(events: list[dict]) -> str | None:
         dec = e.get("decision_event_id", "")
         oid = e.get("order_id")
 
-        if origin == "AGENT":
+        if origin in {"AGENT", "EXOGENOUS_STRESS"}:
             if not decision_ids:
                 return "AGENT orders exist but no AGENT_DECIDE in log"
             if dec not in decision_ids:
@@ -357,6 +360,21 @@ def _check_kpi006(events: list[dict]) -> str | None:
                 return f"AGENT_DECIDE {dec}: observation_event_id {err}"
             if _log_key(observe) >= _log_key(decide):
                 return f"AGENT_DECIDE {dec}: AGENT_OBSERVE {obs_id} not strictly earlier"
+            provenance = (decide.get("decision_evidence") or {}).get("trigger_provenance")
+            expected = "EXOGENOUS_STRESS" if origin == "EXOGENOUS_STRESS" else "ENDOGENOUS_AGENT"
+            # Legacy logs predate DecisionEvidenceV1.  They may omit AGENT
+            # provenance, but an explicit value must agree with origin; the
+            # new EXOGENOUS_STRESS branch always requires explicit evidence.
+            invalid = (
+                provenance != expected
+                if origin == "EXOGENOUS_STRESS"
+                else provenance not in {None, expected}
+            )
+            if invalid:
+                return (
+                    f"{origin} order {oid}: AGENT_DECIDE {dec} provenance "
+                    f"{provenance!r} != {expected}"
+                )
             md_id = observe.get("market_data_event_id", "")
             publish, err = resolve(md_id)
             if err:

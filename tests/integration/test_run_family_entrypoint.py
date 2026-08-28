@@ -83,6 +83,13 @@ def test_unknown_field_rejected_by_constructor():
         ExperimentConfig(seed=1, max_transactions=10, unknown_field=1)
 
 
+def test_unknown_field_rejected_after_construction():
+    """The closed runtime config cannot acquire an unvalidated attribute."""
+    cfg = _base_config()
+    with pytest.raises(AttributeError):
+        cfg.unknown_runtime_field = "bypass"
+
+
 def test_legacy_config_without_family_still_runs():
     """run_family=None (legacy) skips the gate -- existing configs keep working."""
     cfg = _base_config()
@@ -166,6 +173,20 @@ def test_stress_protocol_events_are_executed():
     )
     stress_orders = [e for e in result.events if e.get("origin") == "EXOGENOUS_STRESS"]
     assert len(stress_orders) == 1, "stress protocol event must be executed"
+    decisions = {e["event_id"]: e for e in result.events if e["event_type"] == "AGENT_DECIDE"}
+    stress_decision = decisions[stress_orders[0]["decision_event_id"]]
+    assert stress_decision["decision_evidence"]["trigger_provenance"] == "EXOGENOUS_STRESS"
+    from market_game_sim.evidence.chain_verifier import verify_decision_evidence_chain
+
+    verify_decision_evidence_chain(result.events, run_family="STRESS")
+    from copy import deepcopy
+
+    from market_game_sim.evidence.chain_verifier import ChainVerificationError
+
+    tampered = deepcopy(result.events)
+    next(e for e in tampered if e.get("origin") == "EXOGENOUS_STRESS")["decision_event_id"] = "e0_0"
+    with pytest.raises(ChainVerificationError, match="missing decision"):
+        verify_decision_evidence_chain(tampered, run_family="STRESS")
     # The shock must actually trade (synthetic account exists as counterparty).
     assert any(e.get("event_type") == "TRADE_SETTLE" for e in result.events), (
         "stress order must produce a trade"

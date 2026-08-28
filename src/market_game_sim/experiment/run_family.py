@@ -174,6 +174,8 @@ def validate_seed_plan(plan: object) -> dict:
         raise RunFamilyError("seed_plan.seeds must be a list of integers")
     if len(seeds) != plan["n_seeds"]:
         raise RunFamilyError(f"seed_plan.seeds length {len(seeds)} != n_seeds {plan['n_seeds']}")
+    if len(set(seeds)) != len(seeds):
+        raise RunFamilyError("seed_plan.seeds must be unique")
     return {"n_seeds": plan["n_seeds"], "seeds": list(seeds)}
 
 
