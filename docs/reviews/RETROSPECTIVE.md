@@ -737,3 +737,41 @@ C011 裸布尔预注册、C012 seed_plan Schema 漂移)。
 1. 关键修复必须反向变异验证(强制旧行为,确认测试变红)
 2. 大 commit 拆分(一问题一提交)
 3. 检视文档关闭权只在 reviewer,CURRENT 报告默认 ignored
+
+### Round 9 最终闭环（2026-08-29）
+
+- **最终状态**：14 个稳定 ID 全部 fixed；未决 Critical / High / Medium / Low = 0 / 0 / 0 / 0。
+- **本地最终门禁**：`python tools/verify.py`，2141 passed；真源、生命周期、ruff check、
+  ruff format 全绿。
+- **独立复核**：逐项重跑 Round 8 五个反例，并对 stress dangling reference、预注册摘要
+  漂移/非对象根、延迟期间账户突变做反向变异；未新增 ID。
+
+| ID | 最终状态 | 最终根因修复 | 最终回归证据 | resolved round |
+|---|---|---|---|---|
+| R018-C001 | fixed | observe 使用最后提交的市场边界 | post_trade_observation_consumes_latest_market_interval | 2 |
+| R018-C002 | fixed | cursor/EWMA/index/history 与 AGENT_DECIDE evidence 同事务提交；队列 reservation 支持重叠观察 | decide_failure_aborts_and_no_interval_is_lost_to_retry | 9 |
+| R018-C003 | fixed | observe 冻结 book/account/trades/EWMA/闭合 bars；当前 bar 排除 | current_bar_not_visible + delayed_decision_uses_observation_snapshot | 9 |
+| R018-C004 | fixed | 多空对称绝对仓位裁剪 | same_side_add_is_clipped_symmetrically | 2 |
+| R018-C005 | fixed | seed 唯一性 + 有序全等；ExperimentConfig slots 闭合运行面 | duplicate_dropped_to_single + unknown_field_after_construction | 9 |
+| R018-C006 | fixed | StressProtocol 生产真实 observe→decide→order 链；双验证器校验 EXOGENOUS_STRESS | stress_protocol_events_are_executed（含 dangling 变异） | 9 |
+| R018-C007 | fixed | evidence 使用本次观察 cursor 快照 | overlapping_observations_chain_passes | 6 |
+| R018-C008 | fixed | reserved 统一委托 ledger 并计候选费 | candidate_new_open_fee_is_reserved | 2 |
+| R018-C009 | fixed | V1 嵌套对象闭合类型/范围校验 | test_event_schema.py | 8 |
+| R018-C010 | fixed | EWMA 每 fill 取整 | ewma_is_invariant_to_observation_batch_partition | 2 |
+| R018-C011 | fixed | 内容寻址 frozen preregistration 引用，校验 SHA-256/config hashes/seed plan | arbitrary_string + drifted_artifact + accepted_and_recorded | 9 |
+| R018-C012 | fixed | seed_plan 运行/manifest/Schema 共用闭合结构 | validate_seed_plan_rejects_malformed | 8 |
+| R018-C013 | fixed | 修复阶段保持 stop=false；reviewer 在独立证据通过后关闭 | Round 9 CURRENT + 最终 CI 生命周期 | 9 |
+| R018-C014 | fixed | 正式日志统一剥离下划线内部字段 | formal_log_has_no_transaction_internal_fields | 6 |
+
+**为什么到 Round 9 才收敛**：问题不是修复数量不足，而是多轮把实现选择写成测试预期。
+C002 用 fail-stop 解释覆盖 AC-002 的明确重试不变量；C003/C006 的测试只验证 helper 或
+“能成交”，没有验证观察时点和完整因果引用；C005/C011 只替换了绕过形式，没有闭合输入
+域；C013 又让修复方提前拥有停止权。这四类缺口互相叠加，使测试持续全绿但需求仍不成立。
+
+**后续固定门禁**：
+
+1. 原子性需求必须测试失败前后状态及 fresh retry，不能只测 abort code。
+2. 时间语义必须在观察后、决策前注入状态变化，证明没有读取未来。
+3. 所有 evidence/gate 必须同时测试生产入口、解析器和 dangling/tamper 反例。
+4. 重复值、未知字段、裸标量、摘要漂移列为闭合结构的默认反例集。
+5. `stop_condition_met=true` 与删除 CURRENT 只由最终 reviewer 在全量门禁和 CI 全绿后执行。
