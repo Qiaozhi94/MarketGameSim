@@ -8,6 +8,8 @@ let None + declared mix through).
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from market_game_sim.agent.scheduler import AgentSpec
@@ -104,7 +106,7 @@ def test_unpreregistered_formal_research_rejected():
         run_paired(control, treatment, seeds=[1, 2, 3], evidence_class="formal-research")
 
 
-def test_preregistered_formal_research_accepted_and_recorded():
+def test_preregistered_formal_research_accepted_and_recorded(tmp_path):
     """R018-C011 (Round 5): a preregistered SPONTANEOUS pair may emit
     formal-research, and the report records the evidence_class."""
     control = _cfg("SPONTANEOUS")
@@ -115,16 +117,34 @@ def test_preregistered_formal_research_accepted_and_recorded():
     treatment.seed_plan = {"n_seeds": 3, "seeds": [1, 2, 3]}
     treatment.l_level = "low"
     treatment.m_level = "high"
+    from market_game_sim.evidence.evidence_guard import FrozenPreregistrationReference
+    from market_game_sim.experiment.config import compute_config_hash
+
+    artifact = tmp_path / "frozen-prereg.json"
+    artifact.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "status": "FROZEN",
+                "preregistration_id": "prereg-2026-08-27-v1",
+                "control_config_hash": compute_config_hash(control),
+                "treatment_config_hash": compute_config_hash(treatment),
+                "seed_plan": {"n_seeds": 3, "seeds": [1, 2, 3]},
+            }
+        ),
+        encoding="utf-8",
+    )
+    preregistration = FrozenPreregistrationReference.from_artifact(artifact)
     _, _, comparison = run_paired(
         control,
         treatment,
         seeds=[1, 2, 3],
         evidence_class="formal-research",
-        preregistration="prereg-2026-08-27-v1",
+        preregistration=preregistration,
     )
     assert comparison["evidence_class"] == "formal-research"
     assert comparison["run_family"] == "SPONTANEOUS"
-    assert comparison["preregistration"] == "prereg-2026-08-27-v1"
+    assert comparison["preregistration"]["preregistration_id"] == "prereg-2026-08-27-v1"
 
 
 def test_declared_seed_plan_must_match_actual_seeds():
@@ -140,3 +160,22 @@ def test_declared_seed_plan_must_match_actual_seeds():
     treatment.m_level = "high"
     with pytest.raises(ValueError, match="seed plan"):
         run_paired(control, treatment, seeds=[1], evidence_class="experiment-preview")
+
+
+def test_seed_plan_rejects_duplicate_dropped_to_single():
+    """R018-C005 (Round 8): plan [1,1] (2 seeds) vs actual [1] must be
+    rejected -- a set comparison would collapse the duplicate and accept an
+    under-powered run."""
+    control = _cfg("SPONTANEOUS")
+    control.seed_plan = {"n_seeds": 2, "seeds": [1, 1]}
+    control.l_level = "low"
+    control.m_level = "high"
+    treatment = _cfg("SPONTANEOUS")
+    treatment.seed_plan = {"n_seeds": 2, "seeds": [1, 1]}
+    treatment.l_level = "low"
+    treatment.m_level = "high"
+    with pytest.raises(ValueError, match="seed_plan"):
+        run_paired(control, treatment, seeds=[1], evidence_class="experiment-preview")
+    # Duplicate seeds are invalid even when the runtime list is identical.
+    with pytest.raises(ValueError, match="unique"):
+        run_paired(control, treatment, seeds=[1, 1], evidence_class="experiment-preview")

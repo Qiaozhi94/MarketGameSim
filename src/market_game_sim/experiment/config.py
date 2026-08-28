@@ -11,7 +11,7 @@ from dataclasses import asdict, dataclass, field
 from market_game_sim.agent.scheduler import AgentSpec
 
 
-@dataclass
+@dataclass(slots=True)
 class ExperimentConfig:
     """Runtime configuration for one experiment run."""
 
@@ -65,6 +65,8 @@ class ExperimentConfig:
     l_level: str | None = None
     m_level: str | None = None
     stress_protocol: object | None = None
+    synthetic_shock_accounts: dict[str, int] | None = None
+    outcome_conditional_orders: object | None = None
 
 
 def compute_config_hash(config: ExperimentConfig) -> str:

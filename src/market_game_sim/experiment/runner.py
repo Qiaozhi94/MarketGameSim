@@ -162,7 +162,7 @@ def run_paired(
     n_resamples: int = 10_000,
     bootstrap_seed: int = 0,
     evidence_class: str | None = None,
-    preregistration: str | None = None,
+    preregistration: object | None = None,
 ) -> tuple[list[RunResult], list[RunResult], dict]:
     """Run control and treatment groups with the same seeds (方法论 §10.5
     single-dimension paired control).
@@ -192,6 +192,7 @@ def run_paired(
     # None and a declared family and hardcoded engineering-demonstration).
     from market_game_sim.evidence.evidence_guard import (
         EvidenceClassError,
+        FrozenPreregistrationReference,
         guard_evidence_class,
         guard_formal_research,
     )
@@ -212,22 +213,34 @@ def run_paired(
         # R018-C011 (Round 5/7): formal-research additionally requires a frozen
         # preregistration REFERENCE (id/digest, not a bare bool) -- previously
         # a caller-passed True was enough, untraceable to any frozen protocol.
-        guard_formal_research(family, evidence_class, preregistration=preregistration)
+        guard_formal_research(
+            family,
+            evidence_class,
+            preregistration=preregistration,
+            control_config_hash=compute_config_hash(control),
+            treatment_config_hash=compute_config_hash(treatment),
+            seeds=list(seeds),
+        )
     parity_err = check_paired_parity(control, treatment, treatment_field)
     if parity_err:
         raise ValueError(f"run_paired: control/treatment parity violated: {parity_err}")
 
-    # R018-C005 (Round 7): a declared seed plan must match the seeds actually
-    # run -- declaring n_seeds=4 / seeds=[11,12,13,14] but only running [1]
-    # must fail, not silently produce an under-powered report.
+    from market_game_sim.experiment.run_family import validate_seed_plan
+
+    # R018-C005 (Round 7/8): a declared seed plan must be valid in its own
+    # right and match the seeds actually run by length and position.
+    # Length AND per-position equality are required; a set comparison would
+    # accept plan [1,1] vs actual [1], silently under-powering the report).
     for cfg in (control, treatment):
         plan = cfg.seed_plan
-        if plan and isinstance(plan, dict) and plan.get("seeds") is not None:
-            planned = plan.get("seeds")
-            if set(seeds) != set(planned):
+        if plan is not None:
+            validated = validate_seed_plan(plan)
+            planned = validated["seeds"]
+            actual = list(seeds)
+            if len(planned) != len(actual) or planned != actual:
                 raise ValueError(
-                    f"run_paired: seeds {sorted(seeds)} do not match the declared "
-                    f"seed plan {sorted(planned)} (R018-C005)"
+                    f"run_paired: seeds {actual} do not match the declared "
+                    f"seed plan {planned} (R018-C005)"
                 )
 
     c_results = run_multi_seed(control, seeds)
@@ -257,7 +270,11 @@ def run_paired(
         "run_family": family,
         # R018-C011 (Round 7): the frozen preregistration reference this
         # formal conclusion is bound to (null for non-formal evidence).
-        "preregistration": preregistration,
+        "preregistration": (
+            preregistration.report_reference()
+            if isinstance(preregistration, FrozenPreregistrationReference)
+            else None
+        ),
         # E3 (0.1.2 退出条件): traces this conditional_conclusion back to the
         # exact ExperimentConfig that produced it -- without this, "预注册
         # 实验可从配置哈希追溯到条件性结论" has no machine-checkable link.
@@ -299,10 +316,14 @@ def _dispatch_agents(event: dict, world: dict, kernel: EventKernel) -> list[dict
     if et == "ORDER_ARRIVAL":
         return match_order(event, world, kernel)
     if et == "AGENT_OBSERVE":
+        if event.get("_stress_trigger") is not None:
+            return _handle_stress_observe(event, world, kernel)
         records = handle_agent_observe(event, world, kernel)
         _reschedule_next_observe(event, world, kernel)
         return records
     if et == "AGENT_DECIDE":
+        if event.get("_stress_trigger") is not None:
+            return _handle_stress_decide(event, world, kernel)
         return handle_agent_decide(
             event,
             world,
@@ -310,6 +331,96 @@ def _dispatch_agents(event: dict, world: dict, kernel: EventKernel) -> list[dict
             world.get("agent_specs", {}),
             target_fn=world.get("behavior_mapping", target_position),
         )
+    return []
+
+
+def _handle_stress_observe(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
+    """Record the protocol trigger as a real observe->decide chain."""
+    trigger = event["_stress_trigger"]
+    boundary = world.get("last_market_data_event_id", "e1_0")
+    event["market_data_event_id"] = boundary
+    event["cursor_from_event_id"] = boundary
+    event["cursor_to_event_id"] = boundary
+    event["information_set"] = {
+        "stress_protocol_id": trigger["protocol_id"],
+        "stress_event_index": trigger["event_index"],
+    }
+    observation_event_id = f"e{kernel.current_transaction_seq}_0"
+    kernel.enqueue(
+        {
+            "event_type": "AGENT_DECIDE",
+            "timestamp": event["timestamp"],
+            "agent_id": event["agent_id"],
+            "observation_event_id": observation_event_id,
+            "rule_id": "stress_protocol_v1",
+            "intents": [],
+            "internal_state": {},
+            "_stress_trigger": dict(trigger),
+            "_observed_cursor_from": boundary,
+            "_observed_cursor_to": boundary,
+        }
+    )
+    return []
+
+
+def _handle_stress_decide(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
+    """Emit one exogenous order whose decision id resolves to this record."""
+    trigger = event["_stress_trigger"]
+    qty = trigger["quantity_units"]
+    side = trigger["side"]
+    signed_qty = qty if side == "BUY" else -qty
+    current_position = world["accounts"][event["agent_id"]].position_units
+    target_position = current_position + signed_qty
+    decision_event_id = f"e{kernel.current_transaction_seq}_0"
+    intent_id = f"stress-{trigger['protocol_id']}-{trigger['event_index']}"
+    event["intents"] = [
+        {
+            "intent_id": intent_id,
+            "action": "SUBMIT",
+            "side": side,
+            "order_type": "MARKET",
+            "price_ticks": None,
+            "quantity_units": qty,
+        }
+    ]
+    event["internal_state"] = {
+        "stress_protocol_id": trigger["protocol_id"],
+        "stress_event_index": trigger["event_index"],
+        "position_before_units": current_position,
+    }
+    event["decision_evidence"] = {
+        "schema_version": 1,
+        "goal_model_id": "stress_protocol_v1",
+        "goal_model_version": 1,
+        "desired_position_units": target_position,
+        "executable_position_units": target_position,
+        "constraint_binding": False,
+        "constraint_reason": None,
+        "trigger_provenance": "EXOGENOUS_STRESS",
+        "observation_event_id": event["observation_event_id"],
+        "cursor_from_event_id": event["_observed_cursor_from"],
+        "cursor_to_event_id": event["_observed_cursor_to"],
+    }
+    kernel.enqueue(
+        {
+            "event_type": "ORDER_ARRIVAL",
+            # One logical nanosecond keeps queue_key monotonic when a class-4
+            # decision emits a class-0 order; submitted_at remains the exact
+            # protocol decision time.
+            "timestamp": event["timestamp"] + 1,
+            "agent_id": event["agent_id"],
+            "order_id": intent_id,
+            "action": "SUBMIT",
+            "side": side,
+            "order_type": "MARKET",
+            "price_ticks": None,
+            "quantity_units": qty,
+            "intent_id": intent_id,
+            "decision_event_id": decision_event_id,
+            "submitted_at": event["timestamp"],
+            "origin": "EXOGENOUS_STRESS",
+        }
+    )
     return []
 
 
@@ -473,9 +584,9 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
     for event in config.extra_events:
         kernel.enqueue(event)
 
-    # R018-C006 (Round 5): a declared stress protocol must actually be
-    # EXECUTED -- its finite typed events are injected as EXOGENOUS_STRESS
-    # market orders (ADR-003 §3.2), not silently ignored.
+    # R018-C006 (Round 8): execute each typed stress event through a real
+    # observe->decide->order chain.  The order references the committed
+    # AGENT_DECIDE whose DecisionEvidenceV1 carries EXOGENOUS_STRESS.
     if config.stress_protocol is not None:
         protocol = config.stress_protocol
         for i, sev in enumerate(protocol.events):
@@ -483,19 +594,18 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
             qty = sev.params["quantity_units"]
             kernel.enqueue(
                 {
-                    "event_type": "ORDER_ARRIVAL",
+                    "event_type": "AGENT_OBSERVE",
                     "timestamp": sev.timestamp_ns,
                     "agent_id": f"stress-{protocol.protocol_id}",
-                    "order_id": f"stress-{protocol.protocol_id}-{i}",
-                    "action": "SUBMIT",
-                    "side": side,
-                    "order_type": "MARKET",
-                    "price_ticks": None,
-                    "quantity_units": qty,
-                    "intent_id": f"stress-{protocol.protocol_id}-{i}",
-                    "decision_event_id": "e0_0",
-                    "submitted_at": sev.timestamp_ns,
-                    "origin": "EXOGENOUS_STRESS",
+                    "observed_at": sev.timestamp_ns,
+                    "market_data_event_id": "e1_0",
+                    "information_set": {},
+                    "_stress_trigger": {
+                        "protocol_id": protocol.protocol_id,
+                        "event_index": i,
+                        "side": side,
+                        "quantity_units": qty,
+                    },
                 }
             )
 

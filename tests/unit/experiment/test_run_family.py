@@ -170,6 +170,8 @@ def test_validate_seed_plan_rejects_malformed():
         validate_seed_plan({"n_seeds": 2, "seeds": [1]})
     with pytest.raises(RunFamilyError, match="seed_plan"):
         validate_seed_plan({"n_seeds": 1, "seeds": [True]})
+    with pytest.raises(RunFamilyError, match="unique"):
+        validate_seed_plan({"n_seeds": 2, "seeds": [1, 1]})
     # A valid plan normalises and returns.
     assert validate_seed_plan({"n_seeds": 2, "seeds": [1, 2]}) == {
         "n_seeds": 2,

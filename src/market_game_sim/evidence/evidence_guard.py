@@ -17,7 +17,11 @@ Rules (fail closed, never silently downgraded):
 
 from __future__ import annotations
 
+import hashlib
+import json
+from dataclasses import dataclass
 from enum import StrEnum
+from pathlib import Path
 
 
 class EvidenceClassError(ValueError):
@@ -28,6 +32,80 @@ class EvidenceClass(StrEnum):
     ENGINEERING_DEMONSTRATION = "engineering-demonstration"
     EXPERIMENT_PREVIEW = "experiment-preview"
     FORMAL_RESEARCH = "formal-research"
+
+
+@dataclass(frozen=True, slots=True)
+class FrozenPreregistrationReference:
+    """Content-addressed reference to a machine-resolvable frozen artifact."""
+
+    preregistration_id: str
+    artifact_path: Path
+    content_sha256: str
+
+    @classmethod
+    def from_artifact(cls, artifact_path: str | Path) -> FrozenPreregistrationReference:
+        path = Path(artifact_path)
+        try:
+            raw = path.read_bytes()
+            payload = json.loads(raw.decode("utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise EvidenceClassError(
+                f"cannot resolve preregistration artifact {path}: {exc}"
+            ) from exc
+        if not isinstance(payload, dict):
+            raise EvidenceClassError("preregistration artifact root must be an object")
+        preregistration_id = payload.get("preregistration_id")
+        if not isinstance(preregistration_id, str) or not preregistration_id:
+            raise EvidenceClassError(
+                "preregistration artifact requires non-empty preregistration_id"
+            )
+        return cls(
+            preregistration_id=preregistration_id,
+            artifact_path=path,
+            content_sha256=hashlib.sha256(raw).hexdigest(),
+        )
+
+    def validate(
+        self,
+        *,
+        control_config_hash: str,
+        treatment_config_hash: str,
+        seeds: list[int],
+    ) -> dict:
+        try:
+            raw = self.artifact_path.read_bytes()
+            payload = json.loads(raw.decode("utf-8"))
+        except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise EvidenceClassError(
+                f"cannot resolve preregistration artifact {self.artifact_path}: {exc}"
+            ) from exc
+        if not isinstance(payload, dict):
+            raise EvidenceClassError("preregistration artifact root must be an object")
+        actual_digest = hashlib.sha256(raw).hexdigest()
+        if actual_digest != self.content_sha256:
+            raise EvidenceClassError("preregistration artifact digest drifted after freeze")
+        expected = {
+            "schema_version": 1,
+            "status": "FROZEN",
+            "preregistration_id": self.preregistration_id,
+            "control_config_hash": control_config_hash,
+            "treatment_config_hash": treatment_config_hash,
+            "seed_plan": {"n_seeds": len(seeds), "seeds": list(seeds)},
+        }
+        for field, value in expected.items():
+            if payload.get(field) != value:
+                raise EvidenceClassError(
+                    f"preregistration artifact field {field} is not bound to this run "
+                    f"(expected {value!r}, got {payload.get(field)!r})"
+                )
+        return payload
+
+    def report_reference(self) -> dict[str, str]:
+        return {
+            "preregistration_id": self.preregistration_id,
+            "artifact_path": str(self.artifact_path),
+            "content_sha256": self.content_sha256,
+        }
 
 
 #: Run family -> the evidence classes its runs are allowed to carry.
@@ -71,7 +149,15 @@ def guard_evidence_class(family: str, evidence_class: str) -> EvidenceClass:
     return cls
 
 
-def guard_formal_research(family: str, evidence_class: str, preregistration: str | None) -> None:
+def guard_formal_research(
+    family: str,
+    evidence_class: str,
+    preregistration: FrozenPreregistrationReference | None,
+    *,
+    control_config_hash: str = "",
+    treatment_config_hash: str = "",
+    seeds: list[int] | None = None,
+) -> None:
     """Guard the formal-research gate: only a SPONTANEOUS run carrying a
     frozen preregistration REFERENCE (id / digest, not a bare bool) may claim
     ``formal-research`` (FR-026 / docs/features/README.md: ``formal-research``
@@ -79,16 +165,19 @@ def guard_formal_research(family: str, evidence_class: str, preregistration: str
     must bind an actual frozen preregistration so the conclusion is
     traceable (R018-C011, Round 7)."""
     cls = guard_evidence_class(family, evidence_class)
-    # R018-C011 (Round 7): only a non-empty string reference is a valid
-    # preregistration -- a bare True / non-str passes ``not`` but is not a
-    # traceable frozen-protocol reference.
-    valid = isinstance(preregistration, str) and bool(preregistration)
-    if cls == EvidenceClass.FORMAL_RESEARCH and not valid:
+    if cls != EvidenceClass.FORMAL_RESEARCH:
+        return
+    if not isinstance(preregistration, FrozenPreregistrationReference):
         raise EvidenceClassError(
-            "formal-research evidence requires a frozen preregistration "
-            "reference (FR-026); a run without one may only produce "
+            "formal-research evidence requires a resolved frozen preregistration "
+            "reference and digest (FR-026); a run without one may only produce "
             "engineering-demonstration / experiment-preview"
         )
+    preregistration.validate(
+        control_config_hash=control_config_hash,
+        treatment_config_hash=treatment_config_hash,
+        seeds=list(seeds or []),
+    )
 
 
 def guard_aggregation(items: list[tuple[str, str]]) -> None:
@@ -114,6 +203,7 @@ def guard_aggregation(items: list[tuple[str, str]]) -> None:
 __all__ = [
     "EvidenceClass",
     "EvidenceClassError",
+    "FrozenPreregistrationReference",
     "guard_aggregation",
     "guard_evidence_class",
     "guard_formal_research",

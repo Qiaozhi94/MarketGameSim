@@ -83,7 +83,10 @@ def verify_decision_evidence_chain(
     # ORDER_ARRIVAL.decision_event_id must fail here, not just the
     # observe->decide hop.
     for e in events_list:
-        if e.get("event_type") != "ORDER_ARRIVAL" or e.get("origin") != "AGENT":
+        if e.get("event_type") != "ORDER_ARRIVAL" or e.get("origin") not in {
+            "AGENT",
+            "EXOGENOUS_STRESS",
+        }:
             continue
         dec_id = e.get("decision_event_id", "")
         decide = resolve(dec_id)
@@ -104,6 +107,15 @@ def verify_decision_evidence_chain(
         if _log_key(observe) >= _log_key(decide):
             raise ChainVerificationError(
                 f"AGENT_DECIDE {dec_id} observation {obs_id} not strictly earlier"
+            )
+        provenance = (decide.get("decision_evidence") or {}).get("trigger_provenance")
+        expected = (
+            "EXOGENOUS_STRESS" if e.get("origin") == "EXOGENOUS_STRESS" else "ENDOGENOUS_AGENT"
+        )
+        if provenance != expected:
+            raise ChainVerificationError(
+                f"ORDER_ARRIVAL {e.get('event_id')} origin {e.get('origin')} requires "
+                f"decision provenance {expected}, got {provenance!r}"
             )
 
     for e in events_list:

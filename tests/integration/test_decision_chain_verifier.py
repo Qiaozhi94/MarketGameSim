@@ -123,10 +123,18 @@ def test_benchmark_family_allows_exogenous_stress_provenance():
     BENCHMARK run with EXOGENOUS_STRESS provenance must NOT be rejected on
     the family rule (closed-set membership is still enforced elsewhere)."""
     events = _run_events()
+    changed_decision_id = None
     for e in events:
         if e.get("event_type") == "AGENT_DECIDE":
             e["decision_evidence"]["trigger_provenance"] = "EXOGENOUS_STRESS"
+            changed_decision_id = e["event_id"]
             break
+    for e in events:
+        if (
+            e.get("event_type") == "ORDER_ARRIVAL"
+            and e.get("decision_event_id") == changed_decision_id
+        ):
+            e["origin"] = "EXOGENOUS_STRESS"
     verify_decision_evidence_chain(events, run_family="BENCHMARK")
 
 
