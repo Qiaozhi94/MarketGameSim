@@ -286,3 +286,23 @@ def test_accumulated_history_produces_complete_completed_bars():
     # The closed sequence spans the full history across observations.
     assert bars[3].close == 110  # zero-filled before the bar-4 trade
     assert bars[4].close == 120
+
+
+def test_current_bar_not_visible_at_observation_time():
+    """R018-C003 (Round 8): the CURRENT (in-progress) bar is not visible --
+    a trade at t=0 observed at t=30s yields ZERO completed bars (bar 0 is
+    still open); observed at t=90s yields exactly the closed bar 0."""
+    from market_game_sim.agent.handler import _completed_bars_with_zero_fill
+
+    trades = [{"price_ticks": 100, "quantity_units": 10, "timestamp": 0}]
+    # 30s: bar 0 in progress -> no completed bars.
+    assert (
+        _completed_bars_with_zero_fill(list(trades), bar_ns=60_000_000_000, up_to_ts=30_000_000_000)
+        == []
+    )
+    # 90s: bar 0 closed -> one completed bar.
+    bars = _completed_bars_with_zero_fill(
+        list(trades), bar_ns=60_000_000_000, up_to_ts=90_000_000_000
+    )
+    assert [b.trade_count for b in bars] == [1]
+    assert bars[0].close == 100

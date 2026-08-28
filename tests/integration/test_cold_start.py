@@ -128,17 +128,9 @@ def _run_cold_start_pipeline(enqueue_order: tuple[str, str]):
     on AGENT_OBSERVE enqueue order so the outcome can be checked for
     order-independence rather than relying on one hardcoded sequence.
 
-    Only ONE round of AGENT_OBSERVE is pre-scheduled (per agent) -- the
-    previous version manually pre-enqueued a second round "so the belief
-    agent can react to MM quotes", but that is unnecessary: handle_agent_
-    decide (agent/handler.py) rebuilds its information set from the LIVE
-    book at the moment it actually runs, not from a snapshot frozen at
-    observe time.  Because the market maker's latency_ns (5ms) is far
-    below the belief agent's (50ms), the MM's ORDER_ARRIVAL lands (t=10ms)
-    well before the belief agent's own AGENT_DECIDE fires (t=50ms) even
-    within a single observe round, so the belief agent already sees the
-    MM's quotes by the time it decides.  Confirmed by fault injection:
-    removing the second round left every assertion below still passing.
+    The belief agent gets a second observation after the MM quote arrives.
+    Decisions are required to use their observation snapshot; relying on the
+    first delayed decision to read the live book would be look-ahead leakage.
     """
     mm = _mm_spec()
     agent = _belief_spec("agent-0", signal_bp=10_000)  # max long
@@ -167,6 +159,17 @@ def _run_cold_start_pipeline(enqueue_order: tuple[str, str]):
                 "information_set": {},
             }
         )
+
+    kernel.enqueue(
+        {
+            "event_type": "AGENT_OBSERVE",
+            "timestamp": 20_000_000,
+            "agent_id": "agent-0",
+            "observed_at": 20_000_000,
+            "market_data_event_id": "e1_0",
+            "information_set": {},
+        }
+    )
 
     kernel.run(_dispatch, world, max_transactions=80)
     assert kernel.terminated == "COMPLETED", (

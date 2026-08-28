@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import replace
 from decimal import Decimal
 
@@ -353,6 +354,7 @@ def _compute_belief_signal(
     iset: dict,
     world: dict,
     decision_index: int,
+    observed_trade_history: list[dict] | None = None,
 ) -> int:
     static = world.get("agent_signals", {}).get(spec.agent_id)
     if static is not None:
@@ -376,7 +378,11 @@ def _compute_belief_signal(
         last_ticks=iset.get("last_ticks"),
     )
     bf = book_factor(info)
-    history = world.get("trade_history", {}).get(spec.agent_id, [])
+    history = (
+        observed_trade_history
+        if observed_trade_history is not None
+        else world.get("trade_history", {}).get(spec.agent_id, [])
+    )
     bars = _bars_from_history(history, bar_ns=60_000_000_000)
     mf = momentum_factor(bars, lookback=5)
     rf = reversion_factor(info.last_ticks, iset.get("initial_price_ticks", 10000))
@@ -447,7 +453,12 @@ def _completed_bars_with_zero_fill(
         k = ts_val // bar_ns
         by_bar.setdefault(k, []).append(tr)
     first_bar = min(by_bar)
-    last_completed = up_to_ts // bar_ns - 1 if up_to_ts // bar_ns > first_bar else first_bar
+    # R018-C003 (Round 8): the CURRENT (in-progress) bar is NOT visible --
+    # only bars strictly before the observation's own bar.  up_to_ts=30s with
+    # 60s bars means bar 0 is still open -> zero completed bars.
+    last_completed = up_to_ts // bar_ns - 1
+    if last_completed < first_bar:
+        return []
     out: list[CompletedBar] = []
     prev_close: int | None = None
     for k in range(first_bar, last_completed + 1):
@@ -552,7 +563,12 @@ def handle_agent_decide(
     book: Book = world["book"]
     accounts = world["accounts"]
     initial_price = world.get("initial_price_ticks", 10000)
-    iset = _build_information_set(agent_id, accounts, book, initial_price, min_qty, mult)
+    # R018-C003 (Round 8): a delayed decision consumes the observation-time
+    # snapshot.  Falling back keeps hand-built legacy tests/events compatible.
+    iset = deepcopy(
+        event.get("_observed_information_set")
+        or _build_information_set(agent_id, accounts, book, initial_price, min_qty, mult)
+    )
 
     if spec.is_market_maker:
         intents = _market_maker_intents(
@@ -578,7 +594,13 @@ def handle_agent_decide(
             cursor_to_event_id=cursor_boundary,
         )
     else:
-        signal_bp = _compute_belief_signal(spec, iset, world, decision_index)
+        signal_bp = _compute_belief_signal(
+            spec,
+            iset,
+            world,
+            decision_index,
+            observed_trade_history=event.get("_observed_trade_history"),
+        )
         if spec.goal_model_id is not None:
             # R018-C007 (Round 5): cursor_to must be the OBSERVATION's own
             # upper boundary (carried on the event), not the live world cursor
@@ -589,7 +611,10 @@ def handle_agent_decide(
             cursor_to = event.get("_observed_cursor_to") or world.get("agent_cursors", {}).get(
                 agent_id, "e1_0"
             )
-            ewma_state = world.get("agent_ewma", {}).get(agent_id, {})
+            ewma_state = {
+                "value": event.get("_observed_ewma_value"),
+                "count": event.get("_observed_ewma_count", 0),
+            }
             # R018-C003 (Round 3): the public trades come from the OBSERVATION
             # snapshot the observe handler attached to this event -- the
             # rebuilt iset here has no public_trades.  Completed bars are
@@ -604,16 +629,7 @@ def handle_agent_decide(
                 )
                 for t in event.get("_observed_public_trades", ())
             )
-            completed_bars = tuple(
-                _completed_bars_with_zero_fill(
-                    # R018-C003 (Round 7): aggregate from the agent's CUMULATIVE
-                    # history (committed per observation into world["agent_bars"]),
-                    # so the closed K-line sequence spans all observations.
-                    list(world.get("agent_bars", {}).get(agent_id, ())),
-                    bar_ns=60_000_000_000,
-                    up_to_ts=event["timestamp"],
-                )
-            )
+            completed_bars = tuple(event.get("_observed_completed_bars", ()))
             # R018-C007 (Round 3): the evidence cursor_from must be the
             # observation's own lower boundary, not a hardcoded e1_0 -- the
             # chain verifier requires evidence cursors == observation cursors,
@@ -747,31 +763,45 @@ def handle_agent_observe(
     # the observe transaction that rescheduled this one).  Falls back to the
     # event's own market_data_event_id when no publish has been committed.
     cursor_to = world.get("last_market_data_event_id") or event.get("market_data_event_id", "e1_0")
+    # A later observation may execute while earlier decisions are still
+    # queued.  Continue from the newest queued reservation, while keeping the
+    # authoritative world state unchanged until each decision commits.
+    queued_state = kernel.latest_pending_agent_state(agent_id)
     cursors = world.setdefault("agent_cursors", {})
-    cursor_from = cursors.get(agent_id, "e1_0")
+    cursor_from = (
+        queued_state["cursor"] if queued_state is not None else cursors.get(agent_id, "e1_0")
+    )
     tape = world.get("public_tape", [])
     interval_fills = tape_interval(tape, cursor_from, cursor_to)
     event["cursor_from_event_id"] = cursor_from
     event["cursor_to_event_id"] = cursor_to
     event["market_data_event_id"] = cursor_to
     iset["public_trades"] = interval_fills
-    # R018-C002: the cursor / EWMA advance must NOT mutate the live world
-    # state inside the transaction -- if the transaction later aborts
-    # (fail-stop, §1.5) the live cursors would have advanced past events that
-    # were never committed, losing them forever.  Stage the update ON THE
-    # EVENT (r0) so it commits with the transaction and is dropped with the
-    # buffer on abort; the kernel applies it to the live state only after
-    # commit.  (Round 3: staging in the shared world dict leaked on abort --
-    # a later successful transaction would apply a failed observation's
-    # cursor.  Staging on the event ties the update to this transaction.)
-    ewma_state = world.get("agent_ewma", {}).get(agent_id, {"value": None, "count": 0})
+    # R018-C002: stage on the paired DECIDE event, not OBSERVE.  This makes
+    # cursor/EWMA/index/history and the decision evidence one commit boundary.
+    ewma_state = (
+        {"value": queued_state["ewma_value"], "count": queued_state["ewma_count"]}
+        if queued_state is not None
+        else world.get("agent_ewma", {}).get(agent_id, {"value": None, "count": 0})
+    )
     new_value, new_count = update_ewma(
         ewma_state["value"],
         ewma_state["count"],
         interval_fills,
         spec.ewma_half_life_trades,
     )
-    event["_pending_agent_state"] = {
+    prior_history = (
+        list(queued_state.get("agent_history", ()))
+        if queued_state is not None
+        else list(world.get("agent_bars", {}).get(agent_id, ()))
+    )
+    cumulative_history = prior_history + [dict(fill) for fill in interval_fills]
+    prior_decision_index = (
+        queued_state["decision_index"]
+        if queued_state is not None
+        else world.get("agent_decision_index", {}).get(agent_id, 0)
+    )
+    pending_state = {
         "agent_id": agent_id,
         "cursor": cursor_to,
         "ewma_value": new_value,
@@ -780,13 +810,13 @@ def handle_agent_observe(
         # transaction-scoped -- a failed observe must not consume the decision
         # index or advance cursor_from (previously written straight to world).
         "cursor_from": cursor_from,
-        "decision_index": world.get("agent_decision_index", {}).get(agent_id, 0) + 1,
+        "decision_index": prior_decision_index + 1,
         # R018-C003 (Round 7): the agent's INCREMENTAL trades for this
         # interval commit with the observation; the kernel extends the
         # accumulated world["agent_bars"] history with them.  public_trades
         # stays the incremental interval (代理策略 §1: 上次观察以来的增量),
         # while completed bars aggregate the accumulated history.
-        "agent_trades": list(interval_fills),
+        "agent_history": cumulative_history,
     }
     # R018-C007: the observation's lower cursor boundary is carried on the
     # event (not a world write) so legacy decisions can tag their evidence
@@ -800,7 +830,7 @@ def handle_agent_observe(
     # committed world (advance applied by the kernel after the previous
     # successful observation); the next index is staged and applied only on
     # commit -- a failed observe must not consume it.  No world write here.
-    decision_index = world.get("agent_decision_index", {}).get(agent_id, 0)
+    decision_index = prior_decision_index
     # R018-C003 (Round 3): hand the decision the OBSERVATION's snapshot --
     # the public trades this agent consumed since its last cursor plus the
     # cursor boundaries.  handle_agent_decide rebuilds its own iset via
@@ -816,11 +846,23 @@ def handle_agent_observe(
         "intents": [],
         "internal_state": {},
         "_decision_index": decision_index,
+        "_pending_agent_state": pending_state,
         # R018-C003 (Round 7): public_trades is the INCREMENTAL interval
         # (last_seen, current] -- 代理策略 §1.  The completed K-line sequence
         # is built separately from the agent's cumulative history (see
         # handle_agent_decide via world["agent_bars"]), NOT from this slice.
         "_observed_public_trades": [dict(t) for t in interval_fills],
+        "_observed_completed_bars": list(
+            _completed_bars_with_zero_fill(
+                cumulative_history,
+                bar_ns=60_000_000_000,
+                up_to_ts=event["timestamp"],
+            )
+        ),
+        "_observed_information_set": deepcopy(iset),
+        "_observed_trade_history": deepcopy(world.get("trade_history", {}).get(agent_id, [])),
+        "_observed_ewma_value": new_value,
+        "_observed_ewma_count": new_count,
         "_observed_cursor_from": cursor_from,
         "_observed_cursor_to": cursor_to,
     }

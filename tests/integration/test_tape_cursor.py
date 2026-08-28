@@ -495,16 +495,21 @@ def test_failure_after_staging_does_not_leak_into_next_transaction():
 
 
 def test_decide_failure_aborts_and_no_interval_is_lost_to_retry():
-    """R018-C002 (Round 7): observe succeeds (cursor advances) but decide
-    fails -> the run ABORTS (fail-stop, §1.5).  Under design.md §5 the
-    observe->decide chain's atomicity is preserved by fail-stop: no
-    subsequent observation can 'miss' the consumed interval because the run
-    is not resumable.  This locks the fail-stop boundary so a future change
-    that silently swallows decide errors cannot reintroduce interval loss."""
+    """R018-C002 (Round 8): decide failure leaves cursor/EWMA/index old;
+    a fresh fail-stop retry re-consumes the interval and commits it once."""
     agent = _belief_spec("agent-0")
     accounts = {"agent-0": Account(agent_id="agent-0", wallet_units=10**14)}
     world = _world({"agent-0": agent}, accounts)
     world["last_market_data_event_id"] = "e5_0"
+    world["public_tape"] = [
+        {
+            "event_id": "e4_1",
+            "price_ticks": 10100,
+            "quantity_units": 3,
+            "timestamp": 0,
+            "taker_agent_id": "seed",
+        }
+    ]
 
     def fail_on_decide(event, w, kernel):
         et = event["event_type"]
@@ -535,7 +540,55 @@ def test_decide_failure_aborts_and_no_interval_is_lost_to_retry():
     assert k.terminated == "ABORTED", (
         "a decide failure must fail-stop the run (no silent interval loss)"
     )
-    # The committed observe advanced the cursor (correct -- observe succeeded);
-    # but the run is aborted, so no later observation can re-consume or miss
-    # the interval (design.md §1.5: no resume).
-    assert world["agent_cursors"].get("agent-0") == "e5_0"
+    assert world["agent_cursors"].get("agent-0", "e1_0") == "e1_0"
+    assert world.get("agent_ewma", {}).get("agent-0") is None
+    assert world.get("agent_decision_index", {}).get("agent-0", 0) == 0
+
+    retry = EventKernel(run_id="decide-retry")
+    retry.bootstrap(
+        build_account_payload_from_accounts(accounts, mult=1000),
+        build_book_payload(last_ticks=None),
+    )
+    retry.enqueue(
+        {
+            "event_type": "AGENT_OBSERVE",
+            "timestamp": 0,
+            "agent_id": "agent-0",
+            "observed_at": 0,
+            "market_data_event_id": "e5_0",
+            "information_set": {},
+        }
+    )
+    retry.run(_dispatch, world, max_transactions=4)
+    assert retry.terminated == "COMPLETED"
+    assert world["agent_cursors"]["agent-0"] == "e5_0"
+    assert len(world["agent_bars"]["agent-0"]) == 1
+    assert world["agent_decision_index"]["agent-0"] == 1
+    assert sum(e["event_type"] == "AGENT_DECIDE" for e in retry.committed_records) == 1
+
+
+def test_delayed_decision_uses_observation_account_snapshot():
+    """R018-C003: account changes during latency cannot alter the decision."""
+    agent = _mm_spec()
+    account = Account(agent_id=agent.agent_id, wallet_units=10**14)
+    world = _world({agent.agent_id: agent}, {agent.agent_id: account})
+    kernel = EventKernel(run_id="snapshot")
+    kernel.bootstrap(
+        build_account_payload_from_accounts(world["accounts"], mult=1000),
+        build_book_payload(last_ticks=None),
+    )
+    kernel.enqueue(
+        {
+            "event_type": "AGENT_OBSERVE",
+            "timestamp": 0,
+            "agent_id": agent.agent_id,
+            "observed_at": 0,
+            "market_data_event_id": "e1_0",
+            "information_set": {},
+        }
+    )
+    kernel.run(_dispatch, world, max_transactions=3)
+    account.position_units = 99_999
+    kernel.run(_dispatch, world, max_transactions=4)
+    decide = next(e for e in kernel.committed_records if e["event_type"] == "AGENT_DECIDE")
+    assert decide["internal_state"]["inventory_units"] == 0

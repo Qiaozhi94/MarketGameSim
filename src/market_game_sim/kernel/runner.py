@@ -125,6 +125,27 @@ class EventKernel:
     def queue_empty(self) -> bool:
         return len(self._queue) == 0
 
+    def latest_pending_agent_state(self, agent_id: str) -> dict | None:
+        """Return the newest observation state waiting for this agent's decide.
+
+        Observations may overlap when ``latency_ns > observe_interval_ns``.
+        Their authoritative cursor/EWMA state cannot be committed until the
+        corresponding ``AGENT_DECIDE`` evidence commits, but a later observe
+        must still continue from the newest already-scheduled interval.  The
+        queue is the transaction-local reservation ledger: failed runs discard
+        it with the kernel, so no speculative frontier leaks into a retry.
+        """
+        candidates = [
+            event
+            for _, _, event in self._queue
+            if event.get("event_type") == "AGENT_DECIDE"
+            and event.get("_pending_agent_state", {}).get("agent_id") == agent_id
+        ]
+        if not candidates:
+            return None
+        latest = max(candidates, key=lambda event: event.get("_enqueue_seq", -1))
+        return dict(latest["_pending_agent_state"])
+
     # ------------------------------------------------------------------ #
     # Bootstrap (§4.6.3)
     # ------------------------------------------------------------------ #
@@ -260,11 +281,10 @@ class EventKernel:
             # transaction records (NOT including r0).
             records = handler(event, world, self)
 
-            # R018-C002: the observe handler stages its cursor/EWMA/
-            # decision-index advance on the EVENT; extract it NOW (after the
-            # handler, before _build_record strips underscore-internal keys)
-            # so the staged state is applied only on commit and never leaks
-            # into the formal log.
+            # R018-C002 (Round 8): AGENT_OBSERVE carries no authoritative
+            # state advance.  Its paired AGENT_DECIDE carries the staged
+            # cursor/EWMA/index/history, which is extracted here and applied
+            # only after the decision evidence transaction commits.
             pending_state = event.get("_pending_agent_state")
 
             # Transaction records inherit the parent event's timestamp.
@@ -297,12 +317,10 @@ class EventKernel:
         self._last_committed_transaction_seq = txn_seq
         self._processed_transactions += 1
 
-        # R018-C002: apply the observe transaction's staged cursor / EWMA /
-        # decision-index advance now that the transaction has committed.  The
-        # stage was captured from the event pre-strip, so a fail-stop abort
-        # drops it with the buffer (Round 3/5: a shared-world-dict or
-        # post-strip-read stage leaked a failed observation's state into a
-        # later successful transaction).
+        # R018-C002: apply only after the paired AGENT_DECIDE transaction has
+        # committed.  If decision/evidence production fails, the state stays
+        # at the previous committed boundary and a fresh retry re-consumes the
+        # same interval.
         if pending_state:
             cursors = world.setdefault("agent_cursors", {})
             ewma = world.setdefault("agent_ewma", {})
@@ -317,11 +335,12 @@ class EventKernel:
             if "cursor_from" in pending_state:
                 cf = world.setdefault("agent_cursor_from", {})
                 cf[pending_state["agent_id"]] = pending_state["cursor_from"]
-            if "agent_trades" in pending_state:
-                # R018-C003 (Round 7): commit the agent's accumulated trade
-                # history so completed-bar aggregation spans all observations.
-                world.setdefault("agent_bars", {}).setdefault(pending_state["agent_id"], []).extend(
-                    pending_state["agent_trades"]
+            if "agent_history" in pending_state:
+                # Replace with the observation's cumulative snapshot.  This
+                # remains correct for overlapping observations and avoids
+                # extending the same interval twice on a retry.
+                world.setdefault("agent_bars", {})[pending_state["agent_id"]] = list(
+                    pending_state["agent_history"]
                 )
 
         # 0.1.5 T206/T207: maintain the global public tape + the latest market

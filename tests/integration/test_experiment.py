@@ -41,7 +41,9 @@ def _belief_spec(aid: str) -> AgentSpec:
     return AgentSpec(
         agent_id=aid,
         role="retail",
-        observe_interval_ns=1_000_000_000,
+        # A second snapshot after the MM's first quote must fit inside this
+        # bounded test; delayed decisions no longer read a live future book.
+        observe_interval_ns=100_000_000,
         latency_ns=50_000_000,
         leverage_tier=10,
         aggressiveness_bp=5_000,
@@ -586,7 +588,9 @@ def test_build_study_report_impact_reflects_real_taker_orders():
     aggressive = AgentSpec(
         agent_id="agent-0",
         role="retail",
-        observe_interval_ns=1_000_000_000,
+        # Fit a post-quote observation into the bounded run; the first
+        # snapshot is intentionally empty at cold start.
+        observe_interval_ns=100_000_000,
         latency_ns=50_000_000,
         leverage_tier=10,
         aggressiveness_bp=10_000,
