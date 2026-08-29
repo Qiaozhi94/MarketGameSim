@@ -1480,6 +1480,20 @@ def test_complete_preregistration_passes(sv, tmp_path):
     assert errors == []
 
 
+@pytest.mark.parametrize("missing", ["risk_appetite", "theta_in", "theta_out", "k_x1000"])
+def test_preregistration_missing_model_parameter_is_rejected(sv, tmp_path, missing):
+    """T202 must freeze behavior parameters before T213 can observe results."""
+    exp = _write_prereg(tmp_path, sv.PREREG_REQUIRED_ITEMS)
+    kept = [item for item in sv.PREREG_REQUIRED_ITEMS if item != missing]
+    (exp / "0.1.5-preregistration.md").write_text(
+        "# 预注册\n\n" + "\n".join(f"- [x] {item}" for item in kept) + "\n",
+        encoding="utf-8",
+    )
+    errors: list[str] = []
+    sv.validate_preregistrations(tmp_path, errors)
+    assert any(missing in error and "缺少必填项" in error for error in errors)
+
+
 def test_template_drift_from_validator_is_rejected(sv, tmp_path):
     """模板与校验器闭集漂移必须报错，而不是一边悄悄失效。"""
     _write_prereg(tmp_path, [i for i in sv.PREREG_REQUIRED_ITEMS if i != "多重比较"])
@@ -1489,7 +1503,7 @@ def test_template_drift_from_validator_is_rejected(sv, tmp_path):
 
 
 def test_absent_preregistration_is_silently_ok(sv, tmp_path):
-    """T202 尚未执行时不报错——但上面三条证明它不是空转的门。"""
+    """无产物时不越权判定任务时点；有产物时仍 fail closed。"""
     _write_prereg(tmp_path, sv.PREREG_REQUIRED_ITEMS)
     errors: list[str] = []
     sv.validate_preregistrations(tmp_path, errors)
@@ -1497,7 +1511,7 @@ def test_absent_preregistration_is_silently_ok(sv, tmp_path):
 
 
 def test_repository_template_covers_all_required_items(sv):
-    """真实模板必须覆盖八项——防止本仓库的模板和闭集悄悄分家。"""
+    """真实模板必须覆盖必填闭集，防止模板与校验器漂移。"""
     errors: list[str] = []
     sv.validate_preregistrations(ROOT, errors)
     assert errors == []

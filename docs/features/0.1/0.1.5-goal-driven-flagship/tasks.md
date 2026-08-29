@@ -4,7 +4,7 @@ id: 0.1.5
 version: "0.1"
 doc_kind: tasks
 created: 2026-08-14
-updated: 2026-08-26
+updated: 2026-08-29
 ---
 
 # 0.1.5：目标驱动代理与旗舰实验识别 - 任务
@@ -30,41 +30,42 @@ updated: 2026-08-26
       必须逐项覆盖 [`design.md §4`](design.md) 的 T201 冻结清单（目标模型数学、退化输入行为、
       约束边界、四个 V1 Schema、三族逐字段 allow/deny 矩阵），产出可被参数化测试直接消费的
       golden vector 与矩阵数据 — verify: `python tools/verify.py`
-- [ ] **T202** (`FR-024`, `SC-010`): 冻结 0.1.5 预注册，逐项填满
+- [x] **T202** (`FR-024`, `SC-010`): 冻结 0.1.5 预注册，逐项填满
       [`experiment-template.md` §预注册分析](../../../experiments/experiment-template.md) 的
       必填清单（`L/M` 水平取值、主效应与交互估计量、三家族终点指标定义、样本量与功效依据、
-      seed plan、排除与停止规则、BH 校正集合、校准/验证/实验区划分）；**冻结前不得开始 T213
+      seed plan、排除与停止规则、BH 校正集合、校准/验证/实验区划分、`risk_appetite`
+      分布与 `theta_in/theta_out/k_x1000`）；**冻结前不得开始 T213
       的统计实现与任何正式运行** — verify: `docs/experiments/`
 
 ## 2. 实现任务
 
 ### Phase 0：R1 可打开的工程基线
 
-- [ ] **T203** `[成果门:R1]` (`FR-027`, `AC-011`): 为现有已验证管线增加单命令成果入口，
+- [x] **T203** `[成果门:R1]` (`FR-027`, `AC-011`): 为现有已验证管线增加单命令成果入口，
       在 `artifacts/showcase/latest/` 生成 `RUN.md`、`manifest.json`、原始日志、
       `replay.html` 与 `summary.md`；证据级别固定为 `engineering-demonstration`，不得写入
       正式 evidence index — verify: `tests/integration/test_showcase_bundle.py`
 
 ### Phase 1：目标、信息与遗留代理链
 
-- [ ] **T204** (`FR-021`, `AC-001`): 实现目标模型接口、linear/threshold 模型与独立制度约束层，承接 0.1.2 T404 — verify: `tests/unit/agent/`
-- [ ] **T205** (`FR-021`, `AC-001`): 迁移库存型做市商目标与报价风险政策，承接 0.1.2 T405 — verify: `tests/unit/agent/`
-- [ ] **T206** (`FR-022`, `FR-025`, `AC-002`, `AC-005`): 实现公开 tape、逐代理游标、观察/决策
+- [x] **T204** (`FR-021`, `AC-001`): 实现目标模型接口、linear/threshold 模型与独立制度约束层，承接 0.1.2 T404 — verify: `tests/unit/agent/`
+- [x] **T205** (`FR-021`, `AC-001`): 迁移库存型做市商目标与报价风险政策，承接 0.1.2 T405 — verify: `tests/unit/agent/`
+- [x] **T206** (`FR-022`, `FR-025`, `AC-002`, `AC-005`): 实现公开 tape、逐代理游标、观察/决策
       证据链，承接 0.1.2 T406；游标先消费后原子推进，并补故障注入测试（中途失败重试不丢
       事件、不重复写证据）；**在同一次变更里**把 `DecisionEvidenceV1` 的审计字段与游标边界
       接进 `AGENT_OBSERVE`/`AGENT_DECIDE`、同步 `event-schema.md` 并升 `schema_version`
       ——生产者、Schema、文档、版本号必须一起动 — verify: `tests/integration/`
-- [ ] **T207** (`FR-022`, `NFR-005`, `AC-002`): 固化多代理构建、零仓位、K 线、EWMA 与确定性测试，承接 0.1.2 T407 — verify: `tests/unit/agent/`
-- [ ] **T208** `[成果门:R2]` (`FR-027`, `AC-001`, `AC-002`, `AC-005`): 用固定种子生成目标驱动代理
+- [x] **T207** (`FR-022`, `NFR-005`, `AC-002`): 固化多代理构建、零仓位、K 线、EWMA 与确定性测试，承接 0.1.2 T407 — verify: `tests/unit/agent/`
+- [x] **T208** `[成果门:R2]` (`FR-027`, `AC-001`, `AC-002`, `AC-005`): 用固定种子生成目标驱动代理
       单次运行成果包，回放至少一条“观察—目标—约束—订单—成交”链；证据级别固定为
       `engineering-demonstration` — verify: `tests/integration/test_goal_driven_showcase.py`
 
 ### Phase 2：运行族、证据权限与 `2 × 2` 预览
 
-- [ ] **T209** (`FR-023`, `IR-501`, `AC-003`): 实现三运行族配置闭集与 fail-closed 允许/拒绝矩阵 — verify: `tests/unit/experiment/`
-- [ ] **T210** (`FR-023`, `DR-501`, `AC-004`): 实现 `StressProtocolV1`、四 cell 同路径校验和 `EXOGENOUS_STRESS` provenance — verify: `tests/unit/experiment/`
-- [ ] **T211** (`FR-025`, `TR-501`, `TR-502`, `AC-005`): 扩展决策事件与全链独立验证器 — verify: `tests/integration/`
-- [ ] **T212** (`FR-026`, `IR-502`, `AC-008`): 实现 evidence class 与跨族报告/聚合权限守卫 — verify: `tests/unit/experiment/`
+- [x] **T209** (`FR-023`, `IR-501`, `AC-003`): 实现三运行族配置闭集与 fail-closed 允许/拒绝矩阵 — verify: `tests/unit/experiment/`
+- [x] **T210** (`FR-023`, `DR-501`, `AC-004`): 实现 `StressProtocolV1`、四 cell 同路径校验和 `EXOGENOUS_STRESS` provenance — verify: `tests/unit/experiment/`
+- [x] **T211** (`FR-025`, `TR-501`, `TR-502`, `AC-005`): 扩展决策事件与全链独立验证器 — verify: `tests/integration/`
+- [x] **T212** (`FR-026`, `IR-502`, `AC-008`): 实现 evidence class 与跨族报告/聚合权限守卫 — verify: `tests/unit/experiment/`
 - [ ] **T213** (`FR-024`, `AC-006`): 实现四 cell 配对 seed plan 与三终点独立统计计划 — verify: `tests/integration/`
 - [ ] **T214** `[成果门:R3]` (`FR-024`, `FR-027`, `AC-006`, `AC-007`): 用小种子计划生成四 cell ×
       三终点比较表与代表性回放；manifest 标记 `experiment-preview`，报告显式拒绝正式结论

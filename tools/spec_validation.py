@@ -1158,7 +1158,7 @@ def validate_spec_lifecycle(
 # --------------------------------------------------------------------------- #
 
 # 预注册必填项的稳定短标签。**不从模板正文推断**——模板是散文，措辞会改；这里用显式
-# 闭集，并同时校验模板自己仍然覆盖这八项，让两边漂移时立刻报错而不是一边悄悄失效。
+# 闭集，并同时校验模板自己仍然覆盖这些项，让两边漂移时立刻报错而不是一边悄悄失效。
 PREREG_REQUIRED_ITEMS = (
     "处理因子的水平取值",
     "估计量定义",
@@ -1168,16 +1168,20 @@ PREREG_REQUIRED_ITEMS = (
     "停止规则",
     "多重比较",
     "校准区",
+    "risk_appetite",
+    "theta_in",
+    "theta_out",
+    "k_x1000",
 )
 PREREG_TEMPLATE = "docs/experiments/experiment-template.md"
 
 
 def validate_preregistrations(root: pathlib.Path, errors: list[str]) -> None:
-    """真实预注册产物必须覆盖模板声明的八项必填内容。
+    """真实预注册产物必须覆盖模板声明的必填内容。
 
     预注册的价值全在"看到结果之前写定"，因此漏项不是格式问题：少写一条停止规则，
     "什么时候停止收样"就变成看着结果决定的——那和没有预注册没有区别。文件不存在时
-    本校验静默通过（T202 尚未执行），但缺项一旦出现必须当场失败。
+    本校验在产物不存在时静默通过（任务时点由 lifecycle 拥有），但缺项一旦出现必须当场失败。
     """
     template_path = root / PREREG_TEMPLATE
     if template_path.is_file():
