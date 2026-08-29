@@ -44,6 +44,15 @@ class ProportionDiffResult:
         return self.ci_low > 0 or self.ci_high < 0
 
 
+@dataclass(frozen=True)
+class BHDecision:
+    """One Benjamini-Hochberg decision with its monotone adjusted p-value."""
+
+    p_value: float
+    adjusted_p_value: float
+    significant: bool
+
+
 def bootstrap_proportion_diff(
     control_outcomes: list[bool],
     treatment_outcomes: list[bool],
@@ -117,6 +126,42 @@ def holm_bonferroni(p_values: dict[str, float], alpha: float = 0.05) -> dict[str
                 result[name2] = False
             break
     return result
+
+
+def benjamini_hochberg(p_values: dict[str, float], q: float = 0.05) -> dict[str, BHDecision]:
+    """Control FDR within one pre-registered hypothesis family.
+
+    The adjusted p-values use the standard reverse cumulative minimum of
+    ``p_(i) * m / i``.  Hypothesis names only break equal-p ties, making the
+    result deterministic regardless of input-dict insertion order.
+    """
+    if not (0 < q < 1):
+        raise ValueError(f"q must be in (0, 1), got {q}")
+    for name, p_value in p_values.items():
+        if not isinstance(name, str) or not name:
+            raise ValueError("hypothesis names must be non-empty strings")
+        if isinstance(p_value, bool) or not isinstance(p_value, (int, float)):
+            raise ValueError(f"p-value for {name!r} must be numeric")
+        if not (0 <= p_value <= 1):
+            raise ValueError(f"p-value for {name!r} must be in [0, 1], got {p_value}")
+
+    ranked = sorted(p_values.items(), key=lambda item: (item[1], item[0]))
+    m = len(ranked)
+    adjusted: dict[str, float] = {}
+    running_min = 1.0
+    for reverse_index in range(m - 1, -1, -1):
+        name, p_value = ranked[reverse_index]
+        rank = reverse_index + 1
+        running_min = min(running_min, float(p_value) * m / rank)
+        adjusted[name] = min(running_min, 1.0)
+    return {
+        name: BHDecision(
+            p_value=float(p_values[name]),
+            adjusted_p_value=adjusted[name],
+            significant=adjusted[name] <= q,
+        )
+        for name in p_values
+    }
 
 
 def build_conditional_conclusion(

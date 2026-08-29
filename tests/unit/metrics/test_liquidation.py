@@ -8,7 +8,11 @@ nothing in the repo imports or calls it in a test.
 
 from __future__ import annotations
 
-from market_game_sim.metrics.liquidation import LiquidationMetrics, compute_liquidation_metrics
+from market_game_sim.metrics.liquidation import (
+    LiquidationMetrics,
+    classify_run,
+    compute_liquidation_metrics,
+)
 
 
 def _liq_order(order_id: str, agent_id: str = "A") -> dict:
@@ -180,3 +184,45 @@ def test_chain_size_excludes_missing_chain_id():
     events = [_margin_call("A", "BREACHED", chain_depth=0, chain_id=None)]
     m = compute_liquidation_metrics(events)
     assert m.chain_size_by_id == {}
+
+
+def _classify(events, *, last_ticks=10_000, idle_ns=0, total_ns=100):
+    return classify_run(
+        events=events,
+        last_ticks=last_ticks,
+        initial_price=10_000,
+        total_idle_ns=idle_ns,
+        run_total_ns=total_ns,
+        has_aborted=False,
+        chained_liquidation_drained_book=False,
+    )
+
+
+def test_ev1_records_a_floor_touch_even_when_price_recovers():
+    result = _classify(
+        [
+            {"event_type": "TRADE_SETTLE", "price_ticks": 1},
+            {"event_type": "TRADE_SETTLE", "price_ticks": 10_000},
+        ]
+    )
+    assert "EV-1" in result.economic_endpoint_codes
+
+
+def test_ev3_requires_positive_run_duration():
+    assert "EV-3" not in _classify([], idle_ns=1, total_ns=0).economic_endpoint_codes
+    assert "EV-3" in _classify([], idle_ns=6, total_ns=100).economic_endpoint_codes
+
+
+def test_ev4_records_directional_drained_sides():
+    result = classify_run(
+        events=[],
+        last_ticks=10_000,
+        initial_price=10_000,
+        total_idle_ns=0,
+        run_total_ns=100,
+        has_aborted=False,
+        chained_liquidation_drained_book=True,
+        liquidation_drained_sides=["bid"],
+    )
+    assert result.economic_endpoint_codes == ["EV-4"]
+    assert result.ev4_drained_sides == ["bid"]

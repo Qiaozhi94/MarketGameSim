@@ -10,7 +10,9 @@ from __future__ import annotations
 import pytest
 
 from market_game_sim.experiment.stats import (
+    BHDecision,
     ProportionDiffResult,
+    benjamini_hochberg,
     bootstrap_proportion_diff,
     build_conditional_conclusion,
     holm_bonferroni,
@@ -92,6 +94,32 @@ class TestHolmBonferroni:
     def test_invalid_alpha_raises(self):
         with pytest.raises(ValueError, match="alpha"):
             holm_bonferroni({"a": 0.01}, alpha=0.0)
+
+
+class TestBenjaminiHochberg:
+    def test_adjusted_values_are_monotone_and_input_order_independent(self):
+        first = benjamini_hochberg({"c": 0.04, "a": 0.001, "b": 0.02}, q=0.05)
+        second = benjamini_hochberg({"b": 0.02, "c": 0.04, "a": 0.001}, q=0.05)
+        assert first == second
+        assert first == {
+            "c": BHDecision(0.04, 0.04, True),
+            "a": BHDecision(0.001, 0.003, True),
+            "b": BHDecision(0.02, 0.03, True),
+        }
+
+    def test_family_is_corrected_as_one_set(self):
+        result = benjamini_hochberg({"a": 0.01, "b": 0.04, "c": 0.9}, q=0.05)
+        assert result["a"].significant is True
+        assert result["b"].significant is False
+        assert result["c"].significant is False
+
+    @pytest.mark.parametrize(
+        "p_values,q",
+        [({"a": -0.1}, 0.05), ({"a": 1.1}, 0.05), ({"a": True}, 0.05), ({}, 0.0)],
+    )
+    def test_invalid_inputs_fail_closed(self, p_values, q):
+        with pytest.raises(ValueError):
+            benjamini_hochberg(p_values, q=q)
 
 
 class TestBuildConditionalConclusion:

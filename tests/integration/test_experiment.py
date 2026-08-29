@@ -812,3 +812,66 @@ def test_check_shared_randomness_parity_rejects_empty_path():
     err = check_shared_randomness_parity([_run()], [_run()])
     assert err is not None
     assert "no auditable random path" in err
+
+
+def test_ev4_drained_side_requires_a_causal_liquidation_order():
+    """An already-empty side plus an unrelated chain must not become EV-4."""
+    from market_game_sim.experiment import runner as runner_mod
+
+    class _FinalBook:
+        def best_bid(self):
+            return None
+
+        def best_ask(self):
+            return 10_001
+
+    margin_calls = [
+        {
+            "event_type": "MARGIN_CALL",
+            "event_id": "mc-root",
+            "chain_id": "chain-1",
+            "chain_depth": 0,
+        },
+        {
+            "event_type": "MARGIN_CALL",
+            "event_id": "mc-child",
+            "chain_id": "chain-1",
+            "chain_depth": 1,
+        },
+    ]
+    unrelated = [
+        *margin_calls,
+        {
+            "event_type": "ORDER_ARRIVAL",
+            "origin": "LIQUIDATION",
+            "decision_event_id": "different-chain",
+            "side": "SELL",
+        },
+    ]
+    assert runner_mod._book_sides_drained_by_liq(unrelated, _FinalBook()) == []
+
+    causal = [
+        *margin_calls,
+        {
+            "event_type": "ORDER_ARRIVAL",
+            "origin": "LIQUIDATION",
+            "decision_event_id": "mc-root",
+            "side": "SELL",
+        },
+    ]
+    assert runner_mod._book_sides_drained_by_liq(causal, _FinalBook()) == ["bid"]
+
+
+def test_max_idle_includes_run_boundaries_and_no_trade_runs():
+    from market_game_sim.experiment import runner as runner_mod
+
+    assert runner_mod._compute_max_idle([{"event_type": "RUN_TRAILER", "timestamp": 100}]) == 100
+    assert (
+        runner_mod._compute_max_idle(
+            [
+                {"event_type": "TRADE_SETTLE", "timestamp": 40},
+                {"event_type": "RUN_TRAILER", "timestamp": 100},
+            ]
+        )
+        == 60
+    )

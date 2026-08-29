@@ -66,7 +66,7 @@ updated: 2026-08-29
 - [x] **T210** (`FR-023`, `DR-501`, `AC-004`): 实现 `StressProtocolV1`、四 cell 同路径校验和 `EXOGENOUS_STRESS` provenance — verify: `tests/unit/experiment/`
 - [x] **T211** (`FR-025`, `TR-501`, `TR-502`, `AC-005`): 扩展决策事件与全链独立验证器 — verify: `tests/integration/`
 - [x] **T212** (`FR-026`, `IR-502`, `AC-008`): 实现 evidence class 与跨族报告/聚合权限守卫 — verify: `tests/unit/experiment/`
-- [ ] **T213** (`FR-024`, `AC-006`): 实现四 cell 配对 seed plan 与三终点独立统计计划 — verify: `tests/integration/`
+- [x] **T213** (`FR-024`, `AC-006`): 实现四 cell 配对 seed plan 与三终点独立统计计划 — verify: `tests/integration/test_flagship_factorial.py`
 - [ ] **T214** `[成果门:R3]` (`FR-024`, `FR-027`, `AC-006`, `AC-007`): 用小种子计划生成四 cell ×
       三终点比较表与代表性回放；manifest 标记 `experiment-preview`，报告显式拒绝正式结论
       措辞 — verify: `tests/integration/test_flagship_preview.py`

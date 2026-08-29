@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "preregistration_id": "0.1.5-flagship-preregistration-v1",
+  "status": "FROZEN",
+  "preregistration_path": "docs/experiments/0.1.5-preregistration.md",
+  "preregistration_sha256": "a3d2021eb16e17dd40c5ec2427f22e7e063f096c56c8caf8806c0b9594668116",
+  "models": [
+    "risk_budget_linear_v1",
+    "risk_budget_threshold_v1"
+  ],
+  "cells": {
+    "LL": {"l_level": "low", "m_level": "low", "maint_bp": 300},
+    "LH": {"l_level": "low", "m_level": "high", "maint_bp": 700},
+    "HL": {"l_level": "high", "m_level": "low", "maint_bp": 300},
+    "HH": {"l_level": "high", "m_level": "high", "maint_bp": 700}
+  },
+  "leverage_tier_weights_bp": {
+    "low": {"2": 3334, "3": 3333, "5": 3333},
+    "high": {"10": 3334, "20": 3333, "50": 3333}
+  },
+  "leverage_tier_mechanism": "bench_leverage_tier",
+  "goal_parameters": {
+    "risk_appetite_x1000": {
+      "distribution": "int_uniform_half_open",
+      "low_inclusive": 500,
+      "high_exclusive": 20000,
+      "mechanism": "risk_appetite",
+      "drawn_once_per_run": true
+    },
+    "risk_budget_threshold_v1": {
+      "theta_in": 3000,
+      "theta_out": 1200,
+      "k_x1000": 600
+    }
+  },
+  "seed_plan": {
+    "planned_start": 30000,
+    "planned_end": 30127,
+    "reserve_start": 30128,
+    "reserve_end": 30143,
+    "minimum_valid_blocks": 128
+  },
+  "analysis": {
+    "endpoint_families": ["crash", "surge", "liquidity_drought"],
+    "metrics": ["occurrence", "severity"],
+    "contrasts": ["L", "M", "LxM"],
+    "bootstrap_resamples": 10000,
+    "bootstrap_seed": 913201,
+    "sign_flip_resamples": 100000,
+    "sign_flip_seed": 913202,
+    "bh_q": 0.05,
+    "tests_per_family": 12
+  }
+}
