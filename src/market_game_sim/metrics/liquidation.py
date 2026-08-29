@@ -81,6 +81,7 @@ class RunClassification:
     technical_invalid_code: str | None = None
     is_economic_endpoint: bool = False
     economic_endpoint_codes: list[str] = field(default_factory=list)
+    ev4_drained_sides: list[str] = field(default_factory=list)
     breached: bool = False
 
     def as_dict(self) -> dict:
@@ -101,6 +102,7 @@ def classify_run(
     run_total_ns: int,
     has_aborted: bool,
     chained_liquidation_drained_book: bool,
+    liquidation_drained_sides: list[str] | None = None,
     reference_integrity_ok: bool = True,
     hash_consistent: bool = True,
     conservation_ok: bool = True,
@@ -116,7 +118,7 @@ def classify_run(
     * EV-1: price touched 1 tick.
     * EV-2: max|ln(P/P0)| > ln(10) over entire run interval.
     * EV-3: continuous idle time > 5% of run length.
-    * EV-4: chained liquidation drained the book.
+    * EV-4: chained liquidation drained at least one book side.
     """
     result = RunClassification()
     if log_truncated:
@@ -139,10 +141,16 @@ def classify_run(
         result.is_technical_invalid = True
         result.technical_invalid_code = "TI-3"
         return result
-    if total_idle_ns > 0.05 * run_total_ns:
+    if run_total_ns > 0 and total_idle_ns > 0.05 * run_total_ns:
         result.is_economic_endpoint = True
         result.economic_endpoint_codes.append("EV-3")
-    if last_ticks is not None and initial_price > 0 and last_ticks <= 1:
+    touched_floor = any(
+        ev.get("event_type") == "TRADE_SETTLE"
+        and type(ev.get("price_ticks")) is int
+        and ev["price_ticks"] <= 1
+        for ev in events
+    )
+    if initial_price > 0 and (touched_floor or (last_ticks is not None and last_ticks <= 1)):
         result.is_economic_endpoint = True
         result.economic_endpoint_codes.append("EV-1")
     if initial_price > 0:
@@ -150,7 +158,14 @@ def classify_run(
         if max_deviation is not None and abs(max_deviation) > math.log(10):
             result.is_economic_endpoint = True
             result.economic_endpoint_codes.append("EV-2")
-    if chained_liquidation_drained_book:
+    drained_sides = list(liquidation_drained_sides or [])
+    if chained_liquidation_drained_book and not drained_sides:
+        # Backward-compatible meaning of the legacy boolean: both sides.
+        drained_sides = ["bid", "ask"]
+    if any(side not in {"bid", "ask"} for side in drained_sides):
+        raise ValueError(f"liquidation_drained_sides must contain only bid/ask: {drained_sides}")
+    result.ev4_drained_sides = sorted(set(drained_sides))
+    if result.ev4_drained_sides:
         result.is_economic_endpoint = True
         result.economic_endpoint_codes.append("EV-4")
     if any(

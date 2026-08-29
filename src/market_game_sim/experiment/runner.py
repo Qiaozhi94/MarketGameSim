@@ -626,6 +626,7 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
     )
     reference_integrity_ok = check_causal_references(events) is None
 
+    drained_sides = _book_sides_drained_by_liq(events, world["book"])
     classification = classify_run(
         events=events,
         last_ticks=last_ticks,
@@ -633,7 +634,8 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
         total_idle_ns=idle_ns,
         run_total_ns=run_total_ns,
         has_aborted=kernel.terminated == "ABORTED",
-        chained_liquidation_drained_book=_book_drained_by_liq(events, world["book"]),
+        chained_liquidation_drained_book=bool(drained_sides),
+        liquidation_drained_sides=drained_sides,
         reference_integrity_ok=reference_integrity_ok,
         conservation_ok=conservation_ok,
         # hash_consistent/log_truncated stay at their defaults (True/False):
@@ -775,21 +777,54 @@ def _max_event_timestamp(events: list[dict]) -> int:
 
 
 def _compute_max_idle(events: list[dict]) -> int:
-    """Longest gap between consecutive TRADE_SETTLE events (nanoseconds)."""
+    """Longest no-trade interval, including run boundaries."""
+    run_total_ns = _max_event_timestamp(events)
     trade_ts = sorted(e["timestamp"] for e in events if e.get("event_type") == "TRADE_SETTLE")
-    if len(trade_ts) < 2:
-        return 0
-    return max(b - a for a, b in zip(trade_ts, trade_ts[1:], strict=False))
+    boundaries = [0, *trade_ts, run_total_ns]
+    return max((b - a for a, b in zip(boundaries, boundaries[1:], strict=False)), default=0)
 
 
 def _book_drained_by_liq(events: list[dict], book) -> bool:
-    """Whether chained liquidation drained the book (both sides empty)."""
-    has_chain = any(
-        e.get("event_type") == "MARGIN_CALL" and (e.get("chain_depth") or 0) >= 1 for e in events
-    )
-    if not has_chain:
-        return False
-    return book.best_bid() is None and book.best_ask() is None
+    """Backward-compatible boolean wrapper for any drained book side."""
+    return bool(_book_sides_drained_by_liq(events, book))
+
+
+def _book_sides_drained_by_liq(events: list[dict], book) -> list[str]:
+    """Final sides causally consumed by a depth>=1 liquidation chain."""
+    chained_ids = {
+        event.get("chain_id")
+        for event in events
+        if event.get("event_type") == "MARGIN_CALL"
+        and (event.get("chain_depth") or 0) >= 1
+        and event.get("chain_id")
+    }
+    if not chained_ids:
+        return []
+    chain_margin_call_ids = {
+        event.get("event_id")
+        for event in events
+        if event.get("event_type") == "MARGIN_CALL"
+        and event.get("chain_id") in chained_ids
+        and event.get("event_id")
+    }
+    consumed_sides: set[str] = set()
+    for event in events:
+        if (
+            event.get("event_type") != "ORDER_ARRIVAL"
+            or event.get("origin") != "LIQUIDATION"
+            or event.get("decision_event_id") not in chain_margin_call_ids
+        ):
+            continue
+        if event.get("side") == "SELL":
+            consumed_sides.add("bid")
+        elif event.get("side") == "BUY":
+            consumed_sides.add("ask")
+    sides: list[str] = []
+    if "bid" in consumed_sides and book.best_bid() is None:
+        sides.append("bid")
+    if "ask" in consumed_sides and book.best_ask() is None:
+        sides.append("ask")
+    return sides
 
 
 def _compute_initial_bp(leverage_tier: int) -> int:
