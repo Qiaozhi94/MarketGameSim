@@ -29,7 +29,7 @@ frontmatter**；本文只做入口与收口提示，不复制状态或需求正�
 | [`0.1.2-leverage-and-first-experiment/`](0.1.2-leverage-and-first-experiment/spec.md) | done | 0 |
 | [`0.1.3-robustness/`](0.1.3-robustness/spec.md) | done | 0 |
 | [`0.1.4-replay-and-report/`](0.1.4-replay-and-report/spec.md) | done | 1 |
-| [`0.1.5-goal-driven-flagship/`](0.1.5-goal-driven-flagship/spec.md) | draft | 1 |
+| [`0.1.5-goal-driven-flagship/`](0.1.5-goal-driven-flagship/spec.md) | in-progress | 1 |
 
 ## Legacy design 规则
 

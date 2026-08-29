@@ -775,3 +775,30 @@ C002 用 fail-stop 解释覆盖 AC-002 的明确重试不变量；C003/C006 的�
 3. 所有 evidence/gate 必须同时测试生产入口、解析器和 dangling/tamper 反例。
 4. 重复值、未知字段、裸标量、摘要漂移列为闭合结构的默认反例集。
 5. `stop_condition_met=true` 与删除 CURRENT 只由最终 reviewer 在全量门禁和 CI 全绿后执行。
+
+---
+
+## 循环 19: 0.1.5 T202 预注册冻结与状态回写
+
+- **report_type**: doc-review -> fix-verification
+- **周期**: 2026-08-29（round 1 全量一致性复核 -> round 2 diff-only 复核）
+- **复盘状态**: T202 已冻结，T203—T212 已回写完成，0.1.5 已进入 `in-progress`；
+  未决 Critical / High / Medium / Low = 0 / 0 / 0 / 0
+- **本地门禁**: `python tools/verify.py`，2146 passed；真源、生命周期、ruff check、
+  ruff format 全绿
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| R017-D002 | T202 未冻结且漏模型参数 | High | test-coverage | root-cause | process-gap | fixed | 冻结 L/M、估计量、三终点、功效、seed、排除/停止、BH、三区及两类模型参数；扩展模板与门禁 | `test_preregistration_missing_model_parameter_is_rejected` 4 组反例 | 循环 17 round 1 | 本循环 round 1 | implementation-before-preregistration |
+| R019-D001 | 128 个有效 seed 的跨模型语义不明 | Medium | correctness | symptom | original-doc | fixed | 明确 linear/threshold 共用一个 8-run 块，任一 run 无效即整块排除 | round 2 文档反查 | 1 | 1 | paired-block-ambiguity |
+| R019-D002 | TI-2 有排除码但没有冻结重跑审计方法 | High | correctness | root-cause | original-doc | fixed | 每个 run 同配置/同 seed 执行两次，第二次仅比较事件摘要哈希 | round 2 核对 seed plan 与 TI-1—TI-5 闭环 | 1 | 1 | exclusion-code-without-observation |
+| R019-D003 | 校验器注释仍称八项且称 T202 未执行 | Low | maintainability | symptom | fix-regression | fixed | 删除过时数量和任务状态推断，保留 lifecycle/产物校验边界 | ruff format + 统一 verify | 1 | 1 | stale-gate-comment |
+
+**round 2 结论**：逐项核对 T202 任务文本、实验模板、冻结产物、退化状态合同、
+目标参数合同和状态索引，未新增 ID。预注册在 T213 前冻结，并明确把尚未生成的
+四 cell 配置哈希留给 T213 绑定，没有伪造运行证据。
+
+**模式教训**：预注册门不能只检查统计标题。行为参数与技术排除如果只在代码中存在，
+仍可在看到结果后被改动；因此 `risk_appetite`、threshold 参数和 TI-2 审计步骤都必须成为
+冻结产物与机器缺项门禁的一部分。本循环提交推送后必须由 CI 确认全绿；
+最终 run 以该提交的 GitHub checks 为准。
