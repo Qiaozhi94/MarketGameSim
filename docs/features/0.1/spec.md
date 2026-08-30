@@ -2,19 +2,22 @@
 kind: version-spec
 id: v0.1-belief-testing-laboratory
 version: "0.1"
-status: in-progress
-research_claim_status: not-established
+status: done
+research_claim_status: established
 research_claim_required: true
+evidence_class: formal-research
+research_evidence:
+  - docs/experiments/0.1.5-evidence-index.json
 created: 2026-07-31
-updated: 2026-08-15
+updated: 2026-08-30
 ---
 
 # Feature Specification: Belief Testing Laboratory
 
 **规格编号**：v0.1-belief-testing-laboratory  
-**状态**：工程生命周期与研究声明见 frontmatter。0.1.1—0.1.4 已达成工程退出；根规格
-只有在 **0.1.5** 完成且研究声明建立后才能签收。  
-**创建日期**：2026-07-31　**更新日期**：2026-08-15  
+**状态**：工程生命周期与研究声明见 frontmatter。0.1.1—0.1.5 已完成工程退出，正式
+研究声明已由 0.1.5 evidence index 建立，v0.1 已签收。
+**创建日期**：2026-07-31　**更新日期**：2026-08-30
 **关联 PRD**：[`../../market-game-sim-prd.md`](../../market-game-sim-prd.md) v0.4.0  
 **架构**：[`design.md`](design.md)　**里程碑**：[`0.1.1`](0.1.1-minimal-kernel/spec.md) · [`0.1.2`](0.1.2-leverage-and-first-experiment/spec.md) · [`0.1.3`](0.1.3-robustness/spec.md) · [`0.1.4`](0.1.4-replay-and-report/spec.md) · [`0.1.5`](0.1.5-goal-driven-flagship/spec.md)  
 **已生效决策**：[ADR-001](../../decisions/001-numeric-and-serialization-contract.md)
@@ -462,11 +465,11 @@ ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的
 - 穿仓——权益为负后的账户状态与后续订单权限；
 - 代理破产、价格趋近下界、订单簿单边清空、长时间无成交、价格发散。
 
-## 未闭合事项
+## 收口记录与后移事项
 
-0.1.1—0.1.4 的工程合同已经闭合。ADR-003 接受后，目标驱动代理、信息游标、三运行族、
-`2 × 2` 制度因子与三终点家族由 0.1.5 承接；0.1.2/0.1.3 的旧证据只属于
-`engineering-demonstration`，不建立旗舰研究声明。
+0.1.1—0.1.5 的工程合同已经闭合。目标驱动代理、信息游标、三运行族、`2 × 2` 制度
+因子与三终点家族已由 0.1.5 交付；0.1.2/0.1.3 的旧证据仍只属于
+`engineering-demonstration`，未被升级为旗舰研究证据。
 
 ### P-3 的已知缺陷（后移前记录）
 
@@ -478,11 +481,12 @@ ABIDES、PAMS 等框架不含保证金与强平模型，要用就得改它们的
 （`latency_ns > 0` 恰好制造了这个窗口）。这样可见集合与预知者的当前决策无关，自指
 消解。P-3 中「强平单同样在可见范围内」一句须删除。
 
-### 根规格收口条件
+### 根规格收口结果
 
 [ADR-003](../../decisions/003-goal-driven-agents-and-flagship-identification.md) 已 Accepted。
-0.1.5 必须达到 `status: done` 与 `research_claim_status: established`；随后版本根才可达到
-相同收口状态并生成 `docs/features/releases/0.1.md`。0.1.4 的工程退出不等于 v0.1 已签收。
+0.1.5 与版本根均已达到 `status: done`、`research_claim_status: established`；不可变
+签收记录见 [`docs/features/releases/0.1.md`](../releases/0.1.md)，正式研究证据见
+[`0.1.5-evidence-index.json`](../../experiments/0.1.5-evidence-index.json)。
 
 ## 需求追踪矩阵（唯一真源）
 

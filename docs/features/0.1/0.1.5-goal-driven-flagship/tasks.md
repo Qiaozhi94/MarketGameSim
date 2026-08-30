@@ -73,22 +73,30 @@ updated: 2026-08-30
 
 ### Phase 3：正式旗舰实验
 
-- [ ] **T215** (`FR-024`, `SC-010`, `AC-007`): 运行校准/验证后冻结的正式 `SPONTANEOUS` 实验 — verify: `docs/experiments/`
-- [ ] **T216** (`FR-026`, `DR-502`, `SC-011`, `AC-009`): 生成正式 evidence index 与条件性结论 — verify: `docs/experiments/`
-- [ ] **T217** `[成果门:R4]` (`FR-024`, `FR-026`, `FR-027`, `AC-007`, `AC-009`): 交付三终点正式
+- [x] **T215** (`FR-024`, `SC-010`, `AC-007`): 运行校准/验证后冻结的正式 `SPONTANEOUS` 实验 — verify:
+      `python -m market_game_sim.showcase.formal`、`artifacts/formal/T215/`
+- [x] **T216** (`FR-026`, `DR-502`, `SC-011`, `AC-009`): 生成正式 evidence index 与条件性结论 — verify:
+      `python -m market_game_sim.showcase.evidence_index`、`docs/experiments/0.1.5-evidence-index.json`
+- [x] **T217** `[成果门:R4]` (`FR-024`, `FR-026`, `FR-027`, `AC-007`, `AC-009`): 交付三终点正式
       结果、效应量/不确定性、代表性回放与可复现 manifest；仅允许
-      `SPONTANEOUS + formal-research` — verify: `docs/experiments/`
+      `SPONTANEOUS + formal-research` — verify: `python -m market_game_sim.showcase.r4`、
+      `artifacts/showcase/R4/`
 
 ## 3. 验证与验收任务
 
-- [ ] **T218** (`AC-001`—`AC-012`): 逐项核对退出条件、批量回归与正式证据路径 — verify: `python tools/verify.py`
-- [ ] **T219** (`AC-001`—`AC-012`): 运行项目统一质量门和确定性复现 — verify: `python tools/verify.py`
-- [ ] **T220** `[成果门:R5]` (`FR-027`, `AC-011`, `AC-012`): 生成 v0.1 研究交付入口——
+- [x] **T218** (`AC-001` 至 `AC-010`): 逐项核对退出条件、批量回归与正式证据路径；
+      R5 交付前不得提前签收 `AC-011` / `AC-012` — verify: `python tools/verify.py`、
+      `docs/experiments/0.1.5-t218-acceptance.json`
+- [x] **T219** (`AC-001` 至 `AC-010`): 运行项目统一质量门和确定性复现；
+      R5 交付验收仍由 T220 独占 — verify: `python tools/verify.py`、
+      `docs/experiments/0.1.5-t219-verification.json`
+- [x] **T220** `[成果门:R5]` (`FR-027`, `AC-011`, `AC-012`): 生成 v0.1 研究交付入口——
       **单条命令**同时产出 R5 成果包与仓库内交付物（总结报告、限制说明、evidence index、
       代表性回放提交进 `docs/experiments/`），README 两次点击内可达；集成测试在 clean
       checkout（不含 `artifacts/`）中执行该命令，再断言四条链接全部有效且回放离线可开
-      — verify: `tests/integration/test_delivery_entry.py`
-- [ ] **T221** `[状态门]` (`FR-026`, `AC-009`, `AC-010`): **全部任务与 AC 勾完后**，在同一次变更里回写
+      ；本任务完成后才允许签收 `AC-011` / `AC-012` — verify:
+      `tests/integration/test_delivery_entry.py`
+- [x] **T221** `[状态门]` (`FR-026`, `AC-009`, `AC-010`): **全部任务与 AC 勾完后**，在同一次变更里回写
       验收证据并推进 `done / established`；必须是本文件最后一项 — verify:
       `tools/validate_spec_lifecycle.py`
 

@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "milestone": "0.1.5",
+  "task": "T220",
+  "gate": "R5",
+  "status": "passed",
+  "generated_on": "2026-08-30",
+  "single_command": "python -m market_game_sim.showcase.r5",
+  "clean_checkout": {
+    "artifacts_present_before_command": false,
+    "command_exit_code": 0,
+    "test": "tests/integration/test_delivery_entry.py::test_clean_checkout_command_needs_no_artifacts_and_all_readme_links_work"
+  },
+  "all_gate_rebuild_commands": {
+    "R1": "python -m market_game_sim.showcase.generate benchmarks/BENCH-001.yaml",
+    "R2": "python -m market_game_sim.showcase.r2",
+    "R3": "python -m market_game_sim.showcase.preview --plan docs/experiments/0.1.5-factorial-plan.json --seeds 2 --out artifacts/showcase/R3",
+    "R4": "python -m market_game_sim.showcase.r4",
+    "R5": "python -m market_game_sim.showcase.r5"
+  },
+  "bundle": {
+    "path": "artifacts/showcase/R5",
+    "files": [
+      "RUN.md",
+      "evidence-index.json",
+      "manifest.json",
+      "replay.html",
+      "summary.md"
+    ],
+    "manifest_sha256": "1510340302184c467e5f055d38322ed824432d16fd9d60676184e6ba4183ef9f",
+    "evidence_class": "formal-research",
+    "run_family": "SPONTANEOUS",
+    "representative_seed": 30000
+  },
+  "repository_delivery": {
+    "report": {
+      "path": "docs/experiments/0.1.5-flagship-report.md",
+      "sha256": "21e57860ec4c0faf1f650c011241d21615f07dad7ea1ff5e0cbe4ccef33186d4"
+    },
+    "limitations": {
+      "path": "docs/experiments/0.1.5-flagship-report.md#限制与失效边界",
+      "sha256": "21e57860ec4c0faf1f650c011241d21615f07dad7ea1ff5e0cbe4ccef33186d4"
+    },
+    "representative_replay": {
+      "path": "docs/experiments/0.1.5-representative-replay.html",
+      "sha256": "d366b6c6ba5ad6368d83176985ebe8ba638733c67212bf2ced4e6a6ac11b2dbd",
+      "bytes": 130830,
+      "offline": true,
+      "max_bytes": 5242880
+    },
+    "evidence_index": {
+      "path": "docs/experiments/0.1.5-evidence-index.json",
+      "sha256": "f61b03c5140ba079f9248d26f0c6ed2541c914e95a978555fc0c1bf606ed26b9"
+    },
+    "readme_click_depth": 1
+  },
+  "formal_binding": {
+    "source_tree_sha256": "81984fdc6f39f535cc1763a7f4da15a9be8e15b0e15261b9248c0550d01b64a8",
+    "config_hash": "82cf38207aa8c89e3f65fef0374da90c",
+    "valid_seed_blocks": 128,
+    "excluded_seed_blocks": 0
+  },
+  "targeted_tests": "5 passed",
+  "quality_gate": {
+    "command": "python tools/verify.py",
+    "pytest": "2218 passed",
+    "contract_sources": "passed",
+    "spec_lifecycle": "passed",
+    "ruff_check": "passed",
+    "ruff_format_check": "passed",
+    "warning": ".pytest_cache ACL prevents cache writes; test execution and results are unaffected"
+  }
+}

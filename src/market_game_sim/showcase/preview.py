@@ -197,6 +197,7 @@ def _write_run_log(
     tick_size: str,
     min_quantity: str,
     cash_unit: str,
+    started_at_wall: str | None = None,
 ) -> None:
     """Serialize one run as RUN_HEADER + EVENT x N + RUN_TRAILER JSONL."""
     header = build_run_header(
@@ -204,7 +205,7 @@ def _write_run_log(
         code_version=__version__,
         config_hash=compute_config_hash(config),
         master_seed=config.seed,
-        started_at_wall=datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        started_at_wall=(started_at_wall or datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")),
         tick_size=tick_size,
         min_quantity=min_quantity,
         cash_unit=cash_unit,

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "milestone": "0.1.5",
+  "task": "T219",
+  "status": "passed",
+  "verified_on": "2026-08-30",
+  "formal_resume": {
+    "command": "python -m market_game_sim.showcase.formal --out artifacts/formal/T215-t218",
+    "executed_seed_blocks": 128,
+    "valid_seed_blocks": 128,
+    "new_seed_blocks": 0,
+    "complete": true
+  },
+  "deterministic_reproduction": {
+    "status": "byte-identical",
+    "file_count": 140,
+    "changed_files": 0,
+    "total_bytes": 5900437,
+    "aggregate_sha256": "7d842b738046adb600c85f25ea7ab2e4821a41b739fcb21dadfeda8e00c93584",
+    "t216_generated_sha256": "04b95fc5672e22091c3f932f83b0cf0975286c274a5ae78e4a4c44bf6e8b06f6",
+    "r4_evidence_copy_sha256": "d08192b3cfd4326ff4432920de9ff82ec600504ef6cc3016c9b092fa63d9e959",
+    "commands": [
+      "python -m market_game_sim.showcase.evidence_index --t215-dir artifacts/formal/T215-t218 --out artifacts/formal/T215-t218/evidence-index.json",
+      "python -m market_game_sim.showcase.r4 --evidence-index docs/experiments/0.1.5-evidence-index.json --out artifacts/showcase/R4-t218"
+    ],
+    "scope": [
+      "artifacts/formal/T215-t218",
+      "docs/experiments/0.1.5-evidence-index.json",
+      "artifacts/showcase/R4-t218"
+    ]
+  },
+  "quality_gate": {
+    "command": "python tools/verify.py",
+    "pytest": "2211 passed",
+    "contract_sources": "passed",
+    "spec_lifecycle": "passed",
+    "ruff_check": "passed",
+    "ruff_format_check": "passed",
+    "warning": ".pytest_cache ACL prevents cache writes; test execution and results are unaffected"
+  },
+  "next_task": "T220"
+}
