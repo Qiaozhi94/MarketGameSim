@@ -4,7 +4,7 @@ id: 0.1.5
 version: "0.1"
 doc_kind: tasks
 created: 2026-08-14
-updated: 2026-08-29
+updated: 2026-08-30
 ---
 
 # 0.1.5：目标驱动代理与旗舰实验识别 - 任务
@@ -67,7 +67,7 @@ updated: 2026-08-29
 - [x] **T211** (`FR-025`, `TR-501`, `TR-502`, `AC-005`): 扩展决策事件与全链独立验证器 — verify: `tests/integration/`
 - [x] **T212** (`FR-026`, `IR-502`, `AC-008`): 实现 evidence class 与跨族报告/聚合权限守卫 — verify: `tests/unit/experiment/`
 - [x] **T213** (`FR-024`, `AC-006`): 实现四 cell 配对 seed plan 与三终点独立统计计划 — verify: `tests/integration/test_flagship_factorial.py`
-- [ ] **T214** `[成果门:R3]` (`FR-024`, `FR-027`, `AC-006`, `AC-007`): 用小种子计划生成四 cell ×
+- [x] **T214** `[成果门:R3]` (`FR-024`, `FR-027`, `AC-006`, `AC-007`): 用小种子计划生成四 cell ×
       三终点比较表与代表性回放；manifest 标记 `experiment-preview`，报告显式拒绝正式结论
       措辞 — verify: `tests/integration/test_flagship_preview.py`
 
