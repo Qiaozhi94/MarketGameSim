@@ -17,7 +17,7 @@ from market_game_sim.experiment.config import ExperimentConfig, compute_config_h
 from market_game_sim.showcase.generate import build_showcase_bundle
 from market_game_sim.showcase.summary import DISCLAIMER
 
-REBUILD_CMD = "python -m market_game_sim.showcase.generate <config.yaml>"
+REBUILD_CMD = "python -m market_game_sim.showcase.r2"
 
 
 def _mm_spec() -> AgentSpec:

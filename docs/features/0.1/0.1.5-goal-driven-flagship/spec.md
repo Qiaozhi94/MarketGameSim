@@ -3,12 +3,15 @@ kind: milestone
 id: 0.1.5
 parent: v0.1-belief-testing-laboratory
 version: "0.1"
-status: in-progress
-research_claim_status: not-established
+status: done
+research_claim_status: established
 research_claim_required: true
+evidence_class: formal-research
+research_evidence:
+  - docs/experiments/0.1.5-evidence-index.json
 gate_version: 1
 created: 2026-08-14
-updated: 2026-08-29
+updated: 2026-08-30
 prerequisites:
   - 0.1.4
 ---
@@ -193,26 +196,26 @@ fail closed。
 
 ### 验收清单
 
-- [ ] **AC-001** (`FR-021`, `SC-009`): 目标层没有制度字段依赖，约束正反测试通过。
-- [ ] **AC-002** (`FR-022`, `DR-501`, `TR-501`, `NFR-005`, `SC-009`): 信息游标、K 线与
+- [x] **AC-001** (`FR-021`, `SC-009`): 目标层没有制度字段依赖，约束正反测试通过。
+- [x] **AC-002** (`FR-022`, `DR-501`, `TR-501`, `NFR-005`, `SC-009`): 信息游标、K 线与
       EWMA 确定性通过；观察/决策事件记录游标边界与封闭 Schema 版本；**故障注入测试证明
       消费中途失败后重试不丢公开事件、不产生重复决策证据**。
-- [ ] **AC-003** (`FR-023`, `IR-501`, `NFR-005`): 三运行族非法输入和未知字段均 fail
+- [x] **AC-003** (`FR-023`, `IR-501`, `NFR-005`): 三运行族非法输入和未知字段均 fail
       closed，且拒绝信息包含字段路径与原因。
-- [ ] **AC-004** (`FR-023`, `DR-501`): `StressProtocolV1` 有限、版本化、确定性序列化，
+- [x] **AC-004** (`FR-023`, `DR-501`): `StressProtocolV1` 有限、版本化、确定性序列化，
       且四 cell 逐事件一致。
-- [ ] **AC-005** (`FR-025`, `TR-501`, `TR-502`): 全部成交的目标—约束—订单—风险因果链
+- [x] **AC-005** (`FR-025`, `TR-501`, `TR-502`): 全部成交的目标—约束—订单—风险因果链
       机器可验证；`trigger_provenance` 为闭集且 `SPONTANEOUS` 无 `EXOGENOUS_STRESS`。
-- [ ] **AC-006** (`FR-024`, `SC-010`): `2 × 2` 配对计划和三终点预注册冻结。
-- [ ] **AC-007** (`FR-024`, `SC-010`): 三终点分别输出效应量、不确定性与方向不对称。
-- [ ] **AC-008** (`FR-026`, `IR-502`, `SC-011`): benchmark/stress/旧示范证据越权测试被
+- [x] **AC-006** (`FR-024`, `SC-010`): `2 × 2` 配对计划和三终点预注册冻结。
+- [x] **AC-007** (`FR-024`, `SC-010`): 三终点分别输出效应量、不确定性与方向不对称。
+- [x] **AC-008** (`FR-026`, `IR-502`, `SC-011`): benchmark/stress/旧示范证据越权测试被
       拒绝，报告入口不做隐式降级或跨族聚合。
-- [ ] **AC-009** (`FR-026`, `DR-502`, `SC-011`): 正式 evidence index 完整（配置哈希、
+- [x] **AC-009** (`FR-026`, `DR-502`, `SC-011`): 正式 evidence index 完整（配置哈希、
       代码版本、种子计划、预注册引用、三终点结果与 evidence class）且所有路径存在。
-- [ ] **AC-010** (`NFR-005`): `python tools/verify.py` 全绿且正式运行可由 manifest 复现。
-- [ ] **AC-011** (`FR-027`, `NFR-005`): R1—R5 每个成果包可由单条命令重建，manifest 的
+- [x] **AC-010** (`NFR-005`): `python tools/verify.py` 全绿且正式运行可由 manifest 复现。
+- [x] **AC-011** (`FR-027`, `NFR-005`): R1—R5 每个成果包可由单条命令重建，manifest 的
       `evidence_class` 与运行族一致，示范/预览报告携带“不可作结论”声明。
-- [ ] **AC-012** (`FR-027`, `SC-011`): **同一条命令**在 clean checkout（不含
+- [x] **AC-012** (`FR-027`, `SC-011`): **同一条命令**在 clean checkout（不含
       `artifacts/`）中同时生成 R5 成果包与仓库内交付入口；生成后非开发者从 README 两次
       点击内到达总结报告、代表性回放、限制说明与 evidence index，四者均为仓库内已提交
       路径、链接全部有效、回放离线可开。

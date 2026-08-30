@@ -8,4 +8,4 @@
 
 | 版本 | 状态 | release 文件 |
 |---|---|---|
-| 0.1 | in-progress（0.1.1—0.1.4 done，0.1.5 in-progress / not-established） | 未生成（条件未满足） |
+| 0.1 | done / established | [`0.1.md`](0.1.md) |

@@ -1,0 +1,1474 @@
+{
+  "checkpoints": [
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30000.json.gz",
+      "seed": "30000",
+      "sha256": "2fc8d0483a3c2a86fa1d0614177dbb10575733b6d234164c7eeb61b5a222bb2a"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30001.json.gz",
+      "seed": "30001",
+      "sha256": "9c3abf6e397c2568acfeccef8d4e1dc8c5992bf2947d79d179749181f37bd69a"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30002.json.gz",
+      "seed": "30002",
+      "sha256": "f5297e5ab1c45abb581d5c1797f354519426d6b58475e5414e4592ca1a14b72b"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30003.json.gz",
+      "seed": "30003",
+      "sha256": "3a9516f7293c1c2c973f7e555111f9b4d1f1f853e83bba6885f99969a641aedf"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30004.json.gz",
+      "seed": "30004",
+      "sha256": "572107115eec09a7b37239ac295a10aed540a31f8aa447274b1f60cbb1b9fa36"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30005.json.gz",
+      "seed": "30005",
+      "sha256": "bc1d57f898b26b1ce3690effb8ad9b515a4f5260eeee73d1efbb7c695894792f"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30006.json.gz",
+      "seed": "30006",
+      "sha256": "a8476490d6bec2b5cdbbfe0b8dda79301a2e4a461778ac4b153cc6178cbf924b"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30007.json.gz",
+      "seed": "30007",
+      "sha256": "04322f64ef43b55653f097a873d5c59cbe6acc417a9f4dcd3ebed6839ae95606"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30008.json.gz",
+      "seed": "30008",
+      "sha256": "3c2e0bacf45f93d2e1d6039d6d4429984c6cce8e317db2d8204a0135ffab7352"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30009.json.gz",
+      "seed": "30009",
+      "sha256": "43c7e079a029125c6a473ebbc0420d7e4b07dfbc8c11c8852c66bbe23d64e0bb"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30010.json.gz",
+      "seed": "30010",
+      "sha256": "1b5a3ec96e1599f9c3517809fcf32be2368ff0fbaecc1fbf8cca8d13f2dc1cf6"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30011.json.gz",
+      "seed": "30011",
+      "sha256": "1870f5c3ceb2f7e6f7332647b6e46f25b78e1118c7db5a43ff6ecb2fe13c8c3a"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30012.json.gz",
+      "seed": "30012",
+      "sha256": "9069ca91cddbaeac00c3639f6399360cf30049a6c27332860dfbfea215cc2eba"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30013.json.gz",
+      "seed": "30013",
+      "sha256": "06f2d22640a950599068b7735cd32d40d0c175a41b8588275f14b25e2fbb825b"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30014.json.gz",
+      "seed": "30014",
+      "sha256": "866a78320b143944de4f9d3634fd25cb3a1a904d73322a44e50b040c65d8c92e"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30015.json.gz",
+      "seed": "30015",
+      "sha256": "eeca0aacae9dfcac65f39952f9f05f12523bc759d6c88bb9045fae90c0f0ba1a"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30016.json.gz",
+      "seed": "30016",
+      "sha256": "8039d689d8eaec4609e84acdba2614ce4a609fc8979309c18ec0590682c01fac"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30017.json.gz",
+      "seed": "30017",
+      "sha256": "dd428e1f7b631e648295d457897e170261c36dbb176c78a6c3ed89244c35adb8"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30018.json.gz",
+      "seed": "30018",
+      "sha256": "34b2a6b0d9e49ab8f874b94e815e5759cea0d1a09edf264930812171fc738aae"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30019.json.gz",
+      "seed": "30019",
+      "sha256": "d07ba8022612f38c767bba1d30f73b80cdd02d8302685e03ec6e01f4c6c5027b"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30020.json.gz",
+      "seed": "30020",
+      "sha256": "2376fa7fbcfb1a63e53e604bcb9650f05e6485ccd84de098411cfe1ad68bfcf5"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30021.json.gz",
+      "seed": "30021",
+      "sha256": "7ef9e8cfbd93b1d0eb22ff7d7d286bc349c846c78899a62a8a59d94e1e746dd7"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30022.json.gz",
+      "seed": "30022",
+      "sha256": "2d49fb16842166e327c5a5dc42bc1bdd2794706c84bc3026211f22f2949a683a"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30023.json.gz",
+      "seed": "30023",
+      "sha256": "8db05ac1233b640a4c2f99266572693a51dadd8b055bd4875394086c8fc98e32"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30024.json.gz",
+      "seed": "30024",
+      "sha256": "cf540db9d3a03f0896494d9b5f4a6aec09a5492f7815aa1891d546f9d205a8a0"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30025.json.gz",
+      "seed": "30025",
+      "sha256": "e86049b456958f5578b9f64764c5dd99eeda16afe88c177e2d473b8273136d70"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30026.json.gz",
+      "seed": "30026",
+      "sha256": "656fca995e2054fe6d6a173d3e868f2e60872f0f761c449678370b1f8f553329"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30027.json.gz",
+      "seed": "30027",
+      "sha256": "bf561667e5084e8a7c418520aa4efe8fdec64d4bbe1b33d0048ff3261d6cf617"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30028.json.gz",
+      "seed": "30028",
+      "sha256": "95d61a90bae76e6501e9c650acb5137a78201a6632013b9817e40c9668c421a2"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30029.json.gz",
+      "seed": "30029",
+      "sha256": "0b17f61704a0a2b5a2be565eca93b82a62e89124ea8c5ca663003e2bda340a72"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30030.json.gz",
+      "seed": "30030",
+      "sha256": "d78ced9e6862d8392e17dcaa9dfc2d575e428eecbc411ddbece79d95cc459504"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30031.json.gz",
+      "seed": "30031",
+      "sha256": "464ab18e5abcda7e6c0cb2aa5d1c43acf0000da8e6ddb57fc01e148db2242024"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30032.json.gz",
+      "seed": "30032",
+      "sha256": "4106343e9a85f03d8f7b6d6b163263f49add86e486596c68e6121d7189e16169"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30033.json.gz",
+      "seed": "30033",
+      "sha256": "2edaf8d2a8f0d49948304d4f19c2b6830ca57633863d87ac83f41993b17b3410"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30034.json.gz",
+      "seed": "30034",
+      "sha256": "50d84da6a18305b4d710d7e9ae6d0a29748f8fb26442dd21e679bcc1661c3a3b"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30035.json.gz",
+      "seed": "30035",
+      "sha256": "ab4984f0ab6e4de9882d4341c3787d2438c7be588416f6d19cee1f319f9a9573"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30036.json.gz",
+      "seed": "30036",
+      "sha256": "e980623fd5f59a95e1d3ade1142a103cf08e1c441e40a4f5d5d4ec235d239b56"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30037.json.gz",
+      "seed": "30037",
+      "sha256": "f65e898c1ae06323f0aa7226bfd41c16ee30c8b84bfdd423223daf62b64c6e2c"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30038.json.gz",
+      "seed": "30038",
+      "sha256": "7981cd0af029e58a9543a779bffb470fed42fa9e2592eadce7c04a0d74678076"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30039.json.gz",
+      "seed": "30039",
+      "sha256": "043a18b0b8e89a8d271b5d91a5938ac1bc1d419ddcd4300bb3949e8de20bbc13"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30040.json.gz",
+      "seed": "30040",
+      "sha256": "9d03ac12152671079f20f513e594012d7d6820f1a2516386be75695f8c2c38fe"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30041.json.gz",
+      "seed": "30041",
+      "sha256": "ef12d32aaed1d651aad27e917fbab6c68229df0abc8eed12b77b31fc99248b43"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30042.json.gz",
+      "seed": "30042",
+      "sha256": "25a18afc0bdaa431ecdb1888555345cd1f1ec0c88bb29729e12cd9aa7ee57628"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30043.json.gz",
+      "seed": "30043",
+      "sha256": "9971f85e9c3be2fd5ddda365129e51d766d62075695fe11193cd6b988264add1"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30044.json.gz",
+      "seed": "30044",
+      "sha256": "62207ba6b60ab8b525384a4ee6b8418c93848b8010a4dc309f9e50a0373affa5"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30045.json.gz",
+      "seed": "30045",
+      "sha256": "f0a246db11ca7022d67ff54787a8ae77d617fed80c5dd2213fa418d9550faff2"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30046.json.gz",
+      "seed": "30046",
+      "sha256": "a51376720e42b08b0ff797d419eeb43edc1ce85aee2e596d19f0bc55f1b07706"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30047.json.gz",
+      "seed": "30047",
+      "sha256": "4d20cc05f4b16ca4b8e3662d260d17397d7fcf94d74ae27a7d43b6378ac64661"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30048.json.gz",
+      "seed": "30048",
+      "sha256": "0d8c79d3849e7ffdab08c12ca6f58f47478df4ee79a7684179b2628069d85d1c"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30049.json.gz",
+      "seed": "30049",
+      "sha256": "742af9c703dda1238e5614a7c37737823bf7e5d75079eb5e674dfc0f4d91fa2b"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30050.json.gz",
+      "seed": "30050",
+      "sha256": "cd50398726b4b82dcdd0ee6014c70a0a3ddaa833d7daf1ffeb7668a1649ebd51"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30051.json.gz",
+      "seed": "30051",
+      "sha256": "d10bc0d950d26a9d7b5960b4c07e1a40e9ad8bd855748225db6569b61d63a95c"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30052.json.gz",
+      "seed": "30052",
+      "sha256": "632574a68a5dcd6c0c42f00183a06e9a0cf0a85e06498a4160857e36f83ef397"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30053.json.gz",
+      "seed": "30053",
+      "sha256": "6014561fa3519d6c542590949d61e3c0f26b89649f42e7d4e12585591246aca0"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30054.json.gz",
+      "seed": "30054",
+      "sha256": "bf19b968a0444018d113e8f69b1abb6cefe8176c09c8243146e82662edd085ba"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30055.json.gz",
+      "seed": "30055",
+      "sha256": "fee68b3fd7baff060f7355e27e8e572f74c1dd7b618b7d3e97849713e5cff968"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30056.json.gz",
+      "seed": "30056",
+      "sha256": "e16c1b297b3102477c388a525902129fb582c96f0fe303152010456f0207a218"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30057.json.gz",
+      "seed": "30057",
+      "sha256": "4c129bd2da73f689c0fb13d51e0f4d8bf50db0e687f422d633e34faa4ce5c267"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30058.json.gz",
+      "seed": "30058",
+      "sha256": "84569f0826ac1d6375b369e7a903a2d916f170339219d5141aae75433e3be7f5"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30059.json.gz",
+      "seed": "30059",
+      "sha256": "3d51dfe55157bf8900b27059e04e1c3946737cdc1e71b540ec0e32c22577ab1b"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30060.json.gz",
+      "seed": "30060",
+      "sha256": "b8977588e17d6d73331a10d5aafd15c867e7ce762cff70c3ddbb5344a9a9b2e1"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30061.json.gz",
+      "seed": "30061",
+      "sha256": "a0ff4d8207c3ea354848c7cd3adbfe9d12c33b2ae5fc5e05fce461aab23a057a"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30062.json.gz",
+      "seed": "30062",
+      "sha256": "830490e52ce4afa9ea2ef22edffd00d5b3a3188249043b9bd576302727fcb457"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30063.json.gz",
+      "seed": "30063",
+      "sha256": "5057deeff0d507d3ad8b0f5718634addd12e461071719522aeb33a44125d5fe9"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30064.json.gz",
+      "seed": "30064",
+      "sha256": "83c1d06fb586a7ac0fcebdc2205f250ade0934fc91b6343668e1891d21525152"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30065.json.gz",
+      "seed": "30065",
+      "sha256": "a79fdc4bf545a59ebd27d75a081527edbd60dca12c80edd5c02b3e524f51f99e"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30066.json.gz",
+      "seed": "30066",
+      "sha256": "7e8a3f446933c7ce824c1c20925c92fc059b9dcaf5aa159e0477bcc97d06b0ae"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30067.json.gz",
+      "seed": "30067",
+      "sha256": "65b6a6c126687a235e2ef333bcf3865ef0ab928386abc8ffb28e838246c0abe6"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30068.json.gz",
+      "seed": "30068",
+      "sha256": "70e95e611600b58301649ba8979d0b3703ceff5a316e979964ea87168b6e9c51"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30069.json.gz",
+      "seed": "30069",
+      "sha256": "212bacd31a0325a13f52133cf443c0a9bf40d3b2e7156c0cb05dc8e58dedc03e"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30070.json.gz",
+      "seed": "30070",
+      "sha256": "bccdfb548eb3b9f6580542b757348997573202f472706518cb300f270369b575"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30071.json.gz",
+      "seed": "30071",
+      "sha256": "19f70f0b74dc81928307758f9474eada384c46c9348c06311db6402c3611c926"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30072.json.gz",
+      "seed": "30072",
+      "sha256": "20d5c1f5924225bab5a20370027a36ceae0f8fce94144e2f0b2988db4f0908fe"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30073.json.gz",
+      "seed": "30073",
+      "sha256": "14c9bbdf211c58bbda3cc0deb75ba67023c310b74a5936f39e6840edb13109d4"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30074.json.gz",
+      "seed": "30074",
+      "sha256": "7c18d3cf6dca711231bdb0df341dd4a8c9adfd75526409a61f38a6998138461f"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30075.json.gz",
+      "seed": "30075",
+      "sha256": "f0bb35be9370f47f244e31c43f7a08ca14103932d93f3b3dd4c1f6b9393134b4"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30076.json.gz",
+      "seed": "30076",
+      "sha256": "996454d54a96f22538d8c3def340800c9239488caaf76a757923d9f2595c982f"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30077.json.gz",
+      "seed": "30077",
+      "sha256": "6f575f92c0aa9fa7e3892602276787b3f98a6987543e8070c4263ef75995d0d4"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30078.json.gz",
+      "seed": "30078",
+      "sha256": "b99899add96b279c80fd0348e15a65840c3cd4b00618a6e8ad8d0ad150ab40ef"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30079.json.gz",
+      "seed": "30079",
+      "sha256": "106538b9a7b90478aecd47b99b475b1a286b3bed35c252f82e21fb925d28d1d6"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30080.json.gz",
+      "seed": "30080",
+      "sha256": "d4a7c9c9d7608589b562a2b73764c295848373e4cb2a4bcf533ed55586af26cf"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30081.json.gz",
+      "seed": "30081",
+      "sha256": "0dbeaef5f4295a7442f23a19f9ea8630c44a5df588d5bbf2fd0eec557d5f2255"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30082.json.gz",
+      "seed": "30082",
+      "sha256": "4e840741f4a24dd440f86a9cfda3a728190acaaf5b6610926f9c010032aa2110"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30083.json.gz",
+      "seed": "30083",
+      "sha256": "a2082a820b7459c09e0e9b7358eb3dce6b625c93a4174860d74338766b2c053c"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30084.json.gz",
+      "seed": "30084",
+      "sha256": "fb53800675387ef2cf0a954b0ad39787d575664d498325b091915333856012be"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30085.json.gz",
+      "seed": "30085",
+      "sha256": "4ecccbed25ef41c02663becdee7f9c89346852dcbfc91182d8dd5aae340e099c"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30086.json.gz",
+      "seed": "30086",
+      "sha256": "e3a6b10f78ba79a1323b716fcad86a3900e15a168827f591977b53fdb4de60df"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30087.json.gz",
+      "seed": "30087",
+      "sha256": "c43062f1d26ee1f2c6a4b303734152757d1cdd05ee3aa6ffd9f22c91b87628b0"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30088.json.gz",
+      "seed": "30088",
+      "sha256": "9edb44d9db6211577ba697be158569b7663213fe6899fa24f6d8e0a1d3b3034b"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30089.json.gz",
+      "seed": "30089",
+      "sha256": "aa862fd1a2887111aebe8ec50291562bb0f4bcea7282846f038e6123c10337e8"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30090.json.gz",
+      "seed": "30090",
+      "sha256": "0ac8ed0b56731f92f072c15f2d881e9acddd4a6886b832414cf7a5003e7e2d0c"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30091.json.gz",
+      "seed": "30091",
+      "sha256": "56e86323e7afbf12c481e6b5eb73df6ead736f31404d2622c3a6e6249b33a48d"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30092.json.gz",
+      "seed": "30092",
+      "sha256": "c8e0c361b9c0ce615ba585af83d5b07e4036e556fbbc14dd712c4447da6230a6"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30093.json.gz",
+      "seed": "30093",
+      "sha256": "521a506a20938cbaceff15f1c72fd74ce6091f1575405d1d0f7680dc605e3c06"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30094.json.gz",
+      "seed": "30094",
+      "sha256": "6bd2e85012222b326dd4c42290f1cd38ea2a60d925f59968ea21e5468fcedbf0"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30095.json.gz",
+      "seed": "30095",
+      "sha256": "747306f3149c6be7c7e5ab2138464eb914b18620ac44805cfd48d95eb060192c"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30096.json.gz",
+      "seed": "30096",
+      "sha256": "855d3e27cd91de91fc94af246a3ae67232ee5f782db312876d87d6e5c855238a"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30097.json.gz",
+      "seed": "30097",
+      "sha256": "1c7f5fb6fa110e9b48ac1ec652f0a60b5c974dc5b0d9ccf18fcdd784d8545d37"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30098.json.gz",
+      "seed": "30098",
+      "sha256": "31daacc25cd303e702f37e5a2e6eca82723a5f40d96cb216e6fe4e9a080d5b3a"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30099.json.gz",
+      "seed": "30099",
+      "sha256": "cca81e2535fda1797d09c3bbd91100e67516e796a2b8e5ccf7a7f8077b6ce9b0"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30100.json.gz",
+      "seed": "30100",
+      "sha256": "4c2cfbde27c80b13b035670ab85714a94b4d8431b1649232a1c59a7f0a55c250"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30101.json.gz",
+      "seed": "30101",
+      "sha256": "7b2b260f379042c809a34d12b05f959115187994c82fb765befe56c41ab68ae8"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30102.json.gz",
+      "seed": "30102",
+      "sha256": "bcf7c7a8ce8d0e66923e1950d8f7d830c1b59f954a01e08d7a52fdb09ab5fc84"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30103.json.gz",
+      "seed": "30103",
+      "sha256": "426e1d23bbe2d8bd3f6ddc27a2e76ea77b2758c327f895b365757881ca8c3fd7"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30104.json.gz",
+      "seed": "30104",
+      "sha256": "d1b9b4c01a57b8bb3f7ccce3444f6fe3d765b0212c685214621fadd0baf83c4c"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30105.json.gz",
+      "seed": "30105",
+      "sha256": "a39124c10119f40f366fe6ac6d54c3a24769337a9af52bb7bea5aeda9646b1f2"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30106.json.gz",
+      "seed": "30106",
+      "sha256": "800f984d84eabefc70379eabe216ee523bb7e21be6ace5c21e887fa4ace06186"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30107.json.gz",
+      "seed": "30107",
+      "sha256": "3c38e0d6e102eda225fdfc2ae0cb900837cc343479bfa044803bbb54b552f787"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30108.json.gz",
+      "seed": "30108",
+      "sha256": "381101d180814092e739856f77fb888305199f0f2fdf715e7e30d322fd02a402"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30109.json.gz",
+      "seed": "30109",
+      "sha256": "0f608c093a224f28cb40086233c3a6aa336d2adf6450bbf07298f3d8c7911451"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30110.json.gz",
+      "seed": "30110",
+      "sha256": "b46fce3408df789aa266fc2ab7fb5742b3d4c40abf5020cb63afbaaecf53adc8"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30111.json.gz",
+      "seed": "30111",
+      "sha256": "1404da7a43fae7433502962896007be3aa1400ca403079a8e70d2dc9b8972b62"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30112.json.gz",
+      "seed": "30112",
+      "sha256": "dada4c443271a5a9c7becbc0da17f672e130e6215b88834c7690772a77e3344c"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30113.json.gz",
+      "seed": "30113",
+      "sha256": "5989d7d6809599f3232abc5ac0f73074e34358111847208193d262e75f21f4cf"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30114.json.gz",
+      "seed": "30114",
+      "sha256": "58925c731781c10b840a81e25c077c81d4b987a4cfc876d8306c6d9cb1a2ebf3"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30115.json.gz",
+      "seed": "30115",
+      "sha256": "adcb739fd19a352fb62ecf86721e62ab437bb7948ea4b2441766600e607e46d9"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30116.json.gz",
+      "seed": "30116",
+      "sha256": "4e4c0804cc36a35652894567bae9e74b6cf93f59af48bc0cd66a39618041afda"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30117.json.gz",
+      "seed": "30117",
+      "sha256": "9c251a3082909d852dcefc8383880bacbecab90bd59db8e8f85ed207c003145a"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30118.json.gz",
+      "seed": "30118",
+      "sha256": "99cdd282e173e895ea361e0aa21d6ad3a259608624a97f7bee3f923ead0c0afe"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30119.json.gz",
+      "seed": "30119",
+      "sha256": "2cb49dcffd4b0930ca06f7b71d5f6e5920b6737c05340d9af93ca381652b6bbb"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30120.json.gz",
+      "seed": "30120",
+      "sha256": "e92fa8a12494e1aaa2946cd98a404a50507703dfd51ad8126090b0b7eb1a145b"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30121.json.gz",
+      "seed": "30121",
+      "sha256": "757747636d60f5149a735d893df8174679e50682bbcc7960e0b9cd6047e3c629"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30122.json.gz",
+      "seed": "30122",
+      "sha256": "ae361abce01202c44515299ee701d081c80163731109fc1bc16b45786f0e5d62"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30123.json.gz",
+      "seed": "30123",
+      "sha256": "c20cff27c2b604cea20de4cf98819e8746c505bd1ca2aca51d7f19bb1cc2b0e0"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30124.json.gz",
+      "seed": "30124",
+      "sha256": "94b98782c26a23c1a2f03b599ce1e847f7d3fb90c2df47cce4d893ff1ee6ab01"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30125.json.gz",
+      "seed": "30125",
+      "sha256": "1c48b03929f2f17af75718253ac8009083bd82aaf6348b9b4e9828ead4f86778"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30126.json.gz",
+      "seed": "30126",
+      "sha256": "13ce17458c52a2e8a75840129f16a9b97b66082194d34c87c9d03588cfffb09d"
+    },
+    {
+      "path": "artifacts/formal/T215-t220-r2/checkpoints/seed-30127.json.gz",
+      "seed": "30127",
+      "sha256": "bd459b71789c264cd9549903be9c1a6fd725078462126a1ddf8e30ab06d40390"
+    }
+  ],
+  "code": {
+    "config_hash": "82cf38207aa8c89e3f65fef0374da90c",
+    "package_version": "0.1.0",
+    "source_tree_sha256": "81984fdc6f39f535cc1763a7f4da15a9be8e15b0e15261b9248c0550d01b64a8"
+  },
+  "direction_asymmetry": {
+    "risk_budget_linear_v1": {
+      "HH": {
+        "bootstrap_resamples": 10000,
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "effect": 0.0,
+        "n_blocks": 128
+      },
+      "HL": {
+        "bootstrap_resamples": 10000,
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "effect": 0.0,
+        "n_blocks": 128
+      },
+      "LH": {
+        "bootstrap_resamples": 10000,
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "effect": 0.0,
+        "n_blocks": 128
+      },
+      "LL": {
+        "bootstrap_resamples": 10000,
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "effect": 0.0,
+        "n_blocks": 128
+      }
+    },
+    "risk_budget_threshold_v1": {
+      "HH": {
+        "bootstrap_resamples": 10000,
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "effect": 0.0,
+        "n_blocks": 128
+      },
+      "HL": {
+        "bootstrap_resamples": 10000,
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "effect": 0.0,
+        "n_blocks": 128
+      },
+      "LH": {
+        "bootstrap_resamples": 10000,
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "effect": 0.0,
+        "n_blocks": 128
+      },
+      "LL": {
+        "bootstrap_resamples": 10000,
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "effect": 0.0,
+        "n_blocks": 128
+      }
+    }
+  },
+  "endpoint_results": {
+    "crash": {
+      "bh_family_size": 12,
+      "bh_q": 0.05,
+      "models": {
+        "risk_budget_linear_v1": {
+          "occurrence": {
+            "L": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "LxM": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "M": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            }
+          },
+          "severity": {
+            "L": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "LxM": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "M": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            }
+          }
+        },
+        "risk_budget_threshold_v1": {
+          "occurrence": {
+            "L": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "LxM": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "M": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            }
+          },
+          "severity": {
+            "L": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "LxM": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "M": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            }
+          }
+        }
+      },
+      "significant_hypotheses": [],
+      "statement": "在冻结的代理结构、L×M 四 cell、两个目标模型与 128 个有效配对 seed block 范围内，崩盘家族 0/12 个预注册检验在 BH q=0.05 后支持处理效应；本结果是不支持预注册 H1，不等于接受 H0，也不得外推为现实市场无效应。",
+      "status": "not-supported"
+    },
+    "liquidity_drought": {
+      "bh_family_size": 12,
+      "bh_q": 0.05,
+      "models": {
+        "risk_budget_linear_v1": {
+          "occurrence": {
+            "L": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "LxM": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "M": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            }
+          },
+          "severity": {
+            "L": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "LxM": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "M": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            }
+          }
+        },
+        "risk_budget_threshold_v1": {
+          "occurrence": {
+            "L": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "LxM": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "M": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            }
+          },
+          "severity": {
+            "L": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "LxM": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "M": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            }
+          }
+        }
+      },
+      "significant_hypotheses": [],
+      "statement": "在冻结的代理结构、L×M 四 cell、两个目标模型与 128 个有效配对 seed block 范围内，流动性枯竭家族 0/12 个预注册检验在 BH q=0.05 后支持处理效应；本结果是不支持预注册 H1，不等于接受 H0，也不得外推为现实市场无效应。",
+      "status": "not-supported"
+    },
+    "surge": {
+      "bh_family_size": 12,
+      "bh_q": 0.05,
+      "models": {
+        "risk_budget_linear_v1": {
+          "occurrence": {
+            "L": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "LxM": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "M": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            }
+          },
+          "severity": {
+            "L": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "LxM": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "M": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            }
+          }
+        },
+        "risk_budget_threshold_v1": {
+          "occurrence": {
+            "L": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "LxM": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "M": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            }
+          },
+          "severity": {
+            "L": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "LxM": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            },
+            "M": {
+              "bh_adjusted_p_value": 1.0,
+              "bh_significant": false,
+              "bootstrap_resamples": 10000,
+              "ci_high": 0.0,
+              "ci_low": 0.0,
+              "effect": 0.0,
+              "n_blocks": 128,
+              "p_value": 1.0,
+              "sign_flip_resamples": 100000
+            }
+          }
+        }
+      },
+      "significant_hypotheses": [],
+      "statement": "在冻结的代理结构、L×M 四 cell、两个目标模型与 128 个有效配对 seed block 范围内，暴涨家族 0/12 个预注册检验在 BH q=0.05 后支持处理效应；本结果是不支持预注册 H1，不等于接受 H0，也不得外推为现实市场无效应。",
+      "status": "not-supported"
+    }
+  },
+  "evidence_class": "formal-research",
+  "limitations": [
+    "结论仅适用于冻结的仿真代理、参数、种子与 2×2 制度处理，不外推到现实市场。",
+    "未通过 BH 的检验表示预注册 H1 未获支持，不表示接受 H0 或证明效应严格为零。",
+    "本产物不是交易信号，不连接真实账户、交易所或钱包。"
+  ],
+  "milestone": "0.1.5",
+  "preregistration": {
+    "factorial_plan_path": "docs/experiments/0.1.5-factorial-plan.json",
+    "factorial_plan_sha256": "fd6c063386753b57976e542f0ebb1d9d3b65b6ec62fa85214ea7eb5e3ca5466e",
+    "preregistration_id": "0.1.5-flagship-preregistration-v1",
+    "preregistration_path": "docs/experiments/0.1.5-preregistration.md",
+    "preregistration_sha256": "a3d2021eb16e17dd40c5ec2427f22e7e063f096c56c8caf8806c0b9594668116"
+  },
+  "producer": "0.1.5 T216",
+  "research_claim_eligibility": "eligible",
+  "run_family": "SPONTANEOUS",
+  "schema_version": 1,
+  "seed_plan": {
+    "evidence_sufficient": true,
+    "excluded_seed_blocks": {},
+    "executed_seeds": [
+      30000,
+      30001,
+      30002,
+      30003,
+      30004,
+      30005,
+      30006,
+      30007,
+      30008,
+      30009,
+      30010,
+      30011,
+      30012,
+      30013,
+      30014,
+      30015,
+      30016,
+      30017,
+      30018,
+      30019,
+      30020,
+      30021,
+      30022,
+      30023,
+      30024,
+      30025,
+      30026,
+      30027,
+      30028,
+      30029,
+      30030,
+      30031,
+      30032,
+      30033,
+      30034,
+      30035,
+      30036,
+      30037,
+      30038,
+      30039,
+      30040,
+      30041,
+      30042,
+      30043,
+      30044,
+      30045,
+      30046,
+      30047,
+      30048,
+      30049,
+      30050,
+      30051,
+      30052,
+      30053,
+      30054,
+      30055,
+      30056,
+      30057,
+      30058,
+      30059,
+      30060,
+      30061,
+      30062,
+      30063,
+      30064,
+      30065,
+      30066,
+      30067,
+      30068,
+      30069,
+      30070,
+      30071,
+      30072,
+      30073,
+      30074,
+      30075,
+      30076,
+      30077,
+      30078,
+      30079,
+      30080,
+      30081,
+      30082,
+      30083,
+      30084,
+      30085,
+      30086,
+      30087,
+      30088,
+      30089,
+      30090,
+      30091,
+      30092,
+      30093,
+      30094,
+      30095,
+      30096,
+      30097,
+      30098,
+      30099,
+      30100,
+      30101,
+      30102,
+      30103,
+      30104,
+      30105,
+      30106,
+      30107,
+      30108,
+      30109,
+      30110,
+      30111,
+      30112,
+      30113,
+      30114,
+      30115,
+      30116,
+      30117,
+      30118,
+      30119,
+      30120,
+      30121,
+      30122,
+      30123,
+      30124,
+      30125,
+      30126,
+      30127
+    ],
+    "minimum_valid_blocks": 128,
+    "seed_pool_exhausted": false,
+    "stopping_rule_reached": true,
+    "valid_seeds": [
+      30000,
+      30001,
+      30002,
+      30003,
+      30004,
+      30005,
+      30006,
+      30007,
+      30008,
+      30009,
+      30010,
+      30011,
+      30012,
+      30013,
+      30014,
+      30015,
+      30016,
+      30017,
+      30018,
+      30019,
+      30020,
+      30021,
+      30022,
+      30023,
+      30024,
+      30025,
+      30026,
+      30027,
+      30028,
+      30029,
+      30030,
+      30031,
+      30032,
+      30033,
+      30034,
+      30035,
+      30036,
+      30037,
+      30038,
+      30039,
+      30040,
+      30041,
+      30042,
+      30043,
+      30044,
+      30045,
+      30046,
+      30047,
+      30048,
+      30049,
+      30050,
+      30051,
+      30052,
+      30053,
+      30054,
+      30055,
+      30056,
+      30057,
+      30058,
+      30059,
+      30060,
+      30061,
+      30062,
+      30063,
+      30064,
+      30065,
+      30066,
+      30067,
+      30068,
+      30069,
+      30070,
+      30071,
+      30072,
+      30073,
+      30074,
+      30075,
+      30076,
+      30077,
+      30078,
+      30079,
+      30080,
+      30081,
+      30082,
+      30083,
+      30084,
+      30085,
+      30086,
+      30087,
+      30088,
+      30089,
+      30090,
+      30091,
+      30092,
+      30093,
+      30094,
+      30095,
+      30096,
+      30097,
+      30098,
+      30099,
+      30100,
+      30101,
+      30102,
+      30103,
+      30104,
+      30105,
+      30106,
+      30107,
+      30108,
+      30109,
+      30110,
+      30111,
+      30112,
+      30113,
+      30114,
+      30115,
+      30116,
+      30117,
+      30118,
+      30119,
+      30120,
+      30121,
+      30122,
+      30123,
+      30124,
+      30125,
+      30126,
+      30127
+    ]
+  },
+  "source_artifacts": [
+    {
+      "artifact": "progress.json",
+      "path": "artifacts/formal/T215-t220-r2/progress.json",
+      "sha256": "5490d75e2360d97b26eaee148cd2e5490693ac29ce7e49d41a1aa149187c91ee"
+    },
+    {
+      "artifact": "analysis.json",
+      "path": "artifacts/formal/T215-t220-r2/analysis.json",
+      "sha256": "dbc2e02d06d2ba574b3382c6342ab5daf8ab2fa6625e663ac0f441af9e20ed10"
+    },
+    {
+      "artifact": "run-manifest.json",
+      "path": "artifacts/formal/T215-t220-r2/run-manifest.json",
+      "sha256": "99be6dc52e175ca1f2f2f98aac8fdecc5c49de1d711fe2e7f5418dab29c57224"
+    }
+  ]
+}

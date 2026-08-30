@@ -860,7 +860,11 @@ def _resolve_repo_relative(manifest_path: Path, relative_path: Any) -> Path:
 def _portable_path(path: Path) -> str:
     resolved = path.resolve()
     for ancestor in resolved.parents:
-        if (ancestor / ".git").exists():
+        is_repository = (ancestor / ".git").exists() or (
+            (ancestor / "pyproject.toml").is_file()
+            and (ancestor / "src" / "market_game_sim").is_dir()
+        )
+        if is_repository:
             return resolved.relative_to(ancestor).as_posix()
     return resolved.as_posix()
 

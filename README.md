@@ -15,11 +15,14 @@
 项目采用规格驱动开发（Specification-Driven Development，SDD），版本与里程碑三件套
 （spec/design/tasks）生命周期见 [`docs/features/README.md`](docs/features/README.md)。
 
-## 下一批看得见的成果
+## v0.1 研究交付
 
-当前底层工程、工程示范、回放与报告能力已经存在；下一步先把它们包装成一条命令可生成的
-`replay.html + summary.md + manifest` 成果包，然后依次交付新代理单次运行、`2 × 2`
-实验预览和正式研究结果。各阶段产物、预计投入与交易者介入顺序见
+- [正式总结报告](docs/experiments/0.1.5-flagship-report.md)
+- [代表性离线回放](docs/experiments/0.1.5-representative-replay.html)
+- [限制与失效边界](docs/experiments/0.1.5-flagship-report.md#限制与失效边界)
+- [正式 evidence index](docs/experiments/0.1.5-evidence-index.json)
+
+四项交付均来自 `SPONTANEOUS + formal-research` 正式证据；单命令重建入口与边界见
 [`PRD §15 交付路线图`](docs/market-game-sim-prd.md#15-交付路线图)。
 
 ## 当前规格
@@ -34,7 +37,8 @@
   - `0.1.5-goal-driven-flagship/` 目标驱动代理与正式旗舰实验
 
 每个里程碑目录下各有 `spec.md` 与 `tasks.md`。
-**完整 v0.1 签收 = 0.1.1—0.1.5 全部退出条件通过，且 0.1.5 研究声明建立**；需求归属见版本根 `spec.md`
+**v0.1 已签收**：0.1.1—0.1.5 全部退出条件通过，0.1.5 研究声明已建立；不可变记录见
+[`docs/features/releases/0.1.md`](docs/features/releases/0.1.md)，需求归属见版本根 `spec.md`
 与 `docs/features/0.1/traceability.json`。
 
 ## 产品与研究文档

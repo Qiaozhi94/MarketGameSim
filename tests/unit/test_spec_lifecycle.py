@@ -583,6 +583,15 @@ def test_ac_range_completeness_not_fooled_by_unrelated_mention(sv):
     assert any("AC-006" in e for e in errors)
 
 
+def test_t218_does_not_claim_delivery_acceptance_before_t220(sv):
+    """R020-C004：R5 尚未生成时，T218/T219 不得提前签收其 AC。"""
+    tasks_path = ROOT / "docs" / "features" / "0.1" / "0.1.5-goal-driven-flagship" / "tasks.md"
+    blocks = {tid: block for _mark, tid, block in sv._task_blocks(tasks_path.read_text("utf-8"))}
+    assert "R5 交付前不得提前签收 `AC-011` / `AC-012`" in blocks["T218"]
+    assert "R5 交付验收仍由 T220 独占" in blocks["T219"]
+    assert "本任务完成后才允许签收 `AC-011` / `AC-012`" in blocks["T220"]
+
+
 def test_pending_section_free_text_fails(sv):
     md = "## 8. 待确认问题\n- 这是一个自由文本问题\n"
     errors: list[str] = []

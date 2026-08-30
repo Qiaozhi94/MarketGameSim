@@ -23,7 +23,7 @@ from market_game_sim.showcase.manifest import (
 )
 from market_game_sim.showcase.summary import DISCLAIMER, assert_disclaimer_present
 
-REBUILD_CMD = "python -m market_game_sim.showcase.generate <config.yaml>"
+REBUILD_CMD = "python -m market_game_sim.showcase.generate benchmarks/BENCH-001.yaml"
 
 
 def _mm_spec() -> AgentSpec:
