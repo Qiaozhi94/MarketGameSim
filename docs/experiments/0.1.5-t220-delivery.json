@@ -27,7 +27,7 @@
       "replay.html",
       "summary.md"
     ],
-    "manifest_sha256": "e95ce96c6f5e8bc98e64d137ee16b737a56e58dd11c9e580ff829da0d23a51c0",
+    "manifest_sha256": "d05ac007fcf19b3eb0699ce7d1ae39f592d6416e59999ea6bf4cebbedc58e6a6",
     "evidence_class": "formal-research",
     "run_family": "SPONTANEOUS",
     "representative_seed": 40000
@@ -35,11 +35,11 @@
   "repository_delivery": {
     "report": {
       "path": "docs/experiments/0.1.5-flagship-report.md",
-      "sha256": "d4478b91629adc5ce208d04e13914c6880a87f79e58f3bf986b4e2052925706b"
+      "sha256": "5df0f5a789d45b2d0a37361f6a8e7170f8b316e8cacb2d701320c51fda9a64be"
     },
     "limitations": {
       "path": "docs/experiments/0.1.5-flagship-report.md#限制与失效边界",
-      "sha256": "d4478b91629adc5ce208d04e13914c6880a87f79e58f3bf986b4e2052925706b"
+      "sha256": "5df0f5a789d45b2d0a37361f6a8e7170f8b316e8cacb2d701320c51fda9a64be"
     },
     "representative_replay": {
       "path": "docs/experiments/0.1.5-representative-replay.html",
@@ -50,12 +50,12 @@
     },
     "evidence_index": {
       "path": "docs/experiments/0.1.5-evidence-index.json",
-      "sha256": "8c9210deb6cd94bf6449c872bdfcdd1fcad8d84e9f05f536af6200d466828975"
+      "sha256": "50c07866e7c3e2c173ad51643910e5acf607a8bbca8f830a1666d615d4dab1eb"
     },
     "readme_click_depth": 1
   },
   "formal_binding": {
-    "source_tree_sha256": "1cfa1c138d2d1e039e824d122bb3d6120ea30719f985dd48e1ca30603b54c9e0",
+    "source_tree_sha256": "09075bba075e4867b352a375f45b7a0d7f358bd4c6a9988a5c432aebb5942021",
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "valid_seed_blocks": 128,
     "excluded_seed_blocks": 0
