@@ -151,6 +151,13 @@ def test_clean_checkout_command_needs_no_artifacts_and_all_readme_links_work(tmp
     assert any(not (checkout / entry["path"]).exists() for entry in index["source_artifacts"])
 
     env = os.environ.copy()
+    # pytest-cov 6.x injects COV_CORE_* so spawned Python processes measure
+    # coverage too; the relative --cov source then resolves against the child
+    # cwd and double-counts the checkout copy, diluting the gate. The child
+    # must run without the test suite's coverage plumbing.
+    for key in [name for name in env if name.startswith("COV_CORE_")]:
+        del env[key]
+    assert not [name for name in env if name.startswith("COV_CORE_")]
     env["PYTHONPATH"] = str(checkout / "src")
     completed = subprocess.run(
         [sys.executable, "-m", "market_game_sim.showcase.r5"],
