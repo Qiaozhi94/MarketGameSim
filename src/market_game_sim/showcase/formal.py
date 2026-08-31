@@ -76,15 +76,22 @@ def _sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
-def _source_tree_sha256() -> str:
-    """Bind formal evidence to every Python source file used by the package."""
-    package_root = pathlib.Path(__file__).resolve().parents[1]
+def _source_tree_sha256(root: pathlib.Path | None = None) -> str:
+    """Bind formal evidence to every Python source file used by the package.
+
+    The digest is computed over EOL-normalized (``\\r\\n`` → ``\\n``) file
+    contents so the same logical source tree yields the same binding on every
+    platform regardless of ``core.autocrlf`` checkout settings.
+    """
+    package_root = (
+        pathlib.Path(__file__).resolve().parents[1] if root is None else pathlib.Path(root)
+    )
     digest = hashlib.sha256()
     for path in sorted(package_root.rglob("*.py"), key=lambda item: item.as_posix()):
         relative = path.relative_to(package_root).as_posix().encode("utf-8")
         digest.update(len(relative).to_bytes(4, "big"))
         digest.update(relative)
-        content = path.read_bytes()
+        content = path.read_bytes().replace(b"\r\n", b"\n")
         digest.update(len(content).to_bytes(8, "big"))
         digest.update(content)
     return digest.hexdigest()
