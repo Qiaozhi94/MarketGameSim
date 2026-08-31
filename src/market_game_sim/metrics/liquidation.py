@@ -90,6 +90,7 @@ class RunClassification:
             "technical_invalid_code": self.technical_invalid_code,
             "is_economic_endpoint": self.is_economic_endpoint,
             "economic_endpoint_codes": list(self.economic_endpoint_codes),
+            "ev4_drained_sides": list(self.ev4_drained_sides),
             "breached": self.breached,
         }
 

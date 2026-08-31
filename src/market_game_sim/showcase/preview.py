@@ -74,7 +74,6 @@ DEFAULT_OUT = pathlib.Path("artifacts/showcase/R3")
 PREVIEW_SEEDS = 2
 PREVIEW_BOOTSTRAP_RESAMPLES = 200
 PREVIEW_SIGN_FLIP_RESAMPLES = 500
-PREVIEW_MAX_TRANSACTIONS = 120
 
 #: Fixed bundle file names (design.md §6: RUN.md / manifest.json / replay.html
 #: / summary.md, plus the comparison report and the replay source log).
@@ -114,40 +113,50 @@ class PreviewError(ValueError):
     """The preview bundle request is invalid or mis-scoped."""
 
 
-def _mm_spec() -> AgentSpec:
+def _mm_spec(binding: FactorialPlanBinding) -> AgentSpec:
     """Inventory market maker shared byte-identically by all four cells."""
+    parameters = binding.run_parameters
     return AgentSpec(
         agent_id="mm-0",
         role="inventory_market_maker",
-        observe_interval_ns=100_000_000,
-        latency_ns=5_000_000,
+        observe_interval_ns=parameters.market_maker_observe_interval_ns,
+        latency_ns=parameters.market_maker_latency_ns,
         is_market_maker=True,
-        half_spread_ticks=5,
-        quote_size=10_000,
-        max_inventory=100_000,
-        inventory_skew_k_bp=10_000,
+        leverage_tier=parameters.market_maker_leverage_tier,
+        initial_bp=parameters.market_maker_initial_bp,
+        half_spread_ticks=parameters.market_maker_half_spread_ticks,
+        quote_size=parameters.market_maker_quote_size,
+        max_inventory=parameters.market_maker_max_inventory,
+        inventory_skew_k_bp=parameters.market_maker_inventory_skew_k_bp,
     )
 
 
-def _belief_spec(model_id: str, seed: int, agent_id: str, is_low_l: bool) -> AgentSpec:
+def _belief_spec(
+    model_id: str,
+    seed: int,
+    agent_id: str,
+    is_low_l: bool,
+    binding: FactorialPlanBinding,
+) -> AgentSpec:
     """Belief agent whose tier/appetite follow the frozen semantic draws."""
     weights = {2: 3334, 3: 3333, 5: 3333} if is_low_l else {10: 3334, 20: 3333, 50: 3333}
     tier, _ = discrete_choice(weights, seed, agent_id, "bench_leverage_tier", 0, 0)
     appetite, _ = uniform_range(
         Decimal(500), Decimal(20_000), seed, agent_id, "risk_appetite", 0, 0
     )
+    parameters = binding.run_parameters
     return AgentSpec(
         agent_id=agent_id,
         role="retail",
-        observe_interval_ns=1_000_000_000,
-        latency_ns=50_000_000,
+        observe_interval_ns=parameters.belief_observe_interval_ns,
+        latency_ns=parameters.belief_latency_ns,
         leverage_tier=tier,
         initial_bp=initial_margin_bp_for_tier(tier),
-        aggressiveness_bp=10_000,
-        max_order_qty=10_000,
+        aggressiveness_bp=parameters.belief_aggressiveness_bp,
+        max_order_qty=parameters.belief_max_order_qty,
         goal_model_id=model_id,
         risk_appetite_x1000=int(appetite),
-        ewma_half_life_trades=0,  # warmup off so the replay chain can trade
+        ewma_half_life_trades=parameters.belief_ewma_half_life_trades,
     )
 
 
@@ -170,13 +179,14 @@ def build_preview_configs(
         for cell_id in CELL_IDS:
             is_low_l = cell_id[0] == "L"
             is_low_m = cell_id[1] == "L"
-            specs = [_mm_spec()]
+            specs = [_mm_spec(binding)]
             for agent_id in BELIEF_AGENT_IDS:
-                specs.append(_belief_spec(model_id, seed, agent_id, is_low_l))
+                specs.append(_belief_spec(model_id, seed, agent_id, is_low_l, binding))
             configs[model_id][cell_id] = ExperimentConfig(
                 seed=seed,
-                max_transactions=PREVIEW_MAX_TRANSACTIONS,
-                maint_bp=300 if is_low_m else 700,
+                initial_price_ticks=binding.run_parameters.initial_price_ticks,
+                max_transactions=binding.run_parameters.max_transactions,
+                maint_bp=300 if is_low_m else 1200,
                 agent_specs=specs,
                 run_family="SPONTANEOUS",
                 seed_plan=seed_plan,
@@ -237,7 +247,10 @@ def _write_run_log(
 
 
 def _cell_endpoint_means(
-    results: dict[str, dict[str, list[RunResult]]], valid_seeds: list[int]
+    results: dict[str, dict[str, list[RunResult]]],
+    valid_seeds: list[int],
+    *,
+    initial_price_ticks: int,
 ) -> dict[str, Any]:
     """Descriptive per-cell occurrence/severity means over valid blocks."""
     valid = set(valid_seeds)
@@ -249,7 +262,10 @@ def _cell_endpoint_means(
             for cell_id in CELL_IDS:
                 runs = [r for r in results[model_id][cell_id] if r.seed in valid]
                 if runs:
-                    obs = [endpoint_observations(r)[family] for r in runs]
+                    obs = [
+                        endpoint_observations(r, initial_price_ticks=initial_price_ticks)[family]
+                        for r in runs
+                    ]
                     occurrence = sum(o.occurrence for o in obs) / len(obs)
                     severity = sum(o.severity for o in obs) / len(obs)
                 else:
@@ -359,7 +375,7 @@ def _render_preview_summary(
     )
     lines.append(
         "- **制度处理**: L low `{2x, 3x, 5x}` / high `{10x, 20x, 50x}`；"
-        "M low `300bp` / high `700bp`（`maint_bp` 只进入约束层）。"
+        "M low `300bp` / high `1200bp`（`maint_bp` 只进入约束层）。"
     )
     lines.append(
         "- **配对设计**: 每个 seed block 内四 cell 共享同一 seed 与逐代理偏好抽签，"
@@ -565,13 +581,9 @@ def generate_preview_bundle(
                 results[model_id][cell_id].append(result)
 
     preview_binding = _preview_binding(binding, executed_seeds)
-    initial_price = configs_by_seed[executed_seeds[0]][MODEL_IDS[0]][
-        CELL_IDS[0]
-    ].initial_price_ticks
     analysis = analyze_flagship_results(
         results,
         preview_binding,
-        initial_price_ticks=initial_price,
         bootstrap_resamples=bootstrap_resamples,
         sign_flip_resamples=sign_flip_resamples,
     )
@@ -582,7 +594,11 @@ def generate_preview_bundle(
             f"every executed seed block was excluded ({exclusions}); a preview bundle "
             "requires at least one technically valid representative run"
         )
-    means = _cell_endpoint_means(results, valid_seeds)
+    means = _cell_endpoint_means(
+        results,
+        valid_seeds,
+        initial_price_ticks=binding.run_parameters.initial_price_ticks,
+    )
     config_hash = _combined_config_hash(fingerprints_by_seed)
 
     if rebuild_command is None:
@@ -630,7 +646,7 @@ def generate_preview_bundle(
             "refusal": REFUSAL_STATEMENT,
             "bootstrap_resamples": bootstrap_resamples,
             "sign_flip_resamples": sign_flip_resamples,
-            "max_transactions_per_run": PREVIEW_MAX_TRANSACTIONS,
+            "max_transactions_per_run": binding.run_parameters.max_transactions,
         },
         "factorial_rehearsal": {
             "note": (

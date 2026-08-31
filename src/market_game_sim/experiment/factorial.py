@@ -41,8 +41,8 @@ ENDPOINT_FAMILIES = ("crash", "surge", "liquidity_drought")
 METRICS = ("occurrence", "severity")
 CONTRASTS = ("L", "M", "LxM")
 TECHNICAL_INVALID_CODES = frozenset({"TI-1", "TI-2", "TI-3", "TI-4", "TI-5"})
-PREREGISTRATION_ID = "0.1.5-flagship-preregistration-v1"
-PREREGISTRATION_SHA256 = "a3d2021eb16e17dd40c5ec2427f22e7e063f096c56c8caf8806c0b9594668116"
+PREREGISTRATION_ID = "0.1.5-flagship-preregistration-v2"
+PREREGISTRATION_SHA256 = "334c09f78f37862434b06d4c3604471a4f18334e9568e09a48b4248b3aa1d358"
 
 
 class FactorialPlanError(ValueError):
@@ -74,10 +74,34 @@ class FactorialSeedPlan:
 
 
 FROZEN_SEED_PLAN = FactorialSeedPlan(
-    planned_seeds=tuple(range(30_000, 30_128)),
-    reserve_seeds=tuple(range(30_128, 30_144)),
+    planned_seeds=tuple(range(40_000, 40_128)),
+    reserve_seeds=tuple(range(40_128, 40_144)),
     minimum_valid_blocks=128,
 )
+
+
+@dataclass(frozen=True)
+class FactorialRunParameters:
+    """Non-treatment run parameters frozen by the v2 preregistration."""
+
+    initial_price_ticks: int = 10_000
+    max_transactions: int = 2_000
+    market_maker_leverage_tier: int = 50
+    market_maker_initial_bp: int = 200
+    market_maker_observe_interval_ns: int = 100_000_000
+    market_maker_latency_ns: int = 5_000_000
+    market_maker_half_spread_ticks: int = 5
+    market_maker_quote_size: int = 10_000_000
+    market_maker_max_inventory: int = 500_000_000
+    market_maker_inventory_skew_k_bp: int = 500
+    belief_observe_interval_ns: int = 1_000_000_000
+    belief_latency_ns: int = 50_000_000
+    belief_aggressiveness_bp: int = 10_000
+    belief_max_order_qty: int = 500_000_000
+    belief_ewma_half_life_trades: int = 0
+
+
+FROZEN_RUN_PARAMETERS = FactorialRunParameters()
 
 
 @dataclass(frozen=True)
@@ -93,6 +117,8 @@ class FactorialPlanBinding:
     sign_flip_resamples: int
     sign_flip_seed: int
     bh_q: float
+    run_parameters: FactorialRunParameters = FROZEN_RUN_PARAMETERS
+    minimum_informative_hypotheses_per_family: int = 1
 
     def report_reference(self) -> dict[str, Any]:
         return {
@@ -141,6 +167,7 @@ def load_factorial_plan(path: str | Path) -> FactorialPlanBinding:
             "leverage_tier_weights_bp",
             "leverage_tier_mechanism",
             "goal_parameters",
+            "run_parameters",
             "seed_plan",
             "analysis",
         },
@@ -161,6 +188,7 @@ def load_factorial_plan(path: str | Path) -> FactorialPlanBinding:
     if raw["leverage_tier_mechanism"] != "bench_leverage_tier":
         raise FactorialPlanError("leverage_tier_mechanism must remain 'bench_leverage_tier'")
     _validate_goal_parameters(raw["goal_parameters"])
+    run_parameters = _load_run_parameters(raw["run_parameters"])
 
     seed_payload = raw["seed_plan"]
     _require_exact_keys(
@@ -178,10 +206,10 @@ def load_factorial_plan(path: str | Path) -> FactorialPlanBinding:
     if any(type(value) is not int for value in integers):
         raise FactorialPlanError("seed_plan fields must be integers")
     expected_seed_payload = {
-        "planned_start": 30_000,
-        "planned_end": 30_127,
-        "reserve_start": 30_128,
-        "reserve_end": 30_143,
+        "planned_start": 40_000,
+        "planned_end": 40_127,
+        "reserve_start": 40_128,
+        "reserve_end": 40_143,
         "minimum_valid_blocks": 128,
     }
     if seed_payload != expected_seed_payload:
@@ -202,6 +230,7 @@ def load_factorial_plan(path: str | Path) -> FactorialPlanBinding:
             "sign_flip_seed",
             "bh_q",
             "tests_per_family",
+            "minimum_informative_hypotheses_per_family",
         },
         "analysis",
     )
@@ -211,6 +240,8 @@ def load_factorial_plan(path: str | Path) -> FactorialPlanBinding:
         raise FactorialPlanError("analysis metrics/contrasts drifted from the frozen set")
     if analysis["tests_per_family"] != len(MODEL_IDS) * len(METRICS) * len(CONTRASTS):
         raise FactorialPlanError("analysis.tests_per_family is inconsistent")
+    if analysis["minimum_informative_hypotheses_per_family"] != 1:
+        raise FactorialPlanError("analysis.minimum_informative_hypotheses_per_family must remain 1")
     for field in (
         "bootstrap_resamples",
         "bootstrap_seed",
@@ -264,6 +295,10 @@ def load_factorial_plan(path: str | Path) -> FactorialPlanBinding:
         sign_flip_resamples=analysis["sign_flip_resamples"],
         sign_flip_seed=analysis["sign_flip_seed"],
         bh_q=float(bh_q),
+        run_parameters=run_parameters,
+        minimum_informative_hypotheses_per_family=analysis[
+            "minimum_informative_hypotheses_per_family"
+        ],
     )
 
 
@@ -304,7 +339,15 @@ def validate_flagship_configs(
                 )
             expected_l = "low" if cell_id[0] == "L" else "high"
             expected_m = "low" if cell_id[1] == "L" else "high"
-            expected_maint = 300 if expected_m == "low" else 700
+            expected_maint = 300 if expected_m == "low" else 1200
+            run_parameters = binding.run_parameters
+            if (
+                cfg.initial_price_ticks != run_parameters.initial_price_ticks
+                or cfg.max_transactions != run_parameters.max_transactions
+            ):
+                raise FactorialPlanError(
+                    f"configs.{model_id}.{cell_id} run parameters drifted from the frozen plan"
+                )
             if cfg.run_family != RunFamily.SPONTANEOUS:
                 raise FactorialPlanError(
                     f"configs.{model_id}.{cell_id}.run_family must be SPONTANEOUS"
@@ -324,6 +367,13 @@ def validate_flagship_configs(
                     f"configs.{model_id}.{cell_id}.seed_plan is not the frozen full pool"
                 )
             belief_agents = [spec for spec in cfg.agent_specs if not spec.is_market_maker]
+            market_makers = [spec for spec in cfg.agent_specs if spec.is_market_maker]
+            if len(market_makers) != 1 or not _market_maker_matches(
+                market_makers[0], run_parameters
+            ):
+                raise FactorialPlanError(
+                    f"configs.{model_id}.{cell_id} market maker drifted from the frozen plan"
+                )
             if not belief_agents:
                 raise FactorialPlanError(f"configs.{model_id}.{cell_id} has no belief agents")
             agent_ids = [spec.agent_id for spec in cfg.agent_specs]
@@ -338,6 +388,11 @@ def validate_flagship_configs(
                 else {10: 3334, 20: 3333, 50: 3333}
             )
             for spec in belief_agents:
+                if not _belief_agent_matches(spec, run_parameters):
+                    raise FactorialPlanError(
+                        f"configs.{model_id}.{cell_id}.agent_specs[{spec.agent_id}] "
+                        "drifted from the frozen belief-agent parameters"
+                    )
                 if spec.goal_model_id != model_id:
                     raise FactorialPlanError(
                         f"configs.{model_id}.{cell_id}.agent_specs[{spec.agent_id}]."
@@ -435,7 +490,7 @@ def audit_deterministic_rerun(primary: RunResult, audit: RunResult) -> str | Non
 
 
 def endpoint_observations(
-    result: RunResult, initial_price_ticks: int = 10_000
+    result: RunResult, *, initial_price_ticks: int
 ) -> dict[str, EndpointObservation]:
     """Project one valid run into the three overlapping endpoint families."""
     if result.classification.is_technical_invalid:
@@ -484,7 +539,6 @@ def analyze_flagship_results(
     results: Mapping[str, Mapping[str, Sequence[RunResult]]],
     binding: FactorialPlanBinding,
     *,
-    initial_price_ticks: int = 10_000,
     bootstrap_resamples: int | None = None,
     sign_flip_resamples: int | None = None,
 ) -> dict[str, Any]:
@@ -578,6 +632,18 @@ def analyze_flagship_results(
                 "reason": "no technically valid paired seed blocks",
                 "models": {},
             }
+        report["experimental_validity"] = {
+            "status": "no-valid-blocks",
+            "criterion": (
+                "each endpoint family requires at least one preregistered hypothesis "
+                "with a non-zero paired block contrast"
+            ),
+            "minimum_informative_hypotheses_per_family": (
+                binding.minimum_informative_hypotheses_per_family
+            ),
+            "families": {},
+        }
+        report["research_claim_eligibility"] = "ineligible"
         return report
 
     observations: dict[str, dict[str, dict[int, dict[str, EndpointObservation]]]] = {}
@@ -586,7 +652,8 @@ def analyze_flagship_results(
         for cell_id in CELL_IDS:
             observations[model_id][cell_id] = {
                 seed: endpoint_observations(
-                    by_model_cell_seed[model_id][cell_id][seed], initial_price_ticks
+                    by_model_cell_seed[model_id][cell_id][seed],
+                    initial_price_ticks=binding.run_parameters.initial_price_ticks,
                 )
                 for seed in valid_seeds
             }
@@ -601,13 +668,14 @@ def analyze_flagship_results(
         raise FactorialPlanError("bootstrap_resamples must be a positive integer")
     if type(n_sign_flip) is not int or n_sign_flip <= 0:
         raise FactorialPlanError("sign_flip_resamples must be a positive integer")
+    validity_families: dict[str, Any] = {}
     for family in ENDPOINT_FAMILIES:
         family_report: dict[str, Any] = {
             "evidence_sufficient": sufficient,
-            "inference_eligible": sufficient,
             "models": {},
         }
         p_values: dict[str, float] = {}
+        nonzero_block_counts: dict[str, int] = {}
         for model_id in MODEL_IDS:
             model_report: dict[str, Any] = {}
             for metric in METRICS:
@@ -621,6 +689,9 @@ def analyze_flagship_results(
                 ]
                 for contrast in CONTRASTS:
                     hypothesis_id = f"{model_id}.{metric}.{contrast}"
+                    nonzero_block_counts[hypothesis_id] = sum(
+                        _contrast_value(block, contrast) != 0.0 for block in blocks
+                    )
                     effect = _factorial_effect(
                         blocks,
                         contrast,
@@ -642,7 +713,40 @@ def analyze_flagship_results(
             effect_dict["bh_significant"] = decision.significant
         family_report["bh_q"] = binding.bh_q
         family_report["bh_family_size"] = len(decisions)
+        informative_hypotheses = sorted(
+            hypothesis_id for hypothesis_id, count in nonzero_block_counts.items() if count > 0
+        )
+        informative = len(informative_hypotheses) >= (
+            binding.minimum_informative_hypotheses_per_family
+        )
+        validity_families[family] = {
+            "status": "informative" if informative else "degenerate",
+            "informative_hypotheses": informative_hypotheses,
+            "nonzero_block_counts": nonzero_block_counts,
+        }
+        family_report["experimental_validity"] = validity_families[family]["status"]
+        family_report["inference_eligible"] = sufficient and informative
+        if not informative:
+            family_report["reason"] = "all preregistered paired block contrasts are zero"
         report["endpoint_families"][family] = family_report
+
+    all_families_informative = all(
+        family["status"] == "informative" for family in validity_families.values()
+    )
+    report["experimental_validity"] = {
+        "status": "informative" if all_families_informative else "degenerate",
+        "criterion": (
+            "each endpoint family requires at least one preregistered hypothesis "
+            "with a non-zero paired block contrast"
+        ),
+        "minimum_informative_hypotheses_per_family": (
+            binding.minimum_informative_hypotheses_per_family
+        ),
+        "families": validity_families,
+    }
+    report["research_claim_eligibility"] = (
+        "eligible" if sufficient and all_families_informative else "ineligible"
+    )
 
     for model_id in MODEL_IDS:
         report["direction_asymmetry"][model_id] = {}
@@ -731,7 +835,7 @@ def _bootstrap_mean(values: list[float], n_resamples: int, seed: int, label: str
 def _percentile_interval(sorted_values: list[float]) -> tuple[float, float]:
     count = len(sorted_values)
     low_index = max(int(0.025 * count), 0)
-    high_index = min(int(0.975 * count), count - 1)
+    high_index = count - 1 - low_index
     return sorted_values[low_index], sorted_values[high_index]
 
 
@@ -797,6 +901,43 @@ def _require_exact_keys(value: Any, expected: set[str], path: str) -> None:
         )
 
 
+def _load_run_parameters(payload: Any) -> FactorialRunParameters:
+    expected = dataclasses.asdict(FROZEN_RUN_PARAMETERS)
+    _require_exact_keys(payload, set(expected), "run_parameters")
+    if any(type(value) is not int for value in payload.values()):
+        raise FactorialPlanError("run_parameters fields must be integers")
+    if dict(payload) != expected:
+        path, expected_value, actual = _first_difference(expected, dict(payload), "run_parameters")
+        raise FactorialPlanError(
+            f"{path} drifted from v2: expected {expected_value!r}, got {actual!r}"
+        )
+    return FactorialRunParameters(**payload)
+
+
+def _market_maker_matches(spec: Any, parameters: FactorialRunParameters) -> bool:
+    return (
+        spec.agent_id == "mm-0"
+        and spec.leverage_tier == parameters.market_maker_leverage_tier
+        and spec.initial_bp == parameters.market_maker_initial_bp
+        and spec.observe_interval_ns == parameters.market_maker_observe_interval_ns
+        and spec.latency_ns == parameters.market_maker_latency_ns
+        and spec.half_spread_ticks == parameters.market_maker_half_spread_ticks
+        and spec.quote_size == parameters.market_maker_quote_size
+        and spec.max_inventory == parameters.market_maker_max_inventory
+        and spec.inventory_skew_k_bp == parameters.market_maker_inventory_skew_k_bp
+    )
+
+
+def _belief_agent_matches(spec: Any, parameters: FactorialRunParameters) -> bool:
+    return (
+        spec.observe_interval_ns == parameters.belief_observe_interval_ns
+        and spec.latency_ns == parameters.belief_latency_ns
+        and spec.aggressiveness_bp == parameters.belief_aggressiveness_bp
+        and spec.max_order_qty == parameters.belief_max_order_qty
+        and spec.ewma_half_life_trades == parameters.belief_ewma_half_life_trades
+    )
+
+
 def _validate_cells_payload(cells: Any) -> None:
     _require_exact_keys(cells, set(CELL_IDS), "cells")
     for cell_id in CELL_IDS:
@@ -804,7 +945,7 @@ def _validate_cells_payload(cells: Any) -> None:
         expected = {
             "l_level": "low" if cell_id[0] == "L" else "high",
             "m_level": "low" if cell_id[1] == "L" else "high",
-            "maint_bp": 300 if cell_id[1] == "L" else 700,
+            "maint_bp": 300 if cell_id[1] == "L" else 1200,
         }
         if cells[cell_id] != expected:
             raise FactorialPlanError(f"cells.{cell_id} must be {expected}")

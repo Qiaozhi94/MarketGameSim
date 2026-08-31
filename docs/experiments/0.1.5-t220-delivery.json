@@ -4,7 +4,7 @@
   "task": "T220",
   "gate": "R5",
   "status": "passed",
-  "generated_on": "2026-08-30",
+  "generated_on": "2026-08-31",
   "single_command": "python -m market_game_sim.showcase.r5",
   "clean_checkout": {
     "artifacts_present_before_command": false,
@@ -27,43 +27,43 @@
       "replay.html",
       "summary.md"
     ],
-    "manifest_sha256": "1510340302184c467e5f055d38322ed824432d16fd9d60676184e6ba4183ef9f",
+    "manifest_sha256": "e95ce96c6f5e8bc98e64d137ee16b737a56e58dd11c9e580ff829da0d23a51c0",
     "evidence_class": "formal-research",
     "run_family": "SPONTANEOUS",
-    "representative_seed": 30000
+    "representative_seed": 40000
   },
   "repository_delivery": {
     "report": {
       "path": "docs/experiments/0.1.5-flagship-report.md",
-      "sha256": "21e57860ec4c0faf1f650c011241d21615f07dad7ea1ff5e0cbe4ccef33186d4"
+      "sha256": "d4478b91629adc5ce208d04e13914c6880a87f79e58f3bf986b4e2052925706b"
     },
     "limitations": {
       "path": "docs/experiments/0.1.5-flagship-report.md#限制与失效边界",
-      "sha256": "21e57860ec4c0faf1f650c011241d21615f07dad7ea1ff5e0cbe4ccef33186d4"
+      "sha256": "d4478b91629adc5ce208d04e13914c6880a87f79e58f3bf986b4e2052925706b"
     },
     "representative_replay": {
       "path": "docs/experiments/0.1.5-representative-replay.html",
-      "sha256": "d366b6c6ba5ad6368d83176985ebe8ba638733c67212bf2ced4e6a6ac11b2dbd",
-      "bytes": 130830,
+      "sha256": "aa70a6545dea241045b1e93011edb069aec9f74ade98857f332fdc7c22e951d0",
+      "bytes": 2314160,
       "offline": true,
       "max_bytes": 5242880
     },
     "evidence_index": {
       "path": "docs/experiments/0.1.5-evidence-index.json",
-      "sha256": "f61b03c5140ba079f9248d26f0c6ed2541c914e95a978555fc0c1bf606ed26b9"
+      "sha256": "8c9210deb6cd94bf6449c872bdfcdd1fcad8d84e9f05f536af6200d466828975"
     },
     "readme_click_depth": 1
   },
   "formal_binding": {
-    "source_tree_sha256": "81984fdc6f39f535cc1763a7f4da15a9be8e15b0e15261b9248c0550d01b64a8",
-    "config_hash": "82cf38207aa8c89e3f65fef0374da90c",
+    "source_tree_sha256": "1cfa1c138d2d1e039e824d122bb3d6120ea30719f985dd48e1ca30603b54c9e0",
+    "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "valid_seed_blocks": 128,
     "excluded_seed_blocks": 0
   },
-  "targeted_tests": "5 passed",
+  "targeted_tests": "147 passed",
   "quality_gate": {
     "command": "python tools/verify.py",
-    "pytest": "2218 passed",
+    "pytest": "2226 passed",
     "contract_sources": "passed",
     "spec_lifecycle": "passed",
     "ruff_check": "passed",

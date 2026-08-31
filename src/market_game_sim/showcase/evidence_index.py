@@ -24,6 +24,7 @@ from market_game_sim.experiment.factorial import (
     METRICS,
     MODEL_IDS,
     FactorialPlanBinding,
+    analyze_flagship_results,
     load_factorial_plan,
     validate_flagship_configs,
 )
@@ -33,7 +34,7 @@ from market_game_sim.showcase.formal import (
     _source_tree_sha256,
     _validate_checkpoint_body,
 )
-from market_game_sim.showcase.preview import build_preview_configs
+from market_game_sim.showcase.preview import _combined_config_hash, build_preview_configs
 
 PRODUCER = "0.1.5 T216"
 EVIDENCE_CLASS = "formal-research"
@@ -167,14 +168,22 @@ def _family_conclusion(
         if family["models"] != {} or not isinstance(family["reason"], str):
             raise EvidenceIndexError(f"{family_label} empty-result fields are invalid")
     else:
-        _require_exact_keys(
-            family,
-            {"evidence_sufficient", "inference_eligible", "models", "bh_q", "bh_family_size"},
-            family_label,
-        )
+        expected_keys = {
+            "evidence_sufficient",
+            "inference_eligible",
+            "experimental_validity",
+            "models",
+            "bh_q",
+            "bh_family_size",
+        }
+        if family.get("experimental_validity") == "degenerate":
+            expected_keys.add("reason")
+        _require_exact_keys(family, expected_keys, family_label)
+    informative = valid_blocks > 0 and family.get("experimental_validity") == "informative"
+    expected_eligibility = evidence_sufficient and informative
     if (
         family["evidence_sufficient"] is not evidence_sufficient
-        or family["inference_eligible"] is not evidence_sufficient
+        or family["inference_eligible"] is not expected_eligibility
     ):
         raise EvidenceIndexError(
             f"{family_label} eligibility differs from the frozen stopping result"
@@ -208,11 +217,17 @@ def _family_conclusion(
                     valid_blocks=valid_blocks,
                     label=f"analysis.endpoint_families.{family_id}.{hypothesis_id}",
                 )
-                if evidence_sufficient and effect["bh_significant"]:
+                if expected_eligibility and effect["bh_significant"]:
                     significant.append(hypothesis_id)
 
     label = FAMILY_LABELS[family_id]
-    if not evidence_sufficient:
+    if valid_blocks > 0 and not informative:
+        status = "degenerate"
+        statement = (
+            f"{label}家族的全部预注册块内对比均为零，未通过市场充分性门槛；"
+            "不得将退化输出解释为支持 H0 或制度无效应。"
+        )
+    elif not evidence_sufficient:
         status = "evidence-insufficient"
         statement = (
             f"冻结种子池已耗尽，仅得到 {valid_blocks} 个技术有效配对 seed block，低于预注册"
@@ -241,6 +256,60 @@ def _family_conclusion(
         "bh_family_size": family.get("bh_family_size", 12),
         "models": models,
     }
+
+
+def _validate_experimental_validity(value: Any, binding: FactorialPlanBinding) -> bool:
+    _require_exact_keys(
+        value,
+        {"status", "criterion", "minimum_informative_hypotheses_per_family", "families"},
+        "experimental_validity",
+    )
+    if value["minimum_informative_hypotheses_per_family"] != (
+        binding.minimum_informative_hypotheses_per_family
+    ):
+        raise EvidenceIndexError("experimental validity threshold drifted from the frozen plan")
+    if value["status"] == "no-valid-blocks":
+        if value["families"] != {}:
+            raise EvidenceIndexError("no-valid-blocks validity must have no family results")
+        return False
+    _require_exact_keys(value["families"], set(ENDPOINT_FAMILIES), "experimental_validity.families")
+    all_informative = True
+    expected_hypotheses = {
+        f"{model_id}.{metric}.{contrast}"
+        for model_id in MODEL_IDS
+        for metric in METRICS
+        for contrast in CONTRASTS
+    }
+    for family_id in ENDPOINT_FAMILIES:
+        family = value["families"][family_id]
+        _require_exact_keys(
+            family,
+            {"status", "informative_hypotheses", "nonzero_block_counts"},
+            f"experimental_validity.families.{family_id}",
+        )
+        counts = family["nonzero_block_counts"]
+        _require_exact_keys(
+            counts, expected_hypotheses, f"experimental_validity.families.{family_id}.counts"
+        )
+        if any(type(count) is not int or count < 0 for count in counts.values()):
+            raise EvidenceIndexError("experimental validity counts must be non-negative integers")
+        expected_informative = sorted(key for key, count in counts.items() if count > 0)
+        if family["informative_hypotheses"] != expected_informative:
+            raise EvidenceIndexError(
+                "experimental validity informative hypothesis list is inconsistent"
+            )
+        expected_status = (
+            "informative"
+            if len(expected_informative) >= binding.minimum_informative_hypotheses_per_family
+            else "degenerate"
+        )
+        if family["status"] != expected_status:
+            raise EvidenceIndexError("experimental validity family status is inconsistent")
+        all_informative &= expected_status == "informative"
+    expected_overall = "informative" if all_informative else "degenerate"
+    if value["status"] != expected_overall:
+        raise EvidenceIndexError("experimental validity overall status is inconsistent")
+    return all_informative
 
 
 def _validate_t215(
@@ -315,10 +384,6 @@ def _validate_t215(
     sufficient = len(valid) >= minimum
     if progress.get("evidence_sufficient") is not sufficient:
         raise EvidenceIndexError("progress.evidence_sufficient differs from its valid seed count")
-    if progress.get("inference_eligible") is not sufficient:
-        raise EvidenceIndexError("progress.inference_eligible differs from its valid seed count")
-    if analysis.get("inference_eligible") is not sufficient:
-        raise EvidenceIndexError("analysis.inference_eligible differs from its valid seed count")
     exhausted = not sufficient
     if progress.get("seed_pool_exhausted") is not exhausted:
         raise EvidenceIndexError("progress.seed_pool_exhausted differs from the stopping result")
@@ -343,6 +408,8 @@ def _validate_t215(
     }:
         raise EvidenceIndexError("manifest checkpoint index does not match executed seeds")
     checkpoint_entries: list[dict[str, str]] = []
+    collected = {model_id: {cell_id: [] for cell_id in CELL_IDS} for model_id in MODEL_IDS}
+    all_config_hashes: dict[int, dict[str, dict[str, str]]] = {}
     for seed in executed:
         checkpoint = t215_dir / "checkpoints" / f"seed-{seed}.json.gz"
         if not checkpoint.is_file():
@@ -354,7 +421,7 @@ def _validate_t215(
             configs = build_preview_configs(seed, binding)
             config_hashes = validate_flagship_configs(configs, binding)
             body = _read_checkpoint(checkpoint)
-            _validate_checkpoint_body(
+            block = _validate_checkpoint_body(
                 body,
                 seed=seed,
                 binding=binding,
@@ -364,9 +431,48 @@ def _validate_t215(
             )
         except (FormalRunError, KeyError, TypeError, ValueError) as exc:
             raise EvidenceIndexError(f"checkpoint contract invalid for seed {seed}: {exc}") from exc
+        all_config_hashes[seed] = config_hashes
+        for model_id in MODEL_IDS:
+            for cell_id in CELL_IDS:
+                collected[model_id][cell_id].append(block[model_id][cell_id])
         checkpoint_entries.append(
             {"seed": str(seed), "path": _portable_path(checkpoint), "sha256": digest}
         )
+    if manifest.get("config_hash") != _combined_config_hash(all_config_hashes):
+        raise EvidenceIndexError("manifest.config_hash does not match reconstructed configs")
+    recomputed_report = analyze_flagship_results(
+        collected, binding, bootstrap_resamples=1, sign_flip_resamples=1
+    )
+    # Persisted JSON stringifies integer exclusion-map keys; compare in that same domain.
+    recomputed_report = json.loads(json.dumps(recomputed_report))
+    persisted_report = analysis.get("report")
+    if not isinstance(persisted_report, dict):
+        raise EvidenceIndexError("analysis.report must be an object")
+    if persisted_report.get("seed_plan") != recomputed_report["seed_plan"]:
+        raise EvidenceIndexError("analysis seed plan does not match reconstructed checkpoints")
+    if persisted_report.get("experimental_validity") != recomputed_report["experimental_validity"]:
+        raise EvidenceIndexError("analysis validity does not match reconstructed checkpoints")
+    if valid:
+        for family_id in ENDPOINT_FAMILIES:
+            for model_id in MODEL_IDS:
+                for metric in METRICS:
+                    for contrast in CONTRASTS:
+                        persisted_effect = persisted_report["endpoint_families"][family_id][
+                            "models"
+                        ][model_id][metric][contrast]
+                        recomputed_effect = recomputed_report["endpoint_families"][family_id][
+                            "models"
+                        ][model_id][metric][contrast]
+                        if persisted_effect.get("effect") != recomputed_effect["effect"]:
+                            raise EvidenceIndexError(
+                                "analysis effect does not match reconstructed checkpoints: "
+                                f"{family_id}.{model_id}.{metric}.{contrast}"
+                            )
+    inference_eligible = recomputed_report["research_claim_eligibility"] == "eligible"
+    if progress.get("inference_eligible") is not inference_eligible:
+        raise EvidenceIndexError("progress.inference_eligible differs from experimental validity")
+    if analysis.get("inference_eligible") is not inference_eligible:
+        raise EvidenceIndexError("analysis.inference_eligible differs from experimental validity")
     return progress, analysis, manifest, binding, checkpoint_entries
 
 
@@ -375,6 +481,8 @@ def build_evidence_index(t215_dir: str | pathlib.Path = DEFAULT_T215_DIR) -> dic
     progress, analysis, manifest, binding, checkpoints = _validate_t215(t215)
     report = analysis["report"]
     evidence_sufficient = progress["evidence_sufficient"]
+    experimental_validity = report.get("experimental_validity")
+    informative = _validate_experimental_validity(experimental_validity, binding)
     valid_blocks = len(progress["valid_seeds"])
     families = report.get("endpoint_families")
     _require_exact_keys(families, set(ENDPOINT_FAMILIES), "analysis.report.endpoint_families")
@@ -408,7 +516,9 @@ def build_evidence_index(t215_dir: str | pathlib.Path = DEFAULT_T215_DIR) -> dic
         "producer": PRODUCER,
         "run_family": RUN_FAMILY,
         "evidence_class": EVIDENCE_CLASS,
-        "research_claim_eligibility": "eligible" if evidence_sufficient else "ineligible",
+        "research_claim_eligibility": (
+            "eligible" if evidence_sufficient and informative else "ineligible"
+        ),
         "code": {
             "package_version": manifest["code_version"],
             "source_tree_sha256": manifest["source_tree_sha256"],
@@ -427,10 +537,12 @@ def build_evidence_index(t215_dir: str | pathlib.Path = DEFAULT_T215_DIR) -> dic
         "source_artifacts": source_artifacts,
         "checkpoints": checkpoints,
         "endpoint_results": endpoint_results,
+        "experimental_validity": experimental_validity,
         "direction_asymmetry": direction_asymmetry,
         "limitations": [
             "结论仅适用于冻结的仿真代理、参数、种子与 2×2 制度处理，不外推到现实市场。",
             "未通过 BH 的检验表示预注册 H1 未获支持，不表示接受 H0 或证明效应严格为零。",
+            "有效性门槛仅保证每个终点家族至少存在一个非零块内对比，不保证全部指标变化或统计功效。",
             "本产物不是交易信号，不连接真实账户、交易所或钱包。",
         ],
     }
@@ -450,6 +562,7 @@ def validate_evidence_index(index: dict[str, Any], *, require_paths: bool = True
         "source_artifacts",
         "checkpoints",
         "endpoint_results",
+        "experimental_validity",
         "direction_asymmetry",
         "limitations",
     }
@@ -516,11 +629,6 @@ def validate_evidence_index(index: dict[str, Any], *, require_paths: bool = True
         raise EvidenceIndexError("evidence index may only describe a reached stopping rule")
     if seed_plan["seed_pool_exhausted"] is not (not sufficient):
         raise EvidenceIndexError("evidence index pool exhaustion differs from sufficiency")
-    expected_eligibility = "eligible" if sufficient else "ineligible"
-    if index["research_claim_eligibility"] != expected_eligibility:
-        raise EvidenceIndexError(
-            "evidence index.research_claim_eligibility differs from evidence sufficiency"
-        )
     if not isinstance(seed_plan["excluded_seed_blocks"], dict):
         raise EvidenceIndexError("evidence index excluded_seed_blocks must be an object")
 
@@ -538,6 +646,12 @@ def validate_evidence_index(index: dict[str, Any], *, require_paths: bool = True
     binding = load_factorial_plan(preregistration["factorial_plan_path"])
     if preregistration != binding.report_reference():
         raise EvidenceIndexError("evidence index preregistration binding has drifted")
+    informative = _validate_experimental_validity(index["experimental_validity"], binding)
+    expected_eligibility = "eligible" if sufficient and informative else "ineligible"
+    if index["research_claim_eligibility"] != expected_eligibility:
+        raise EvidenceIndexError(
+            "evidence index.research_claim_eligibility differs from evidence sufficiency/validity"
+        )
     if not sufficient and executed != list(binding.seed_plan.pool):
         raise EvidenceIndexError(
             "ineligible evidence index must contain the exhausted frozen seed pool"
@@ -563,10 +677,23 @@ def validate_evidence_index(index: dict[str, Any], *, require_paths: bool = True
             (
                 {
                     "evidence_sufficient": sufficient,
-                    "inference_eligible": sufficient,
+                    "inference_eligible": sufficient
+                    and (
+                        index["experimental_validity"]["families"][family_id]["status"]
+                        == "informative"
+                    ),
+                    "experimental_validity": index["experimental_validity"]["families"][family_id][
+                        "status"
+                    ],
                     "models": result["models"],
                     "bh_q": result["bh_q"],
                     "bh_family_size": result["bh_family_size"],
+                    **(
+                        {"reason": "all preregistered paired block contrasts are zero"}
+                        if index["experimental_validity"]["families"][family_id]["status"]
+                        == "degenerate"
+                        else {}
+                    ),
                 }
                 if valid
                 else {

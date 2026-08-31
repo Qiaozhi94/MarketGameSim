@@ -70,6 +70,8 @@ def _assert_delivery(root: Path) -> None:
     assert "## 限制与失效边界" in report
     assert "## 版本签收" in report
     assert "formal-research" in report
+    assert "Gate R4" not in report
+    assert "本 R4 包" not in report
     replay = docs / DOC_REPLAY_NAME
     assert replay.stat().st_size <= MAX_REPLAY_BYTES
     html = replay.read_text(encoding="utf-8")
@@ -86,7 +88,7 @@ def test_single_command_generates_r5_bundle_and_repository_delivery(tmp_path):
         docs_dir=tmp_path / "docs" / "experiments",
         rebuild_command="rebuild-r5",
     )
-    assert result["representative_seed"] == 30_000
+    assert result["representative_seed"] == 40_000
     assert result["replay"].stat().st_size <= MAX_REPLAY_BYTES
     assert set(BUNDLE_FILES) == {path.name for path in result["out_dir"].iterdir()}
 

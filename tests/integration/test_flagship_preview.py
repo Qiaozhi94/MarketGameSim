@@ -39,7 +39,7 @@ from market_game_sim.showcase.summary import DISCLAIMER
 
 ROOT = Path(__file__).resolve().parents[2]
 REAL_PLAN = ROOT / "docs" / "experiments" / "0.1.5-factorial-plan.json"
-REPRESENTATIVE_RUN_ID = "exp-s30000"
+REPRESENTATIVE_RUN_ID = "exp-s40000"
 REPRESENTATIVE_LABEL = "risk_budget_linear_v1/LL"
 
 
@@ -79,8 +79,8 @@ def test_preview_bundle_produces_fixed_file_set(preview):
         assert (out / name).is_file(), f"missing bundle file: {name}"
     assert preview["evidence_class"] == "experiment-preview"
     assert preview["gate"] == "R3"
-    assert preview["executed_seeds"] == [30_000]
-    assert preview["valid_seeds"] == [30_000]
+    assert preview["executed_seeds"] == [40_000]
+    assert preview["valid_seeds"] == [40_000]
     assert preview["excluded_seed_blocks"] == {}
 
 
@@ -92,8 +92,8 @@ def test_manifest_marks_experiment_preview_with_executed_seed_plan(preview):
     assert manifest["gate"] == "R3"
     assert manifest["manifest_version"] == 1
     assert manifest["code_version"] == __version__
-    assert manifest["seed"] == 30_000
-    assert manifest["seed_plan"] == {"n_seeds": 1, "seeds": [30_000]}
+    assert manifest["seed"] == 40_000
+    assert manifest["seed_plan"] == {"n_seeds": 1, "seeds": [40_000]}
 
     entries = {e["artifact_id"]: e for e in manifest["artifacts"]}
     assert set(entries) == {"comparison", "replay_log", "replay", "summary", "run_doc"}
@@ -108,9 +108,9 @@ def test_manifest_marks_experiment_preview_with_executed_seed_plan(preview):
 
 def test_manifest_config_hash_covers_all_eight_cell_configs(preview, binding):
     manifest = json.loads((preview["out_dir"] / MANIFEST_NAME).read_text(encoding="utf-8"))
-    configs = build_preview_configs(30_000, binding)
+    configs = build_preview_configs(40_000, binding)
     fingerprints = validate_flagship_configs(configs, binding)
-    expected = _combined_config_hash({30_000: fingerprints})
+    expected = _combined_config_hash({40_000: fingerprints})
     assert manifest["config_hash"] == expected
 
     all_hashes = [h for cell_hashes in fingerprints.values() for h in cell_hashes.values()]
@@ -140,8 +140,8 @@ def test_comparison_json_scopes_preview_ineligible(preview):
     assert data["plan"]["preregistration_path"] == "docs/experiments/0.1.5-preregistration.md"
 
     scope = data["preview"]
-    assert scope["executed_seeds"] == [30_000]
-    assert scope["valid_seeds"] == [30_000]
+    assert scope["executed_seeds"] == [40_000]
+    assert scope["valid_seeds"] == [40_000]
     assert scope["excluded_seed_blocks"] == {}
     assert scope["frozen_minimum_valid_blocks"] == 128
     assert scope["evidence_sufficient"] is False
@@ -208,16 +208,16 @@ def test_two_seed_preview_executes_frozen_pool_prefix_in_order(tmp_path):
         bootstrap_resamples=10,
         sign_flip_resamples=20,
     )
-    assert result["executed_seeds"] == [30_000, 30_001]
-    assert result["valid_seeds"] == [30_000, 30_001]
+    assert result["executed_seeds"] == [40_000, 40_001]
+    assert result["valid_seeds"] == [40_000, 40_001]
 
     manifest = json.loads((tmp_path / MANIFEST_NAME).read_text(encoding="utf-8"))
-    assert manifest["seed_plan"] == {"n_seeds": 2, "seeds": [30_000, 30_001]}
-    assert manifest["seed"] == 30_000
+    assert manifest["seed_plan"] == {"n_seeds": 2, "seeds": [40_000, 40_001]}
+    assert manifest["seed"] == 40_000
     validate_showcase_manifest(manifest)
 
     data = json.loads((tmp_path / "comparison.json").read_text(encoding="utf-8"))
-    assert data["preview"]["executed_seeds"] == [30_000, 30_001]
+    assert data["preview"]["executed_seeds"] == [40_000, 40_001]
     for family in data["cell_endpoint_means"].values():
         for model in family.values():
             for cell in model.values():

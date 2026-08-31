@@ -380,6 +380,7 @@ def _progress_payload(
     exclusions: dict[int, list[str]],
     complete: bool,
     exhausted: bool,
+    inference_eligible: bool = False,
 ) -> dict[str, Any]:
     return {
         "schema_version": 1,
@@ -394,7 +395,7 @@ def _progress_payload(
         "excluded_seed_blocks": exclusions,
         "minimum_valid_blocks": binding.seed_plan.minimum_valid_blocks,
         "evidence_sufficient": complete,
-        "inference_eligible": complete,
+        "inference_eligible": inference_eligible,
         "stopping_rule_reached": complete or exhausted,
         "seed_pool_exhausted": exhausted,
     }
@@ -523,12 +524,23 @@ def run_formal_experiment(
             bootstrap_resamples=bootstrap_resamples,
             sign_flip_resamples=sign_flip_resamples,
         )
+        inference_eligible = analysis["research_claim_eligibility"] == "eligible"
+        progress = _progress_payload(
+            binding=binding,
+            executed_seeds=executed_seeds,
+            valid_seeds=valid_seeds,
+            exclusions=exclusions,
+            complete=complete,
+            exhausted=exhausted,
+            inference_eligible=inference_eligible,
+        )
+        progress_path = _write_json(out / PROGRESS_NAME, progress)
         analysis_payload = {
             "schema_version": 1,
             "producer": PRODUCER,
             "run_family": "SPONTANEOUS",
             "evidence_class": EVIDENCE_CLASS,
-            "inference_eligible": complete,
+            "inference_eligible": inference_eligible,
             "report": analysis,
         }
         analysis_path = _write_json(out / ANALYSIS_NAME, analysis_payload)

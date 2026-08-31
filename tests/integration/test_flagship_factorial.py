@@ -18,6 +18,7 @@ from market_game_sim.experiment.factorial import (
     FactorialPlanBinding,
     FactorialPlanError,
     FactorialSeedPlan,
+    _percentile_interval,
     analyze_flagship_results,
     audit_deterministic_rerun,
     endpoint_observations,
@@ -130,18 +131,35 @@ def _configs(binding: FactorialPlanBinding) -> dict[str, dict[str, ExperimentCon
             belief = AgentSpec(
                 agent_id="belief-0",
                 role="belief_trader",
-                observe_interval_ns=10,
-                latency_ns=1,
+                observe_interval_ns=binding.run_parameters.belief_observe_interval_ns,
+                latency_ns=binding.run_parameters.belief_latency_ns,
                 leverage_tier=tier,
                 initial_bp=initial_margin_bp_for_tier(tier),
                 goal_model_id=model_id,
                 risk_appetite_x1000=int(appetite),
+                aggressiveness_bp=binding.run_parameters.belief_aggressiveness_bp,
+                max_order_qty=binding.run_parameters.belief_max_order_qty,
+                ewma_half_life_trades=binding.run_parameters.belief_ewma_half_life_trades,
+            )
+            mm = AgentSpec(
+                agent_id="mm-0",
+                role="inventory_market_maker",
+                observe_interval_ns=binding.run_parameters.market_maker_observe_interval_ns,
+                latency_ns=binding.run_parameters.market_maker_latency_ns,
+                is_market_maker=True,
+                leverage_tier=binding.run_parameters.market_maker_leverage_tier,
+                initial_bp=binding.run_parameters.market_maker_initial_bp,
+                half_spread_ticks=binding.run_parameters.market_maker_half_spread_ticks,
+                quote_size=binding.run_parameters.market_maker_quote_size,
+                max_inventory=binding.run_parameters.market_maker_max_inventory,
+                inventory_skew_k_bp=binding.run_parameters.market_maker_inventory_skew_k_bp,
             )
             configs[model_id][cell_id] = ExperimentConfig(
                 seed=1,
-                max_transactions=100,
-                maint_bp=300 if is_low_m else 700,
-                agent_specs=[belief],
+                initial_price_ticks=binding.run_parameters.initial_price_ticks,
+                max_transactions=binding.run_parameters.max_transactions,
+                maint_bp=300 if is_low_m else 1200,
+                agent_specs=[mm, belief],
                 run_family="SPONTANEOUS",
                 seed_plan=seed_plan,
                 l_level="low" if is_low_l else "high",
@@ -216,14 +234,14 @@ def test_validate_flagship_configs_accepts_only_l_m_and_model_differences():
     assert all(set(model_hashes) == set(CELL_IDS) for model_hashes in hashes.values())
 
     bad = _configs(binding)
-    original = bad[MODEL_IDS[0]]["HH"].agent_specs[0]
-    bad[MODEL_IDS[0]]["HH"].agent_specs[0] = dataclasses.replace(original, max_order_qty=9_999)
-    with pytest.raises(FactorialPlanError, match="four-cell parity"):
+    original = bad[MODEL_IDS[0]]["HH"].agent_specs[1]
+    bad[MODEL_IDS[0]]["HH"].agent_specs[1] = dataclasses.replace(original, max_order_qty=9_999)
+    with pytest.raises(FactorialPlanError, match="frozen belief-agent parameters"):
         validate_flagship_configs(bad, binding)
 
     wrong_preference_draw = _configs(binding)
-    original = wrong_preference_draw[MODEL_IDS[0]]["HH"].agent_specs[0]
-    wrong_preference_draw[MODEL_IDS[0]]["HH"].agent_specs[0] = dataclasses.replace(
+    original = wrong_preference_draw[MODEL_IDS[0]]["HH"].agent_specs[1]
+    wrong_preference_draw[MODEL_IDS[0]]["HH"].agent_specs[1] = dataclasses.replace(
         original, risk_appetite_x1000=original.risk_appetite_x1000 + 1
     )
     with pytest.raises(FactorialPlanError, match="frozen semantic draw"):
@@ -237,13 +255,17 @@ def test_validate_flagship_configs_accepts_only_l_m_and_model_differences():
 
 def test_endpoint_projection_preserves_direction_and_overlap():
     result = _run(1, crash=True, surge=True, liquidity=True)
-    observed = endpoint_observations(result)
+    observed = endpoint_observations(result, initial_price_ticks=10_000)
     assert observed["crash"].occurrence == 1.0
     assert observed["surge"].occurrence == 1.0
     assert observed["liquidity_drought"].occurrence == 1.0
     assert observed["crash"].severity > 0
     assert observed["surge"].severity > 0
     assert observed["liquidity_drought"].severity == 0.8
+
+
+def test_percentile_interval_uses_symmetric_order_statistics():
+    assert _percentile_interval(list(range(10_000))) == (250, 9_749)
 
 
 def test_analysis_builds_three_separate_twelve_test_bh_families():
@@ -268,6 +290,45 @@ def test_analysis_builds_three_separate_twelve_test_bh_families():
     assert liquidity_linear["occurrence"]["M"]["effect"] == 1.0
     assert "bh_adjusted_p_value" in crash_linear["severity"]["LxM"]
     assert set(report["direction_asymmetry"][MODEL_IDS[0]]) == set(CELL_IDS)
+
+
+def test_degenerate_results_are_ineligible_even_with_enough_blocks():
+    results = {
+        model_id: {
+            cell_id: [_run(seed, group_label=cell_id) for seed in (1, 2)] for cell_id in CELL_IDS
+        }
+        for model_id in MODEL_IDS
+    }
+    report = analyze_flagship_results(
+        results, _binding(), bootstrap_resamples=10, sign_flip_resamples=10
+    )
+    assert report["seed_plan"]["evidence_sufficient"] is True
+    assert report["experimental_validity"]["status"] == "degenerate"
+    assert report["research_claim_eligibility"] == "ineligible"
+    assert all(
+        family["inference_eligible"] is False for family in report["endpoint_families"].values()
+    )
+
+
+def test_frozen_validation_zone_produces_informative_real_output():
+    from market_game_sim.experiment.runner import run_one
+    from market_game_sim.showcase.preview import build_preview_configs
+
+    binding = dataclasses.replace(
+        load_factorial_plan(REAL_PLAN),
+        seed_plan=FactorialSeedPlan(tuple(range(20_000, 20_004)), (), 4),
+    )
+    results = {model_id: {cell_id: [] for cell_id in CELL_IDS} for model_id in MODEL_IDS}
+    for seed in binding.seed_plan.planned_seeds:
+        configs = build_preview_configs(seed, binding)
+        for model_id in MODEL_IDS:
+            for cell_id in CELL_IDS:
+                results[model_id][cell_id].append(run_one(configs[model_id][cell_id]))
+    report = analyze_flagship_results(
+        results, binding, bootstrap_resamples=10, sign_flip_resamples=10
+    )
+    assert report["experimental_validity"]["status"] == "informative"
+    assert report["research_claim_eligibility"] == "eligible"
 
 
 def test_any_invalid_run_excludes_the_whole_eight_run_seed_block():

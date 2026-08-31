@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import pathlib
 
 import pytest
@@ -181,7 +182,11 @@ def test_established_requires_done_formal_evidence(sv, tmp_path):
 def test_established_with_repository_evidence_passes(sv, tmp_path):
     evidence = tmp_path / "docs" / "experiments" / "evidence.json"
     evidence.parent.mkdir(parents=True)
-    evidence.write_text("{}", encoding="utf-8")
+    evidence.write_text(
+        '{"research_claim_eligibility":"eligible",'
+        '"experimental_validity":{"status":"informative"}}',
+        encoding="utf-8",
+    )
     errors: list[str] = []
     sv.validate_research_claim(
         {
@@ -195,6 +200,38 @@ def test_established_with_repository_evidence_passes(sv, tmp_path):
         "x",
     )
     assert errors == []
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {
+            "research_claim_eligibility": "ineligible",
+            "experimental_validity": {"status": "informative"},
+        },
+        {
+            "research_claim_eligibility": "eligible",
+            "experimental_validity": {"status": "degenerate"},
+        },
+    ],
+)
+def test_established_rejects_ineligible_or_degenerate_evidence(sv, tmp_path, payload):
+    evidence = tmp_path / "docs" / "experiments" / "evidence.json"
+    evidence.parent.mkdir(parents=True)
+    evidence.write_text(json.dumps(payload), encoding="utf-8")
+    errors: list[str] = []
+    sv.validate_research_claim(
+        {
+            "status": "done",
+            "research_claim_status": "established",
+            "evidence_class": "formal-research",
+            "research_evidence": ["docs/experiments/evidence.json"],
+        },
+        tmp_path,
+        errors,
+        "x",
+    )
+    assert errors
 
 
 @pytest.mark.parametrize(
