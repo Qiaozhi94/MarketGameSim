@@ -19,12 +19,23 @@ REAL_PLAN = ROOT / "docs" / "experiments" / "0.1.5-factorial-plan.json"
 
 
 def _result(config) -> RunResult:
+    is_high_l = config.group_label[0] == "H"
+    is_high_m = config.group_label[1] == "H"
     return RunResult(
         seed=config.seed,
         terminated="COMPLETED",
         abort_code=None,
         events=[
-            {"event_type": "TRADE_SETTLE", "timestamp": 10, "price_ticks": 10_001},
+            {
+                "event_type": "TRADE_SETTLE",
+                "timestamp": 10 if not is_high_l else 30,
+                "price_ticks": 5_000 if is_high_l else 10_000,
+            },
+            {
+                "event_type": "TRADE_SETTLE",
+                "timestamp": 20 if not is_high_m else 60,
+                "price_ticks": 20_000 if is_high_m else 10_000,
+            },
             {"event_type": "RUN_BOUNDARY", "timestamp": 100},
         ],
         book_last_ticks=10_001,
@@ -40,7 +51,7 @@ def _small_binding():
     return dataclasses.replace(
         binding,
         seed_plan=FactorialSeedPlan(
-            planned_seeds=(30_000,), reserve_seeds=(), minimum_valid_blocks=1
+            planned_seeds=(40_000,), reserve_seeds=(), minimum_valid_blocks=1
         ),
     )
 
@@ -62,7 +73,7 @@ def test_formal_runner_executes_primary_and_ti2_rerun_then_resumes(tmp_path, mon
     )
     assert len(calls) == 16  # 8 primary + 8 deterministic reruns
     assert first["complete"] is True
-    assert first["valid_seeds"] == [30_000]
+    assert first["valid_seeds"] == [40_000]
     assert first["analysis"].is_file()
     assert first["manifest"].is_file()
 
@@ -81,7 +92,7 @@ def test_formal_runner_executes_primary_and_ti2_rerun_then_resumes(tmp_path, mon
     assert progress["run_family"] == "SPONTANEOUS"
     assert progress["inference_eligible"] is True
     checkpoint = formal._read_checkpoint(
-        tmp_path / formal.CHECKPOINT_DIR_NAME / "seed-30000.json.gz"
+        tmp_path / formal.CHECKPOINT_DIR_NAME / "seed-40000.json.gz"
     )
     for model_id, cells in checkpoint["audit_event_summary_sha256"].items():
         for cell_id, audit_digest in cells.items():
@@ -102,7 +113,7 @@ def test_operational_pause_writes_ineligible_progress_without_analysis(tmp_path,
         max_new_blocks=1,
     )
     assert len(calls) == 16
-    assert result["executed_seeds"] == [30_000]
+    assert result["executed_seeds"] == [40_000]
     assert result["complete"] is False
     assert result["analysis"] is None
     assert result["manifest"] is None
@@ -120,10 +131,10 @@ def test_checkpoint_digest_tampering_fails_closed(tmp_path, monkeypatch):
         bootstrap_resamples=10,
         sign_flip_resamples=20,
     )
-    checkpoint = tmp_path / formal.CHECKPOINT_DIR_NAME / "seed-30000.json.gz"
+    checkpoint = tmp_path / formal.CHECKPOINT_DIR_NAME / "seed-40000.json.gz"
     with gzip.open(checkpoint, "rb") as stream:
         envelope = json.loads(stream.read().decode("utf-8"))
-    envelope["body"]["seed"] = 30_001
+    envelope["body"]["seed"] = 40_001
     with gzip.open(checkpoint, "wb") as stream:
         stream.write(json.dumps(envelope).encode("utf-8"))
     with pytest.raises(formal.FormalRunError, match="body digest mismatch"):

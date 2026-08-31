@@ -130,15 +130,10 @@ def _render_r5_report(
         model_id=model_id,
         cell_id=cell_id,
         keep_every=keep_every,
-    )
-    base = base.replace(
-        "# 0.1.5 正式旗舰实验结果 — Gate R4",
-        "# 0.1.5 正式旗舰实验研究交付 — Gate R5",
-        1,
-    ).replace(
-        "- 本 R4 包依赖 T215 原始 checkpoint；正式交付入口与仓库内回放由 T220/R5 生成。",
-        "- 本 R5 交付由已提交 evidence index 与同源码、同配置、同 seed 的双次确定性重放生成。",
-        1,
+        title="# 0.1.5 正式旗舰实验研究交付 — Gate R5",
+        delivery_limitation=(
+            "- 本 R5 交付由已提交 evidence index 与同源码、同配置、同 seed 的双次确定性重放生成。"
+        ),
     )
     lines = [
         base.rstrip(),

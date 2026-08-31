@@ -8,8 +8,13 @@ nothing in the repo imports or calls it in a test.
 
 from __future__ import annotations
 
+import dataclasses
+
+import pytest
+
 from market_game_sim.metrics.liquidation import (
     LiquidationMetrics,
+    RunClassification,
     classify_run,
     compute_liquidation_metrics,
 )
@@ -226,3 +231,18 @@ def test_ev4_records_directional_drained_sides():
     )
     assert result.economic_endpoint_codes == ["EV-4"]
     assert result.ev4_drained_sides == ["bid"]
+    assert set(result.as_dict()) == {field.name for field in dataclasses.fields(RunClassification)}
+
+
+def test_ev4_rejects_unknown_drained_side():
+    with pytest.raises(ValueError, match="only bid/ask"):
+        classify_run(
+            events=[],
+            last_ticks=10_000,
+            initial_price=10_000,
+            total_idle_ns=0,
+            run_total_ns=100,
+            has_aborted=False,
+            chained_liquidation_drained_book=True,
+            liquidation_drained_sides=["middle"],
+        )

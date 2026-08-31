@@ -177,10 +177,19 @@ def _build_bounded_replay(log_path: pathlib.Path, replay_path: pathlib.Path) -> 
 
 
 def _render_summary(
-    index: dict[str, Any], *, seed: int, model_id: str, cell_id: str, keep_every: int
+    index: dict[str, Any],
+    *,
+    seed: int,
+    model_id: str,
+    cell_id: str,
+    keep_every: int,
+    title: str = "# 0.1.5 正式旗舰实验结果 — Gate R4",
+    delivery_limitation: str = (
+        "- 本 R4 包依赖 T215 原始 checkpoint；正式交付入口与仓库内回放由 T220/R5 生成。"
+    ),
 ) -> str:
     lines = [
-        "# 0.1.5 正式旗舰实验结果 — Gate R4",
+        title,
         "",
         "## 运行族与研究资格",
         "",
@@ -270,7 +279,7 @@ def _render_summary(
     lines.extend(f"- {limitation}" for limitation in index["limitations"])
     lines.extend(
         [
-            "- 本 R4 包依赖 T215 原始 checkpoint；正式交付入口与仓库内回放由 T220/R5 生成。",
+            delivery_limitation,
             "",
         ]
     )

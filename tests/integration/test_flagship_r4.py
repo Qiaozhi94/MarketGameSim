@@ -11,6 +11,7 @@ import pytest
 from market_game_sim import __version__
 from market_game_sim.experiment.factorial import (
     CELL_IDS,
+    ENDPOINT_FAMILIES,
     MODEL_IDS,
     event_summary_sha256,
     load_factorial_plan,
@@ -150,7 +151,9 @@ def test_r4_summary_reports_all_formal_effects_and_boundaries(tmp_path, r4_input
     assert text.count("| crash |") == 12
     assert text.count("| surge |") == 12
     assert text.count("| liquidity_drought |") == 12
-    assert text.count("`not-supported`") == 3
+    index = json.loads(index_path.read_text(encoding="utf-8"))
+    for family_id in ENDPOINT_FAMILIES:
+        assert f"- 判定：`{index['endpoint_results'][family_id]['status']}`" in text
     assert "不等于接受 H0" in text
     assert "不构成结果导向挑选" in text
 
@@ -166,7 +169,7 @@ def test_r4_replay_is_offline_bounded_and_readable(tmp_path, r4_inputs):
     assert "http://" not in html
     assert "https://" not in html
     log = read_log(result["log"])
-    assert log.run_id == "exp-s30000"
+    assert log.run_id == "exp-s40000"
     assert len(log.events) > 0
 
 
@@ -205,7 +208,7 @@ def test_r4_rejects_representative_ti2_audit_drift(tmp_path, r4_inputs):
     body["audit_event_summary_sha256"][MODEL_IDS[0]][CELL_IDS[0]] = "0" * 64
     _write_checkpoint(checkpoint_path, body)
     index = json.loads(index_path.read_text(encoding="utf-8"))
-    selected = next(entry for entry in index["checkpoints"] if entry["seed"] == "30000")
+    selected = next(entry for entry in index["checkpoints"] if entry["seed"] == "40000")
     selected["sha256"] = _sha256(checkpoint_path)
     _write_json(index_path, index)
     with pytest.raises(R4BundleError, match="TI-2 rerun digest"):

@@ -15,10 +15,10 @@
     "AC-010"
   ],
   "status": "passed",
-  "verified_on": "2026-08-30",
+  "verified_on": "2026-08-31",
   "quality_gate": {
     "command": "python tools/verify.py",
-    "pytest": "2211 passed",
+    "pytest": "2226 passed",
     "contract_sources": "passed",
     "spec_lifecycle": "passed",
     "ruff_check": "passed",
@@ -26,20 +26,22 @@
     "warning": ".pytest_cache ACL prevents cache writes; test execution and results are unaffected"
   },
   "formal_run": {
-    "path": "artifacts/formal/T215-t218",
+    "path": "artifacts/formal/T215-r021-v2-final",
     "run_family": "SPONTANEOUS",
     "evidence_class": "formal-research",
     "executed_seed_blocks": 128,
     "valid_seed_blocks": 128,
     "excluded_seed_blocks": 0,
-    "source_tree_sha256": "edc96db9f3acee653c077425a49e41ec7a9b36d67b99b7b2567ecda6f773b305",
-    "config_hash": "82cf38207aa8c89e3f65fef0374da90c"
+    "source_tree_sha256": "1cfa1c138d2d1e039e824d122bb3d6120ea30719f985dd48e1ca30603b54c9e0",
+    "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
+    "experimental_validity": "informative",
+    "research_claim_eligibility": "eligible"
   },
   "r4_bundle": {
-    "path": "artifacts/showcase/R4-t218",
-    "manifest_sha256": "2e891a828a324bd2158ec03f10661701e70f75158e04ad7193bac9203c6adf7d",
-    "representative_seed": 30000,
-    "replay_bytes": 130957
+    "path": "artifacts/showcase/R4-r021-v2-final",
+    "manifest_sha256": "c3254abc9cb95babbd438a8c496eeabf2b3b5133fc41f58ab4d2436bbba14ef2",
+    "representative_seed": 40000,
+    "replay_bytes": 2314160
   },
   "acceptance": [
     {
@@ -92,7 +94,7 @@
       "id": "AC-007",
       "status": "passed",
       "evidence": [
-        "artifacts/formal/T215-t218/analysis.json",
+        "artifacts/formal/T215-r021-v2-final/analysis.json",
         "tests/integration/test_flagship_evidence_index.py"
       ]
     },
@@ -116,7 +118,7 @@
       "id": "AC-010",
       "status": "passed",
       "evidence": [
-        "artifacts/formal/T215-t218/run-manifest.json",
+        "artifacts/formal/T215-r021-v2-final/run-manifest.json",
         "tests/integration/test_flagship_formal.py",
         "python tools/verify.py"
       ]

@@ -11,6 +11,7 @@ path 无法证明门真的会挡错误。
 
 from __future__ import annotations
 
+import json
 import pathlib
 import re
 
@@ -233,6 +234,26 @@ def validate_research_claim(
                     continue
                 if not resolved.is_file():
                     fail(errors, f"{where}: research_evidence 不存在：{ref!r}")
+                    continue
+                if resolved.suffix.lower() != ".json":
+                    fail(
+                        errors,
+                        f"{where}: established 的 research_evidence 必须是 JSON 索引：{ref!r}",
+                    )
+                    continue
+                try:
+                    evidence = json.loads(resolved.read_text(encoding="utf-8"))
+                except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                    fail(errors, f"{where}: research_evidence 无法解析：{ref!r}: {exc}")
+                    continue
+                if not isinstance(evidence, dict):
+                    fail(errors, f"{where}: research_evidence 根必须是对象：{ref!r}")
+                    continue
+                if evidence.get("research_claim_eligibility") != "eligible":
+                    fail(errors, f"{where}: research_evidence 未取得研究声明资格：{ref!r}")
+                validity = evidence.get("experimental_validity")
+                if not isinstance(validity, dict) or validity.get("status") != "informative":
+                    fail(errors, f"{where}: research_evidence 未通过非退化有效性门禁：{ref!r}")
     if front.get("status") == "done" and required and claim != "established":
         fail(errors, f"{where}: 该规格要求正式研究声明，status=done 时必须 established")
     if is_version and front.get("status") == "done" and claim == "not-established":
