@@ -518,6 +518,15 @@ def test_link_escape_out_of_repo(sv, tmp_path, tmp_path_factory):
     assert any("逃逸" in e for e in errors)
 
 
+def test_current_review_draft_is_excluded_from_repository_link_scan(sv, tmp_path):
+    review = tmp_path / "docs" / "reviews" / "CURRENT-doc.md"
+    review.parent.mkdir(parents=True)
+    review.write_text("[过程稿死链](missing.md)\n", encoding="utf-8")
+    errors: list[str] = []
+    sv.check_docs_links(tmp_path, errors)
+    assert errors == []
+
+
 # --------------------------------------------------------------------------- #
 # traceability owner/exit
 # --------------------------------------------------------------------------- #
@@ -643,6 +652,35 @@ def test_pending_section_none_ok(sv):
     assert errors == []
 
 
+@pytest.mark.parametrize(
+    "line",
+    [
+        "- [ ] Q-001: 未关闭的问题",
+        "- [x] Q-002: 已关闭的问题 — 决策：采用方案 A",
+    ],
+)
+def test_pending_section_standard_checkbox_ok(sv, line):
+    md = f"## 8. 待确认问题\n{line}"
+    errors: list[str] = []
+    sv._check_pending_section(md, "待确认问题", "Q", errors, "spec")
+    assert errors == []
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "-[ ] Q-001: 缺少连字符后的空格",
+        "- [ ] Q-001 缺少冒号",
+        "- [ ] Q-001:",
+    ],
+)
+def test_pending_section_malformed_checkbox_fails(sv, line):
+    md = f"## 8. 待确认问题\n{line}"
+    errors: list[str] = []
+    sv._check_pending_section(md, "待确认问题", "Q", errors, "spec")
+    assert any("非规范行" in e for e in errors)
+
+
 def test_open_question_fails_after_ready(sv):
     md = "## 8. 待确认问题\n- [ ] Q-001: 未关闭的问题"
     errors: list[str] = []
@@ -766,6 +804,38 @@ def test_ac_referencing_undeclared_requirement_fails(sv, tmp_path):
     assert any("AC-001" in e and "FR-999" in e for e in errors)
 
 
+def test_ac_referencing_undeclared_ux_id_is_rejected(sv, tmp_path):
+    spec = _spec_with_ac(
+        "- [ ] **AC-001** (`UX-999`): 未声明的 UX。",
+        "- **UX-201**：已声明的 UX。\n",
+    )
+    tasks = "## 2. 实现任务\n\n- [ ] **T001** (`AC-001`): 实施 — verify: `tests/unit/test_x.py`\n"
+    errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "draft")
+    assert any("AC-001" in e and "UX-999" in e for e in errors)
+
+
+def test_ac_referencing_declared_ux_id_passes(sv, tmp_path):
+    spec = _spec_with_ac(
+        "- [ ] **AC-001** (`UX-201`): 已声明的 UX。",
+        "- **UX-201**：已声明的 UX。\n",
+    )
+    tasks = "## 2. 实现任务\n\n- [ ] **T001** (`AC-001`): 实施 — verify: `tests/unit/test_x.py`\n"
+    errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "draft")
+    assert errors == []
+
+
+def test_declared_ux_requirement_without_ac_is_rejected(sv):
+    spec = _spec_with_ac(
+        "- [ ] **AC-001** (`FR-001`): 只认领功能需求。",
+        "- **FR-001**：功能需求。\n- **UX-201**：无人认领的 UX。\n",
+    )
+    errors: list[str] = []
+    sv._check_requirement_ac_coverage({"created": "2026-09-01"}, spec, errors, "m")
+    assert any("UX-201" in e and "没有被任何 AC 引用" in e for e in errors)
+
+
 def test_ac_referencing_version_root_or_prd_id_passes(sv, tmp_path):
     """AC 可以引用版本根 requirement 与 PRD 编号——0.1.4 就是这么写的。"""
     spec = _spec_with_ac("- [ ] **AC-001** (`SC-008`, `PR-018`, `E1`): 做到某事。", "")
@@ -823,14 +893,109 @@ def test_missing_test_path_blocks_only_after_draft(sv, tmp_path):
     sv._check_ac_references(
         spec, tasks, "", "", tmp_path, ready_errors, "m", "ready-for-development"
     )
-    assert any("真实存在的路径" in e for e in ready_errors)
+    assert any("真实存在的文件" in e for e in ready_errors)
 
     (tmp_path / "tests" / "unit" / "not_yet").mkdir(parents=True)
+    directory_errors: list[str] = []
+    sv._check_ac_references(
+        spec, tasks, "", "", tmp_path, directory_errors, "m", "ready-for-development"
+    )
+    assert any("真实存在的文件" in e for e in directory_errors)
+
+    test_file = tmp_path / "tests" / "unit" / "not_yet" / "test_feature.py"
+    test_file.write_text("", encoding="utf-8")
+    tasks = (
+        "## 2. 实现任务\n\n"
+        "- [ ] **T001** (`AC-001`): 实施 — verify: "
+        "`tests/unit/not_yet/test_feature.py`\n"
+    )
     fixed_errors: list[str] = []
     sv._check_ac_references(
         spec, tasks, "", "", tmp_path, fixed_errors, "m", "ready-for-development"
     )
     assert fixed_errors == []
+
+
+def test_non_test_path_does_not_satisfy_ac_path_gate(sv, tmp_path):
+    (tmp_path / "tools").mkdir()
+    (tmp_path / "tools" / "verify.py").write_text("", encoding="utf-8")
+    spec = _spec_with_ac("- [ ] **AC-001** (`FR-001`): 做到某事。")
+    tasks = "## 2. 实现任务\n\n- [ ] **T001** (`AC-001`): 实施 — verify: `tools/verify.py`\n"
+    errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "ready-for-development")
+    assert any("真实存在的文件" in e for e in errors)
+
+
+def test_real_test_file_satisfies_ac_path_gate(sv, tmp_path):
+    test_file = tmp_path / "tests" / "unit" / "test_feature.py"
+    test_file.parent.mkdir(parents=True)
+    test_file.write_text("", encoding="utf-8")
+    spec = _spec_with_ac("- [ ] **AC-001** (`FR-001`): 做到某事。")
+    tasks = (
+        "## 2. 实现任务\n\n"
+        "- [ ] **T001** (`AC-001`): 实施 — verify: `tests/unit/test_feature.py::test_it`\n"
+    )
+    errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "ready-for-development")
+    assert errors == []
+
+
+def test_historical_milestone_keeps_legacy_verify_path_rule(sv, tmp_path):
+    spec = _spec_with_ac("- [ ] **AC-001** (`FR-001`): 历史验收。")
+    tasks = "## 2. 实现任务\n\n- [ ] **T001** (`AC-001`): 历史门禁 — verify: `tools/verify.py`\n"
+    errors: list[str] = []
+    sv._check_ac_references(
+        spec,
+        tasks,
+        "",
+        "",
+        tmp_path,
+        errors,
+        "m",
+        "done",
+        "2026-08-31",
+    )
+    assert errors == []
+
+
+def test_same_requirement_id_declared_in_both_specs_is_rejected(sv):
+    version_spec = "- **FR-201**：版本根的完整正文。\n"
+    milestone_spec = "- **FR-201**：里程碑的完整正文。\n"
+    errors: list[str] = []
+    sv._check_version_requirement_registry(
+        version_spec, milestone_spec, "0.2.1-example", errors, "m"
+    )
+    assert any("FR-201" in e and "重复完整声明" in e for e in errors)
+
+
+def test_version_root_registry_entry_with_milestone_link_passes(sv):
+    version_spec = "- **FR-201**：一句话意图；正文见 [里程碑](0.2.1-example/spec.md#4-需求)。\n"
+    milestone_spec = "- **FR-201**：里程碑的完整正文。\n"
+    errors: list[str] = []
+    sv._check_version_requirement_registry(
+        version_spec, milestone_spec, "0.2.1-example", errors, "m"
+    )
+    assert errors == []
+
+
+def test_version_root_registry_plain_text_path_is_rejected(sv):
+    version_spec = "- **FR-201**：正文见 0.2.1-example/spec.md。\n"
+    milestone_spec = "- **FR-201**：里程碑的完整正文。\n"
+    errors: list[str] = []
+    sv._check_version_requirement_registry(
+        version_spec, milestone_spec, "0.2.1-example", errors, "m"
+    )
+    assert any("FR-201" in e and "必须链接" in e for e in errors)
+
+
+def test_user_story_title_mismatch_between_version_and_milestone_is_rejected(sv):
+    version_spec = "### US-201：版本标题（P1）\n"
+    milestone_spec = "### US-201：里程碑标题（Priority: P1）\n"
+    errors: list[str] = []
+    sv._check_version_requirement_registry(
+        version_spec, milestone_spec, "0.2.1-example", errors, "m"
+    )
+    assert any("US-201" in e and "标题不一致" in e for e in errors)
 
 
 def test_markdown_collectors_are_not_silently_empty_on_real_specs(sv):
@@ -1127,6 +1292,38 @@ def test_sequential_task_ids_pass(sv):
     )
     errors: list[str] = []
     sv.validate_task_id_order({"gate_version": 1}, tasks, errors, "m")
+    assert errors == []
+
+
+def test_new_milestone_task_id_must_be_unique_across_milestones(sv, tmp_path):
+    legacy = tmp_path / "legacy"
+    current = tmp_path / "current"
+    legacy.mkdir()
+    current.mkdir()
+    (legacy / "tasks.md").write_text("- [x] **T801** (`FR-001`): 旧任务\n", encoding="utf-8")
+    (current / "tasks.md").write_text("- [ ] **T801** (`FR-001`): 新任务\n", encoding="utf-8")
+    all_ids = {
+        "0.1.1": (legacy, {"created": "2026-08-01"}),
+        "0.2.1": (current, {"created": "2026-09-01"}),
+    }
+    errors: list[str] = []
+    sv.validate_new_task_ids_unique_across_milestones(all_ids, errors)
+    assert any("T801" in e and "0.1.1" in e and "0.2.1" in e for e in errors)
+
+
+def test_historical_task_id_collisions_are_not_retroactively_rejected(sv, tmp_path):
+    first = tmp_path / "first"
+    second = tmp_path / "second"
+    first.mkdir()
+    second.mkdir()
+    for path in (first, second):
+        (path / "tasks.md").write_text("- [x] **T301** (`FR-001`): 旧任务\n", encoding="utf-8")
+    all_ids = {
+        "0.1.1": (first, {"created": "2026-08-01"}),
+        "0.1.2": (second, {"created": "2026-08-02"}),
+    }
+    errors: list[str] = []
+    sv.validate_new_task_ids_unique_across_milestones(all_ids, errors)
     assert errors == []
 
 

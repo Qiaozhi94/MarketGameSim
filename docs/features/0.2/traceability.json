@@ -1,0 +1,36 @@
+{
+  "$comment": "v0.2 需求追踪真源；当前只包含 H1 手动交易沙盒，H2 须另立规格后再加入。",
+  "matrix_version": 1,
+  "statuses": ["owned", "deferred", "removed"],
+  "milestones": {
+    "0.2.1": "docs/features/0.2/0.2.1-interactive-sandbox"
+  },
+  "requirements": {
+    "US-201": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E1"]}]},
+    "US-202": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E3", "E5"]}]},
+    "US-203": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E4"]}]},
+    "FR-201": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E1"]}]},
+    "FR-202": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E1", "E2"]}]},
+    "FR-203": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E2"]}]},
+    "FR-204": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E1"]}]},
+    "FR-205": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E3"]}]},
+    "FR-206": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E4"]}]},
+    "FR-207": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E2"]}]},
+    "FR-208": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E5"]}]},
+    "TR-201": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E3"]}]},
+    "TR-202": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E2", "E3"]}]},
+    "TR-203": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E5"]}]},
+    "IR-201": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E1", "E2"]}]},
+    "IR-202": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E1"]}]},
+    "IR-203": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E3", "E5"]}]},
+    "NFR-201": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E3"]}]},
+    "NFR-202": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E1", "E5"]}]},
+    "NFR-203": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E4"]}]},
+    "NFR-204": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E2", "E5"]}]},
+    "SC-201": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E2"]}]},
+    "SC-202": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E3"]}]},
+    "SC-203": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E4"]}]},
+    "SC-204": {"status": "owned", "owners": [{"milestone": "0.2.1", "exits": ["E5"]}]}
+  },
+  "tracked_id_families": ["US", "FR", "TR", "IR", "NFR", "SC"]
+}

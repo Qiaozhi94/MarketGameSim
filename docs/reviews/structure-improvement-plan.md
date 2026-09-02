@@ -1,7 +1,7 @@
 # MarketGameSim 目录结构改造方案
 
-> 状态：**Implemented（2026-08-10，M001—M024、M026—M030 已勾选；M025 待全部里程碑
-> done 后生成 releases/0.1.md）**  
+> 状态：**Implemented（结构改造于 2026-08-10 完成；M025 随 v0.1 于 2026-08-30
+> 签收闭合；M001—M030 全部勾选）**
 > 基线日期：2026-08-09  
 > 实施状态：见 §13 实施任务清单（执行进度真相源）  
 > 参考：PersonaHub `structure-improvement-plan.md`、`docs/features/README.md`，以及
@@ -693,8 +693,8 @@ constitution 完成职责分解后再确认整个 `.specify/` 已删除。
 - [x] M022：新增 `docs/README.md` 所有权地图，验证两次点击内可到达全部权威文档。
 - [x] M023：更新根 README、CLAUDE 和 `tools/README.md`，删除重复状态与完整命令清单。
 - [x] M024：新增 `docs/features/0.1/README.md`，保留稳定路径并说明 legacy design 规则。
-- [ ] M025：仅在全部里程碑 done 后生成 `docs/features/releases/0.1.md`、写入
-  `closed_at`；条件未满足时保持未勾。
+- [x] M025：全部里程碑 done 后生成 `docs/features/releases/0.1.md`、写入
+  `closed_at: 2026-08-30`。
 - [x] M026：把本方案迁入 `docs/reviews/`，按 review 协议处置根 `code-review-report.md`。
 
 ### Phase E：工具版本、CI 与最终验收

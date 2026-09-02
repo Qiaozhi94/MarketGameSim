@@ -4,7 +4,8 @@
 不可妥协）与原则 7（小步、确定性、可观察）的规范正文拥有者。字段级合同、算法层与
 撮合规则不在这里重复，见 `docs/contracts/` 与各里程碑 `design.md`。
 
-> 本文件为 v0.1 的架构层概要；跨里程碑共享的详细技术设计见 `docs/features/0.1/design.md`。
+> v0.1 的共享设计见 `docs/features/0.1/design.md`；当前 v0.2 交互层共享设计见
+> `docs/features/0.2/design.md`。
 
 ## 1. 分层与依赖方向
 
@@ -46,6 +47,7 @@ L1  确定性内核        kernel/ · book/ · ledger/ · eventlog/
 ## 4. 相关入口
 
 - `docs/features/0.1/design.md`：跨里程碑共享技术设计。
+- `docs/features/0.2/design.md`：交互会话、输入重放与研究隔离的共享设计。
 - `docs/contracts/`：跨规格实现合同。
 - `docs/decisions/`：已拍板且跨 Feature 生效的长期决策（ADR）。
 - `docs/SOP.md`：原则入口与阻断规则。
