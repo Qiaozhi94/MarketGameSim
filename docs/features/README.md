@@ -77,6 +77,8 @@ docs/features/
   `tools/validate_spec_lifecycle.py` 强制执行；规则引入前已完成的里程碑不追溯执法。
 - 任务 ID 在 `tasks.md` 内唯一且按文档顺序递增（允许跳号），同样由门禁执行——编号顺序
   与执行顺序背离时，依赖关系只能靠人读出来。
+- 跨里程碑检索也必须无歧义：0.2.x 从当前全仓未使用的 T8xx 号段开始；2026-09-01 起创建的
+  里程碑任务 ID 必须与全仓其他里程碑唯一，由门禁校验，不能只靠约定号段。
 - 回写生命周期状态的那一项任务标记 `` `[状态门]` ``：**必须存在、全文件唯一、且是最后
   一项**。`done` 要求全部任务勾完，状态门排在任何任务之前都会形成"`done` 要求该任务
   完成、该任务又要求先 `done`"的不可满足顺序。门禁按标记判定，不猜任务描述的措辞——
@@ -97,12 +99,15 @@ docs/features/
   用 `[migrated-to: <milestone>/<task>]` 唯一映射到真实后继任务；不得伪造勾选。
 - `gate_version: 1`：新里程碑（0.1.4 起）必选。额外校验三件套齐全、顶层结构与模板
   完全一致、Q/DQ 全部关闭；标记 `done` 时 tasks 与 AC 必须全部完成。
+- 对 2026-09-01 起创建的里程碑，版本根 spec 只保留 requirement ID、一句话意图与里程碑
+  正文链接；里程碑 spec 唯一拥有完整需求正文。同一 US 在两处出现时标题必须一致。
 - AC 校验（gate v1）的具体口径：
-  - 每条 AC 括号内引用的 ID 必须真实存在——`FR/NFR/SC/DR/TR/IR/US` 在本 spec 或版本根
+  - 每条 AC 括号内引用的 ID 必须真实存在——`FR/NFR/SC/DR/TR/IR/US/UX` 在本 spec 或版本根
     spec 声明过，`PR/KPI` 在 PRD 声明过，`E<n>` 在本 spec 的退出条件表里；
   - 每条 AC 必须被至少一个任务引用（`` `AC-001`—`AC-012` `` 这类范围声明会展开计入）；
   - `ready-for-development` 及以上，覆盖该 AC 的任务里至少有一条 `verify:` 指向仓库内
-    真实存在的路径；`draft` 阶段允许测试尚未创建，只要求引用关系成立。
+    `tests/` 下真实存在的测试文件；目录和 `tools/verify.py` 等非测试路径不计入。`draft`
+    阶段允许测试尚未创建，只要求引用关系成立。
 
 ### 固定顶层章节
 
@@ -165,6 +170,8 @@ docs/features/
 ## 需求追踪
 
 - `traceability.json` 是 requirement → milestone → exit 的机器追踪真源。
+- `UX` 是里程碑本地家族，只在里程碑 spec 声明并由 AC 认领，不进入版本级
+  `traceability.json`；版本级矩阵只追踪跨里程碑归属的家族。
 - requirement `statuses` 只表示 `owned/deferred/removed`；milestone 生命周期由各
   milestone `spec.md` frontmatter 表示；release 生命周期由版本根 `spec.md` 与
   `releases/<version>.md` 表示。

@@ -20,6 +20,9 @@ build/
 # 编辑器本地历史（VS Code Local History 扩展）
 .history/
 
+# 检视过程稿：固定文件名覆盖写，永不进 git（review-convergence skill §8）
+docs/reviews/CURRENT-*.md
+
 # 本机代理运行续接状态
 .sisyphus/
 

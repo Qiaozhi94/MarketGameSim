@@ -526,7 +526,7 @@ def _check_pending_section(
     if len(lines) == 1 and lines[0] == "无":
         return
     for ln in lines:
-        m = re.match(rf"^-[ \[]([ x])[ \]]\s+({tag}-\d+)", ln)
+        m = re.fullmatch(rf"- \[([ x])\] {tag}-\d+: .+", ln)
         if not m:
             fail(errors, f"{where}: 「{section_title}」含非规范行：{ln!r}")
 
@@ -574,15 +574,61 @@ def _check_ac_range_completeness(
 
 
 _AC_DECL = re.compile(r"^- \[[ x]\]\s+\*\*(?P<ac>AC-\d+)\*\*\s*\((?P<refs>[^)]*)\)", re.M)
-_BACKTICKED_ID = re.compile(r"`((?:US|FR|NFR|SC|KR|DR|TR|IR|PR|KPI|E)-?\d+)`")
-_DECLARED_ID = re.compile(r"^- \*\*((?:US|FR|NFR|SC|KR|DR|TR|IR|PR|KPI)-\d+)\*\*", re.M)
+_BACKTICKED_ID = re.compile(r"`((?:US|UX|FR|NFR|SC|KR|DR|TR|IR|PR|KPI|E)-?\d+)`")
+_DECLARED_ID = re.compile(r"^- \*\*((?:US|UX|FR|NFR|SC|KR|DR|TR|IR|PR|KPI)-\d+)\*\*", re.M)
 _DECLARED_HEADING_ID = re.compile(r"^### ((?:US)-\d+)[：:]", re.M)
+_REQUIREMENT_DECL = re.compile(
+    r"^- \*\*(?P<id>(?:UX|FR|NFR|SC|DR|TR|IR)-\d+)\*\*[：:]"
+    r"(?P<body>[^\n]*(?:\n {2,}[^\n]*)*)",
+    re.M,
+)
+_US_HEADING = re.compile(r"^### (?P<id>US-\d+)[：:](?P<title>[^\n]+)", re.M)
 _EXIT_ROW = re.compile(r"^\|\s*(E\d+)\s*\|", re.M)
 _VERIFY_TOKENS = re.compile(r"—\s*verify:\s*(?P<verify>[^\n]*(?:\n\s{6,}[^\n]*)*)", re.M)
 
 
 def _declared_ids(text: str) -> set[str]:
     return set(_DECLARED_ID.findall(text)) | set(_DECLARED_HEADING_ID.findall(text))
+
+
+def _check_version_requirement_registry(
+    version_spec_text: str,
+    milestone_spec_text: str,
+    milestone_dirname: str,
+    errors: list[str],
+    where: str,
+) -> None:
+    """版本根只登记需求；同 ID 的完整正文由里程碑 spec 唯一拥有。"""
+    version_body = _without_fenced_code(version_spec_text)
+    milestone_body = _without_fenced_code(milestone_spec_text)
+    version_decls = {
+        m.group("id"): m.group("body") for m in _REQUIREMENT_DECL.finditer(version_body)
+    }
+    milestone_ids = {m.group("id") for m in _REQUIREMENT_DECL.finditer(milestone_body)}
+    required_link = f"{milestone_dirname}/spec.md"
+    for rid in sorted(version_decls.keys() & milestone_ids):
+        linked_paths = {
+            target.split("#", 1)[0].split("?", 1)[0]
+            for target in re.findall(r"\[[^\]]*\]\(([^)]+)\)", version_decls[rid])
+        }
+        if required_link not in linked_paths:
+            fail(
+                errors,
+                f"{where}: {rid} 在版本根与里程碑重复完整声明；"
+                f"版本根登记项必须链接 {required_link}",
+            )
+
+    def user_story_titles(text: str) -> dict[str, str]:
+        return {
+            match.group("id"): re.sub(r"\s*[（(][^）)]*[）)]\s*$", "", match.group("title")).strip()
+            for match in _US_HEADING.finditer(text)
+        }
+
+    version_titles = user_story_titles(version_body)
+    milestone_titles = user_story_titles(milestone_body)
+    for rid in sorted(version_titles.keys() & milestone_titles.keys()):
+        if version_titles[rid] != milestone_titles[rid]:
+            fail(errors, f"{where}: {rid} 在版本根与里程碑的标题不一致")
 
 
 def _ac_task_coverage(tasks_text: str) -> dict[int, list[str]]:
@@ -599,16 +645,22 @@ def _ac_task_coverage(tasks_text: str) -> dict[int, list[str]]:
 
 
 def _block_has_existing_path(block: str, root: pathlib.Path) -> bool:
-    """任务的 verify 段是否指向仓库内真实存在的路径。"""
+    """任务的 verify 段是否指向仓库 ``tests/`` 下真实存在的文件。"""
     match = _VERIFY_TOKENS.search(block)
     if not match:
         return False
     for token in re.findall(r"`([^`]+)`", match.group("verify")):
         for candidate in token.split():
             candidate = candidate.strip().rstrip("；,，")
-            if "/" not in candidate:
+            candidate = candidate.split("::", 1)[0].replace("\\", "/")
+            if not candidate.startswith("tests/"):
                 continue
-            if (root / candidate).exists():
+            candidate_path = (root / candidate).resolve()
+            try:
+                candidate_path.relative_to((root / "tests").resolve())
+            except ValueError:
+                continue
+            if candidate_path.is_file():
                 return True
     return False
 
@@ -616,15 +668,19 @@ def _block_has_existing_path(block: str, root: pathlib.Path) -> bool:
 # 「本 spec 声明的需求必须有 AC 认领」规则的引入日；此前 created 的里程碑不追溯执法
 # （0.1.4 的 US-004/US-005/TR-001/SC-006 就没有 AC，规则出现时它已经 done）。
 AC_COVERAGE_RULE_DATE = "2026-08-15"
+# 版本根「登记表」、里程碑「需求正文」规则从 H1 规格起执行；历史 0.1.x 不追溯改写。
+VERSION_REGISTRY_RULE_DATE = "2026-09-01"
+# verify 必须落到 tests/ 真实文件的规则同样从 H1 起执行；旧里程碑保留原交付记录。
+AC_TEST_FILE_RULE_DATE = "2026-09-01"
 # 只对这几族强制 AC 覆盖：US 用「独立测试」段自证，SC/KR 是版本级成功标准，
 # 它们的验收锚点在版本根而不在里程碑。
-AC_COVERED_FAMILIES = ("FR", "NFR", "DR", "TR", "IR")
+AC_COVERED_FAMILIES = ("FR", "NFR", "DR", "TR", "IR", "UX")
 
 
 def _check_requirement_ac_coverage(
     front: dict, spec_text: str, errors: list[str], where: str
 ) -> None:
-    """本 spec 声明的每条 FR/NFR/DR/TR/IR 都必须被至少一条 AC 引用。
+    """本 spec 声明的每条 FR/NFR/DR/TR/IR/UX 都必须被至少一条 AC 引用。
 
     D009 的成因：0.1.5 一次写下 6 条 IR/DR/TR，AC 却只引用 FR/NFR/SC——接口、数据、
     事件三类需求整体没有验收锚点，而且没有任何门禁会说话。
@@ -650,6 +706,7 @@ def _check_ac_references(
     errors: list[str],
     where: str,
     status: str,
+    created: str | None = None,
 ) -> None:
     """AC 必须引用真实存在的 requirement，且被至少一个任务的测试路径覆盖。
 
@@ -659,7 +716,9 @@ def _check_ac_references(
     known = _declared_ids(spec_text) | _declared_ids(version_spec_text) | _declared_ids(prd_text)
     exits = set(_EXIT_ROW.findall(spec_text))
     coverage = _ac_task_coverage(tasks_text)
-    path_required = status in ("ready-for-development", "in-progress", "review", "done")
+    path_required = status in ("ready-for-development", "in-progress", "review", "done") and (
+        created is None or created >= AC_TEST_FILE_RULE_DATE
+    )
 
     for match in _AC_DECL.finditer(_without_fenced_code(spec_text)):
         ac = match.group("ac")
@@ -675,7 +734,7 @@ def _check_ac_references(
             fail(errors, f"{where}: {ac} 没有任何任务引用，验收无实施锚点")
             continue
         if path_required and not any(_block_has_existing_path(b, root) for b in blocks):
-            fail(errors, f"{where}: {ac} 的覆盖任务没有一条 verify 指向仓库内真实存在的路径")
+            fail(errors, f"{where}: {ac} 的覆盖任务没有一条 verify 指向 tests/ 下真实存在的文件")
 
 
 def validate_gate1(
@@ -866,6 +925,36 @@ def _task_blocks(tasks_text: str) -> list[tuple[str, str, str]]:
         end = matches[index + 1].start() if index + 1 < len(matches) else len(tasks_text)
         out.append((match.group("mark"), match.group("id"), tasks_text[match.start() : end]))
     return out
+
+
+TASK_GLOBAL_UNIQUENESS_RULE_DATE = "2026-09-01"
+
+
+def validate_new_task_ids_unique_across_milestones(
+    all_ids: dict[str, tuple[pathlib.Path, dict]], errors: list[str]
+) -> None:
+    """新里程碑任务 ID 不得与任何其他里程碑碰撞；历史重复不追溯。"""
+    owners: dict[str, list[tuple[str, dict]]] = {}
+    for mid, (mdir, front) in all_ids.items():
+        tasks_path = mdir / "tasks.md"
+        if not tasks_path.is_file():
+            continue
+        tasks_text = tasks_path.read_text(encoding="utf-8")
+        for _mark, tid, _block in _task_blocks(tasks_text):
+            owners.setdefault(tid, []).append((mid, front))
+
+    for tid, matches in sorted(owners.items()):
+        if len(matches) < 2:
+            continue
+        new_owners = [
+            mid
+            for mid, front in matches
+            if isinstance(front.get("created"), str)
+            and front["created"] >= TASK_GLOBAL_UNIQUENESS_RULE_DATE
+        ]
+        if new_owners:
+            all_owners = ", ".join(mid for mid, _front in matches)
+            fail(errors, f"新里程碑任务 ID {tid} 跨里程碑重复：{all_owners}")
 
 
 def validate_completion_state(
@@ -1107,6 +1196,8 @@ def check_docs_links(
         rel = p.relative_to(root)
         if any(part in skip for part in rel.parts):
             continue
+        if rel.parts[:2] == ("docs", "reviews") and p.name.startswith("CURRENT-"):
+            continue
         text = p.read_text(encoding="utf-8")
         check_markdown_links(text, p.parent, errors, str(rel))
         check_links_out_of_repo(text, p.parent, root, errors, str(rel))
@@ -1124,6 +1215,7 @@ def validate_spec_lifecycle(
     all_ids = collect_all_milestones(features_dir)
     validate_ids_unique(all_ids, errors)
     validate_prerequisites(all_ids, errors)
+    validate_new_task_ids_unique_across_milestones(all_ids, errors)
     validate_versions(features_dir, root, errors)
     check_ownership_index(features_dir, root, errors)
     check_docs_links(root, errors)
@@ -1153,17 +1245,30 @@ def validate_spec_lifecycle(
             )
             version_spec = mdir.parent / "spec.md"
             prd = root / "docs" / "market-game-sim-prd.md"
+            version_spec_text = (
+                version_spec.read_text(encoding="utf-8") if version_spec.is_file() else ""
+            )
             _check_ac_references(
                 spec_text,
                 tasks_text,
-                version_spec.read_text(encoding="utf-8") if version_spec.is_file() else "",
+                version_spec_text,
                 prd.read_text(encoding="utf-8") if prd.is_file() else "",
                 root,
                 errors,
                 where,
                 front.get("status", ""),
+                front.get("created"),
             )
             _check_requirement_ac_coverage(front, spec_text, errors, where)
+            created = front.get("created", "")
+            if (
+                isinstance(created, str)
+                and created >= VERSION_REGISTRY_RULE_DATE
+                and version_spec_text
+            ):
+                _check_version_requirement_registry(
+                    version_spec_text, spec_text, mdir.name, errors, where
+                )
 
         validate_completion_state(mid, front, spec_text, tasks_text, all_ids, errors)
         validate_outcome_gates(front, tasks_text, errors, where)
