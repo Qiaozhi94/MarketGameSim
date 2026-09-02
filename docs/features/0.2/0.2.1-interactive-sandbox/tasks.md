@@ -18,6 +18,9 @@ updated: 2026-09-01
 - 每项完成并验证后立即勾选；实现中若契约失效，先修订三件套。
 - 三个 Phase 分别对应 PRD §15 的 H1-A、H1-B、H1-C 可见成果门。
 - 所有产物标记 `interactive + engineering-demonstration`，不得进入研究证据。
+- 推进到 `ready-for-development` 前，覆盖 AC-001—AC-008 的实现任务所列 `verify:` 测试文件
+  必须已存在于 `tests/` 下；未实现行为可先用 `pytest.mark.xfail(strict=True)` 骨架占位并
+  写明原因。门禁不接受目录或 `tools/verify.py` 代替具体测试文件。
 
 ## 1. 前置条件
 
@@ -25,7 +28,8 @@ updated: 2026-09-01
       与恢复边界问题；Q 与 DQ 结论必须一致，重叠部分以 DQ 为准，Q 只保留产品口径并引用
       DQ — verify: `spec.md`、`design.md`
 - [ ] T802 (`TR-201`—`TR-203`, `IR-201`—`IR-203`): 冻结输入 artifact、会话接口、稳定错误码
-      与 manifest 合同；若改事件 Schema，先完成版本提升和跨真源测试 — verify:
+      与 manifest 合同；若改事件 Schema，先完成版本提升和跨真源测试；冻结后创建
+      T803—T815 所列测试文件骨架，再推进 `ready-for-development` — verify:
       `docs/contracts/event-schema.md`、`src/market_game_sim/schema/event_fields.json`
 
 ## 2. 实现任务
