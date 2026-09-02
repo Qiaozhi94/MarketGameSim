@@ -802,3 +802,39 @@ C002 用 fail-stop 解释覆盖 AC-002 的明确重试不变量；C003/C006 的�
 仍可在看到结果后被改动；因此 `risk_appetite`、threshold 参数和 TI-2 审计步骤都必须成为
 冻结产物与机器缺项门禁的一部分。本循环提交推送后必须由 CI 确认全绿；
 最终 run 以该提交的 GitHub checks 为准。
+
+---
+
+## 循环 20: 0.2.1 H1 交互沙盒规格收敛
+
+- **report_type**: doc-review -> fix-verification
+- **周期**: 2026-09-01—2026-09-02（round 1 全量复核 -> round 2 diff-only -> round 3 regression-only）
+- **复盘状态**: H1 规格与机器门禁已收敛；未决 Critical / High / Medium / Low = 0 / 0 / 0 / 0
+- **本地门禁**: `python tools/verify.py`，2252 passed；真源、生命周期、ruff check、ruff format 全绿
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| R022-D001 | run_mode 未受摘要哈希保护 | High | correctness | root-cause | original-coding | fixed | RUN_HEADER 为模式真源并与 manifest 交叉校验 | T806 计划的模式篡改反例 | 1 | 2 | unhashed-isolation-key |
+| R022-D002 | UX ID 脱离门禁与追踪 | High | correctness | root-cause | process-gap | fixed | UX 纳入声明与 AC 覆盖检查 | lifecycle 回归 + N1/N2 变异 | 1 | 2 | rule-without-gate |
+| R022-D003 | 全范围 verify 架空 AC 路径门禁 | High | test-coverage | root-cause | original-coding | fixed | 只接受 tests/ 下真实文件且禁止越界 | M3/M8 目录、总门禁反例 | 1 | 2 | silent-no-op-gate |
+| R022-D004 | 版本根与里程碑双真源漂移 | High | correctness | root-cause | original-coding | fixed | 版本根改为意图+里程碑链接，registry 校验重复声明 | M5/M7 无链接与标题漂移反例 | 1 | 2 | dual-source-of-truth |
+| R022-D005 | 暂停期多输入时间不变量矛盾 | High | correctness | root-cause | original-coding | fixed | 改用 `(assigned_timestamp, input_seq)` 严格递增 | T803 计划的 pacing 回归 | 1 | 2 | contradictory-invariants |
+| R022-D006 | 人类观察面未对齐 AGENT_OBSERVE | High | correctness | root-cause | spec-drift | fixed | 人类信息集明确为 AGENT_OBSERVE 子集 | T804 计划的字段子集断言 | 1 | 2 | cross-contract-drift |
+| R022-D007 | 里程碑撤销版本速度公平决策 | Medium | correctness | root-cause | spec-drift | fixed | 版本决策收窄为信息公平，不承诺速度公平 | registry 门禁 + 人工复核 | 1 | 2 | dual-source-of-truth |
+| R022-D008 | run_mode 缺失/未知反例不可构造 | Medium | correctness | root-cause | original-coding | fixed | 定义 evidence guard 四分支输入面与原子写 | T806 计划的正反例 | 1 | 2 | untestable-negative-case |
+| R022-D009 | Q 与 DQ 重复拥有同一决定 | Medium | quality | root-cause | original-coding | fixed | 产品形态留 Q，技术决策归 DQ | 文档一致性复核 | 1 | 2 | duplicated-open-question |
+| R022-D010 | design 测试文件与 tasks verify 漂移 | Medium | test-coverage | root-cause | original-coding | fixed | design 逐 AC 对齐 tasks 完整路径 | ready 阶段真实文件门禁 | 1 | 2 | plan-path-drift |
+| R022-D011 | T201—T218 与旧里程碑 ID 冲突 | Medium | quality | root-cause | original-coding | fixed | 平移到 T801—T818 并增全仓唯一性门禁 | N5 跨里程碑重复反例 | 1 | 2 | cross-milestone-id-collision |
+| R022-D012 | UI 状态集与会话状态机不同构 | Low | quality | symptom-patch | original-coding | fixed | 增会话状态到 UI 状态唯一映射 | 文档一致性复核 | 1 | 2 | state-model-drift |
+| R022-D013 | CURRENT 过程稿进入 Git 和链接门禁 | Low | quality | root-cause | process-gap | fixed | 精确忽略 CURRENT-* 并从链接扫描排除 | CURRENT 死链不参与扫描 | 1 | 2 | rule-without-gate |
+| R022-D014 | registry 可被 ID 与冒号间空白绕过 | Medium | correctness | root-cause | fix-regression | fixed | 共享 ID 家族并统一容忍冒号前空白 | 四种分隔形式先红后绿 | 2 | 3 | rule-without-gate |
+| R022-D015 | ready 真实测试文件门禁无工作流 | Medium | test-coverage | root-cause | fix-regression | fixed | tasks 写明 strict xfail 骨架与 T802 前置 | lifecycle 门禁复核 | 2 | 3 | gate-without-workflow |
+| R022-D016 | Q-202 遗留旧任务 T202 | Low | correctness | root-cause | fix-regression | fixed | 改为 T802 并扫描 0.2 任务引用 | `rg` 无 T0xx—T7xx 遗留 | 2 | 3 | partial-symmetric-fix |
+| R022-D017 | 移除 AC 范围后完整性检查空转 | Low | quality | symptom-patch | fix-regression | fixed | T816 恢复 AC 范围，T817 恢复 E5，说明路径门禁边界 | H1 T816 范围锚点回归 | 2 | 3 | silent-no-op-gate |
+| R022-D018 | FIX-log 未忽略且参与链接扫描 | Low | quality | root-cause | fix-regression | fixed | 精确忽略 FIX-log 并从链接扫描排除 | 过程稿参数化测试先红后绿 | 3 | 3 | process-artifact-leak |
+
+**round 3 结论**：D014—D017 的目标修复均通过独立复核；回归检视新增并当轮修复
+D018。本地唯一门禁全绿，未发现新的未决问题。
+
+**模式教训**：规则与工作流必须成对修改；两个正则解析同一语法时必须共用家族与分隔口径；
+删除范围锚点前必须验证完整性门禁仍非空转；CURRENT 与 FIX-log 均属于过程稿，忽略与验证排除应同步落地。
