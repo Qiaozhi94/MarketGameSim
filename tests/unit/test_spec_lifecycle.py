@@ -988,6 +988,17 @@ def test_version_root_registry_plain_text_path_is_rejected(sv):
     assert any("FR-201" in e and "必须链接" in e for e in errors)
 
 
+@pytest.mark.parametrize("separator", ["：", ":", " ：", " :"])
+def test_version_registry_gate_is_whitespace_insensitive(sv, separator):
+    version_spec = f"- **FR-201**{separator}版本根的完整正文。\n"
+    milestone_spec = "- **FR-201**：里程碑的完整正文。\n"
+    errors: list[str] = []
+    sv._check_version_requirement_registry(
+        version_spec, milestone_spec, "0.2.1-example", errors, "m"
+    )
+    assert any("FR-201" in e and "必须链接" in e for e in errors)
+
+
 def test_user_story_title_mismatch_between_version_and_milestone_is_rejected(sv):
     version_spec = "### US-201：版本标题（P1）\n"
     milestone_spec = "### US-201：里程碑标题（Priority: P1）\n"
