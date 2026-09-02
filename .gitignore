@@ -22,6 +22,7 @@ build/
 
 # 检视过程稿：固定文件名覆盖写，永不进 git（review-convergence skill §8）
 docs/reviews/CURRENT-*.md
+docs/reviews/FIX-log.md
 
 # 本机代理运行续接状态
 .sisyphus/

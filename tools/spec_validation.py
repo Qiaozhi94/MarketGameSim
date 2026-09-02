@@ -1198,7 +1198,9 @@ def check_docs_links(
         rel = p.relative_to(root)
         if any(part in skip for part in rel.parts):
             continue
-        if rel.parts[:2] == ("docs", "reviews") and p.name.startswith("CURRENT-"):
+        if rel.parts[:2] == ("docs", "reviews") and (
+            p.name.startswith("CURRENT-") or p.name == "FIX-log.md"
+        ):
             continue
         text = p.read_text(encoding="utf-8")
         check_markdown_links(text, p.parent, errors, str(rel))

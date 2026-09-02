@@ -518,8 +518,9 @@ def test_link_escape_out_of_repo(sv, tmp_path, tmp_path_factory):
     assert any("逃逸" in e for e in errors)
 
 
-def test_current_review_draft_is_excluded_from_repository_link_scan(sv, tmp_path):
-    review = tmp_path / "docs" / "reviews" / "CURRENT-doc.md"
+@pytest.mark.parametrize("draft_name", ["CURRENT-doc.md", "FIX-log.md"])
+def test_review_process_drafts_are_excluded_from_repository_link_scan(sv, tmp_path, draft_name):
+    review = tmp_path / "docs" / "reviews" / draft_name
     review.parent.mkdir(parents=True)
     review.write_text("[过程稿死链](missing.md)\n", encoding="utf-8")
     errors: list[str] = []
