@@ -808,9 +808,9 @@ C002 用 fail-stop 解释覆盖 AC-002 的明确重试不变量；C003/C006 的�
 ## 循环 20: 0.2.1 H1 交互沙盒规格收敛
 
 - **report_type**: doc-review -> fix-verification
-- **周期**: 2026-09-01—2026-09-02（round 1 全量复核 -> round 2 diff-only -> round 3 regression-only）
-- **复盘状态**: H1 规格与机器门禁已收敛；未决 Critical / High / Medium / Low = 0 / 0 / 0 / 0
-- **本地门禁**: `python tools/verify.py`，2252 passed；真源、生命周期、ruff check、ruff format 全绿
+- **周期**: 2026-09-01—2026-09-02（round 1 全量复核 -> round 2 diff-only -> round 3 regression-only -> round 4 diff-only）
+- **复盘状态**: H1 规格与机器门禁本地收敛，待远端 CI；未决 Critical / High / Medium / Low = 0 / 0 / 0 / 0
+- **本地门禁**: `python tools/verify.py`，2256 passed；真源、生命周期、ruff check、ruff format 全绿
 
 | ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次轮次 | 修复轮次 | 模式标签 |
 |---|---|---|---|---|---|---|---|---|---|---|---|
@@ -832,9 +832,12 @@ C002 用 fail-stop 解释覆盖 AC-002 的明确重试不变量；C003/C006 的�
 | R022-D016 | Q-202 遗留旧任务 T202 | Low | correctness | root-cause | fix-regression | fixed | 改为 T802 并扫描 0.2 任务引用 | `rg` 无 T0xx—T7xx 遗留 | 2 | 3 | partial-symmetric-fix |
 | R022-D017 | 移除 AC 范围后完整性检查空转 | Low | quality | symptom-patch | fix-regression | fixed | T816 恢复 AC 范围，T817 恢复 E5，说明路径门禁边界 | H1 T816 范围锚点回归 | 2 | 3 | silent-no-op-gate |
 | R022-D018 | FIX-log 未忽略且参与链接扫描 | Low | quality | root-cause | fix-regression | fixed | 精确忽略 FIX-log 并从链接扫描排除 | 过程稿参数化测试先红后绿 | 3 | 3 | process-artifact-leak |
+| R022-D019 | `_DECLARED_ID` 收紧后漏采带括注/破折号的需求声明 | Medium | correctness | root-cause | fix-regression | fixed | 恢复粗体 ID 前缀识别，registry 独立保留冒号规则 | 注解变体 + 全仓保护面测试先红后绿 | 3 | 4 | silent-no-op-gate |
 
-**round 3 结论**：D014—D017 的目标修复均通过独立复核；回归检视新增并当轮修复
-D018。本地唯一门禁全绿，未发现新的未决问题。
+**round 3—4 结论**：round 3 回归探测发现并记录 D019；round 4 由 `302215b` 修复，
+独立复跑 D019 与 D014 相邻回归 8 passed，轮末唯一门禁 2256 passed。当前本地无未决问题，
+等待远端 CI 后闭环。
 
 **模式教训**：规则与工作流必须成对修改；两个正则解析同一语法时必须共用家族与分隔口径；
-删除范围锚点前必须验证完整性门禁仍非空转；CURRENT 与 FIX-log 均属于过程稿，忽略与验证排除应同步落地。
+声明前缀采集器与 registry 完整声明解析器的分隔约束不能互相移植；删除范围锚点前必须验证
+完整性门禁仍非空转；CURRENT 与 FIX-log 均属于过程稿，忽略与验证排除应同步落地。
