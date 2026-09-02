@@ -12,6 +12,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import pathlib
+import re
 
 import pytest
 
@@ -1038,6 +1039,28 @@ def test_markdown_collectors_are_not_silently_empty_on_real_specs(sv):
         assert list(sv._AC_DECL.finditer(spec_body)), f"{where}: AC 采集器采到 0 条"
         assert sv._declared_ids(spec_body), f"{where}: 需求声明采集器采到 0 条"
     assert checked >= 2, "前提失效：gate v1 里程碑少于 2 个，覆盖面不足以证明采集器有效"
+
+
+@pytest.mark.parametrize(
+    ("line", "requirement_id"),
+    [
+        ("- **NFR-004**（沿用）：说明。", "NFR-004"),
+        ("- **FR-001** — 说明。", "FR-001"),
+        ("- **FR-002**：说明。", "FR-002"),
+    ],
+)
+def test_declared_id_accepts_annotated_requirement_lines(sv, line, requirement_id):
+    assert requirement_id in sv._declared_ids(line)
+
+
+def test_repository_declared_ids_do_not_shrink(sv):
+    line_prefix = re.compile(r"^- \*\*((?:US|UX|FR|NFR|SC|KR|DR|TR|IR|PR|KPI)-\d+)\*\*", re.M)
+    for spec_path in sorted((ROOT / "docs" / "features").glob("**/spec.md")):
+        body = sv._without_fenced_code(spec_path.read_text(encoding="utf-8"))
+        expected = set(line_prefix.findall(body))
+        assert expected <= sv._declared_ids(body), (
+            f"{spec_path}: 漏采 {sorted(expected - sv._declared_ids(body))}"
+        )
 
 
 def test_declared_requirement_without_ac_fails(sv):

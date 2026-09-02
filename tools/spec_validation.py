@@ -577,7 +577,7 @@ _AC_DECL = re.compile(r"^- \[[ x]\]\s+\*\*(?P<ac>AC-\d+)\*\*\s*\((?P<refs>[^)]*)
 _BACKTICKED_ID = re.compile(r"`((?:US|UX|FR|NFR|SC|KR|DR|TR|IR|PR|KPI|E)-?\d+)`")
 _INLINE_ID_FAMILY = r"(?:US|UX|FR|NFR|SC|KR|DR|TR|IR|PR|KPI)"
 _REGISTRY_ID_FAMILY = r"(?:UX|FR|NFR|SC|DR|TR|IR)"
-_DECLARED_ID = re.compile(rf"^- \*\*({_INLINE_ID_FAMILY}-\d+)\*\*\s*[：:]", re.M)
+_DECLARED_ID = re.compile(rf"^- \*\*({_INLINE_ID_FAMILY}-\d+)\*\*", re.M)
 _DECLARED_HEADING_ID = re.compile(r"^### ((?:US)-\d+)[：:]", re.M)
 _REQUIREMENT_DECL = re.compile(
     rf"^- \*\*(?P<id>{_REGISTRY_ID_FAMILY}-\d+)\*\*\s*[：:]"
