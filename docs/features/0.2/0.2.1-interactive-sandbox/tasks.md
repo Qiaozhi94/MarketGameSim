@@ -21,6 +21,8 @@ updated: 2026-09-01
 - 推进到 `ready-for-development` 前，覆盖 AC-001—AC-008 的实现任务所列 `verify:` 测试文件
   必须已存在于 `tests/` 下；未实现行为可先用 `pytest.mark.xfail(strict=True)` 骨架占位并
   写明原因。门禁不接受目录或 `tools/verify.py` 代替具体测试文件。
+- T816 保留 AC 范围声明用于检查验收上界；它的目录级 `verify:` 不满足逐条 AC 路径门禁，
+  每条 AC 仍必须由 T803—T815 的具体测试文件独立覆盖。
 
 ## 1. 前置条件
 
@@ -83,9 +85,9 @@ updated: 2026-09-01
 
 ## 3. 验证与验收任务
 
-- [ ] T816: 运行交互单元、集成、客户端与跨进程测试，逐项回填 AC 的
+- [ ] T816 (`AC-001`—`AC-008`): 运行交互单元、集成、客户端与跨进程测试，逐项回填 AC 的
       真实测试路径 — verify: `tests/unit/interactive/`、`tests/integration/`
-- [ ] T817: 运行唯一质量门并保存 H1-C 验证记录 — verify:
+- [ ] T817 (`E5`): 运行唯一质量门并保存 H1-C 验证记录 — verify:
       `python tools/verify.py`
 - [ ] T818 `[状态门]`: 核对 E1—E5、成果包、交互证据隔离与回归测试后，回写里程碑和版本
       状态；H1 不建立研究声明 — verify: `python tools/validate_spec_lifecycle.py`

@@ -881,6 +881,12 @@ def test_ac_range_declaration_counts_as_coverage(sv, tmp_path):
     assert errors == []
 
 
+def test_h1_validation_task_keeps_explicit_ac_range_anchor(sv):
+    tasks_path = ROOT / "docs" / "features" / "0.2" / "0.2.1-interactive-sandbox" / "tasks.md"
+    blocks = {tid: block for _mark, tid, block in sv._task_blocks(tasks_path.read_text("utf-8"))}
+    assert sv._AC_RANGE.findall(blocks["T816"]) == ["008"]
+
+
 def test_missing_test_path_blocks_only_after_draft(sv, tmp_path):
     """draft 阶段允许测试尚不存在；ready-for-development 起必须指向真实路径。"""
     spec = _spec_with_ac("- [ ] **AC-001** (`FR-001`): 做到某事。")
