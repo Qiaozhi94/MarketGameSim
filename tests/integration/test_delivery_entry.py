@@ -52,6 +52,7 @@ def _assert_delivery(root: Path) -> None:
     validate_showcase_manifest(manifest)
     assert manifest["gate"] == "R5"
     assert manifest["evidence_class"] == "formal-research"
+    assert manifest["run_mode"] == "research"
     assert manifest["seed_plan"]["n_seeds"] == 128
     for entry in manifest["artifacts"]:
         assert _blake2b(bundle / entry["path"]) == entry["hash"]
@@ -101,6 +102,7 @@ def test_r2_has_a_concrete_single_command(tmp_path):
     assert "<config.yaml>" not in run_doc
     assert manifest["gate"] == "R2"
     assert manifest["evidence_class"] == "engineering-demonstration"
+    assert manifest["run_mode"] == "benchmark"
 
 
 def test_r5_generation_is_byte_deterministic(tmp_path):

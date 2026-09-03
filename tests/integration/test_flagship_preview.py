@@ -89,6 +89,7 @@ def test_manifest_marks_experiment_preview_with_executed_seed_plan(preview):
     manifest = json.loads((out / MANIFEST_NAME).read_text(encoding="utf-8"))
 
     assert manifest["evidence_class"] == "experiment-preview"
+    assert manifest["run_mode"] == "research"
     assert manifest["gate"] == "R3"
     assert manifest["manifest_version"] == 1
     assert manifest["code_version"] == __version__

@@ -4,7 +4,7 @@ id: 0.2.1
 version: "0.2"
 doc_kind: tasks
 created: 2026-09-01
-updated: 2026-09-01
+updated: 2026-09-04
 ---
 
 # 0.2.1：H1 手动交易沙盒 - 任务
@@ -26,32 +26,35 @@ updated: 2026-09-01
 
 ## 1. 前置条件
 
-- [ ] T801 (`Q-201`—`Q-203`, `DQ-201`—`DQ-204`): 关闭客户端、演示配置、节奏、输入事件
-      与恢复边界问题；Q 与 DQ 结论必须一致，重叠部分以 DQ 为准，Q 只保留产品口径并引用
-      DQ — verify: `spec.md`、`design.md`
-- [ ] T802 (`TR-201`—`TR-203`, `IR-201`—`IR-203`): 冻结输入 artifact、会话接口、稳定错误码
-      与 manifest 合同；若改事件 Schema，先完成版本提升和跨真源测试；冻结后创建
-      T803—T815 所列测试文件骨架，再推进 `ready-for-development` — verify:
-      `docs/contracts/event-schema.md`、`src/market_game_sim/schema/event_fields.json`
+- [x] T801 (`Q-201`—`Q-203`, `DQ-201`—`DQ-204`): 已确认浏览器 loopback 客户端、R2 派生演示配置、
+      seed 7、默认暂停/单步、1×连续模式、输入记录策略和 ABORTED 恢复边界；Q 与 DQ 结论一致，
+      重叠部分以 DQ 为准，Q 只保留产品口径并引用 DQ — verify: `spec.md`、`design.md`
+- [x] T802 (`TR-201`—`TR-203`, `IR-201`—`IR-203`): 已冻结输入 artifact、会话接口、稳定错误码
+      与 manifest 合同；冻结 H1 参数为 `max_transactions=80`、人类初始现金 `10,000.00`、空仓、
+      `1×`、单笔最大数量 `1.000`、最多 `8` 个活动订单、最多 `64` 条待处理输入和默认端口 `8765`；
+      若改事件 Schema，先完成版本提升和跨真源测试；冻结后创建 T803—T815 所列测试文件骨架，
+      再推进 `ready-for-development` — verify:
+      `docs/contracts/interactive-session.md`、`docs/contracts/event-schema.md`、
+      `src/market_game_sim/schema/event_fields.json`；本合同冻结事件 Schema v4，不新增 H1 专用事件。
 
 ## 2. 实现任务
 
 ### Phase 1：H1-A 确定性交互会话
 
-- [ ] T803 (`FR-201`, `FR-204`, `IR-202`, `AC-001`, `AC-004`): 以正反测试实现会话状态机、
+- [x] T803 (`FR-201`, `FR-204`, `IR-202`, `AC-001`, `AC-004`): 以正反测试实现会话状态机、
       单 writer inbox、暂停/继续/单步和逻辑时间分配 — verify:
       `tests/unit/interactive/test_session.py`、`tests/unit/interactive/test_pacing.py`
-- [ ] T804 (`FR-202`, `IR-201`, `AC-002`): 实现只读已提交状态的观察快照投影，按
+- [x] T804 (`FR-202`, `IR-201`, `AC-002`): 实现只读已提交状态的观察快照投影，按
       `AGENT_OBSERVE` 闭集覆盖未完成 K 线、超 k 深度、未来事件、代理私有状态和多活动订单
       不可泄漏场景 — verify:
       `tests/integration/test_interactive_observation.py`
-- [ ] T805 (`FR-205`, `TR-201`, `IR-203`, `NFR-201`, `AC-005`): 实现规范输入 journal、哈希
+- [x] T805 (`FR-205`, `TR-201`, `IR-203`, `NFR-201`, `AC-005`): 实现规范输入 journal、哈希
       和无墙钟等待的重放驱动 — verify: `tests/integration/test_interactive_replay.py`
-- [ ] T806 (`FR-206`, `NFR-203`, `AC-006`): 在正式运行、统计、报告与 evidence index 生产入口
+- [x] T806 (`FR-206`, `NFR-203`, `AC-006`): 在正式运行、统计、报告与 evidence index 生产入口
       接入 manifest/header 双读、模式不一致、交互/缺失/未知拒绝矩阵；覆盖摘要不变的模式篡改、
       匹配非交互正例及多 bundle 整批零部分写入 — verify:
       `tests/integration/test_interactive_evidence_guard.py`
-- [ ] T807 `[成果门:H1-A]` (`AC-001`, `AC-002`, `AC-004`, `AC-005`, `AC-006`): 单命令生成
+- [x] T807 `[成果门:H1-A]` (`AC-001`, `AC-002`, `AC-004`, `AC-005`, `AC-006`): 单命令生成
       可打开的 headless 会话说明、输入记录、事件日志和重放摘要，标记为
       `interactive + engineering-demonstration` — verify: `tests/integration/test_interactive_headless.py`
 

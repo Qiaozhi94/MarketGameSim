@@ -19,13 +19,42 @@ from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from pathlib import Path
+from typing import Any, TypeVar
+
+from market_game_sim.schema.registry import get_registry
+
+T = TypeVar("T")
 
 
 class EvidenceClassError(ValueError):
     """Raised when an evidence class violates the run-family permission."""
+
+
+class EvidenceRunModeError(EvidenceClassError):
+    """Raised before evidence consumers can read a disallowed bundle body."""
+
+
+class RunMode(StrEnum):
+    BENCHMARK = "benchmark"
+    RESEARCH = "research"
+    INTERACTIVE = "interactive"
+
+
+@dataclass(frozen=True, slots=True)
+class EvidenceBundleCandidate:
+    manifest_path: Path
+    event_log_path: Path
+
+
+@dataclass(frozen=True, slots=True)
+class GuardedEvidenceBundle:
+    manifest_path: Path
+    event_log_path: Path
+    run_mode: RunMode
 
 
 class EvidenceClass(StrEnum):
@@ -200,11 +229,102 @@ def guard_aggregation(items: list[tuple[str, str]]) -> None:
         guard_evidence_class(family, ec)
 
 
+def guard_evidence_bundle(candidate: EvidenceBundleCandidate) -> GuardedEvidenceBundle:
+    """Cross-check manifest/header modes before any consumer reads event bodies."""
+
+    if not isinstance(candidate, EvidenceBundleCandidate):
+        raise TypeError("candidate must be an EvidenceBundleCandidate")
+    manifest_path = Path(candidate.manifest_path)
+    event_log_path = Path(candidate.event_log_path)
+    manifest = _read_json_object(manifest_path, "bundle manifest")
+    header = _read_first_header(event_log_path)
+    manifest_mode = manifest.get("run_mode")
+    header_mode = header.get("run_mode")
+
+    if manifest_mode == RunMode.INTERACTIVE or header_mode == RunMode.INTERACTIVE:
+        raise EvidenceRunModeError(
+            "interactive run_mode is ineligible for formal research evidence"
+        )
+
+    allowed = _run_mode_values()
+    if manifest_mode not in allowed:
+        raise EvidenceRunModeError(
+            f"manifest.run_mode must be one of {sorted(allowed)}, got {manifest_mode!r}"
+        )
+    if header.get("record_kind") != "RUN_HEADER":
+        raise EvidenceRunModeError("event log first record must be RUN_HEADER")
+    if header_mode not in allowed:
+        raise EvidenceRunModeError(
+            f"RUN_HEADER.run_mode must be one of {sorted(allowed)}, got {header_mode!r}"
+        )
+    if manifest_mode != header_mode:
+        raise EvidenceRunModeError(
+            f"manifest.run_mode {manifest_mode!r} does not match "
+            f"RUN_HEADER.run_mode {header_mode!r}"
+        )
+    return GuardedEvidenceBundle(
+        manifest_path=manifest_path,
+        event_log_path=event_log_path,
+        run_mode=RunMode(manifest_mode),
+    )
+
+
+def consume_guarded_bundle_batch(
+    candidates: Sequence[EvidenceBundleCandidate],
+    consumer: Callable[[tuple[GuardedEvidenceBundle, ...]], T],
+) -> T:
+    """Validate a complete batch before invoking a writing/aggregation consumer."""
+
+    if not callable(consumer):
+        raise TypeError("consumer must be callable")
+    if not candidates:
+        raise EvidenceRunModeError("evidence bundle batch must not be empty")
+    guarded = tuple(guard_evidence_bundle(candidate) for candidate in candidates)
+    return consumer(guarded)
+
+
+def _read_json_object(path: Path, label: str) -> dict[str, Any]:
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise EvidenceRunModeError(f"cannot read {label} at {path}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise EvidenceRunModeError(f"{label} must be a JSON object")
+    return value
+
+
+def _read_first_header(path: Path) -> dict[str, Any]:
+    try:
+        with path.open(encoding="utf-8") as stream:
+            first_line = stream.readline()
+        value = json.loads(first_line)
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise EvidenceRunModeError(f"cannot read RUN_HEADER at {path}: {exc}") from exc
+    if not isinstance(value, dict):
+        raise EvidenceRunModeError("event log first record must be a JSON object")
+    return value
+
+
+def _run_mode_values() -> set[str]:
+    metadata = get_registry().get_fields("RUN_HEADER")["run_mode"]
+    allowed = set(metadata.enum or ())
+    implementation = {mode.value for mode in RunMode}
+    if allowed != implementation:
+        raise EvidenceRunModeError("RunMode implementation differs from event schema")
+    return allowed
+
+
 __all__ = [
+    "EvidenceBundleCandidate",
     "EvidenceClass",
     "EvidenceClassError",
+    "EvidenceRunModeError",
     "FrozenPreregistrationReference",
+    "GuardedEvidenceBundle",
+    "RunMode",
+    "consume_guarded_bundle_batch",
     "guard_aggregation",
+    "guard_evidence_bundle",
     "guard_evidence_class",
     "guard_formal_research",
     "validate_decision_evidence_v1",

@@ -261,6 +261,7 @@ def generate_r5_delivery(
             "n_seeds": len(index["seed_plan"]["executed_seeds"]),
             "seeds": index["seed_plan"]["executed_seeds"],
         },
+        run_mode="research",
         evidence_class=EVIDENCE_CLASS,
         gate=GATE,
     )

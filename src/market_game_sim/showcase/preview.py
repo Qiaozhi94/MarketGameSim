@@ -225,6 +225,7 @@ def _write_run_log(
         agent_initial_bp={
             s.agent_id: initial_margin_bp_for_tier(s.leverage_tier) for s in config.agent_specs
         },
+        run_mode="research",
     )
     max_txn = max(
         (e["transaction_seq"] for e in result.events if "transaction_seq" in e),
@@ -716,6 +717,7 @@ def generate_preview_bundle(
         config_hash=config_hash,
         seed=executed_seeds[0],
         seed_plan={"n_seeds": len(executed_seeds), "seeds": executed_seeds},
+        run_mode="research",
         evidence_class=EVIDENCE_CLASS,
         gate=GATE,
     )

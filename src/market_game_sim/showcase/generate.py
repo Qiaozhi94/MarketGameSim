@@ -94,6 +94,7 @@ def _write_run_log(
         fee_bps_cap=max(config.maker_bps, config.taker_bps, 0),
         initial_price_ticks=config.initial_price_ticks,
         agent_initial_bp=_agent_initial_bp(config),
+        run_mode="benchmark",
     )
     trailer = _build_trailer(result)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -220,6 +221,7 @@ def build_showcase_bundle(
             "n_seeds": 1,
             "seeds": [config.seed],
         },
+        run_mode="benchmark",
         evidence_class=EVIDENCE_CLASS,
         gate=gate,
     )

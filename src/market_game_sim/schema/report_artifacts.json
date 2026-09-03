@@ -531,6 +531,14 @@
           }
         }
       },
+      "run_mode": {
+        "type": "string",
+        "enum": [
+          "benchmark",
+          "research",
+          "interactive"
+        ]
+      },
       "evidence_class": {
         "type": "string",
         "enum": [
