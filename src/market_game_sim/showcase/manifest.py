@@ -56,6 +56,7 @@ def build_showcase_manifest(
     config_hash: str,
     seed: int,
     seed_plan: dict[str, Any],
+    run_mode: str,
     evidence_class: str,
     gate: str,
 ) -> dict[str, Any]:
@@ -100,6 +101,7 @@ def build_showcase_manifest(
         "config_hash": config_hash,
         "seed": seed,
         "seed_plan": dict(seed_plan),
+        "run_mode": run_mode,
         "evidence_class": evidence_class,
         "gate": gate,
     }

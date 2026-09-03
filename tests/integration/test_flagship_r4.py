@@ -132,6 +132,7 @@ def test_r4_bundle_has_fixed_formal_artifact_set(tmp_path, r4_inputs):
     manifest = json.loads((out / MANIFEST_NAME).read_text(encoding="utf-8"))
     assert manifest["gate"] == "R4"
     assert manifest["evidence_class"] == "formal-research"
+    assert manifest["run_mode"] == "research"
     assert manifest["seed_plan"]["n_seeds"] == 128
     assert len(manifest["artifacts"]) == 6
     validate_showcase_manifest(manifest)

@@ -99,6 +99,7 @@ def test_goal_driven_manifest_evidence_class(tmp_path):
     )
     manifest = json.loads((tmp_path / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["evidence_class"] == "engineering-demonstration"
+    assert manifest["run_mode"] == "benchmark"
     assert manifest["code_version"] == __version__
     assert manifest["config_hash"] == compute_config_hash(config)
     assert manifest["seed"] == config.seed

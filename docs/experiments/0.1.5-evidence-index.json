@@ -1,650 +1,650 @@
 {
   "checkpoints": [
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40000.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40000.json.gz",
       "seed": "40000",
-      "sha256": "bea4607aab5add44b0497ee2f2e58f262de6437906ed2bf5c116e0d19cdca4ac"
+      "sha256": "08fc86c7ed7ccc465b0688583e6cebc12069c63b1335354aa67a4991df009499"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40001.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40001.json.gz",
       "seed": "40001",
-      "sha256": "8d0382ee27f7c23535fb27bb85218e14e72017d43c5b503a42fa4ccde42783c8"
+      "sha256": "9e19ff035048a9f71347c0f44d3068f5df02088792c1f175dc5cd149538b8297"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40002.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40002.json.gz",
       "seed": "40002",
-      "sha256": "43230000fe635f256241cc599a051aab719e1001019424858800b246c4f36d92"
+      "sha256": "98e8207571c2ed04813891a6003ce487ea9d2a4369f282bbdd5cd7ebf69bcc98"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40003.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40003.json.gz",
       "seed": "40003",
-      "sha256": "0cbadd43ea2d304bb0d906e62ec233fc425c73366586b2cc2861228587844477"
+      "sha256": "efc1993c822ba5a093d69bbb534c245e815a8a61d950cf2cf9b3f0a07bab5ecf"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40004.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40004.json.gz",
       "seed": "40004",
-      "sha256": "f8c8e2c27a75bc80caac7ec39b2b79774ed6f09b4c5815bb561f2afc5f64de2f"
+      "sha256": "3fa5c53ccffbc77d4c6bba00fae285c4d066054b8837a0bf2ee48a7e747037bd"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40005.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40005.json.gz",
       "seed": "40005",
-      "sha256": "139c40b4272fba5993d7d3174e2793179031f82fddc944a322eb00a4dd9088ca"
+      "sha256": "cfa389c90b7bccab2fb1e03239e4d6ac7c2498a590fecbe3085aafb59334667c"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40006.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40006.json.gz",
       "seed": "40006",
-      "sha256": "4960d28a5b48b59b9c2ef2b58a978e0e36070726063992f80f542954d2a33584"
+      "sha256": "842e59f3d1d3358c38def0e4a4a7b26eb88c9a1dac10cba1cb60f62189fad5a0"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40007.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40007.json.gz",
       "seed": "40007",
-      "sha256": "ff06617c09bddf130dd201dd6f75d10445721f766cfa365b5531b49b1fd17aa3"
+      "sha256": "6045be29789b34f2421e861a020fb3cdadc27cd431beb48985eaa5212b661c31"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40008.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40008.json.gz",
       "seed": "40008",
-      "sha256": "32311b9910d379d8cbaee38768de58fd64c58909d1ecc9c552058945ef58428c"
+      "sha256": "4e10bc4d29b9fb9dd7f2ecda8d80af0e749e513044cda6ac74f2285b9cf57c36"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40009.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40009.json.gz",
       "seed": "40009",
-      "sha256": "a2c57c9b9c28bfad315a0173984522082196be8bfad9d7d6d842f4e9eeb3f91a"
+      "sha256": "ea6ff57f68a442cd7029812dc86fd7e18dedb8699d7c4fe9bd06260cb2fa61bc"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40010.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40010.json.gz",
       "seed": "40010",
-      "sha256": "752e3c60cdc1df5d1d5583a7d2623a6920279d5de88c410803ce9fac1449ac88"
+      "sha256": "ee869b016bca65be5b93b6eb7b4bc3f31998b500aa9df5f0fa474cbafc994499"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40011.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40011.json.gz",
       "seed": "40011",
-      "sha256": "b8ffe4209dedd84eba959425917e981850c99e01e23ff98061a332c4c79a48f0"
+      "sha256": "683b851ef40fcddede5b81f02084ae354d6ab2ed745c479bc935a4f839addcbf"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40012.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40012.json.gz",
       "seed": "40012",
-      "sha256": "118a86440de48b876090781a326eeadccbf66036c1b37d62aff6759b636237de"
+      "sha256": "57790ff8d1557a42c613fcda01e791e87a14911cb1fbafa9bf8f64f1ea9267ac"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40013.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40013.json.gz",
       "seed": "40013",
-      "sha256": "f5b26fb2266f50df51fadd99e9b01e32dc63f1c7a840f7e7d7231121df914932"
+      "sha256": "17998efae0c1228350be7df46f69d1f1ec6fbb89a5370b7f171d3dae708187a4"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40014.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40014.json.gz",
       "seed": "40014",
-      "sha256": "01efc624079c199a715149371421feb59baade84cf8f34cea97b4033f89c28e2"
+      "sha256": "4d3be51a7a0379fef8ed81d62ed303326adb2b0cc3621190382081c331dc54d5"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40015.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40015.json.gz",
       "seed": "40015",
-      "sha256": "415da994e8a8556137f7a639a78590ede6ebc3628b10f9d0765ac5dbfb486c2c"
+      "sha256": "9d7dd3ea87b8fbfc767dd22f282d91a3449fbed6f41e736cae498375cffee07a"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40016.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40016.json.gz",
       "seed": "40016",
-      "sha256": "8b069ba68f1b3b3527049e81f7858665c8de61f10c282c9149164972688a5588"
+      "sha256": "a8c8d8cc5bd04e63546ced889174c7dbfaf5e4ddd59b2c65af146587a4692e07"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40017.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40017.json.gz",
       "seed": "40017",
-      "sha256": "10d0ae374117d2fb704398d1e22aa065e1b6b3d38e243245bdde86e11406282e"
+      "sha256": "7554841e78e4c176162376831e5b2368f8de2d6f3234da59995cb0552f4bf0a6"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40018.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40018.json.gz",
       "seed": "40018",
-      "sha256": "15bec6ba8a2af298a5bb48949e277bc2d33461b43331c502dbee4c1a9bf5a38a"
+      "sha256": "6fca5f75c33ccc971575dfb67fbcac3b265b171685bc258ae8abd4a7d7dd32e7"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40019.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40019.json.gz",
       "seed": "40019",
-      "sha256": "6521a92d49732617a70a1e884d3fa26c8a5c320fdb4d176d74aa81c2d9e2acff"
+      "sha256": "02ce537bc10cee11673d6bc02441cea62ce811d3b51a80407dff3ca5a69b010e"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40020.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40020.json.gz",
       "seed": "40020",
-      "sha256": "c65d8f97a698fa6788c65ea812d629dc8604317394639c341a5cda6d441e71a1"
+      "sha256": "398f07a61adf96b54a05cc5281bc61e1c4d89c2554f4c76912cc33f0a6830e8e"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40021.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40021.json.gz",
       "seed": "40021",
-      "sha256": "4339af1a5b67c1e93d4a7441dcf18b791079f0c9e59fcf0266c8607558b59a9e"
+      "sha256": "2f409abfa314d0b86c1495acfb0c1369f2937554953c5023d01ef5e1871af3ed"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40022.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40022.json.gz",
       "seed": "40022",
-      "sha256": "c134cfec62425ca107afb1e259996c12a4ac2aa78afb4f54518986cd42c1f3a9"
+      "sha256": "89b217dd11549717ac5310580e208d8991238f6e09cf62bd94649b619644d90d"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40023.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40023.json.gz",
       "seed": "40023",
-      "sha256": "ab01c1c4b5b637623df8c8cf2548c34ce69c96217b756d03722e7fa8cca56d26"
+      "sha256": "59d835ae5ad6167906a4eb73c0a782efc1b4f39a80c45d928a2acd12ee10e31a"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40024.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40024.json.gz",
       "seed": "40024",
-      "sha256": "02d69bef87f158958a56038d8a0302a2248c08c713b5e5fbbd55de5f814b6b2d"
+      "sha256": "80197fc2cf8d10e383d3c910d273642fdaf2c408091cc4c6a7c2d652d9147419"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40025.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40025.json.gz",
       "seed": "40025",
-      "sha256": "1e3622ca9aa9efa52221e58b4a0c432e72d501d545ff667864989dc0c714554d"
+      "sha256": "dd1af5e34f40c6fbc0ed1a06265fd9c2671b0940ffe8b57a21d6be6cec3aefb4"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40026.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40026.json.gz",
       "seed": "40026",
-      "sha256": "2474a308073a6e95caaca03cc109421839da6b528854da7fcec9e076bfa8fe64"
+      "sha256": "69726e4b995b4e831fd325656b53c75f5eb632ff226e3bf65b7a8a42ec4b2229"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40027.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40027.json.gz",
       "seed": "40027",
-      "sha256": "b59f28a17d8bd821ea042b101ad925d3547c583d103d70f44b7753f0e9d6101a"
+      "sha256": "27e79725604608a6a0003e1470eabd3ab92dcbe0e658a547aa2988eedb42fa39"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40028.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40028.json.gz",
       "seed": "40028",
-      "sha256": "8ac7f5d01f075bffbc4bd8b95e6168ebec15cc17c00440baf65d6703e6a4fa85"
+      "sha256": "86c0698e1abe874b2734e86fc847103908803e9a65c22258d1ee0ec587c62fae"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40029.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40029.json.gz",
       "seed": "40029",
-      "sha256": "dbe59ad755af49c997cc7c04539bc99c8532ca85704d45a2c0105aa131c40a33"
+      "sha256": "bccd7cb633de930dc3640df791f14e9d9253b264d15eae4497eb6bff68b19d4b"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40030.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40030.json.gz",
       "seed": "40030",
-      "sha256": "a7ecce634289c0448c31aea34cab5c66ad36786d2c5ec50b7bf522584e584902"
+      "sha256": "f2997922a0ea4e3261540b1d43675f954562f6b3b096bc037130e3e445336268"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40031.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40031.json.gz",
       "seed": "40031",
-      "sha256": "8178334cf92b24df90f24373f035f58b7f03804339935f8908bbc409737aa9ce"
+      "sha256": "fcf437ca7567e9a60ed78c32571d8fa6541b96caa14be284a4db40b00d479ca6"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40032.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40032.json.gz",
       "seed": "40032",
-      "sha256": "8c9c152eb7124b735f2d0d9f6c1c5badff470c35ef33141222b65cf9da909427"
+      "sha256": "663b5c6b1524077e0f9f9ca6f5e115d7c24e4fe6343f906708f29a57b73686a5"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40033.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40033.json.gz",
       "seed": "40033",
-      "sha256": "62307431c47f1602838a48f6bec86900690db1f93f6120991a87ad7ce1277973"
+      "sha256": "649caf1048a5f117421ad1e6978483a0498a623abd4415aeda059dbfea1ea02d"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40034.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40034.json.gz",
       "seed": "40034",
-      "sha256": "b4e07d7bf8803d72a8f508f21305bdbdf1da8212774392693706be8b1d3d668f"
+      "sha256": "72a6b7817fd98b0b2bc9bea037c4bc039671f4821a11b90cf3606d0da01e75d3"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40035.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40035.json.gz",
       "seed": "40035",
-      "sha256": "f439f06ec63097a7037803bd24931662eb610fc6c0cc4a15b54a0352c318742c"
+      "sha256": "34017abe23c8712e3329b5533970f9374cad459b1e19a186b8de92c0f3b03860"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40036.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40036.json.gz",
       "seed": "40036",
-      "sha256": "e80213ffb34305ce76f8db31d8df786434d5403ff400e71fce3b192bf9eb3714"
+      "sha256": "561aebdd85f2b6b9ce8c2537c892abf4c665e6e369a7f8fe4f3fc4035b2a352d"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40037.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40037.json.gz",
       "seed": "40037",
-      "sha256": "c2679af89d2ae26ff01c290d176a5c0556942a8cc4c32ea2b350379177a52be3"
+      "sha256": "59c3e3d94ec8a34d453159fa59ff51fc70c9c668ce11af02ab455f712b38b569"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40038.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40038.json.gz",
       "seed": "40038",
-      "sha256": "4676b9bf9c31dcdd4d8428a3212fffd7c5d7f4674f6398fe0cf185f3af724682"
+      "sha256": "a8d90545f75ddb05c853273029040acfe5bbeebd0c4e7110295cb3a60d749545"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40039.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40039.json.gz",
       "seed": "40039",
-      "sha256": "c0dfbf2d933776ea909f78a9992d635214a2604e54069874f6ba3d3f0f426a68"
+      "sha256": "0af5fdc87246b0c22cba85449fa72cb95d2dc487d4108ea3da34980b3e1532cf"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40040.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40040.json.gz",
       "seed": "40040",
-      "sha256": "3b27dd5b28834285e009d8b46e0d40ad906198946c8d07dea0dde8d240b6e143"
+      "sha256": "56d9fa0d31320ebac93c8832356352e4adcf5d4a986e15c767fa5319d193c816"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40041.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40041.json.gz",
       "seed": "40041",
-      "sha256": "bdc5393d74e68b1b454b4d33c35cb3415140565d31ac4efa25bbdc6f0641b6c3"
+      "sha256": "6d7ec3c03bb3892f7f2c612bdb99bdf2825e0c45fad54ed79121d4ed54e877de"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40042.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40042.json.gz",
       "seed": "40042",
-      "sha256": "d45fc40daab1b2e252e77c011b669130dcfbe661b06e5dd4ac5a28ec980348c2"
+      "sha256": "e7d8c50f67b948d9b413111fd08356eae412c0cf7c2981aa91642da8147446cf"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40043.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40043.json.gz",
       "seed": "40043",
-      "sha256": "8de9e88296c594b5801faad7cb259fe690447faf90172f0b30eede8aba3836f7"
+      "sha256": "331a7ab8f82cd698b9a8040b97f10c1bff3ee034d5fafc9351ec87d494f9a99a"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40044.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40044.json.gz",
       "seed": "40044",
-      "sha256": "f7df4308234d5f557dabd29a9daaee1399e15c4bfe0164ac9a472d5fab0cdc21"
+      "sha256": "573efb0ceb110c7eeee0ae923984d031a3beca26ed22f5096d1b8df150a0a07c"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40045.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40045.json.gz",
       "seed": "40045",
-      "sha256": "77ff4dd44c06fd5a03f45770e3b9d9be3b81ed3f9549e4f1e2217907988444cc"
+      "sha256": "24f45f9822d1a75773f768deb3d457f60c00810bda6add4aec5aca2e41c94059"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40046.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40046.json.gz",
       "seed": "40046",
-      "sha256": "fa6995416af0373643a02400b145794b6574bc51356e0cd9507c7b13ff6d0e1d"
+      "sha256": "18051c63bc975d32a41794273e2720804312cac3054a7305c738a3808ac2dad4"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40047.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40047.json.gz",
       "seed": "40047",
-      "sha256": "57dd053dea4ed4a6e48104c454110e4ea6ff5b014e5d7b5bb37e8855c621617c"
+      "sha256": "50b846a34c525fed248eeebe75471119ed4900041ba6a1514bbeed2b37479e8a"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40048.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40048.json.gz",
       "seed": "40048",
-      "sha256": "6bc72c67b04683d766640c6b600157e57cc3630740d9dd1febf650f99b9603a4"
+      "sha256": "91998d4a79d34c6cfdbf3fbcf4eae739f277808b8b37abe117c98dba64e18517"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40049.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40049.json.gz",
       "seed": "40049",
-      "sha256": "a8b25eabc85f15fe624148dda582dd8ccac6e467dd3ee6a1546103d28256aa91"
+      "sha256": "f8854e06209fef316683b2d9dd093745a4764e4a20f97a8e21ba94b87260cd56"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40050.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40050.json.gz",
       "seed": "40050",
-      "sha256": "ebd6473a0cd91d72a4dde47518f8b24e13717b2f59c1c73ae4ff672c8d27e40d"
+      "sha256": "0ab8047e056a71a255aee6d9e78610d6bf6619786c879ebc220b73b045b74ff5"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40051.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40051.json.gz",
       "seed": "40051",
-      "sha256": "e214df38fc139343647bd188a72326b1dcdf7c2a959febf3513d55589e4c84b9"
+      "sha256": "a0086ca76e4ee034852020f7938aeff93db93944807bffa932df1038a24b2da6"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40052.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40052.json.gz",
       "seed": "40052",
-      "sha256": "04dc9d141d3a3f042305bb8186eabd37e2af347e1a229c829d966c9a28986aef"
+      "sha256": "f6abfcb544d4087a737b87d333588261967e4e89c7c92c2a92aeade8a3cbee60"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40053.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40053.json.gz",
       "seed": "40053",
-      "sha256": "08bb9a417ff92d52b52cd4b0e1a4f119d450124aadd42d49d5d4891a81725213"
+      "sha256": "ce8d2a9bf8eeac201a68b7c6110ada56731f5c0d063b12f19144a236079ee2ff"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40054.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40054.json.gz",
       "seed": "40054",
-      "sha256": "48896e9ba21112f48862ce76f4da6780104db62ca6ce8c8ef3c8a5cf2b742eb0"
+      "sha256": "cdbc78832423d363bc8866948804f2729c9afee8bb75211b31c942bab2196151"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40055.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40055.json.gz",
       "seed": "40055",
-      "sha256": "da6bb57a9d716ddf8e16196f0aa8968ba480283d2124af2cbf1b205beeb6a673"
+      "sha256": "b3eb16ebd912a849475e4159e9e892cdff42e7e7903138f9935b83eb0b558b1e"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40056.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40056.json.gz",
       "seed": "40056",
-      "sha256": "22b5ef563418fe4bb0fd5f256d6f0c3e9b2b71caa96da0d10be79d564e3a6a06"
+      "sha256": "1f2fc4f6a8cb4037bf50af9c38e0cf82a911b32fad4e83fd0b8b6dbff4fe43a5"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40057.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40057.json.gz",
       "seed": "40057",
-      "sha256": "90ed44c30575174fe060bd6a61ea0412f060451af8c7dd715ff6cd31cba29cbb"
+      "sha256": "9193dbc91a00a50b991a403fe419f493ca98d23655931db4647696cef5e1de74"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40058.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40058.json.gz",
       "seed": "40058",
-      "sha256": "ccff32a403385fa4e68d803d62b27919dbf2148b6c291c6ac0aeb667a210304c"
+      "sha256": "200a4b6edd099ab79e41e5cf053302b20cd9b8df249e5a32dde64c3075934ce4"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40059.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40059.json.gz",
       "seed": "40059",
-      "sha256": "a619ee10ccbaa0a69227f5f08f991ea227315830c8aeaa76ab3c5b9e2c36c230"
+      "sha256": "e2b6d374d17bd1104bb5420da4a62278c52e4503c84364636b1aacee0c10a3dc"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40060.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40060.json.gz",
       "seed": "40060",
-      "sha256": "362ab56018f9d388416f46fc9e6f77a9203adbd5e4cfcebc41fc4f11c8def1f4"
+      "sha256": "eb0405a3a52037e65594e17ca8089fb864b616954b87a015afb9237513c87765"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40061.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40061.json.gz",
       "seed": "40061",
-      "sha256": "31d9b90cacb5d73f61be1e372770adcc4f688d0e3b7b45543cf67b0151774d65"
+      "sha256": "f2f68e0055583eb5501e141d244833946547028df0ccc360cb41ac8b65fbfde1"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40062.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40062.json.gz",
       "seed": "40062",
-      "sha256": "fa3958d6c239f5645b090e6010fabd9a8c1c46d5c34f57b9c8104f4dfdd25261"
+      "sha256": "0d5e83bbd47bc2aeed4baff946c55f07a01ef1c9da2190dd80fdb9a19cd20dc0"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40063.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40063.json.gz",
       "seed": "40063",
-      "sha256": "c4a44d346a209aee70103ef51f5feffcf84e84e544bdc6f3dc8bc7940171051b"
+      "sha256": "65210804f5917a94c5ef91b9fb7b14ac294d5fdff986cd3f7a1e74b865b6dc5b"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40064.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40064.json.gz",
       "seed": "40064",
-      "sha256": "a132033043e3ea5b65b5e52af59ee5b018f216b8585750f138877d3968aca260"
+      "sha256": "f6b41ac59e8eec1027519374b0ea22bcba472e7a8fb5b5c8256eab1cf4df59e1"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40065.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40065.json.gz",
       "seed": "40065",
-      "sha256": "763b193fc9cf85bbe76d8ff24c0490f098a5df838a55ea3e33430229d073e180"
+      "sha256": "46c10323f55b2ae6ad22fbf7490a30cb0f1c8e2edf39e38394242bc25c107c9d"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40066.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40066.json.gz",
       "seed": "40066",
-      "sha256": "ba4f18d3918cc0aa2d048e94a8f213b3260e729a71361859a3e6167961ca7fd1"
+      "sha256": "57769db4ebbf8bed5b096755df1848506b5978d541ce8211277d39cb19867a4d"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40067.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40067.json.gz",
       "seed": "40067",
-      "sha256": "990385fe4f8e42d6ad604453f7587fa4bdce6e7d3803940e85b194b492e6f96b"
+      "sha256": "04c09d368e1592de2da4804297e42ef22541dd6783d3a5622754f627d0c8ecc7"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40068.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40068.json.gz",
       "seed": "40068",
-      "sha256": "4c3984745afa0a1c188223fa1adff88eeb10d2637bda195dfbbc22448e29a6c9"
+      "sha256": "b0868f958c1a1bacc1bac954948c0d20c1a7c05a6489be6836ece72d2b212e59"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40069.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40069.json.gz",
       "seed": "40069",
-      "sha256": "70f51702d7580c88bd83307d477d79921afa2a631306f12d5f0b07fe841c891d"
+      "sha256": "20045a9c82644b33ce7070843548bef118707a65952c723886549d0292956384"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40070.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40070.json.gz",
       "seed": "40070",
-      "sha256": "99dd4d037a8c65faabdd066df099e950d1b55ba019e33040f890fc6c91f50918"
+      "sha256": "3e0ef4aaffd5e491e18031e65b5dcd2f5af06bf876cf4b15926bfc3b7a6cc451"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40071.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40071.json.gz",
       "seed": "40071",
-      "sha256": "1a1dcb0b5e5a5f36957108ecf52afade3a78e9232b2bfbf220659a804a1a0dd4"
+      "sha256": "305c654d0349736232672e6313a995142e0501b08adb83a0b53132c1a5b3872a"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40072.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40072.json.gz",
       "seed": "40072",
-      "sha256": "ee9d80e91ccdc5f7994b9fb3cec112081f9ec2a3a4d13c6b3780268ade33c371"
+      "sha256": "d5e025901f0277abfc7be2b51cd0cfd509dafa4f925b6e47bc7ce604b031e2a9"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40073.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40073.json.gz",
       "seed": "40073",
-      "sha256": "4ca1b6595c52b7e691b7ac8f8e7083d4d3c29c0f550f4275664e1d8636d9e751"
+      "sha256": "5fc91298d9d025a0f3e7104ef5eb1f71f4fe0073c1f4ca58f8a87df9a3f2ddaa"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40074.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40074.json.gz",
       "seed": "40074",
-      "sha256": "3779d8978c51b3196b744adc06701b6f311d5be8a80cedff971886bf068cb20c"
+      "sha256": "e568a4860899612aeace3268dbea297bf2aa8a7cc435348eaa603ae2b6e05731"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40075.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40075.json.gz",
       "seed": "40075",
-      "sha256": "fc7212dd9b4b0de5316c687d148cd4bc7569d6ce0c321c862774be081f9393c2"
+      "sha256": "b8f3b9d4a04d67eb343939a424084f6a1b150298244871737ae1fe1b558fbf48"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40076.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40076.json.gz",
       "seed": "40076",
-      "sha256": "05cfbad22631c9b72caea368111d94124e3759310601063881ad14b9a5e5321d"
+      "sha256": "9aefce7efb16c31f9705481c4e6b061c9e7efbcce11f3e8a86dacc2717c58bb9"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40077.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40077.json.gz",
       "seed": "40077",
-      "sha256": "7b13040c0bb22681bb085cc8091736a12b08d7caeed1031a97d4ffd6764e9d47"
+      "sha256": "c64726439ae20b1facc1c749170429d5ff4f207f2074ccad748073423b68d9f2"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40078.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40078.json.gz",
       "seed": "40078",
-      "sha256": "6c5ffb863bdb71ef02d4e3f380b58473bb24a1310d9d87a3d1eb57de6ceeda3f"
+      "sha256": "d5690a7d5ea2ec15d209a12ecfb7f5b591a82c0802149db82fc77de97c8bf145"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40079.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40079.json.gz",
       "seed": "40079",
-      "sha256": "b84f2b3194cd114b76017cffecd1cbc4bf8bea0ee7c3471cf162c338f0eefc22"
+      "sha256": "2db85462dcdb9590b9d255ffca2996c43ac248f8bd94dd2d21a42611b7ec581e"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40080.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40080.json.gz",
       "seed": "40080",
-      "sha256": "f40e71c73f737b3b03df818d033feecdd7df13fa2f4ac8b7e629ab4305b44a49"
+      "sha256": "1e982c84658fa6f1b02840d5a20aa111269c32ac4f4f19321d338707ab4bb9b1"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40081.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40081.json.gz",
       "seed": "40081",
-      "sha256": "f13a115f448d150dcfbeb51721e33fc418d02cdc833c886fae9e34c602d44592"
+      "sha256": "0480289900debbff2f3b7d6991fcac765a688bee0edc0b25a232f1ebaae1dd32"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40082.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40082.json.gz",
       "seed": "40082",
-      "sha256": "9ab44fa21db82a47419b52a87c813ef68f9fba7521abe46d32753e3d344c9c9e"
+      "sha256": "04bdb235179b8cd61951a4430933d86e29cc9487a9e63a0e3361dd37cef97d9e"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40083.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40083.json.gz",
       "seed": "40083",
-      "sha256": "958eb9f7a673c54b5ba4bdd8603d0082bd2c018f9be0bfec1b9af025a3c33ca9"
+      "sha256": "f6793829a310336118ae9435aeeccbad2dcf982315022681dcce158baba3c8ef"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40084.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40084.json.gz",
       "seed": "40084",
-      "sha256": "8d5454f0d3d157bc2911964b965abe20cf801bf8ffa430747b0bbe38807b4400"
+      "sha256": "8d7468cc111bf213da8ecfc792e6d350f0df5a4b8a2c8940e9dab6a5399f7869"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40085.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40085.json.gz",
       "seed": "40085",
-      "sha256": "2d88d58a3828462aec6fd0da8504f79a52e57435656b5bfb3fb6646243208b1c"
+      "sha256": "bcda99f87a87d6ef1ca27f249281f007a361a5210e1b2690c9ce6ccf84952f31"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40086.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40086.json.gz",
       "seed": "40086",
-      "sha256": "0e471a9a67c0b26ce1aa4b144687cd920ff9e2976053d9f6a33c161d9a1dcd9c"
+      "sha256": "32cfdb064bf7b3143f2c4963f54e7188fcc1a75f2836e685a467c6e6fd83fc78"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40087.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40087.json.gz",
       "seed": "40087",
-      "sha256": "babc8262378e9f6464f3c938ff9d09cc8655e35c1a7cb8b929b13cce2172f98a"
+      "sha256": "0e6c78097c4c4dff89e1c633b73717ea4549deec8ce135a39dfafb870a5a32da"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40088.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40088.json.gz",
       "seed": "40088",
-      "sha256": "da65b8f1d98c5c9d4b924d856a0c9e3a4cc9b107a0d2af0a564906cf3ee15119"
+      "sha256": "3055dced30197499cbf34a69d4a0dcad281e5d6131e14ce1c484dbeb948ba35c"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40089.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40089.json.gz",
       "seed": "40089",
-      "sha256": "cf10f7af6a358a0384eca72d986a088247fea990f0f01eaaca2cb86f7af0cd71"
+      "sha256": "b4a173d1707e2c85df45d24065877ec7a428da6fa78b181fee6d40e2c9b074a7"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40090.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40090.json.gz",
       "seed": "40090",
-      "sha256": "376332ac7558e22a884ea04681a47d9be75b523ac22d57e8156da53e52690212"
+      "sha256": "38c7018ca76bd3e2dc1703e9da8349fd2e413fb66d5025fd225263d4b56ac1fe"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40091.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40091.json.gz",
       "seed": "40091",
-      "sha256": "9fb1bd1dc8f2fc4d841d66da77fc7943349a56ea4a60373ba45d90d2d8afc825"
+      "sha256": "c469ebf42de4eccc701ec7cc95c6326348d3de8cec94bdd6508489d2433bcad5"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40092.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40092.json.gz",
       "seed": "40092",
-      "sha256": "4a7e58d311c4485a71f1d82e21b5e753313d7fc9f182ebc89e9fb052d7cae8aa"
+      "sha256": "5e71ad873e81667613a367de41bc5346e2f9414ad7e4a216cb7c5483e8295d56"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40093.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40093.json.gz",
       "seed": "40093",
-      "sha256": "acc75887654f911ef155e64263bf5c9436090a144484e3282c683b542d0aeb0e"
+      "sha256": "21b3288c63533822c3364a10931a25e69bd17c292b8f3b8a4a7d051f7e0eb8f8"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40094.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40094.json.gz",
       "seed": "40094",
-      "sha256": "32e9abfdd69cdc73f6f1cb6f191b978b7e484ac8d99956cf8986bb6d69746d94"
+      "sha256": "84a7c0949e7b4869793b69433e72ec9b4162cd056357ecb9e547685dd264f8ee"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40095.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40095.json.gz",
       "seed": "40095",
-      "sha256": "de595f110366f9d9164c36cbdba48d5a567e25ab6a8c8bc3bc378e6d74a890b7"
+      "sha256": "3709d62cf9e2ef17cd76a27ae1258b7f65d7b2d87b6d927891e160649d2017f0"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40096.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40096.json.gz",
       "seed": "40096",
-      "sha256": "d07fe7fce9daba3b1fd78110873dcb6b9600d1ab786096747ee6901be30f5ce2"
+      "sha256": "0ffa7d311f32b20e01397b82ea7f9612ccfd4db902b267517d5cbe2829df3a01"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40097.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40097.json.gz",
       "seed": "40097",
-      "sha256": "264bca4842a107dd319940a790aa8a05d33319818d81d3e988a3967aab222910"
+      "sha256": "385dcc59740620241af468e3f58ec1cb0bf019bc3262d195768b657f2798dcd2"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40098.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40098.json.gz",
       "seed": "40098",
-      "sha256": "9ebcdfbc5b685683f636286d2ee5ff2f2d06e3775ef1306c21968a9a32308c29"
+      "sha256": "72b9684b6068dc56ba5b72b7b863356c975873f445a70b027eaebe8aca2afc3e"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40099.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40099.json.gz",
       "seed": "40099",
-      "sha256": "bf90a68c89383a01efde56450e340c0fc05ffeb994e0eac6c9fb7571075042b4"
+      "sha256": "48c0bedce3a80ef40fd7f68d380968f3bfa64e85f9d9e274baa583ba85cee3b3"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40100.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40100.json.gz",
       "seed": "40100",
-      "sha256": "d96478ed507ba020b3ca31cfe6ca6a27de9d0c88c9fa2715bbe58ceae6cf9316"
+      "sha256": "3e9ef125f623f70e59d7b21f9f5b436031693c90a2f441c98d9d6f933cefa768"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40101.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40101.json.gz",
       "seed": "40101",
-      "sha256": "9b7681e56ec9ea30f8166d07fe2bbd2726303f00fe6065c3ec5520e5f4d22a95"
+      "sha256": "44a11e92292f4fdb013df722b38aa433b3ba2388d0837e39f3ad9dda343df0ee"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40102.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40102.json.gz",
       "seed": "40102",
-      "sha256": "e1d8fa1255bb8711d6fe3bf39923200d0a2f89af26c645ab0d3c2190f9b708fa"
+      "sha256": "010dfeecca1f310f2fa18d772d34d2daa9518608cb6e90b637cdb138572dc766"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40103.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40103.json.gz",
       "seed": "40103",
-      "sha256": "dca08724374738a2f47dc01fdf4b30b00e1cd4a47755eabbf4e8d4d41bba430e"
+      "sha256": "dd51f39f425d23fd4437368c3803ef0df6a4d5d5001ef732e95156f49f89f6c0"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40104.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40104.json.gz",
       "seed": "40104",
-      "sha256": "757963b3b4c00cbe7767030c7075c0cd6919c432f0ea3585fa0feae612e7f63b"
+      "sha256": "23670fbc0adba7b99ec076d0ef3b929951ae9e16a58cb76c0e250bea1c8cffb2"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40105.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40105.json.gz",
       "seed": "40105",
-      "sha256": "c0ab028f3d32647445259aa8d4ee8b2786c8ab35663dff80baa842cc9b97e96e"
+      "sha256": "e07b36afea6549f7354a736ec434dbf78257de2688b16400b9a27a1c3ead7dc6"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40106.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40106.json.gz",
       "seed": "40106",
-      "sha256": "afdbe816d786d272ab9878889f075357e86036173af00c89c06a2bc70cefc3ea"
+      "sha256": "f6c16bd2ed09f9081b5493413e41b895990873dfb57afa11b9b4399c0856cc6d"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40107.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40107.json.gz",
       "seed": "40107",
-      "sha256": "edf8b76f4f4f960adc90c4fb768640a96b2b8e883c16f1d673f45ee1c799f517"
+      "sha256": "ba6e76fcbc4592221a8ea440085b1f6184dc28f0853d1cac9e33d65525fb6c65"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40108.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40108.json.gz",
       "seed": "40108",
-      "sha256": "25c8c3f4bacc4bee6914c3b47be8e0a81ff77d853e44c892cba2519bc38e48a4"
+      "sha256": "66dd2a55a8b14a960ba5045fd086d1ee0b38755bb17bf86b01959249261c347a"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40109.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40109.json.gz",
       "seed": "40109",
-      "sha256": "40f6178dc4ac70fbdf18ac2bac949a5fbc36a56c1dd4c2fd131f6a61893d0ce1"
+      "sha256": "cc8c7960fef4bdce97d5d544335adcbb54cab36ac3bbff8e87aebd767b013a6a"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40110.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40110.json.gz",
       "seed": "40110",
-      "sha256": "a7dbd090727839c9cd106b684eaabd4f221bbc58ccf6b272bc051f4b4e42f398"
+      "sha256": "b77fe493e117cfa814b526f3f705829951162ba16d22a95263aa2bbd843e984b"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40111.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40111.json.gz",
       "seed": "40111",
-      "sha256": "c3ef6a15c359dbfa8fb1f9dde0a08c27c9b177e4cae879d6f085be6edf9cd50c"
+      "sha256": "0bf5cd73d0fca0550178e99d16c4ea568bd03559d296103d42c3f5066d024639"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40112.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40112.json.gz",
       "seed": "40112",
-      "sha256": "1d8bf4dd3aee488c38aec0cad3a3b0e8316763ac1ae49a051758beb9e64df6ae"
+      "sha256": "679176b1260712b21604bcfee624ffe0f77a816ae01a355dcf686c11a49e6481"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40113.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40113.json.gz",
       "seed": "40113",
-      "sha256": "86de343bd7e566fc7006651607c514e90b934ffbe72e635e0521218f1b36f958"
+      "sha256": "aa6e293858ee1621a521b245cd3cbc0ba9766f751b46c999f897955227efc771"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40114.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40114.json.gz",
       "seed": "40114",
-      "sha256": "7fa557b54472e7d65b5df6f2f773790080e48d5ec1d4d7048891eb99292e2e3b"
+      "sha256": "2c9cd01615d9416723924b8c7464d12c2615dde6c9f9cfe373c78e6441cdb4a2"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40115.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40115.json.gz",
       "seed": "40115",
-      "sha256": "24ff2858e6673a4107d3eb118d4fa3ed95ab2bff06838406a9a88ba877a5ca73"
+      "sha256": "436a8c55e0b826953394cc350bc3e2127c568ecfd5ee962478d6dab6a594cbb3"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40116.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40116.json.gz",
       "seed": "40116",
-      "sha256": "d8e457c5acc0c62fb0bf6c889f0888c720ad535e152a9a2fe993b410830af5e1"
+      "sha256": "72cdb5509d5d7bbcde3c1b0e98a234417ec0220fc7995472345a932450f7ddcb"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40117.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40117.json.gz",
       "seed": "40117",
-      "sha256": "818c57859c025b2ecf08364dca7e1ac45b48f8bfe9fd9e8bd39b1f257b9afe97"
+      "sha256": "4350b8b7edff1bad7c63d51ff02b05f7200c2c85891075ef41c42cc907dfd4a7"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40118.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40118.json.gz",
       "seed": "40118",
-      "sha256": "9e7a7bfeb5008b06e090169d31394a0efc6884bc09153777e673e65494c6dddf"
+      "sha256": "c2acd9c196236f1acabca32be74f473038837aa1f8c44adbfe7c48c03713e904"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40119.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40119.json.gz",
       "seed": "40119",
-      "sha256": "b923b36a28448489c1bbdd4a147a24a4a238defbcf1b4d95932754e6a3f7bc21"
+      "sha256": "0c0e74b3b21d454fc732dc3846e331b35a398b381705b5d17ab7eb07a723dfa0"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40120.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40120.json.gz",
       "seed": "40120",
-      "sha256": "29c2f2f186d26913c44fb5f1de3d270d4122d4c21f41657a660e2e2105977c07"
+      "sha256": "805b8b6ed8a746f2d77e340d255c9972def931989a5e7d1b677e066a5dbe8cc6"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40121.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40121.json.gz",
       "seed": "40121",
-      "sha256": "cc5a09afaf3760abc15bc4cae0d3d91e5c56e0b4745b68a7a1e512322d667b47"
+      "sha256": "d68702f5c6786190a7dc017bb1f44d3c77231e941e20c6391d2d67102200b1f4"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40122.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40122.json.gz",
       "seed": "40122",
-      "sha256": "65622111135409de55734c5d95c3b3853eff720a77fc002f517638db95431a3e"
+      "sha256": "0c7848a9b4c32b3ab9e27c7386778edfd4b39d7f56650143703abef2b3e9f659"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40123.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40123.json.gz",
       "seed": "40123",
-      "sha256": "3678bd2fdf8a1c7272002ef63e9c75b4a77b0a3aeef3e9558e5ccf37b6c91066"
+      "sha256": "e257dffd9248ff1cfb59c948c9c34ab96baa46227649668fd7067cb53daf41a6"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40124.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40124.json.gz",
       "seed": "40124",
-      "sha256": "bf094d567e4b85e60e09de7a35cb36afd104c6d652acadfeff78d49e0f8b3cfd"
+      "sha256": "c4dce869013e6538d319f7604a71c48c4e4ffc12a9e67a1a6ee5c3e0d05ee68b"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40125.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40125.json.gz",
       "seed": "40125",
-      "sha256": "69d8e6039c3d26387be62ffab014d50e75ff793a0dd00fcc8362d9965e7fe96d"
+      "sha256": "c8ef104be4fcc18c9409ce743109761a4ed4dd05fb4a19eade9676687be624a2"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40126.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40126.json.gz",
       "seed": "40126",
-      "sha256": "372077f9539450d3fb656b7b9f814ea2a58ddc49e819d7144122b483f3e0d6f6"
+      "sha256": "16517cbe1582e4280903914e479875e4000d6a428b3bdf3c6e669ccdb5100888"
     },
     {
-      "path": "artifacts/formal/T215-r021-v2-final/checkpoints/seed-40127.json.gz",
+      "path": "artifacts/formal/T215-phase1-final/checkpoints/seed-40127.json.gz",
       "seed": "40127",
-      "sha256": "fed1c32e33b2b13f1a1d335d5af710b9892b59135635703ec79fd52fb4e1aed6"
+      "sha256": "c64a99c15818e03272c5fd46b67c51c9b266e2bc8cf77482fc9d9300184ae354"
     }
   ],
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "09075bba075e4867b352a375f45b7a0d7f358bd4c6a9988a5c432aebb5942021"
+    "source_tree_sha256": "370513ac7ed68bfc6e8088061fc3882abfeb44ad20f92893b5763e602c7837ba"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {
@@ -1549,18 +1549,18 @@
   "source_artifacts": [
     {
       "artifact": "progress.json",
-      "path": "artifacts/formal/T215-r021-v2-final/progress.json",
-      "sha256": "1764e92f04449ac85fd2ce599e420e147c5d8ca709ea2eb863cdbe4d8d9ebd7d"
+      "path": "artifacts/formal/T215-phase1-final/progress.json",
+      "sha256": "9bd39162487dfe433934b79f75f0c461201f2ce4e0048bfbbca5911dbbd2a342"
     },
     {
       "artifact": "analysis.json",
-      "path": "artifacts/formal/T215-r021-v2-final/analysis.json",
+      "path": "artifacts/formal/T215-phase1-final/analysis.json",
       "sha256": "8b85623a292949b09511a794a166cf7e23b897918c9a4c6ed756ecace175fccb"
     },
     {
       "artifact": "run-manifest.json",
-      "path": "artifacts/formal/T215-r021-v2-final/run-manifest.json",
-      "sha256": "6f58f1ac61fbe36ccc413751cd705029e4bed86423ce9f98f25abaf99fed77e5"
+      "path": "artifacts/formal/T215-phase1-final/run-manifest.json",
+      "sha256": "1f9dfc751e0e6524f9e374c9b6dd2c72653f478264193701a7b27289c7b33feb"
     }
   ]
 }

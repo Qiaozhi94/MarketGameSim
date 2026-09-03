@@ -4,7 +4,7 @@ id: 0.2.1
 version: "0.2"
 doc_kind: design
 created: 2026-09-01
-updated: 2026-09-01
+updated: 2026-09-04
 ---
 
 # 0.2.1：H1 手动交易沙盒 - 设计
@@ -16,7 +16,8 @@ updated: 2026-09-01
 - **行为契约**：[`spec.md`](spec.md)。
 - **版本设计**：[`../design.md`](../design.md)。
 - **PRD / Architecture**：PRD §15 H1；architecture §1、§3。
-- **Contract**：事件 Schema、代理策略、撮合、账户与保证金、退化状态。
+- **Contract**：事件 Schema、代理策略、撮合、账户与保证金、退化状态、
+  [`interactive-session.md`](../../../contracts/interactive-session.md)。
 - **实现约束**：逻辑时间仍是唯一市场时间；人类订单不得绕过现有生产入口；
   `interactive` 永不进入研究证据；核心领域层保持标准库边界。
 
@@ -26,7 +27,7 @@ updated: 2026-09-01
 artifact 写出；人类适配器把规范动作转换成现有代理/订单事件；客户端只消费快照和提交
 命令。重放器以配置、种子和输入序列重新驱动同一会话层。
 
-- 客户端：新增本地交易界面，具体形态待 DQ-201。
+- 客户端：新增本地交易界面，采用 DQ-201 已确认的 loopback 浏览器方案。
 - Runtime：新增 session controller、pacer、human adapter、input journal。
 - 内核：只接收已分配逻辑时间的现有动作，不读取墙钟。
 - Event / Evidence：沿用 `AGENT_DECIDE` 因果链；新增版本化输入 artifact 与交互证据守卫。
@@ -59,9 +60,10 @@ saved config + seed + input journal
 
 H1 不引入数据库 migration，新增两个版本化 JSON/JSONL artifact：
 
-`interactive-inputs.v1.jsonl` 每行字段：
+`input-journal.jsonl` 使用 `INPUT_HEADER + INPUT* + INPUT_TRAILER` 闭合结构；每条 `INPUT`
+字段：
 
-- `schema_version`：恒为 1。
+- `record_kind`：恒为 `INPUT`；`input_schema_version`：恒为 1。
 - `session_id`：诊断标识，不参与确定性比较。
 - `input_seq`：从 0 开始严格递增。
 - `action`：`PLACE_ORDER | CANCEL_ORDER | PAUSE | RESUME | STEP | END`。
@@ -72,7 +74,8 @@ H1 不引入数据库 migration，新增两个版本化 JSON/JSONL artifact：
 - `received_at_wall`：可空 RFC 3339 诊断字段，不进入输入哈希。
 
 manifest 在现有成果包字段上增加 `input_schema_version`、`input_hash`、`run_mode` 与客户端
-版本。输入哈希覆盖除 `session_id`、`received_at_wall` 外的全部规范字段。
+版本。`input_hash` 是小写 SHA-256，按行覆盖 `INPUT` 中除 `session_id`、
+`received_at_wall` 外的规范投影及 LF；header/trailer 不参与哈希。
 
 兼容策略：v1 重放器只接受精确支持的输入 schema；未知版本 fail closed，不做猜测性迁移。
 
@@ -109,8 +112,8 @@ header 字段在事件 Schema 中为 `HASH_EXCLUDE`，因此模式一致性由�
 ### Event / Trace Contract
 
 接受的 `PLACE_ORDER`/`CANCEL_ORDER` 先形成 `AGENT_DECIDE(rule_id="human")`，再沿既有因果
-外键进入订单事件。被拒绝的人类输入始终存在于 input journal；是否也写业务事件由 DQ-203
-决定，未冻结前不得修改事件 Schema。
+外键进入订单事件。被拒绝的人类输入始终存在于 input journal；是否也写业务事件遵循 DQ-203
+已冻结的记录策略。
 
 若实现需要新增事件类型或字段，必须先修订 `event_fields.json`、事件 Schema 文档、哈希
 清单与 schema version，并补跨真源负向测试。
@@ -126,7 +129,7 @@ PAUSED。暂停期收到的多条输入按 `input_seq` 全部分配到同一个�
 依序提交，中途不推进逻辑时间。重放模式禁用墙钟等待，严格按记录的
 `(assigned_timestamp, input_seq)` 复合键注入。
 
-客户端断开策略待 DQ-202/DQ-204 冻结；无论策略为何，已提交事务不得回滚，未提交输入不得
+客户端断开与崩溃恢复策略遵循 DQ-202/DQ-204 已冻结的边界；无论策略为何，已提交事务不得回滚，未提交输入不得
 标记 accepted。
 
 ## 6. UI 与可观测性
@@ -192,7 +195,7 @@ PAUSED。暂停期收到的多条输入按 `input_seq` 全部分配到同一个�
 
 ## 10. 待确认设计问题
 
-- [ ] DQ-201: 首个客户端传输与呈现技术选型。— 建议：使用仅绑定 loopback 的 Python HTTP adapter + 原生 HTML/JS 客户端，客户端以短轮询读取版本化快照并通过 JSON mutation 接口提交动作；核心会话协议保持传输无关，以便后续替换客户端。
-- [ ] DQ-202: 连续模式下墙钟到逻辑时间的倍率、输入取样边界和客户端断开策略。— 建议：首版只支持默认暂停/单步与可选 1× 连续模式；所有输入在已提交事务边界按 `input_seq` 取样，`assigned_timestamp` 单调不减且复合键 `(assigned_timestamp, input_seq)` 严格递增；断开后完成当前事务并自动暂停，不允许后台无界继续运行。
-- [ ] DQ-203: 被拒绝的人类输入写入哪些记录？— 建议：解析或 schema 校验失败只写 input journal；已进入生产订单路径后被制度、风控或业务规则拒绝的输入同时写 journal 和既有拒绝事件，不新增 H1 专用事件类型，因此首版不提升 event schema version。
-- [ ] DQ-204: session 崩溃后的 H1 恢复边界。— 建议：首版不做进程内断点续跑；崩溃会话标记 `ABORTED`，恢复时从头重放完整且哈希有效的输入日志，输入截断、缺 trailer 或哈希不符均 fail closed。
+- [x] DQ-201: 采用仅绑定 `127.0.0.1` 的 Python HTTP adapter + 原生 HTML/JS 客户端；默认端口 `8765`，允许显式覆盖但拒绝非 loopback 绑定。客户端通过短轮询读取版本化快照，并通过 JSON mutation 接口提交动作；核心会话协议保持传输无关。
+- [x] DQ-202: 默认 `PAUSED + STEP`，可选 `1×` 连续模式，UI 节拍 `250 ms`。输入只在已提交事务边界按 `input_seq` 取样；`assigned_timestamp` 单调不减，复合键 `(assigned_timestamp, input_seq)` 严格递增。客户端断开后完成当前事务并自动暂停，不允许后台无界继续运行。
+- [x] DQ-203: 解析或 Schema 校验失败只写 input journal；已进入生产订单路径后被制度、风控或业务规则拒绝的输入同时写 journal 和既有拒绝事件。不新增 H1 专用事件类型，首版不提升 event schema version。
+- [x] DQ-204: 首版不做进程内断点续跑；崩溃会话标记为 `ABORTED`。恢复时从头重放完整且哈希有效的输入日志；输入截断、缺 trailer 或哈希不符均 fail closed。

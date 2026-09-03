@@ -3,13 +3,13 @@ kind: milestone
 id: 0.2.1
 parent: v0.2-interactive-market-sandbox
 version: "0.2"
-status: draft
+status: ready-for-development
 research_claim_status: not-applicable
 research_claim_required: false
 evidence_class: engineering-demonstration
 gate_version: 1
 created: 2026-09-01
-updated: 2026-09-01
+updated: 2026-09-04
 prerequisites:
   - 0.1.5
 ---
@@ -27,7 +27,8 @@ prerequisites:
 - **上游合同**：[`event-schema.md`](../../../contracts/event-schema.md)、
   [`agent-strategy.md`](../../../contracts/agent-strategy.md)、
   [`matching.md`](../../../contracts/matching.md)、
-  [`margin-and-account.md`](../../../contracts/margin-and-account.md)。
+  [`margin-and-account.md`](../../../contracts/margin-and-account.md)、
+  [`interactive-session.md`](../../../contracts/interactive-session.md)。
 - **上游决策**：v0.1 根规格 D-7、PRD Q-016。
 - **功能类型**：user-facing / runtime / event / validation。
 - **规格模式**：full。
@@ -211,10 +212,12 @@ prerequisites:
 ## 5. 生命周期与不变量
 
 ```text
-CREATED -> RUNNING   start / 配置、种子与人类账户通过校验
+CREATED -> PAUSED    start / 配置、种子与人类账户通过校验，按默认节奏等待首个动作
 RUNNING -> PAUSED    pause / 当前事务提交完成后停止推进
-PAUSED  -> RUNNING   resume 或 step / step 只提交一个调度单位后再暂停
+PAUSED  -> RUNNING   resume
+PAUSED  -> PAUSED    step / 只提交一个调度单位后仍保持暂停
 RUNNING -> COMPLETED end 或经济终点 / 写完整 trailer 与 manifest
+PAUSED  -> COMPLETED end / 写完整 trailer 与 manifest
 *       -> ABORTED   不可恢复故障 / 丢弃失败事务并写稳定 abort code
 ```
 
@@ -285,7 +288,7 @@ RUNNING -> COMPLETED end 或经济终点 / 写完整 trailer 与 manifest
 - 上游里程碑：0.1.5 `done / established`。
 - 上游合同：事件 Schema、撮合、账户与保证金、代理策略、退化状态。
 - 下游消费者：H2 人在环正式实验规格、后续教学与多用户体验。
-- 外部依赖：首个客户端技术方案待 Q-201 决定；核心协议不得依赖该选择。
+- 外部依赖：首个客户端采用 Q-201/DQ-201 已确认的 loopback 浏览器方案；核心协议仍不得依赖该具体呈现选择。
 
 ### 决策与风险
 
@@ -298,6 +301,6 @@ RUNNING -> COMPLETED end 或经济终点 / 写完整 trailer 与 manifest
 
 ## 8. 待确认问题
 
-- [ ] Q-201: 交易者的首个使用形态是浏览器页面还是终端界面？— 建议：浏览器页面，更低使用门槛且可复用现有 K 线与回放表达。传输与呈现技术由 [`design.md`](design.md) DQ-201 唯一拥有，本条只承诺用户可见形态。
-- [ ] Q-202: H1 默认启动哪套市场配置与背景代理组合？— 建议：从 `market_game_sim.showcase.r2.build_r2_config()` 派生固定演示配置，使用 seed 7、1 个库存型做市商、1 个目标驱动代理和 1 个人类代理；不要采用 BENCH-001 的 190 代理压力配置，启动后默认暂停，并在 T802 smoke test 后冻结具体交易上限与人类账户参数。
-- [ ] Q-203: 默认节奏向用户呈现连续实时、倍速，还是“暂停观察 + 单步提交”？— 建议：默认“暂停观察 + 单步”，以优先保证可控性和确定性审计。倍率、输入取样边界和断开策略由 [`design.md`](design.md) DQ-202 唯一拥有。
+- [x] Q-201: 首个使用形态确定为浏览器页面；传输与呈现技术由 [`design.md`](design.md) DQ-201 唯一拥有，本条只承诺用户可见形态。
+- [x] Q-202: 默认使用固定 R2 派生配置、seed 7、1 个库存型做市商、1 个目标驱动代理和 1 个人类账户；初始价格 `100.00`（`10_000` ticks），人类账户初始现金 `10,000.00`、空仓、无活动订单、默认 `1×`、初始保证金率 `100%`，单笔最大数量 `1.000`、最多 `8` 个活动订单；会话 `max_transactions=80`，不采用 BENCH-001 压力配置；具体输入 artifact、manifest 与内部单位映射由 T802 冻结。
+- [x] Q-203: 默认使用“暂停观察 + 单步提交”；连续模式、输入取样边界与断开策略由 [`design.md`](design.md) DQ-202 唯一拥有。

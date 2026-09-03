@@ -102,6 +102,7 @@ def test_manifest_carries_provenance_and_hashes(tmp_path):
 
     # Fixed provenance fields.
     assert manifest["evidence_class"] == "engineering-demonstration"
+    assert manifest["run_mode"] == "benchmark"
     assert manifest["code_version"] == __version__
     assert manifest["config_hash"] == compute_config_hash(config)
     assert manifest["seed"] == config.seed
@@ -215,6 +216,7 @@ def test_manifest_rejects_wrong_evidence_class():
         "config_hash": "abc",
         "seed": 1,
         "seed_plan": {"n_seeds": 1, "seeds": [1]},
+        "run_mode": "benchmark",
         "evidence_class": "bogus-class",
         "gate": "R1",
     }
@@ -306,6 +308,7 @@ def test_manifest_rejects_malformed_seed_plan():
         "config_hash": "abc",
         "seed": 1,
         "seed_plan": {"n_seeds": "8"},
+        "run_mode": "benchmark",
         "evidence_class": "engineering-demonstration",
         "gate": "R1",
     }
@@ -322,6 +325,7 @@ def _manifest_with_seed_plan(sp) -> dict:
         "config_hash": "abc",
         "seed": 1,
         "seed_plan": sp,
+        "run_mode": "benchmark",
         "evidence_class": "engineering-demonstration",
         "gate": "R1",
     }
