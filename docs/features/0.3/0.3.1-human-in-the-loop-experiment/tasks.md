@@ -28,6 +28,8 @@ updated: 2026-09-04
   `pytest.mark.xfail(strict=True)` 骨架并写明原因。
 - 完成且验证后立即勾选；实现中契约失效时先修订三件套。
 - 首个正式参与者前必须关闭全部 Q/DQ、完成适用伦理/同意确认并冻结协议。
+- T925 只运行统一质量门并检查验收上界，不承担任何 AC 的测试路径锚点；AC-301—AC-308
+  必须由 T904—T924 所列具体测试文件覆盖。
 
 ## 1. 前置条件
 
@@ -104,7 +106,7 @@ updated: 2026-09-04
 - [ ] T924 (`AC-305`, `AC-306`): 用冻结模拟数据验证效应恢复、缺失、多重性、三机制和无综合分数
       — verify: `tests/experiment/test_outcomes.py`
 - [ ] T925 (`AC-301`, `AC-302`, `AC-303`, `AC-304`, `AC-305`, `AC-306`, `AC-307`, `AC-308`):
-      运行项目统一质量门 — verify: `tests/integration/test_h2_delivery.py`
+      运行项目统一质量门 — verify: `python tools/verify.py`
 - [ ] T926 `[状态门]`: 回写 spec 验收/研究证据、版本索引和状态；研究声明仅在 H2-C 正式证据
       与外部审阅均通过后设为 established — verify: `tools/validate_spec_lifecycle.py`
 
