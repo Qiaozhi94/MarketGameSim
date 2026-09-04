@@ -72,7 +72,8 @@ updated: 2026-09-04
 - [ ] T912 [P] (`FR-304`, `SC-303`, `AC-305`): 实现三个独立结果家族、配对估计、不确定性、
       多重性和缺失处理 — verify: `tests/unit/experiment/test_h2_outcomes.py`
 - [ ] T913 [P] (`FR-305`, `TR-302`, `SC-303`, `AC-306`): 实现激进订单、流动性撤回和风险减仓
-      指标及因果追溯 — verify: `tests/unit/experiment/test_h2_mechanisms.py`、
+      指标及因果追溯，将 ID/公式/单位/窗口/缺失语义写入指标字典唯一真源 — verify:
+      `docs/research/metrics-dictionary.md`、`tests/unit/experiment/test_h2_mechanisms.py`、
       `tests/integration/test_h2_mechanisms.py`
 - [ ] T914 (`FR-303`, `NFR-303`, `AC-303`, `AC-308`): 实现技术中止、撤回、补跑与结果盲
       adjudication 流程；补跑只能按冻结顺序消耗备用 seed/pair 并绑定配套控制 — verify:
