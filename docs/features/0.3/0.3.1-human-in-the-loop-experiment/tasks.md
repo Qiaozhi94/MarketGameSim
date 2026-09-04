@@ -36,8 +36,10 @@ updated: 2026-09-04
 - [ ] T901 (`Q-301`, `Q-302`, `Q-303`, `Q-304`, `Q-305`, `Q-306`, `Q-307`, `Q-308`, `DQ-301`,
       `DQ-302`, `DQ-303`, `DQ-304`, `DQ-305`): 关闭全部阻塞研究与设计问题 — verify:
       `spec.md`、`design.md`
-- [ ] T902 (`FR-301`, `NFR-302`, `SC-301`): 完成协议、功效/停止规则、同意/隐私和适用伦理
-      审查，并取得可审计签字 — verify: `docs/experiments/H2-preregistration.md`、
+- [ ] T902 (`FR-301`, `NFR-302`, `SC-301`): 先冻结招募/参与者小时/预算上限，再以参与者内
+      重复、pair 缺失和多重性运行功效模拟；只有 go 判定后才完成协议、停止规则、同意/隐私
+      和适用伦理审查并取得可审计签字，no-go 时禁止 freeze — verify:
+      `docs/experiments/H2-preregistration.md`、
       `python tools/validate_spec_lifecycle.py`
 - [ ] T903 (`FR-301`, `NFR-301`, `AC-301`): 验证 v0.2.1、事件/指标合同与目标代理配置可支持
       唯一差异配对 — verify: `tests/unit/experiment/test_h2_protocol.py`
