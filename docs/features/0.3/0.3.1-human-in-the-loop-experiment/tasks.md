@@ -22,7 +22,10 @@ updated: 2026-09-04
 - 行为与验收真相源：[`spec.md`](spec.md)。
 - 技术方案与边界：[`design.md`](design.md)。
 - 每项任务只描述一个可验证动作，并引用合法的 US/需求/AC ID。
-- 阶段成果门规则见 [`docs/features/README.md`](../../README.md#阶段成果门)（唯一拥有者）。
+- 阶段成果门规则见 [`docs/features/README.md`](../../README.md#阶段成果门)；状态推进与 AC
+  测试路径规则见同文档的 [`gate 规则`](../../README.md#gate-规则)（唯一拥有者）。推进
+  `ready-for-development` 前须建立本文件所列的具体测试文件；未实现行为使用
+  `pytest.mark.xfail(strict=True)` 骨架并写明原因。
 - 完成且验证后立即勾选；实现中契约失效时先修订三件套。
 - 首个正式参与者前必须关闭全部 Q/DQ、完成适用伦理/同意确认并冻结协议。
 
