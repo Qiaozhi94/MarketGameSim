@@ -91,7 +91,8 @@ updated: 2026-09-04
       首个正式样本前归档时间证据；预注册文档门和 protocol schema 门须同时通过 — verify:
       `tests/unit/experiment/test_h2_protocol.py`、`python tools/validate_spec_lifecycle.py`
 - [ ] T917 (`US-301`, `FR-302`, `NFR-302`, `NFR-303`, `AC-304`, `AC-308`): 按冻结协议完成
-      参与者训练、正式会话、配对控制与结果盲裁决，直至停止规则满足 — verify:
+      参与者训练、正式会话、配对控制与结果盲裁决，按冻结 owner、目标日期与招募台账推进
+      直至停止规则满足；若资源窗口结束仍不足，保留审计样本流但不得进入声明或版本收口 — verify:
       `tests/integration/test_h2_paired_runs.py`
 - [ ] T918 (`FR-303`, `IR-302`, `SC-302`, `AC-303`, `AC-304`): 冻结只含完整合格 pair 的 H2
       evidence index 和样本流图 — verify: `tests/integration/test_h2_evidence_guard.py`
@@ -123,12 +124,14 @@ updated: 2026-09-04
 ## 4. 依赖与并行关系
 
 - `T901 -> T902 -> T904`：先关闭研究决策并取得适用审查，再冻结可执行协议。
+- `T902` 的伦理、招募和资源判据是外部关键路径：必须写明 owner、目标日期、go/no-go 结论和
+  失败分支；`python tools/verify.py` 通过不能代替这些证据。
 - `T904 -> T906 -> T907 -> T909`：assignment 与 pair 必须绑定已冻结协议。
 - `T907 -> T910 -> T911 -> T915`：正式 UI 依赖窗口和目标代理插槽。
 - `T908 -> T914 -> T915`：预览必须先验证阶段隔离和裁决。
 - `T912 [P]` 与 `T913 [P]` 可并行：结果与机制属于不同分析模块且定义已由协议冻结。
 - `T915 -> T916 -> T917 -> T918 -> T919 -> T920 -> T921`：正式协议冻结后才采样，index
-  冻结后才分析，分析完成后才生成正式报告。
+  冻结后才分析，分析完成后才生成正式报告；T917 未达到冻结停止规则时不得进入 T918。
 - `T905 [P]` 可与运行骨架开发并行：只修改 enrollment/隐私模块，不共享市场运行状态。
 
 ## 5. 明确后移
