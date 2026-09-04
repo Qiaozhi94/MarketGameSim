@@ -50,7 +50,8 @@ updated: 2026-09-04
 - [ ] T905 [P] (`DR-301`, `IR-301`, `AC-308`): 实现匿名 enrollment、同意/资格/理解检查和撤回状态
       — verify: `tests/unit/experiment/test_h2_privacy.py`
 - [ ] T906 (`FR-301`, `IR-301`, `NFR-303`, `AC-304`): 实现预签发 assignment、seed/scenario
-      顺序与结果盲纳入元数据 — verify: `tests/integration/test_h2_paired_runs.py`
+      顺序、有序备用 seed/pair 池与结果盲纳入元数据 — verify:
+      `tests/integration/test_h2_paired_runs.py`
 - [ ] T907 (`FR-302`, `TR-301`, `NFR-301`, `AC-304`): 实现目标代理插槽、人类替换条件、纯代理
       控制生成与冻结字段比较 — verify: `tests/integration/test_h2_paired_runs.py`
 - [ ] T908 (`FR-303`, `IR-302`, `AC-303`): 实现 mode/stage/protocol/pair/inclusion 多重 evidence
@@ -73,7 +74,8 @@ updated: 2026-09-04
       指标及因果追溯 — verify: `tests/unit/experiment/test_h2_mechanisms.py`、
       `tests/integration/test_h2_mechanisms.py`
 - [ ] T914 (`FR-303`, `NFR-303`, `AC-303`, `AC-308`): 实现技术中止、撤回、补跑与结果盲
-      adjudication 流程 — verify: `tests/integration/test_h2_evidence_guard.py`
+      adjudication 流程；补跑只能按冻结顺序消耗备用 seed/pair 并绑定配套控制 — verify:
+      `tests/integration/test_h2_evidence_guard.py`
 - [ ] T915 `[成果门:H2-B]` (`AC-302`, `AC-303`, `AC-305`, `AC-306`, `AC-308`): 用固定假参与者
       输入生成训练、正式会话、三结果与机制预览，入口
       `python -m market_game_sim.experiment preview`，验收有限窗口、阶段隔离、重放和报告结构，
