@@ -59,7 +59,7 @@ updated: 2026-09-05
       控制生成与冻结字段比较 — verify: `tests/integration/test_h2_paired_runs.py`
 - [ ] T908 (`FR-303`, `IR-302`, `AC-303`): 实现 mode/stage/protocol/pair/inclusion 多重 evidence
       guard 和原子拒绝 — verify: `tests/integration/test_h2_evidence_guard.py`
-- [ ] T909 `[成果门:H2-A]` (`AC-301`, `AC-303`, `AC-304`): 生成可打开的冻结协议草案、配对
+- [ ] T909 `[成果门:H2-A]` (`AC-301`, `AC-303`, `AC-304`): 生成可打开的冻结协议、配对
       manifest diff 与 guard 矩阵，入口 `python -m market_game_sim.experiment preview-protocol`，
       验收协议漂移及 H1 数据均被拒绝，标记为 `experiment-preview` — verify:
       `tests/integration/test_h2_delivery.py`
