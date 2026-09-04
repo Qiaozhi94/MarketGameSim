@@ -71,3 +71,23 @@ jobs:
       - env:
           PYTHONHASHSEED: "0"
         run: pytest --cov=src/market_game_sim/book --cov=src/market_game_sim/ledger --cov-branch --cov-fail-under=90
+
+  windows-interactive:
+    name: H1 interactive (Windows)
+    needs: contract-sources
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: pip install -e ".[dev]"
+      - name: Validate loopback client, replay, and portable bundle paths
+        run: >-
+          pytest -q
+          tests/integration/test_interactive_client.py
+          tests/integration/test_interactive_control.py
+          tests/integration/test_interactive_replay.py
+          tests/integration/test_interactive_bundle.py
+          tests/integration/test_interactive_failure_paths.py
+          tests/integration/test_interactive_delivery.py

@@ -1,5 +1,6 @@
 """Deterministic interactive-session primitives."""
 
+from market_game_sim.interactive.adapter import HumanAdapter, HumanCommandResult
 from market_game_sim.interactive.journal import (
     INPUT_SCHEMA_VERSION,
     InputJournal,
@@ -31,6 +32,7 @@ from market_game_sim.interactive.pacing import (
     PacingError,
     PendingInput,
 )
+from market_game_sim.interactive.runtime import InputResult, InteractiveRuntime
 from market_game_sim.interactive.session import (
     SessionController,
     SessionDispatchError,
@@ -49,6 +51,7 @@ __all__ = [
     "IdempotencyConflictError",
     "InboxFullError",
     "InputAction",
+    "InputResult",
     "InputInbox",
     "InputJournal",
     "InputJournalRecord",
@@ -59,6 +62,7 @@ __all__ = [
     "JournalValidationError",
     "LogicalPacer",
     "InteractiveObservation",
+    "InteractiveRuntime",
     "MarketObservation",
     "ObservationProjector",
     "PacingError",
@@ -72,4 +76,6 @@ __all__ = [
     "SessionState",
     "SessionTransitionError",
     "SessionView",
+    "HumanAdapter",
+    "HumanCommandResult",
 ]

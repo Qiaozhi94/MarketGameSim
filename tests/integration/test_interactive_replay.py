@@ -1,6 +1,8 @@
 """T805/T812 integration tests for the input journal and deterministic replay."""
 
 import json
+import subprocess
+import sys
 
 import pytest
 
@@ -138,6 +140,43 @@ def test_invalid_append_is_atomic_and_fresh_retry_succeeds() -> None:
     assert journal.records == (valid,)
 
 
-@pytest.mark.xfail(strict=True, reason="T812 replay tamper checks are not implemented yet")
-def test_replay_contract_rejects_truncation_and_duplicate_idempotency_key():
-    pytest.fail("T812 pending")
+def test_replay_contract_rejects_truncation_tamper_and_duplicate_idempotency_key(
+    tmp_path,
+) -> None:
+    original = _journal("session-a", "2026-09-04T01:02:03+08:00")
+    valid = tmp_path / "valid.jsonl"
+    original.write(valid)
+    truncated = tmp_path / "truncated.jsonl"
+    truncated.write_bytes(valid.read_bytes().splitlines(keepends=True)[0])
+    with pytest.raises(JournalValidationError, match="HEADER and INPUT_TRAILER"):
+        read_input_journal(truncated)
+    tampered = tmp_path / "tampered.jsonl"
+    raw = valid.read_bytes().replace(b'"price_ticks":10000', b'"price_ticks":10001')
+    tampered.write_bytes(raw)
+    with pytest.raises(JournalValidationError, match="input_hash"):
+        read_input_journal(tampered)
+    duplicate = tmp_path / "duplicate.jsonl"
+    lines = valid.read_bytes().splitlines(keepends=True)
+    second = json.loads(lines[2])
+    second["client_request_id"] = "request-0"
+    lines[2] = json.dumps(second, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+    duplicate.write_bytes(b"".join(lines))
+    with pytest.raises(JournalValidationError, match="client_request_id"):
+        read_input_journal(duplicate)
+
+
+def test_two_new_process_replays_are_identical(tmp_path) -> None:
+    from market_game_sim.interactive.delivery import generate_interactive_delivery
+
+    bundle = tmp_path / "H1"
+    generate_interactive_delivery(bundle)
+    command = [
+        sys.executable,
+        "-m",
+        "market_game_sim.interactive.replay_session",
+        str(bundle / "input-journal.jsonl"),
+    ]
+    first = subprocess.run(command, capture_output=True, text=True, check=False)
+    second = subprocess.run(command, capture_output=True, text=True, check=False)
+    assert first.returncode == second.returncode == 0
+    assert json.loads(first.stdout) == json.loads(second.stdout)

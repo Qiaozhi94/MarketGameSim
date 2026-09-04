@@ -3,7 +3,7 @@
 **文档版本**：0.4.2（**H1 规格启动**）<br>
 **状态**：Active<br>
 **创建日期**：2026-07-28　**更新日期**：2026-09-01<br>
-**产品阶段**：v0.1 已签收；v0.2.1 规格草案<br>
+**产品阶段**：v0.1、v0.2 H1 已签收<br>
 **项目原则**：[`docs/SOP.md`](SOP.md)（唯一入口，含安全与合规边界 §4）  
 **当前规格**：[`docs/features/0.2/spec.md`](features/0.2/spec.md)；
 [`v0.2.1 H1 手动交易沙盒`](features/0.2/0.2.1-interactive-sandbox/spec.md)<br>
