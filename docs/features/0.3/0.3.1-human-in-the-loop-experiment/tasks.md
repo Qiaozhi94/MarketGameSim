@@ -101,7 +101,8 @@ updated: 2026-09-04
 ## 3. 验证与验收任务
 
 - [ ] T922 (`AC-301`, `AC-303`, `AC-304`): 运行协议、证据门、配对和重放正反测试 — verify:
-      `tests/experiment/test_protocol.py`
+      `tests/unit/experiment/test_h2_protocol.py`、`tests/integration/test_h2_evidence_guard.py`、
+      `tests/integration/test_h2_paired_runs.py`
 - [ ] T923 (`AC-302`, `AC-308`): 在目标 Windows 环境运行训练、正式窗口、断线、撤回与阶段
       提示验收 — verify: `tests/integration/test_experiment_session.py`
 - [ ] T924 (`AC-305`, `AC-306`): 用冻结模拟数据验证效应恢复、缺失、多重性、三机制和无综合分数
