@@ -1,0 +1,32 @@
+{
+  "$comment": "v0.3 需求追踪真源；当前只包含 H2 人在环崩盘反馈实验。",
+  "matrix_version": 1,
+  "statuses": ["owned", "deferred", "removed"],
+  "milestones": {
+    "0.3.1": "docs/features/0.3/0.3.1-human-in-the-loop-experiment"
+  },
+  "requirements": {
+    "US-301": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E2", "E3"]}]},
+    "US-302": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E4"]}]},
+    "US-303": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E5"]}]},
+    "FR-301": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E1"]}]},
+    "FR-302": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E2", "E3"]}]},
+    "FR-303": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E2", "E5"]}]},
+    "FR-304": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E4"]}]},
+    "FR-305": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E4"]}]},
+    "FR-306": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E5"]}]},
+    "DR-301": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E1", "E5"]}]},
+    "TR-301": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E2", "E3"]}]},
+    "TR-302": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E4"]}]},
+    "IR-301": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E2"]}]},
+    "IR-302": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E2", "E5"]}]},
+    "NFR-301": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E3", "E5"]}]},
+    "NFR-302": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E1", "E5"]}]},
+    "NFR-303": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E1", "E3"]}]},
+    "SC-301": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E1"]}]},
+    "SC-302": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E3"]}]},
+    "SC-303": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E4"]}]},
+    "SC-304": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E5"]}]}
+  },
+  "tracked_id_families": ["US", "FR", "DR", "TR", "IR", "NFR", "SC"]
+}

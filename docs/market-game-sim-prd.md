@@ -1,13 +1,13 @@
 # MarketGameSim 产品需求文档
 
-**文档版本**：0.4.2（**H1 规格启动**）<br>
+**文档版本**：0.5.0（**H2 规格启动**）<br>
 **状态**：Active<br>
-**创建日期**：2026-07-28　**更新日期**：2026-09-01<br>
-**产品阶段**：v0.1、v0.2 H1 已签收<br>
+**创建日期**：2026-07-28　**更新日期**：2026-09-04<br>
+**产品阶段**：v0.1、v0.2 H1 已签收；v0.3 H2 规格草案<br>
 **项目原则**：[`docs/SOP.md`](SOP.md)（唯一入口，含安全与合规边界 §4）  
-**当前规格**：[`docs/features/0.2/spec.md`](features/0.2/spec.md)；
-[`v0.2.1 H1 手动交易沙盒`](features/0.2/0.2.1-interactive-sandbox/spec.md)<br>
-**已签收规格**：[`docs/features/0.1/spec.md`](features/0.1/spec.md)<br>
+**当前规格**：[`docs/features/0.3/spec.md`](features/0.3/spec.md)；
+[`v0.3.1 H2 人在环崩盘反馈实验`](features/0.3/0.3.1-human-in-the-loop-experiment/spec.md)<br>
+**已签收规格**：[`v0.1`](features/0.1/spec.md)、[`v0.2`](features/0.2/spec.md)<br>
 **方法论说明**：[`docs/research/methodology.md`](research/methodology.md)　
 **指标字典**：[`docs/research/metrics-dictionary.md`](research/metrics-dictionary.md)
 
@@ -423,8 +423,9 @@ v0.1 已完成 R1—R5 并于 2026-08-30 正式签收。当前可见交付包括
 [正式总结报告](experiments/0.1.5-flagship-report.md)、
 [代表性离线回放](experiments/0.1.5-representative-replay.html)、
 [正式证据索引](experiments/0.1.5-evidence-index.json)与
-[版本签收记录](features/releases/0.1.md)。下一开发动作是建立 v0.2.1 H1 手动交易沙盒的
-Feature 三件套；在规格通过评审前不开始实现。
+[版本签收记录](features/releases/0.1.md)。H1 手动交易沙盒亦已签收；当前下一动作是评审并
+冻结 [`v0.3.1 H2`](features/0.3/0.3.1-human-in-the-loop-experiment/spec.md) 的研究协议，
+在开放问题关闭、preview 与适用伦理/同意确认通过前不采集正式样本。
 
 ### v0.1 用户可见成果门
 
@@ -553,6 +554,12 @@ H1 是 v0.2.1 的第一个 Feature，不在 v0.1 签收路径上，其 24–40 �
 
 H1 交付后，才能冻结独立的人在环协议并开始 H2 正式实验。H2 必须声明
 随机分组、信息权限、操作窗口、学习/疲劳效应与排除规则，且不与纯代理样本合并统计。
+
+H2 的旗舰问题是：在无外生基本面冲击的合成永续市场中，以真实人类交易者替换一个目标
+驱动代理，是否会改变价格崩盘、流动性枯竭与强平连锁的发生和严重程度；若发生改变，该
+效应是否与人类的激进订单、流动性撤回或风险减仓行为相一致？控制条件采用同配置、同种子
+的冻结纯代理反事实，三个结果家族保持分立。完整识别边界与验收见
+[`v0.3.1 spec`](features/0.3/0.3.1-human-in-the-loop-experiment/spec.md)。
 
 ### v0.3+：交互产品扩展
 
