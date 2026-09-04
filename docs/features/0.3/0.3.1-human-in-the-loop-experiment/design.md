@@ -87,6 +87,11 @@ Paired pure-agent runner --------------------+-> pair validator
 - `adjudication.jsonl`：按冻结 reason code 记录 included/excluded/withdrawn，保留裁决时间和依据。
 - evidence index：只列纳入 pair 及协议哈希，不复制身份资料。
 
+H2 预注册采用双层机器门：`docs/experiments/H2-preregistration.md` 进入现有
+`validate_preregistrations`，校验研究问题、参数归属和冻结字段不缺项；H2 `protocol.json`
+schema 校验参与者、assignment、窗口、停止、排除和分析的可执行字段。两者通过同一内容哈希
+交叉绑定，任一缺失或漂移均不得 freeze。T904/T916 必须为两层门禁各提供失败与通过用例。
+
 事件 header 的兼容修改必须提升 schema 版本；旧 `interactive` 和 v0.1 事件保持可读，但默认
 不补填 H2 字段且不能通过 H2 guard。具体 schema 版本在 DQ-301 关闭后冻结。
 

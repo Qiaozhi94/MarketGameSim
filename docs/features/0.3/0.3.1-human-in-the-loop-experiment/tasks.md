@@ -37,7 +37,8 @@ updated: 2026-09-04
       `DQ-302`, `DQ-303`, `DQ-304`, `DQ-305`): 关闭全部阻塞研究与设计问题 — verify:
       `spec.md`、`design.md`
 - [ ] T902 (`FR-301`, `NFR-302`, `SC-301`): 完成协议、功效/停止规则、同意/隐私和适用伦理
-      审查，并取得可审计签字 — verify: `docs/experiments/H2-protocol.md`
+      审查，并取得可审计签字 — verify: `docs/experiments/H2-preregistration.md`、
+      `python tools/validate_spec_lifecycle.py`
 - [ ] T903 (`FR-301`, `NFR-301`, `AC-301`): 验证 v0.2.1、事件/指标合同与目标代理配置可支持
       唯一差异配对 — verify: `tests/unit/experiment/test_h2_protocol.py`
 
@@ -46,7 +47,7 @@ updated: 2026-09-04
 ### Phase 1：H2-A 冻结协议与配对运行骨架
 
 - [ ] T904 (`FR-301`, `DR-301`, `AC-301`): 实现 protocol schema、完整性校验、内容哈希与不可变
-      冻结 — verify: `tests/unit/experiment/test_h2_protocol.py`
+      冻结，并与仓库预注册门交叉绑定 — verify: `tests/unit/experiment/test_h2_protocol.py`
 - [ ] T905 [P] (`DR-301`, `IR-301`, `AC-308`): 实现匿名 enrollment、同意/资格/理解检查和撤回状态
       — verify: `tests/unit/experiment/test_h2_privacy.py`
 - [ ] T906 (`FR-301`, `IR-301`, `NFR-303`, `AC-304`): 实现预签发 assignment、seed/scenario
@@ -84,7 +85,8 @@ updated: 2026-09-04
 ### Phase 3：H2-C 正式采样与研究交付
 
 - [ ] T916 (`FR-301`, `SC-301`, `AC-301`): 冻结最终预注册、分析代码、协议哈希与分配表，并在
-      首个正式样本前归档时间证据 — verify: `tests/unit/experiment/test_h2_protocol.py`
+      首个正式样本前归档时间证据；预注册文档门和 protocol schema 门须同时通过 — verify:
+      `tests/unit/experiment/test_h2_protocol.py`、`python tools/validate_spec_lifecycle.py`
 - [ ] T917 (`US-301`, `FR-302`, `NFR-302`, `NFR-303`, `AC-304`, `AC-308`): 按冻结协议完成
       参与者训练、正式会话、配对控制与结果盲裁决，直至停止规则满足 — verify:
       `tests/integration/test_h2_paired_runs.py`
