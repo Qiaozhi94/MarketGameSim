@@ -94,12 +94,16 @@ Paired pure-agent runner --------------------+-> pair validator
 
 ### API / CLI / Adapter Contract
 
-计划入口：
+计划统一沿用仓库的 `python -m` 入口；除非 DQ-302 显式增加 `[project.scripts]`，不得在文档
+或交付说明中使用不存在的 `market-game-sim` console script：
 
-- `protocol validate|freeze <path>`：验证完整性并生成内容哈希，只允许从 draft 产生新冻结版。
-- `experiment enroll|train|assign|run|withdraw`：每步要求上一状态的不可伪造引用。
-- `experiment control-pair <assignment>`：从 assignment 生成冻结纯代理运行。
-- `experiment preview|adjudicate|analyze|deliver`：阶段严格分离，正式命令只读冻结 index。
+- `python -m market_game_sim.experiment protocol validate|freeze <path>`：验证完整性并生成内容哈希，
+  只允许从 draft 产生新冻结版。
+- `python -m market_game_sim.experiment enroll|train|assign|run|withdraw`：每步要求上一状态的
+  不可伪造引用。
+- `python -m market_game_sim.experiment control-pair <assignment>`：从 assignment 生成冻结纯代理运行。
+- `python -m market_game_sim.experiment preview|adjudicate|analyze|deliver`：阶段严格分离，正式命令
+  只读冻结 index。
 
 错误码至少区分协议未冻结/漂移、assignment 不匹配、窗口关闭、阶段非法、pair 漂移、技术
 中止、撤回和证据不合格。接口名与 payload 待 DQ-302 冻结。
@@ -249,7 +253,7 @@ preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失
 
 #### DQ-302：CLI、API 与对象 schema
 
-- 建议统一为 `market-game-sim experiment` 命令族，下设 `protocol validate/freeze`、
+- 建议统一为 `python -m market_game_sim.experiment` 命令族，下设 `protocol validate/freeze`、
   `enroll`、`train`、`assign`、`run`、`withdraw`、`adjudicate`、`analyze` 和 `deliver`。
 - 采用 protocol、participant、assignment、session-manifest、adjudication、evidence-index
   六类版本化 JSON schema。正式写入必须绑定协议哈希、原子落盘；分析只能读取显式冻结的
