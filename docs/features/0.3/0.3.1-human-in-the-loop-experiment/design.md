@@ -147,14 +147,14 @@ Paired pure-agent runner --------------------+-> pair validator
 
 | 验收项 | 测试层级 | 计划文件 / 场景 | 关键断言 |
 |---|---|---|---|
-| `AC-301` | unit / contract | `tests/experiment/test_protocol.py` | 完整冻结、漂移新哈希、旧 assignment 拒绝 |
+| `AC-301` | unit / contract | `tests/unit/experiment/test_h2_protocol.py` | 完整冻结、漂移新哈希、旧 assignment 拒绝 |
 | `AC-302` | integration / UI | `tests/integration/test_experiment_session.py` | 有限窗口、超时、无特权控制 |
-| `AC-303` | integration | `tests/experiment/test_evidence_guard.py` | 模式/阶段/协议/pair 拒绝且零部分输出 |
-| `AC-304` | integration | `tests/experiment/test_paired_runs.py` | 账户/资金/代理集合相同、唯一差异、控制复现、处理重放 |
-| `AC-305` | unit / research | `tests/experiment/test_outcomes.py` | 三家族、双侧区间、多重性、无综合分数 |
-| `AC-306` | unit / integration | `tests/experiment/test_mechanisms.py` | 三机制及完整因果追溯 |
+| `AC-303` | integration | `tests/integration/test_h2_evidence_guard.py` | 模式/阶段/协议/pair 拒绝且零部分输出 |
+| `AC-304` | integration | `tests/integration/test_h2_paired_runs.py` | 账户/资金/代理集合相同、唯一差异、控制复现、处理重放 |
+| `AC-305` | unit / research | `tests/unit/experiment/test_h2_outcomes.py` | 三家族、双侧区间、多重性、无综合分数 |
+| `AC-306` | unit / integration | `tests/unit/experiment/test_h2_mechanisms.py`、`tests/integration/test_h2_mechanisms.py` | 三机制及完整因果追溯 |
 | `AC-307` | E2E / research | `tests/integration/test_h2_delivery.py` | index-only 重建、哈希与结论语法 |
-| `AC-308` | contract / manual | `tests/experiment/test_privacy.py` | PII 拒绝、阶段提示、撤回政策 |
+| `AC-308` | contract / manual | `tests/unit/experiment/test_h2_privacy.py`、`tests/integration/test_experiment_session.py` | PII 拒绝、阶段提示、撤回政策 |
 
 preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失 pair、断线和撤回路径；正式研究
 结果不作为单元测试 fixture 提交。真实参与者 pilot 的验收记录仅标为 `experiment-preview`。
