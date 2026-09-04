@@ -10,7 +10,7 @@ topics:
   - formal-research
 doc_kind: tasks
 created: 2026-09-04
-updated: 2026-09-04
+updated: 2026-09-05
 ---
 
 # 0.3.1：H2 人在环崩盘反馈实验 - 任务

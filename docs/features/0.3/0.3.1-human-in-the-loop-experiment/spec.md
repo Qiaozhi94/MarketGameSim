@@ -9,7 +9,7 @@ research_claim_required: true
 evidence_class: formal-research
 gate_version: 1
 created: 2026-09-04
-updated: 2026-09-04
+updated: 2026-09-05
 prerequisites:
   - 0.2.1
 ---
