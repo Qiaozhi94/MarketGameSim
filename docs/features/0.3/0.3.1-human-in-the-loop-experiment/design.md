@@ -27,7 +27,7 @@ updated: 2026-09-05
 - **上游 Contract**：[`event-schema`](../../../contracts/event-schema.md)、
   [`agent-strategy`](../../../contracts/agent-strategy.md)、
   [`interactive-session`](../../../contracts/interactive-session.md)。
-- **实现约束**：复用唯一市场内核；H1 `interactive` 保持隔离；正式实验在 Q-301—Q-307、
+- **实现约束**：复用唯一市场内核；H1 `interactive` 保持隔离；正式实验在 Q-301—Q-308、
   DQ-301—DQ-305 全部关闭、preview 通过和协议冻结前不可采样。
 
 ## 1. 技术概要与影响面
