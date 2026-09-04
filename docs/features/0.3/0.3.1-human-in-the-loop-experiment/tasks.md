@@ -92,7 +92,8 @@ updated: 2026-09-05
       `tests/unit/experiment/test_h2_protocol.py`、`python tools/validate_spec_lifecycle.py`
 - [ ] T917 (`US-301`, `FR-302`, `NFR-302`, `NFR-303`, `AC-304`, `AC-308`): 按冻结协议完成
       参与者训练、正式会话、配对控制与结果盲裁决，按冻结 owner、目标日期与招募台账推进
-      直至停止规则满足；若资源窗口结束仍不足，保留审计样本流但不得进入声明或版本收口 — verify:
+      直至停止规则满足；若资源窗口结束仍不足，由本任务写出 `incomplete-study` 非证据样本流，
+      不得进入 T918、研究声明或版本收口 — verify:
       `tests/integration/test_h2_paired_runs.py`
 - [ ] T918 (`FR-303`, `IR-302`, `SC-302`, `AC-303`, `AC-304`): 冻结只含完整合格 pair 的 H2
       evidence index 和样本流图 — verify: `tests/integration/test_h2_evidence_guard.py`
