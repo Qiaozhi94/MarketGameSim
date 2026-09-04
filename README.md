@@ -27,7 +27,7 @@
 
 ## 当前规格
 
-- [`docs/features/0.2/`](docs/features/0.2/README.md)：H1 手动交易沙盒，当前为 draft。
+- [`docs/features/0.2/`](docs/features/0.2/README.md)：已签收的 H1 手动交易沙盒。
   - `spec.md` 版本需求　`design.md` 跨里程碑约束　`traceability.json` 需求归属
   - `0.2.1-interactive-sandbox/`：观察、下单、撤单、输入重放与研究证据隔离
 - [`docs/features/0.1/`](docs/features/0.1/README.md)：已签收的含杠杆与强制平仓市场实验环境，
@@ -139,3 +139,23 @@ conversations/        AI 对话存档与复盘
 ```bash
 python tools/verify.py
 ```
+
+## 本地手动交易沙盒（H1-B）
+
+Phase 2 客户端只绑定 loopback，使用合成市场和模拟资金：
+
+```bash
+python -m market_game_sim.interactive.client
+```
+
+然后打开 `http://127.0.0.1:8765`。界面支持限价/市价下单、撤单、暂停、继续、单步、
+账户与保证金审查；结果不构成交易建议，也不会进入正式研究证据。
+
+代表性交互成果包可用单命令生成：
+
+```bash
+python -m market_game_sim.interactive.delivery
+```
+
+生成与查看说明见 [`docs/experiments/interactive-H1.md`](docs/experiments/interactive-H1.md)；
+成果生成后可离线打开其中的 `replay.html`。

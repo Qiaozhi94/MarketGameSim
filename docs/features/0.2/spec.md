@@ -2,7 +2,7 @@
 kind: version-spec
 id: v0.2-interactive-market-sandbox
 version: "0.2"
-status: draft
+status: done
 research_claim_status: not-applicable
 research_claim_required: false
 evidence_class: engineering-demonstration

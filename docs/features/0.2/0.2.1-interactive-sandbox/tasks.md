@@ -60,39 +60,39 @@ updated: 2026-09-04
 
 ### Phase 2：H1-B 本地交易界面
 
-- [ ] T808 (`FR-203`, `IR-201`, `TR-202`, `AC-003`): 将人类限价/市价下单与撤单接入现有
+- [x] T808 (`FR-203`, `IR-201`, `TR-202`, `AC-003`): 将人类限价/市价下单与撤单接入现有
       决策、准入、撮合、账本和风险生产路径，覆盖接受/拒绝及批量订单 — verify:
       `tests/integration/test_human_order_path.py`
-- [ ] T809 (`FR-207`, `UX-201`, `UX-202`, `UX-203`, `AC-007`): 实现选定本地客户端的市场、
+- [x] T809 (`FR-207`, `UX-201`, `UX-202`, `UX-203`, `AC-007`): 实现选定本地客户端的市场、
       账户、订单、输入结果、会话控制和边界提示视图 — verify:
       `tests/integration/test_interactive_client.py`
-- [ ] T810 (`FR-204`, `IR-202`, `NFR-202`, `AC-004`): 接通客户端控制、幂等键、断开与终态
+- [x] T810 (`FR-204`, `IR-202`, `NFR-202`, `AC-004`): 接通客户端控制、幂等键、断开与终态
       行为，验证没有半提交和终态复活 — verify: `tests/integration/test_interactive_control.py`
-- [ ] T811 `[成果门:H1-B]` (`AC-003`, `AC-004`, `AC-007`): 用固定演示配置完成观察、合法下单、
+- [x] T811 `[成果门:H1-B]` (`AC-003`, `AC-004`, `AC-007`): 用固定演示配置完成观察、合法下单、
       拒单、撤单与账户审查的本地闭环，标记为 `interactive + engineering-demonstration` —
       verify: `tests/integration/test_interactive_user_journey.py`
 
 ### Phase 3：H1-C 重放与交付包
 
-- [ ] T812 (`FR-205`, `TR-201`, `TR-202`, `IR-203`, `AC-005`): 增加跨进程双次重放及输入
+- [x] T812 (`FR-205`, `TR-201`, `TR-202`, `IR-203`, `AC-005`): 增加跨进程双次重放及输入
       篡改、截断、重复幂等键反例 — verify: `tests/integration/test_interactive_replay.py`
-- [ ] T813 (`FR-208`, `TR-203`, `IR-203`, `AC-008`): 生成 RUN、manifest、输入日志、事件日志
+- [x] T813 (`FR-208`, `TR-203`, `IR-203`, `AC-008`): 生成 RUN、manifest、输入日志、事件日志
       与离线 replay 的同源成果包，并校验全部内容哈希 — verify:
       `tests/integration/test_interactive_bundle.py`
-- [ ] T814 (`NFR-202`, `NFR-204`, `AC-007`, `AC-008`): 验证 Windows 本机启动、客户端断开、
+- [x] T814 (`NFR-202`, `NFR-204`, `AC-007`, `AC-008`): 验证 Windows 本机启动、客户端断开、
       日志写入失败、断网回放和 stable abort 行为 — verify:
       `tests/integration/test_interactive_failure_paths.py`
-- [ ] T815 `[成果门:H1-C]` (`AC-005`, `AC-006`, `AC-007`, `AC-008`): 单命令交付代表性 H1 包，
+- [x] T815 `[成果门:H1-C]` (`AC-005`, `AC-006`, `AC-007`, `AC-008`): 单命令交付代表性 H1 包，
       从 README 两次点击内可达并在新进程确定性重放，标记为
       `interactive + engineering-demonstration` — verify: `tests/integration/test_interactive_delivery.py`
 
 ## 3. 验证与验收任务
 
-- [ ] T816 (`AC-001`—`AC-008`): 运行交互单元、集成、客户端与跨进程测试，逐项回填 AC 的
+- [x] T816 (`AC-001`—`AC-008`): 运行交互单元、集成、客户端与跨进程测试，逐项回填 AC 的
       真实测试路径 — verify: `tests/unit/interactive/`、`tests/integration/`
-- [ ] T817 (`E5`): 运行唯一质量门并保存 H1-C 验证记录 — verify:
+- [x] T817 (`E5`): 运行唯一质量门并保存 H1-C 验证记录 — verify:
       `python tools/verify.py`
-- [ ] T818 `[状态门]`: 核对 E1—E5、成果包、交互证据隔离与回归测试后，回写里程碑和版本
+- [x] T818 `[状态门]`: 核对 E1—E5、成果包、交互证据隔离与回归测试后，回写里程碑和版本
       状态；H1 不建立研究声明 — verify: `python tools/validate_spec_lifecycle.py`
 
 ## 4. 依赖与并行关系
