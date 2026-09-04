@@ -40,7 +40,10 @@ updated: 2026-09-04
 - 前端：实验专用阶段、同意/训练、倒计时、退出和技术中止状态；移除正式态 pause/step。
 - 后端 / API：协议冻结、匿名 enrollment、assignment、窗口控制和样本裁决。
 - 存储 / Migration：文件型 protocol/assignment/session/evidence artifact；不引入数据库。
-- Runtime / Agent Adapter：一个目标代理插槽切换为规范人类输入；其余路径不变。
+- Runtime / Agent Adapter：新增 H2 专用目标插槽替换适配器；目标代理仍保留在冻结
+  `agent_specs` 与账户集合中，但正式处理运行禁用其策略决策入口，由规范人类输入接管同一
+  `agent_id`、账户、初始资金、杠杆与风险参数。`human-experiment` 禁止沿用 H1
+  `extra_accounts["human"]` 的新增账户路径；撮合、账本、保证金和强平生产路径保持不变。
 - Event / Evidence：新 `human-experiment` mode、sample stage、协议/pair 元数据与独立 guard。
 - 文档 / 配置：预注册、数据字典、运行手册、同意/保留政策和正式报告。
 
@@ -61,6 +64,8 @@ Paired pure-agent runner --------------------+-> pair validator
 - `protocol` 是研究设计唯一真相源，冻结后内容寻址且不可原地修改。
 - `assignment` 在采样前决定参与者、seed block、顺序和目标代理，不读取运行结果。
 - `experiment session controller` 只负责窗口、状态和输入规范化，不复制撮合/风控业务逻辑。
+- `target-slot adapter` 只替换冻结目标插槽的决策生产者，不新增或删除账户；处理与控制运行的
+  账户集合、初始资金总量、背景 `agent_specs` 和制度配置必须逐字段相同。
 - `pair validator` 比较冻结字段白名单，处理字段只允许 `decision_source` 及其派生输入不同。
 - `analysis` 只读取冻结 evidence index，不扫描 artifact 目录自动挑样本。
 - 身份/联系信息由研究流程外部保管，本仓库仅处理不可直接识别的研究假名。
@@ -137,7 +142,7 @@ Paired pure-agent runner --------------------+-> pair validator
 | `AC-301` | unit / contract | `tests/experiment/test_protocol.py` | 完整冻结、漂移新哈希、旧 assignment 拒绝 |
 | `AC-302` | integration / UI | `tests/integration/test_experiment_session.py` | 有限窗口、超时、无特权控制 |
 | `AC-303` | integration | `tests/experiment/test_evidence_guard.py` | 模式/阶段/协议/pair 拒绝且零部分输出 |
-| `AC-304` | integration | `tests/experiment/test_paired_runs.py` | 唯一差异、控制复现、处理重放 |
+| `AC-304` | integration | `tests/experiment/test_paired_runs.py` | 账户/资金/代理集合相同、唯一差异、控制复现、处理重放 |
 | `AC-305` | unit / research | `tests/experiment/test_outcomes.py` | 三家族、双侧区间、多重性、无综合分数 |
 | `AC-306` | unit / integration | `tests/experiment/test_mechanisms.py` | 三机制及完整因果追溯 |
 | `AC-307` | E2E / research | `tests/integration/test_h2_delivery.py` | index-only 重建、哈希与结论语法 |
