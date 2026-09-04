@@ -72,6 +72,8 @@ Paired pure-agent runner --------------------+-> pair validator
   账户集合、初始资金总量、背景 `agent_specs` 和制度配置必须逐字段相同。
 - `pair validator` 比较冻结字段白名单，处理字段只允许 `decision_source` 及其派生输入不同。
 - `analysis` 只读取冻结 evidence index，不扫描 artifact 目录自动挑样本。
+- 三类机制指标的规范定义只写入 `docs/research/metrics-dictionary.md`；protocol 保存字典版本与
+  指标 ID，分析器不得复制公式或按本地实现重新解释口径。
 - 身份/联系信息由研究流程外部保管，本仓库仅处理不可直接识别的研究假名。
 
 ## 3. 数据模型与 Migration
