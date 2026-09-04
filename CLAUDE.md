@@ -5,9 +5,10 @@
 - **不可违反原则**唯一入口：[`docs/SOP.md`](docs/SOP.md)（含各原则唯一拥有者链接）。
 - 规格与生命周期规则：[`docs/features/README.md`](docs/features/README.md)。
 - 全仓文档所有权地图：[`docs/README.md`](docs/README.md)。
-- 当前 v0.2 规格真源：[`docs/features/0.2/spec.md`](docs/features/0.2/spec.md)；H1 里程碑：
-  [`docs/features/0.2/0.2.1-interactive-sandbox/spec.md`](docs/features/0.2/0.2.1-interactive-sandbox/spec.md)。
-- 已签收 v0.1：[`docs/features/releases/0.1.md`](docs/features/releases/0.1.md)。
+- 当前 v0.3 规格真源：[`docs/features/0.3/spec.md`](docs/features/0.3/spec.md)；H2 里程碑：
+  [`docs/features/0.3/0.3.1-human-in-the-loop-experiment/spec.md`](docs/features/0.3/0.3.1-human-in-the-loop-experiment/spec.md)。
+- 已签收 v0.1、v0.2：[`v0.1`](docs/features/releases/0.1.md)、
+  [`v0.2`](docs/features/releases/0.2.md)。
 
 ## 提交前必须本地跑通
 

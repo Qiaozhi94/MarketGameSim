@@ -27,6 +27,8 @@
 
 ## 当前规格
 
+- [`docs/features/0.3/`](docs/features/0.3/README.md)：H2 人在环崩盘反馈实验草案。
+  - `0.3.1-human-in-the-loop-experiment/`：配对纯代理反事实、受控人类替换、三类结果与机制分析
 - [`docs/features/0.2/`](docs/features/0.2/README.md)：已签收的 H1 手动交易沙盒。
   - `spec.md` 版本需求　`design.md` 跨里程碑约束　`traceability.json` 需求归属
   - `0.2.1-interactive-sandbox/`：观察、下单、撤单、输入重放与研究证据隔离
@@ -89,7 +91,7 @@ ADR-001—004、007—009，其决策要点并入 v0.1 规格的「设计决策�
 
 | 编号 | 例子 | 含义 | 谁来推进 |
 |---|---|---|---|
-| **规格 ID** | `v0.1-belief-testing-laboratory` | 一份规格的目录名与稳定标识 | 提出新研究问题时新开 `v0.2-…` |
+| **规格 ID** | `v0.3-human-in-the-loop-crash-experiment` | 一份规格的目录名与稳定标识 | 提出新研究问题时新开版本规格 |
 | **里程碑 ID** | `0.1.1`—`0.1.4` | 规格 v0.1 **内部的实现阶段**，是章节号 | 规格拆分时确定，不随代码变 |
 | **包版本** | `pyproject.toml` 的 `0.1.0` | 发布物的 SemVer | 首次可运行发布时才推进 |
 | **Schema 版本** | `schema_version = 2` | 事件日志格式版本 | 首次正式运行后，任何字段变更都须提升 |

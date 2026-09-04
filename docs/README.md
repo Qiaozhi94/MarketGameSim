@@ -14,7 +14,7 @@
 | 长期架构决策（ADR） | [`docs/decisions/`](decisions/000-template.md) |
 | Feature/里程碑行为与状态 | 对应 `spec.md`（见 [`docs/features/README.md`](features/README.md)） |
 | Feature/里程碑实现方案 | 对应 `design.md`（见 [`docs/features/README.md`](features/README.md)） |
-| requirement owner 与 exit | [`docs/features/0.1/traceability.json`](features/0.1/traceability.json) |
+| requirement owner 与 exit | 对应版本的 `traceability.json`（当前为 [`v0.3`](features/0.3/traceability.json)） |
 | 开发纪律与质量门 | [`docs/SOP.md`](SOP.md) |
 | 当前项目入口和强提醒 | [`CLAUDE.md`](../CLAUDE.md) |
 | 实验协议与结果索引 | [`docs/experiments/`](experiments/experiment-template.md) |
