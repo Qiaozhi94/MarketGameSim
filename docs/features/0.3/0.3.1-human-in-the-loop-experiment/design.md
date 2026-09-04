@@ -61,7 +61,11 @@ Paired pure-agent runner --------------------+-> pair validator
                           outcomes + mechanisms + report/replay
 ```
 
-- `protocol` 是研究设计唯一真相源，冻结后内容寻址且不可原地修改。
+- H2 冻结协议计划放在 `src/market_game_sim/experiment/h2/protocol.py`；它拥有参与者、分配、
+  窗口、停止和分析预注册，不替代既有 `experiment/protocol.py` 的三区运行约束，也不替代
+  `experiment/stress_protocol.py` 的外生压力合同。共享内容寻址工具可以抽取复用，但三类
+  protocol 的 schema、错误码和 evidence guard 不得互相冒充。
+- H2 `protocol` 是本研究设计唯一真相源，冻结后内容寻址且不可原地修改。
 - `assignment` 在采样前决定参与者、seed block、顺序和目标代理，不读取运行结果。
 - `experiment session controller` 只负责窗口、状态和输入规范化，不复制撮合/风控业务逻辑。
 - `target-slot adapter` 只替换冻结目标插槽的决策生产者，不新增或删除账户；处理与控制运行的
