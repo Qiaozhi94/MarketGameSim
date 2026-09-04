@@ -128,6 +128,10 @@ schema 校验参与者、assignment、窗口、停止、排除和分析的可执
 - 客户端输入带 `window_id + input_seq`；控制器只在窗口开放、未提交时接受一次规范决定。
 - 窗口关闭与输入到达竞争由服务器提交顺序裁决并记录；迟到输入稳定拒绝，不回拨逻辑时间。
 - 控制运行可预生成，但必须使用与处理运行相同的冻结代码/config/seed；代码变化使 pair 失效。
+- 背景代理随机数继续使用既有语义键
+  `(master_seed, agent_id, mechanism, decision_index, draw_index)`；禁止改成跨代理共享的可变
+  计数器。pair manifest 绑定 RNG contract 版本，确保替换目标插槽不会仅因抽样游标错位改变
+  其他代理的随机流；由处理引起的观察和调度路径分叉仍属于合法处理效应。
 - 首个正式样本前随 assignment 一并签发有序备用 seed/pair 池。技术补跑只能按冻结顺序消耗
   下一个备用项；对应纯代理控制须在处理结果对 assignment/adjudication 不可见时生成并锁定。
   原 seed/pair 不得复用，备用项的启用和未启用状态都进入样本流图。
