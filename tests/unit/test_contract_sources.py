@@ -624,6 +624,17 @@ def test_h2_control_policies_cannot_collapse_to_one_instance():
         assert "记录主对照选择依据" in text, f"{doc} 未要求记录主对照选择依据"
 
 
+def test_h2_control_arm_cli_uses_the_schema_enum():
+    """CLI、协议 schema 与任务必须共享改名后的 control-arm 闭集。"""
+    design = (ROOT / H2_CONTROL_CONTRACT_DOCS[1]).read_text(encoding="utf-8")
+    tasks = (ROOT / H2_CONTROL_CONTRACT_DOCS[2]).read_text(encoding="utf-8")
+    assert "`--arm window-matched|goal`" in design
+    assert "`--arm aligned|goal`" not in design
+    enum_contract = r"`control_arm` 闭集为\s+`window-matched \| goal`"
+    assert re.search(enum_contract, design)
+    assert re.search(enum_contract, tasks)
+
+
 def test_h2_retrospective_preserves_nonadoption_dispositions():
     """忽略的 CURRENT/FIX-log 即使被误删，裁决理由也必须在 Git 历史中有无损兜底。"""
     retrospective = (ROOT / "docs" / "reviews" / "RETROSPECTIVE.md").read_text(encoding="utf-8")

@@ -114,7 +114,8 @@ schema 校验参与者、assignment、窗口、停止、排除和分析的可执
 - `python -m market_game_sim.experiment enroll|train|assign|run|withdraw`：每步要求上一状态的
   不可伪造引用。
 - `python -m market_game_sim.experiment control-pair <assignment>`：从 assignment 生成两条冻结纯代理
-  运行（`--arm aligned|goal`，默认两条都生成）。
+  运行（`--arm window-matched|goal`，默认两条都生成）。协议 schema 的 `control_arm` 闭集为
+  `window-matched | goal`；CLI 直接复用该枚举，不维护第二套名称映射。
 - `python -m market_game_sim.experiment preview|adjudicate|analyze|deliver`：阶段严格分离，正式命令
   只读冻结 index。
 
