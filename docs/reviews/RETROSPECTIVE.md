@@ -1003,3 +1003,38 @@ Q-308 关闭后拦截数由 13 降为 12 且其余 Q/DQ 仍被拦（门禁没被
 
 **3. 忽略文件没有 Git 兜底。** 用户要求保留时，即使 CI 全绿也不得套用默认清理步骤；关键裁决
 必须同时进入 RETROSPECTIVE，过程稿则持续留在固定文件名下。
+
+---
+
+## 循环 23: 0.3.1 Q-308 比较合同收敛复核
+
+- **report_type**: doc-review
+- **周期**: 2026-09-05（round 3 diff-only 复检 → 逐条修复 → round 4 diff-only 修复回归复核）
+- **基线**: `18bcea1` → `603cb7c`（最终总结提交另计）
+- **收尾状态**: 7 条全部 fixed；未决 Critical / High / Medium / Low = 0 / 0 / 0 / 0；
+  CURRENT/FIX-log 按用户要求持续保留
+- **本地门禁**: `python tools/verify.py`，2333 passed；真源、生命周期、ruff check、ruff format 全绿；
+  当前 HEAD 的远端 CI 待推送后确认
+
+### 完整 issue 表
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复建议 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| goal-agent-control-scheduler-undefined | 次要对照的调度合同未定义 | High | correctness | 根因 | 修复回归 | fixed | 明确次要对照是否共享有限窗口 | 三条件统一有限窗口；次要对照只保留方向性策略差异 | test_h2_secondary_control_uses_the_shared_window_scheduler | 3 | 4 | comparator-contract-underspecified |
+| sole-difference-wording-contradicts-matrix | “唯一差异”与目标差异矩阵冲突 | Medium | correctness | 根因 | 修复回归 | fixed | 按比较矩阵验证相同项并披露差异项 | AC、设计和任务统一为逐字段矩阵合同 | test_h2_pair_contract_uses_the_declared_difference_matrix | 3 | 4 | cross-document-contract-drift |
+| us301-not-synced-with-new-comparator | US-301 仍使用旧替换效应口径 | Medium | correctness | 根因 | 修复回归 | fixed | 同步用户场景与独立测试 | 改为人类相对预注册参照策略及比较矩阵 | test_h2_us301_uses_the_registered_reference_policy | 3 | 4 | partial-symmetric-fix |
+| two-controls-may-collapse | 两条对照可能退化为同一实例 | Medium | correctness | 根因 | 首次实现 | fixed | 要求策略 ID/参数不同并记录选择依据 | 三件套冻结区分判据和主对照事前依据 | test_h2_control_policies_cannot_collapse_to_one_instance | 3 | 4 | comparator-contract-underspecified |
+| control-arm-cli-name-drift | CLI 仍使用废弃 aligned arm | Medium | correctness | 症状 | 修复回归 | fixed | CLI 与 schema 共享闭集枚举 | 统一为 window-matched/goal 且不保留别名 | test_h2_control_arm_cli_uses_the_schema_enum | 3 | 4 | cross-document-contract-drift |
+| fr301-paragraph-indentation | FR-301 正文局部缩进 | Low | quality | 症状 | 修复回归 | fixed | 移除两空格缩进 | 连续正文归零缩进并增加段落断言 | test_h2_fr301_prose_has_no_accidental_indentation | 3 | 4 | — |
+| fr301-scenario-stale-difference-language | FR-301 场景仍使用“非处理字段” | Medium | correctness | 症状 | 修复回归 | fixed | 失败场景改用矩阵语义 | 拒绝相同项漂移或差异项漏报 | test_h2_pair_contract_uses_the_declared_difference_matrix | 4 | 4 | partial-symmetric-fix |
+
+### 模式教训
+
+**1. comparator 改名必须覆盖调度、CLI、场景和任务。** 本循环 7 条里 6 条来自前轮修复，说明只改
+主问题与分析式会留下大量相邻合同漂移；跨文档测试现已覆盖三件套的闭集名称与关键不变量。
+
+**2. “唯一差异”不能代替比较矩阵。** 人类任务/激励和策略内部目标本来就不同；可执行合同应
+逐字段声明哪些必须相同、哪些允许不同并必须披露，失败场景也必须复用同一语义。
+
+**3. 修复自伤率需要 round 4 才能看见。** 6 条原 finding 修复后，diff-only 又找到 1 条旧场景
+措辞；该项同轮补入既有矩阵门禁，没有继续全量重读或扩散范围。
