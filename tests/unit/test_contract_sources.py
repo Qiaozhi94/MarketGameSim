@@ -586,6 +586,22 @@ def test_h2_secondary_control_uses_the_shared_window_scheduler():
     assert "两条纯代理对照均受同一有限窗口调度器约束" in tasks
 
 
+def test_h2_pair_contract_uses_the_declared_difference_matrix():
+    """验收只能锁定矩阵相同项，不能与目标差异行互相否定。"""
+    spec = (ROOT / H2_CONTROL_CONTRACT_DOCS[0]).read_text(encoding="utf-8")
+    design = (ROOT / H2_CONTROL_CONTRACT_DOCS[1]).read_text(encoding="utf-8")
+    tasks = (ROOT / H2_CONTROL_CONTRACT_DOCS[2]).read_text(encoding="utf-8")
+    assert "唯一预定差异为决策" not in spec
+    assert "降低市场路径噪声并明确唯一差异" not in spec
+    assert "只允许 `decision_source` 及其派生输入不同" not in design
+    assert "唯一差异为决策来源" not in design
+    assert "唯一差异配对" not in tasks
+    required = "比较矩阵中标为“相同”的字段逐字段一致"
+    assert required in spec
+    assert required in design
+    assert required in tasks
+
+
 def test_h2_retrospective_preserves_nonadoption_dispositions():
     """忽略的 CURRENT/FIX-log 即使被误删，裁决理由也必须在 Git 历史中有无损兜底。"""
     retrospective = (ROOT / "docs" / "reviews" / "RETROSPECTIVE.md").read_text(encoding="utf-8")

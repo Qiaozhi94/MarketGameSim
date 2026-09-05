@@ -71,9 +71,10 @@ Paired pure-agent runner --------------------+-> pair validator
 - `experiment session controller` 只负责窗口、状态和输入规范化，不复制撮合/风控业务逻辑。
 - `target-slot adapter` 只替换冻结目标插槽的决策生产者，不新增或删除账户；处理与控制运行的
   账户集合、初始资金总量、背景 `agent_specs` 和制度配置必须逐字段相同。
-- `pair validator` 比较冻结字段白名单（含账户、初始资金、信息集、动作空间与**窗口调度
-  参数**），主要 pair 只允许 `decision_source` 及其派生输入不同；次要 `GOAL_AGENT_CONTROL`
-  额外允许目标策略字段不同，并被标记为描述性，不参与主要 pair 完整性判定。
+- `pair validator` 要求比较矩阵中标为“相同”的字段逐字段一致（含账户、初始资金、信息集、
+  动作空间与**窗口调度参数**）；决策生产者、参与者任务/激励和策略 ID/version/参数/显式目标
+  按矩阵标为不同并分别披露。次要 `GOAL_AGENT_CONTROL` 标记为描述性，不参与主要 pair
+  完整性判定。
 - `analysis` 只读取冻结 evidence index，不扫描 artifact 目录自动挑样本。
 - 三类机制指标的规范定义只写入 `docs/research/metrics-dictionary.md`；protocol 保存字典版本与
   指标 ID，分析器不得复制公式或按本地实现重新解释口径。
@@ -174,7 +175,7 @@ schema 校验参与者、assignment、窗口、停止、排除和分析的可执
 | `AC-301` | unit / contract | `tests/unit/experiment/test_h2_protocol.py` | 完整冻结、漂移新哈希、旧 assignment 拒绝 |
 | `AC-302` | integration / UI | `tests/integration/test_experiment_session.py` | 有限窗口、超时、无特权控制 |
 | `AC-303` | integration | `tests/integration/test_h2_evidence_guard.py` | 模式/阶段/协议/pair 拒绝且零部分输出 |
-| `AC-304` | integration | `tests/integration/test_h2_paired_runs.py` | 账户/资金/代理集合/窗口调度参数相同、唯一差异为决策来源、主对照复现、处理重放、次要对照标为描述性 |
+| `AC-304` | integration | `tests/integration/test_h2_paired_runs.py` | 比较矩阵中标为“相同”的字段逐字段一致、目标差异分别披露、主对照复现、处理重放、次要对照标为描述性 |
 | `AC-305` | unit / research | `tests/unit/experiment/test_h2_outcomes.py` | 三家族、双侧区间、多重性、无综合分数 |
 | `AC-306` | unit / integration | `tests/unit/experiment/test_h2_mechanisms.py`、`tests/integration/test_h2_mechanisms.py` | 三机制及完整因果追溯 |
 | `AC-307` | E2E / research | `tests/integration/test_h2_delivery.py` | index-only 重建、哈希与结论语法 |
