@@ -43,7 +43,8 @@ updated: 2026-09-05
       `docs/experiments/H2-preregistration.md`、
       `python tools/validate_spec_lifecycle.py`
 - [ ] T903 (`FR-301`, `NFR-301`, `AC-301`): 验证 v0.2.1、事件/指标合同与目标代理配置可支持
-      唯一差异配对 — verify: `tests/unit/experiment/test_h2_protocol.py`
+      比较矩阵中标为“相同”的字段逐字段一致，并能冻结、输出其余差异项 — verify:
+      `tests/unit/experiment/test_h2_protocol.py`
 
 ## 2. 实现任务
 
