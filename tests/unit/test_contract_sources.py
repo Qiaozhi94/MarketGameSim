@@ -601,7 +601,12 @@ def test_h2_retrospective_issue_table_is_lossless():
     assert len(issues) == 25
     assert all(len(row.strip("|").split("|")) == 13 for row in issues)
     statuses = {row.strip("|").split("|")[6].strip() for row in issues}
-    assert all(status.startswith(("fixed", "rejected", "tracked")) for status in statuses)
+    assert all(status.startswith(("fixed", "rejected", "partial", "tracked")) for status in statuses)
+    by_id = {row.strip("|").split("|")[0].strip(): row for row in issues}
+    assert "partial（裁决 #2）" in by_id["treatment-bundles-three-changes"]
+    assert "partial（裁决 #3）" in by_id["estimand-too-narrow-for-product-thesis"]
+    assert "aligned-control-policy-contract-unresolved" in by_id["treatment-bundles-three-changes"]
+    assert "q308-flagship-question-comparator-drift" in by_id["estimand-too-narrow-for-product-thesis"]
 
 
 def test_claude_ci_job_inventory_matches_workflow():
