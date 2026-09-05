@@ -602,6 +602,17 @@ def test_h2_pair_contract_uses_the_declared_difference_matrix():
     assert required in tasks
 
 
+def test_h2_us301_uses_the_registered_reference_policy():
+    """用户场景必须与 Q-308 的主要参照策略和比较矩阵保持一致。"""
+    spec = (ROOT / H2_CONTROL_CONTRACT_DOCS[0]).read_text(encoding="utf-8")
+    us301 = spec.split("### US-301", 1)[1].split("### US-302", 1)[0]
+    assert "预注册纯代理参照策略" in us301
+    assert "人类决策相对参照策略的差异效应" in us301
+    assert "比较矩阵中标为“相同”的字段" in us301
+    for obsolete in ("替换指定代理", "估计替换效应", "除决策来源外"):
+        assert obsolete not in us301
+
+
 def test_h2_retrospective_preserves_nonadoption_dispositions():
     """忽略的 CURRENT/FIX-log 即使被误删，裁决理由也必须在 Git 历史中有无损兜底。"""
     retrospective = (ROOT / "docs" / "reviews" / "RETROSPECTIVE.md").read_text(encoding="utf-8")
