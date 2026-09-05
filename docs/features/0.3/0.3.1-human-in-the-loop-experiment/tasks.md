@@ -36,7 +36,8 @@ updated: 2026-09-05
 - [ ] T901 (`Q-301`, `Q-302`, `Q-303`, `Q-304`, `Q-305`, `Q-306`, `Q-307`, `DQ-301`,
       `DQ-302`, `DQ-303`, `DQ-304`, `DQ-305`): 关闭剩余阻塞研究与设计问题；`Q-308` 已裁决为
       窗口匹配参照策略差异（主对照 `WINDOW_MATCHED_POLICY_CONTROL`），Q-301 只需选定两条对照的策略
-      家族与参数实例 — verify: `spec.md`、`design.md`
+      家族与参数实例。`WINDOW_MATCHED_POLICY_CONTROL` 与 `GOAL_AGENT_CONTROL` 的策略 ID 或参数组合必须不同，
+      并记录主对照选择依据 — verify: `spec.md`、`design.md`
 - [ ] T902 (`FR-301`, `NFR-302`, `SC-301`): 先冻结招募/参与者小时/预算上限，再以参与者内
       重复、pair 缺失和多重性运行功效模拟；只有 go 判定后才完成协议、停止规则、同意/隐私
       和适用伦理审查并取得可审计签字，no-go 时禁止 freeze — verify:

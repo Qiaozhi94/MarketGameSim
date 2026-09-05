@@ -613,6 +613,17 @@ def test_h2_us301_uses_the_registered_reference_policy():
         assert obsolete not in us301
 
 
+def test_h2_control_policies_cannot_collapse_to_one_instance():
+    """主、次对照必须可区分，并留下主对照选择依据。"""
+    required = (
+        "`WINDOW_MATCHED_POLICY_CONTROL` 与 `GOAL_AGENT_CONTROL` 的策略 ID 或参数组合必须不同"
+    )
+    for doc in H2_CONTROL_CONTRACT_DOCS:
+        text = (ROOT / doc).read_text(encoding="utf-8")
+        assert required in text, f"{doc} 未禁止两条对照退化为同一策略实例"
+        assert "记录主对照选择依据" in text, f"{doc} 未要求记录主对照选择依据"
+
+
 def test_h2_retrospective_preserves_nonadoption_dispositions():
     """忽略的 CURRENT/FIX-log 即使被误删，裁决理由也必须在 Git 历史中有无损兜底。"""
     retrospective = (ROOT / "docs" / "reviews" / "RETROSPECTIVE.md").read_text(encoding="utf-8")
