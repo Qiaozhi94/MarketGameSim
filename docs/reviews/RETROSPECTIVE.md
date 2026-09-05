@@ -859,3 +859,79 @@ ruff、pytest 3.11、pytest 3.13。19 条发现全部 fixed，未决 Critical/Hi
 "复核人重跑 verify.py 全绿"的记录，但它由修复者写入，不是检视人产出。结论巧合一致不改变
 性质——`self-approved-closure` 的判据是"写结论的人和执行修复的人是否同一个"，署名代写会让
 这个判据失效。复核结论只以 `CURRENT-<type>.md` 与本文件中检视人写下的内容为准。
+
+---
+
+## 循环 21: 0.3.1 H2 人在环实验规格与设计文档检视
+
+- **report_type**: doc-review
+- **周期**: 2026-09-04 → 2026-09-05（4 轮：全量扫描 → 修复 → 修复方复核 → 检视方独立核对 + owner 裁决落地）
+- **基线**: `cf54f0e` → `725252e`（24 个提交，只动 4 个文档：design 87 / tasks 67 / prd 16 / spec 行数若干）
+- **收尾状态**: 24 条关闭，1 条 `tracked`（Q-304/Q-307 的 owner 裁决）；CI 5 个 job 全绿
+- **机器门禁**: 检视全程 `python tools/verify.py` 一直是绿的（2317 passed）——25 条发现没有一条能被它发现
+
+### 完整 issue 表
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| h2-human-slot-replacement-unmodeled | design 称"其余路径不变"，但 H1 人类是 extra_accounts 新增账户，H2 要求替换代理插槽 | High | correctness | 根因 | 首次实现 | fixed | target-slot adapter：禁用目标代理策略、人类继承同一 agent_id/账户/资金/杠杆，禁用 extra_accounts 路径 | test_h2_paired_runs.py + verify.py | 1 | 3 | cross-feature-contract-drift |
+| tasks-missing-readiness-rules | 缺 0.2.1 已固化的"ready 前须有 strict-xfail 骨架"推进规则 | High | test-coverage | 流程缺陷 | fixed | 恢复门禁规则并上引 features/README.md 唯一拥有者 | tests/unit/test_spec_lifecycle.py | 1 | 3 | gate-lesson-not-carried-forward |
+| t925-single-file-ac-bypass | T925 一条 verify 覆盖 8 个 AC，逐条 AC 路径门禁被单点旁路 | High | test-coverage | 根因 | 流程缺陷 | fixed | T925 verify 改 `python tools/verify.py`，并声明不作 AC 锚点 | test_non_test_path_does_not_satisfy_ac_path_gate | 1 | 3 | gate-bypass-by-aggregate-task |
+| dq305-referenced-as-q305 | 恢复策略归属写成 Q-305，实为 DQ-305 | Medium | correctness | 根因 | 首次实现 | fixed | 纠正为 DQ-305，Q-305 只拥有补跑/排除/撤回政策 | verify.py | 1 | 3 | — |
+| existing-experiment-protocol-collision | 既有 experiment/protocol.py 与新 H2 协议模块职责冲突未说明 | Medium | correctness | 契约漂移 | fixed | H2 协议落到 experiment/h2/protocol.py 并写明三类 protocol 边界 | verify.py | 1 | 3 | cross-feature-contract-drift |
+| cli-entry-three-way-drift | CLI 入口三处写法不一致且仓库无 console script | Medium | correctness | 首次实现 | fixed | 统一为 `python -m market_game_sim.experiment` | verify.py | 1 | 3 | — |
+| outcome-gate-id-not-in-prd | 成果门 H2-A/B/C 在 PRD §15 不存在 | Medium | correctness | 契约漂移 | fixed | PRD v0.5.1 补 H2-A/B/C 表并更新串行顺序 | verify.py | 1 | 3 | — |
+| t922-verify-mismatch | T922 引用 AC-303/304 但 verify 只指 test_protocol.py | Medium | correctness | 首次实现 | fixed | 补齐三条测试路径 | verify.py | 1 | 3 | — |
+| rerun-new-seed-breaks-pairing | 补跑换新 seed 后控制生成与 seed 平衡未定义 | Medium | correctness | 首次实现 | fixed | 结果盲的有序预签发备用 seed/pair 池，控制随分配预生成 | verify.py | 1 | 3 | — |
+| tests-experiment-dir-off-convention | tests/experiment/ 偏离仓库既有分层且层级标注自相矛盾 | Medium | quality | 首次实现 | fixed | 迁入 tests/unit/experiment 与 tests/integration | verify.py | 1 | 3 | — |
+| preregistration-gate-unchecked | 未确认 H2 协议是否进入 validate_preregistrations | Medium | test-coverage | 首次实现 | fixed | 接入双层预注册门，两份文件各存 SHA256 并交叉引用 | verify.py | 1 | 3 | — |
+| mechanism-metrics-not-in-dictionary | 三类机制指标未指定 metrics-dictionary 为唯一拥有者 | Medium | correctness | 首次实现 | fixed | spec/design/tasks 共同指定字典唯一真源 | verify.py | 1 | 3 | — |
+| constraint-omits-dq | §0 实现约束漏列 DQ-301—DQ-305 | Low | correctness | 首次实现 | fixed | 补齐 Q-301—Q-308 与 DQ-301—DQ-305 | verify.py | 1 | 3 | — |
+| rng-semantic-key-dependency-undeclared | 未声明"唯一差异"依赖 per-agent 语义键 RNG | Low | correctness | 首次实现 | fixed | 冻结语义键元组与 RNG 合同版本，禁止改共享计数器 | verify.py | 1 | 3 | — |
+| t903-verify-time-inversion | T903 verify 指向 T904 才创建的测试文件 | Low | quality | 症状 | 首次实现 | fixed（裁决） | 未采纳原定性：骨架先行规则已使引用合法 | tests/unit/test_spec_lifecycle.py | 1 | 3 | — |
+| treatment-bundles-three-changes | 处理打包决策来源/频率/目标函数三件事，效应不可归因 | High | correctness | 首次实现 | fixed | owner 采纳：主对照改 ALIGNED_POLICY_CONTROL，联合处理降为次要描述性 | 变异验证：Q-308 从开放问题拦截列表消失 | 1 | 4 | estimand-underspecified |
+| rare-event-power-no-gonogo | 罕见事件功效无 go/no-go 决策点 | High | correctness | 首次实现 | fixed | 先冻结资源上限再做聚类功效模拟，no-go 时禁止 freeze | verify.py | 1 | 3 | — |
+| estimand-too-narrow-for-product-thesis | 估计量与 PRD 第二层核心产出的关系未论证 | Medium | correctness | 首次实现 | fixed | 随 Q-308 落定：结论语法强制三限定词，禁用简称"人类效应" | verify.py | 1 | 4 | estimand-underspecified |
+| no-agent-ablation-reference-frame | 缺纯代理消融谱系作解释坐标系 | Medium | correctness | 首次实现 | fixed（部分吸收） | 以次要 GOAL_AGENT_CONTROL 对照臂吸收；完整消融谱系不采纳 | verify.py | 1 | 4 | — |
+| primary-endpoint-occurrence-vs-severity | 发生率二值指标被放在主要终点 | Medium | correctness | 首次实现 | tracked（T901 / Q-304、Q-307） | 未自动替换；改为二值/全样本/hurdle 同场模拟按证据选 | — | 1 | — | — |
+| non-code-critical-path-unplanned | 伦理与招募关键路径无排期与失败分支 | Low | quality | 首次实现 | fixed | 补 owner/日期/incomplete-study 非证据路径 | verify.py | 1 | 3 | — |
+| fix-question-line-wrapping-parser-unsafe | 修复时把 Q 行拆成续行，生命周期解析器无法识别 | Medium | correctness | 症状 | 修复回归 | fixed | 恢复单行标准复选框格式 | test_pending_section_standard_checkbox_ok | 2 | 3 | parser-sensitive-document-format |
+| fix-preregistration-shared-digest | 修复文本要求两份不同文档共享同一摘要 | High | correctness | 根因 | 修复回归 | fixed | 改为各存 SHA256 并由清单交叉绑定 | verify.py | 2 | 3 | cross-artifact-binding |
+| fix-no-go-failure-path-ambiguous | no-go 留痕与关闭规则不清 | Medium | correctness | 根因 | 修复回归 | fixed | incomplete-study 非证据路径，禁止进入 T918/声明/收口 | verify.py | 2 | 3 | failure-path-underspecified |
+| fix-q308-gate-coverage | 新增 Q-308 后门禁范围漏覆盖 | Medium | correctness | 根因 | 修复回归 | fixed | 全部范围扩到 Q-308 | test_open_question_fails_after_ready | 2 | 3 | cross-document-gate-drift |
+
+### 模式教训
+
+**1. 机器门禁全绿证明不了文档正确。** 25 条发现里 0 条能被 `verify.py` 捕获——它验证的是引用与
+结构自洽，而这轮的问题全在语义层（影响面判断错、成果门 ID 不在唯一拥有者里、估计量定义复合）。
+"提交前跑 verify.py"是必要条件，不是文档评审的替代。
+
+**2. 上一个里程碑的教训不会自动继承（`gate-lesson-not-carried-forward`）。** 0.2.1 用一轮检视换来的
+"ready 前必须有具体 strict-xfail 测试骨架、目录级 verify 不算数"写在它自己的 `tasks.md` 第 0 节，
+0.3.1 从模板起草时整段丢失。修复的正确做法不是在 0.3.1 抄一遍，而是上提到
+`features/README.md` 的 gate 规则（唯一拥有者）后由各里程碑引用——这次已经这么做了。
+
+**3. 聚合任务会悄悄旁路逐条门禁（`gate-bypass-by-aggregate-task`）。** T925 一条任务引用全部 8 个 AC，
+而 `_check_ac_references` 只要求"任一覆盖任务的 verify 指向存在文件"，于是一个文件就能让 8 条 AC
+集体过门。0.2.1 曾用 T816 的注释挡住同一形态，0.3.1 复现。判据：**任何引用 3 个以上 AC 的任务，
+都要显式声明它不承担路径锚点**。
+
+**4. 研究设计问题不能按缺陷循环关闭。** 6 条研究设计发现里，5 条需要 owner 裁决（估计量、终点、
+scope），按缺陷走"再改一次文档"永远关不掉。本轮用 `status: tracked` + `needs_owner_decision`
+把它们移出收敛统计、挂到 T901，收敛统计才没有被永远拖住。其中 Q-308（估计量定义）在第 4 轮由
+owner 裁决后一次性关闭 3 条。
+
+**5. 变异验证是"门禁有牙"的唯一可信证据。** 两次变异（把 spec 副本 status 改成
+`ready-for-development` 再跑生命周期校验）分别证明：T925 改造后 8 条 AC 确实全部失败（旁路已堵）、
+Q-308 关闭后拦截数由 13 降为 12 且其余 Q/DQ 仍被拦（门禁没被削弱）。口头"已修复"在本轮同样
+出现过引用不实（`regression_test` 写了一个仓库里不存在的测试名），靠核对才发现。
+
+**6. 修复自伤率与历史一致。** 25 条里 4 条 `origin: fix-regression`（16%），全部在第 2 轮 diff-only
+复核中被发现，其中 1 条是 High（要求两份不同文档共享同一摘要，物理不可实现）。这再次说明
+"第 2 轮 diff-only 复核省不得"——这 4 条在第 1 轮物理上不存在。
+
+**7. origin 分布**：首次实现 17、修复回归 4、契约漂移 2、流程缺陷 2。占比最大的仍是起草期一次性
+写下的语义缺陷，说明规格三件套的首稿评审（而不是后续轮次）才是投入产出比最高的位置。
+
+**8. 存活轮数**：绝大多数 1→3 轮关闭；3 条研究设计问题 1→4 轮（等 owner 裁决）；1 条仍
+`tracked`。没有出现"连续 3 轮修不动"的不收敛升级情形。
