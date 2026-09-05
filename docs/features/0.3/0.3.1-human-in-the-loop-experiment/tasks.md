@@ -57,7 +57,7 @@ updated: 2026-09-05
       顺序、有序备用 seed/pair 池与结果盲纳入元数据 — verify:
       `tests/integration/test_h2_paired_runs.py`
 - [ ] T907 (`FR-301`, `FR-302`, `TR-301`, `NFR-301`, `AC-304`): 实现目标代理插槽、人类替换条件、
-      受同一窗口调度器约束的参照策略代理，以及 `WINDOW_MATCHED_POLICY_CONTROL` 主对照与
+      两条纯代理对照均受同一有限窗口调度器约束，以及 `WINDOW_MATCHED_POLICY_CONTROL` 主对照与
       `GOAL_AGENT_CONTROL` 次要对照的双臂生成与冻结字段比较（窗口调度参数必须在白名单内，
       主对照策略取自预注册的 v0.1 家族；协议须冻结账户/风险、信息、动作、窗口与目标差异的
       比较矩阵，且不声称目标函数对齐） — verify: `tests/integration/test_h2_paired_runs.py`
