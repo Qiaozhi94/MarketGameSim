@@ -635,6 +635,15 @@ def test_h2_control_arm_cli_uses_the_schema_enum():
     assert re.search(enum_contract, tasks)
 
 
+def test_h2_fr301_prose_has_no_accidental_indentation():
+    """FR-301 正文是连续段落，不能因局部缩进被 Markdown 解释为代码块。"""
+    spec = (ROOT / H2_CONTROL_CONTRACT_DOCS[0]).read_text(encoding="utf-8")
+    fr301 = spec.split("### Requirement: 冻结 H2 协议与配对反事实", 1)[1]
+    fr301 = fr301.split("#### Scenario", 1)[0]
+    indented = [line for line in fr301.splitlines() if line.startswith("  ")]
+    assert indented == []
+
+
 def test_h2_retrospective_preserves_nonadoption_dispositions():
     """忽略的 CURRENT/FIX-log 即使被误删，裁决理由也必须在 Git 历史中有无损兜底。"""
     retrospective = (ROOT / "docs" / "reviews" / "RETROSPECTIVE.md").read_text(encoding="utf-8")
