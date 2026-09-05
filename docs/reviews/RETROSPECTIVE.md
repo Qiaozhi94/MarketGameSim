@@ -889,9 +889,9 @@ ruff、pytest 3.11、pytest 3.13。19 条发现全部 fixed，未决 Critical/Hi
 | constraint-omits-dq | 采样约束漏 DQ | Low | correctness | 根因 | 首次实现 | fixed | 补全 Q/DQ 范围 | 写明 Q-301—Q-308 与 DQ-301—DQ-305 | verify.py | 1 | 3 | — |
 | rng-semantic-key-dependency-undeclared | 配对依赖的 RNG 契约未声明 | Low | correctness | 根因 | 首次实现 | fixed | 冻结语义键与合同版本 | 禁止改为跨代理共享计数器 | verify.py | 1 | 3 | — |
 | t903-verify-time-inversion | T903 指向后续任务测试文件 | Low | quality | 症状 | 首次实现 | rejected（裁决 #1） | 改 verify 或合并骨架先行说明 | 未改；ready 前骨架先行使引用合法 | tests/unit/test_spec_lifecycle.py | 1 | 3 | — |
-| treatment-bundles-three-changes | 处理打包来源/频率/目标函数 | High | correctness | 根因 | 首次实现 | fixed（裁决 #2） | 对齐机会集、如实命名或增加参照臂 | 主比较改为窗口匹配参照策略，目标差异显式披露；原 goal 仅描述 | test_h2_primary_control_is_window_matched_not_goal_aligned | 1 | 4 | estimand-underspecified |
+| treatment-bundles-three-changes | 处理打包来源/频率/目标函数 | High | correctness | 根因 | 首次实现 | partial（裁决 #2） | 对齐机会集、如实命名或增加参照臂 | 接纳参照臂与禁用简称；“目标对齐”未兑现，剩余转新周期 aligned-control-policy-contract-unresolved | Q-308 生命周期变异验证 | 1 | 4 | estimand-underspecified |
 | rare-event-power-no-gonogo | 罕见终点无功效 go/no-go | High | correctness | 根因 | 首次实现 | fixed | 协议冻结前设置资源上限和失败分支 | 聚类功效模拟超过上限即 no-go | verify.py | 1 | 3 | — |
-| estimand-too-narrow-for-product-thesis | 估计量与产品声明边界未论证 | Medium | correctness | 根因 | 首次实现 | fixed（裁决 #3） | 论证可证伪声明或如实收窄定位 | 强制参与者池/任务激励/模型族/参照策略限定 | test_h2_flagship_question_uses_the_primary_reference_policy | 1 | 4 | estimand-underspecified |
+| estimand-too-narrow-for-product-thesis | 估计量与产品声明边界未论证 | Medium | correctness | 根因 | 首次实现 | partial（裁决 #3） | 论证可证伪声明或如实收窄定位 | 接纳结论限定词；PRD/父规格仍保留旧问题，剩余转新周期 q308-flagship-question-comparator-drift | Q-308 生命周期变异验证 | 1 | 4 | estimand-underspecified |
 | no-agent-ablation-reference-frame | 缺完整纯代理消融谱系 | Medium | correctness | 根因 | 首次实现 | rejected（裁决 #4） | 增加消融谱系作为解释坐标 | 不采纳完整谱系；保留 goal 对照仅作描述，未来另立研究 | 裁决记录 #4 | 1 | 4 | — |
 | primary-endpoint-occurrence-vs-severity | 二值发生与严重度主次未冻结 | Medium | correctness | 根因 | 首次实现 | tracked（T901/Q-304/Q-307；裁决 #5） | 比较二值、连续与 hurdle 功效后冻结 | 尚待 Q-304/Q-307 按证据选择 | — | 1 | — | — |
 | non-code-critical-path-unplanned | 伦理与招募无排期/失败分支 | Low | quality | 根因 | 首次实现 | fixed | 增加 owner、日期和不足样本分支 | incomplete-study 为非证据且禁止收口 | verify.py | 1 | 3 | — |
@@ -910,11 +910,13 @@ ruff、pytest 3.11、pytest 3.13。19 条发现全部 fixed，未决 Critical/Hi
 #2 · `treatment-bundles-three-changes` · partial · 接纳“不能把复合处理简称为人类效应”，并由
 Q-308 建立主要参照策略；未直接采纳“增加通用权益目标第三臂”，因为相同文字目标不保证策略、
 认知、节奏或动作分布相同，且会增加多重比较范围。后续裁决以预注册参照策略为主要对照，原
-goal-driven 策略仅作次要描述。证据：0.3.1 spec §1/FR-304/Q-308。· 第 4 轮
+goal-driven 策略仅作次要描述。证据：0.3.1 spec §1/FR-304/Q-308。接纳部分→Q-308 参照臂；
+剩余部分→新周期 `aligned-control-policy-contract-unresolved`。· 第 4 轮
 
 #3 · `estimand-too-narrow-for-product-thesis` · partial · 不采纳“与产品核心产出无关”的定性：
 PRD §15 已把 H2 明列为旗舰问题；接纳其中关于声明边界的部分，在正式结论中强制限定参与者池、
-任务/激励与模型族，并禁止简称“人类效应”。证据：PRD §15、0.3.1 spec §1/§7。· 第 4 轮
+任务/激励与模型族，并禁止简称“人类效应”。证据：PRD §15、0.3.1 spec §1/§7。接纳部分→
+结论语法；剩余部分→新周期 `q308-flagship-question-comparator-drift`。· 第 4 轮
 
 #4 · `no-agent-ablation-reference-frame` · rejected · 完整纯代理消融谱系不是主要配对因果对比的
 识别前提，也不能估计参与者异质性、学习、疲劳或依从性；新增臂还会扩大分析和多重性范围。
