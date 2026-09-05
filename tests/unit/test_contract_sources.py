@@ -575,6 +575,22 @@ def test_h2_protocol_requires_an_auditable_comparison_matrix():
     assert "可审计比较矩阵" in design and "不同且必须分别披露" in design
 
 
+def test_h2_retrospective_preserves_nonadoption_dispositions():
+    """忽略的 CURRENT/FIX-log 即使被误删，裁决理由也必须在 Git 历史中有无损兜底。"""
+    retrospective = (ROOT / "docs" / "reviews" / "RETROSPECTIVE.md").read_text(encoding="utf-8")
+    section = retrospective.split("### 裁决记录（从被误删的 CURRENT-doc 恢复）", 1)[1]
+    section = section.split("### 审查过程稿保留约束（恢复）", 1)[0]
+    for issue_id in (
+        "t903-verify-time-inversion",
+        "treatment-bundles-three-changes",
+        "estimand-too-narrow-for-product-thesis",
+        "no-agent-ablation-reference-frame",
+        "primary-endpoint-occurrence-vs-severity",
+    ):
+        assert issue_id in section, f"缺少 {issue_id} 的裁决记录"
+    assert "证据：" in section and "关闭路径" in section
+
+
 def test_v2_goal_contract_freezes_the_decisions_design_defers_to_it():
     """design 把语义"已冻结"的部分指向合同，合同就必须真的写着这些语义。
 

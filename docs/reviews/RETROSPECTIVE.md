@@ -900,6 +900,39 @@ ruff、pytest 3.11、pytest 3.13。19 条发现全部 fixed，未决 Critical/Hi
 | fix-no-go-failure-path-ambiguous | no-go 留痕与关闭规则不清 | Medium | correctness | 根因 | 修复回归 | fixed | incomplete-study 非证据路径，禁止进入 T918/声明/收口 | verify.py | 2 | 3 | failure-path-underspecified |
 | fix-q308-gate-coverage | 新增 Q-308 后门禁范围漏覆盖 | Medium | correctness | 根因 | 修复回归 | fixed | 全部范围扩到 Q-308 | test_open_question_fails_after_ready | 2 | 3 | cross-document-gate-drift |
 
+### 裁决记录（从被误删的 CURRENT-doc 恢复）
+
+#1 · `t903-verify-time-inversion` · rejected · 原判断假设 T904 才创建测试；实际 gate 规则要求
+进入 `ready-for-development` 前先创建 `strict=True` xfail 骨架，因此 T903 验证的是已存在骨架，
+不存在时间倒置。证据：`tasks.md` §0 与 `tests/unit/test_spec_lifecycle.py`。若以后移除骨架先行
+规则，本问题重新打开。· 第 3 轮
+
+#2 · `treatment-bundles-three-changes` · partial · 接纳“不能把复合处理简称为人类效应”，并由
+Q-308 建立主要参照策略；未直接采纳“增加通用权益目标第三臂”，因为相同文字目标不保证策略、
+认知、节奏或动作分布相同，且会增加多重比较范围。后续裁决以预注册参照策略为主要对照，原
+goal-driven 策略仅作次要描述。证据：0.3.1 spec §1/FR-304/Q-308。· 第 4 轮
+
+#3 · `estimand-too-narrow-for-product-thesis` · partial · 不采纳“与产品核心产出无关”的定性：
+PRD §15 已把 H2 明列为旗舰问题；接纳其中关于声明边界的部分，在正式结论中强制限定参与者池、
+任务/激励与模型族，并禁止简称“人类效应”。证据：PRD §15、0.3.1 spec §1/§7。· 第 4 轮
+
+#4 · `no-agent-ablation-reference-frame` · rejected · 完整纯代理消融谱系不是主要配对因果对比的
+识别前提，也不能估计参与者异质性、学习、疲劳或依从性；新增臂还会扩大分析和多重性范围。
+保留 `GOAL_AGENT_CONTROL` 仅是次要描述性参照，不宣称等价于完整消融谱系。证据：0.3.1 spec
+FR-304 与 design Q-308；完整消融若未来开展，须另立预注册研究。· 第 4 轮
+
+#5 · `primary-endpoint-occurrence-vs-severity` · tracked · 不自动把连续严重度升为主要终点：枯竭
+时长与连锁长度也可能零膨胀，连续量不保证更有功效。关闭路径是 T901 的 Q-304/Q-307：同时模拟
+二值发生、全样本严重度及 two-part/hurdle 方案，每家族按科学重要性和功效证据冻结一个主要
+estimand，并维持 Holm 校正。证据：0.3.1 design Q-304/Q-307。· 第 4 轮
+
+### 审查过程稿保留约束（恢复）
+
+循环 21 收口时曾清理 `CURRENT-doc.md` 与 `FIX-log.md`，但用户已明确要求“不私自移除”。两文件
+受 `.gitignore` 保护且从未进入 Git，删除后没有 Git 历史兜底。本节恢复不可丢失的裁决理由；
+当前周期已重新创建 `CURRENT-doc.md`，并重建 `FIX-log.md` 的 commit/验证映射。后续即使 CI 全绿，
+也按用户覆盖指令持续保留这两个过程稿，除非用户再次明确授权删除。
+
 ### 模式教训
 
 **1. 机器门禁全绿证明不了文档正确。** 25 条发现里 0 条能被 `verify.py` 捕获——它验证的是引用与
