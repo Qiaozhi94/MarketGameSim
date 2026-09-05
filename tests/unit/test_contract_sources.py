@@ -593,6 +593,7 @@ def test_h2_pair_contract_uses_the_declared_difference_matrix():
     tasks = (ROOT / H2_CONTROL_CONTRACT_DOCS[2]).read_text(encoding="utf-8")
     assert "唯一预定差异为决策" not in spec
     assert "降低市场路径噪声并明确唯一差异" not in spec
+    assert "非处理字段差异" not in spec
     assert "只允许 `decision_source` 及其派生输入不同" not in design
     assert "唯一差异为决策来源" not in design
     assert "唯一差异配对" not in tasks
@@ -600,6 +601,7 @@ def test_h2_pair_contract_uses_the_declared_difference_matrix():
     assert required in spec
     assert required in design
     assert required in tasks
+    assert "标为“不同”的字段未完整披露" in spec
 
 
 def test_h2_us301_uses_the_registered_reference_policy():
