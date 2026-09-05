@@ -604,6 +604,15 @@ def test_h2_retrospective_issue_table_is_lossless():
     assert all(status.startswith(("fixed", "rejected", "tracked")) for status in statuses)
 
 
+def test_claude_ci_job_inventory_matches_workflow():
+    """新增 CI job 时，开发者入口不能继续给出过期的通过项数量。"""
+    guide = (ROOT / "CLAUDE.md").read_text(encoding="utf-8")
+    workflow = (ROOT / ".github" / "workflows" / "ci.yml").read_text(encoding="utf-8")
+    assert "H1 interactive (Windows)" in guide
+    assert "共 5 个" in guide
+    assert "name: H1 interactive (Windows)" in workflow
+
+
 def test_v2_goal_contract_freezes_the_decisions_design_defers_to_it():
     """design 把语义"已冻结"的部分指向合同，合同就必须真的写着这些语义。
 

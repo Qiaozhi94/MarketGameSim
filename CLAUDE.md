@@ -35,7 +35,8 @@ CI 的 `lint` job 与 `test` job 是独立的两步，`pytest` 全绿不代表 `
 全绿（见下一节的工具版本漂移问题，以及 CI 环境本身和本地终究不是同一个
 环境）。每次 `push` 之后用 `gh run watch <run-id> --exit-status`（或先
 `gh run list --limit 1` 拿到本次的 run id）等它跑完，确认全部 job（目前是
-真源与生命周期校验、`ruff`、`pytest` 3.11、`pytest` 3.13，共 4 个）都是绿的，再把
+真源与生命周期校验、`ruff`、`pytest` 3.11、`pytest` 3.13、H1 interactive (Windows)，
+共 5 个）都是绿的，再把
 这次任务当作完成。如果红了，当场排查修复、重新提交推送、再等一轮 CI，
 不能先汇报"已完成"再回头补救。
 
