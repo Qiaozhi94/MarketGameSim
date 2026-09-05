@@ -1009,12 +1009,12 @@ Q-308 关闭后拦截数由 13 降为 12 且其余 Q/DQ 仍被拦（门禁没被
 ## 循环 23: 0.3.1 Q-308 比较合同收敛复核
 
 - **report_type**: doc-review
-- **周期**: 2026-09-05（round 3 diff-only 复检 → 逐条修复 → round 4 diff-only 修复回归复核）
-- **基线**: `18bcea1` → `603cb7c`（最终总结提交另计）
-- **收尾状态**: 7 条全部 fixed；未决 Critical / High / Medium / Low = 0 / 0 / 0 / 0；
+- **周期**: 2026-09-05（round 3 diff-only 复检 → 逐条修复 → round 4/5 diff-only 修复回归复核）
+- **基线**: `18bcea1` → `7064ae9`（最终总结提交另计）
+- **收尾状态**: 9 条全部 fixed；未决 Critical / High / Medium / Low = 0 / 0 / 0 / 0；
   CURRENT/FIX-log 按用户要求持续保留
-- **本地门禁**: `python tools/verify.py`，2333 passed；真源、生命周期、ruff check、ruff format 全绿；
-  远端 CI 已在 HEAD `8227181` 全绿（run 33963727401，5 个 job：真源与生命周期、ruff、pytest 3.11/3.13、H1 interactive (Windows)）
+- **本地门禁**: `python tools/verify.py`，2334 passed；真源、生命周期、ruff check、ruff format 全绿；
+  远端 CI 已在前一 HEAD `8227181` 全绿（run 33963727401），当前 Low 修复待重新推送确认
 
 ### 完整 issue 表
 
@@ -1027,10 +1027,12 @@ Q-308 关闭后拦截数由 13 降为 12 且其余 Q/DQ 仍被拦（门禁没被
 | control-arm-cli-name-drift | CLI 仍使用废弃 aligned arm | Medium | correctness | 症状 | 修复回归 | fixed | CLI 与 schema 共享闭集枚举 | 统一为 window-matched/goal 且不保留别名 | test_h2_control_arm_cli_uses_the_schema_enum | 3 | 4 | cross-document-contract-drift |
 | fr301-paragraph-indentation | FR-301 正文局部缩进 | Low | quality | 症状 | 修复回归 | fixed | 移除两空格缩进 | 连续正文归零缩进并增加段落断言 | test_h2_fr301_prose_has_no_accidental_indentation | 3 | 4 | — |
 | fr301-scenario-stale-difference-language | FR-301 场景仍使用“非处理字段” | Medium | correctness | 症状 | 修复回归 | fixed | 失败场景改用矩阵语义 | 拒绝相同项漂移或差异项漏报 | test_h2_pair_contract_uses_the_declared_difference_matrix | 4 | 4 | partial-symmetric-fix |
+| design-matrix-lacks-secondary-column | 比较矩阵缺少次要对照列 | Low | quality | 根因 | 修复回归 | fixed | 增加 GOAL_AGENT_CONTROL 列 | 三条件五列表集中冻结相同项和目标差异 | test_h2_design_matrix_covers_all_three_conditions | 4 | 5 | partial-symmetric-fix |
+| matrix-disclosure-anchor-regression | 扩列时丢失目标差异合同锚点 | Low | quality | 症状 | 修复回归 | fixed | 保留旧合同并追加新约束 | 恢复“不同且必须分别披露”并保留两策略不同 | test_h2_protocol_requires_an_auditable_comparison_matrix | 5 | 5 | partial-symmetric-fix |
 
 ### 模式教训
 
-**1. comparator 改名必须覆盖调度、CLI、场景和任务。** 本循环 7 条里 6 条来自前轮修复，说明只改
+**1. comparator 改名必须覆盖调度、CLI、场景和任务。** 本循环 9 条里 8 条来自前轮修复，说明只改
 主问题与分析式会留下大量相邻合同漂移；跨文档测试现已覆盖三件套的闭集名称与关键不变量。
 
 **2. “唯一差异”不能代替比较矩阵。** 人类任务/激励和策略内部目标本来就不同；可执行合同应
@@ -1038,3 +1040,7 @@ Q-308 关闭后拦截数由 13 降为 12 且其余 Q/DQ 仍被拦（门禁没被
 
 **3. 修复自伤率需要 round 4 才能看见。** 6 条原 finding 修复后，diff-only 又找到 1 条旧场景
 措辞；该项同轮补入既有矩阵门禁，没有继续全量重读或扩散范围。
+
+**4. 开发就绪与文档缺陷分开统计。** 0.3.1 仍有 Q-301—Q-307、DQ-301—DQ-305 共 12 个计划内
+决策，Owner/H2 预注册/9 个严格 xfail 测试骨架也未落地；它们由 T901/T902 与 ready gate 追踪，
+不重新记为产品缺陷，但在关闭前里程碑必须保持 `draft`。
