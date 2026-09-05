@@ -575,6 +575,17 @@ def test_h2_protocol_requires_an_auditable_comparison_matrix():
     assert "可审计比较矩阵" in design and "不同且必须分别披露" in design
 
 
+def test_h2_secondary_control_uses_the_shared_window_scheduler():
+    """次要对照也必须冻结决策机会，避免描述性差异混入调度变化。"""
+    spec = (ROOT / H2_CONTROL_CONTRACT_DOCS[0]).read_text(encoding="utf-8")
+    design = (ROOT / H2_CONTROL_CONTRACT_DOCS[1]).read_text(encoding="utf-8")
+    tasks = (ROOT / H2_CONTROL_CONTRACT_DOCS[2]).read_text(encoding="utf-8")
+    required = "`GOAL_AGENT_CONTROL` 也必须使用同一有限窗口调度器"
+    assert required in spec
+    assert required in design
+    assert "两条纯代理对照均受同一有限窗口调度器约束" in tasks
+
+
 def test_h2_retrospective_preserves_nonadoption_dispositions():
     """忽略的 CURRENT/FIX-log 即使被误删，裁决理由也必须在 Git 历史中有无损兜底。"""
     retrospective = (ROOT / "docs" / "reviews" / "RETROSPECTIVE.md").read_text(encoding="utf-8")
