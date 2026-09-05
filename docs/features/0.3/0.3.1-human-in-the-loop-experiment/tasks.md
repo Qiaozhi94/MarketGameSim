@@ -52,7 +52,8 @@ updated: 2026-09-05
 ### Phase 1：H2-A 冻结协议与配对运行骨架
 
 - [ ] T904 (`FR-301`, `DR-301`, `AC-301`): 实现 protocol schema、完整性校验、内容哈希与不可变
-      冻结，并与仓库预注册门交叉绑定 — verify: `tests/unit/experiment/test_h2_protocol.py`
+      冻结，并与仓库预注册门交叉绑定；`control_arm` 闭集为 `window-matched | goal`，CLI 复用
+      同一枚举真源 — verify: `tests/unit/experiment/test_h2_protocol.py`
 - [ ] T905 [P] (`DR-301`, `IR-301`, `AC-308`): 实现匿名 enrollment、同意/资格/理解检查和撤回状态
       — verify: `tests/unit/experiment/test_h2_privacy.py`
 - [ ] T906 (`FR-301`, `IR-301`, `NFR-303`, `AC-304`): 实现预签发 assignment、seed/scenario
