@@ -872,33 +872,33 @@ ruff、pytest 3.11、pytest 3.13。19 条发现全部 fixed，未决 Critical/Hi
 
 ### 完整 issue 表
 
-| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| h2-human-slot-replacement-unmodeled | design 称"其余路径不变"，但 H1 人类是 extra_accounts 新增账户，H2 要求替换代理插槽 | High | correctness | 根因 | 首次实现 | fixed | target-slot adapter：禁用目标代理策略、人类继承同一 agent_id/账户/资金/杠杆，禁用 extra_accounts 路径 | test_h2_paired_runs.py + verify.py | 1 | 3 | cross-feature-contract-drift |
-| tasks-missing-readiness-rules | 缺 0.2.1 已固化的"ready 前须有 strict-xfail 骨架"推进规则 | High | test-coverage | 流程缺陷 | fixed | 恢复门禁规则并上引 features/README.md 唯一拥有者 | tests/unit/test_spec_lifecycle.py | 1 | 3 | gate-lesson-not-carried-forward |
-| t925-single-file-ac-bypass | T925 一条 verify 覆盖 8 个 AC，逐条 AC 路径门禁被单点旁路 | High | test-coverage | 根因 | 流程缺陷 | fixed | T925 verify 改 `python tools/verify.py`，并声明不作 AC 锚点 | test_non_test_path_does_not_satisfy_ac_path_gate | 1 | 3 | gate-bypass-by-aggregate-task |
-| dq305-referenced-as-q305 | 恢复策略归属写成 Q-305，实为 DQ-305 | Medium | correctness | 根因 | 首次实现 | fixed | 纠正为 DQ-305，Q-305 只拥有补跑/排除/撤回政策 | verify.py | 1 | 3 | — |
-| existing-experiment-protocol-collision | 既有 experiment/protocol.py 与新 H2 协议模块职责冲突未说明 | Medium | correctness | 契约漂移 | fixed | H2 协议落到 experiment/h2/protocol.py 并写明三类 protocol 边界 | verify.py | 1 | 3 | cross-feature-contract-drift |
-| cli-entry-three-way-drift | CLI 入口三处写法不一致且仓库无 console script | Medium | correctness | 首次实现 | fixed | 统一为 `python -m market_game_sim.experiment` | verify.py | 1 | 3 | — |
-| outcome-gate-id-not-in-prd | 成果门 H2-A/B/C 在 PRD §15 不存在 | Medium | correctness | 契约漂移 | fixed | PRD v0.5.1 补 H2-A/B/C 表并更新串行顺序 | verify.py | 1 | 3 | — |
-| t922-verify-mismatch | T922 引用 AC-303/304 但 verify 只指 test_protocol.py | Medium | correctness | 首次实现 | fixed | 补齐三条测试路径 | verify.py | 1 | 3 | — |
-| rerun-new-seed-breaks-pairing | 补跑换新 seed 后控制生成与 seed 平衡未定义 | Medium | correctness | 首次实现 | fixed | 结果盲的有序预签发备用 seed/pair 池，控制随分配预生成 | verify.py | 1 | 3 | — |
-| tests-experiment-dir-off-convention | tests/experiment/ 偏离仓库既有分层且层级标注自相矛盾 | Medium | quality | 首次实现 | fixed | 迁入 tests/unit/experiment 与 tests/integration | verify.py | 1 | 3 | — |
-| preregistration-gate-unchecked | 未确认 H2 协议是否进入 validate_preregistrations | Medium | test-coverage | 首次实现 | fixed | 接入双层预注册门，两份文件各存 SHA256 并交叉引用 | verify.py | 1 | 3 | — |
-| mechanism-metrics-not-in-dictionary | 三类机制指标未指定 metrics-dictionary 为唯一拥有者 | Medium | correctness | 首次实现 | fixed | spec/design/tasks 共同指定字典唯一真源 | verify.py | 1 | 3 | — |
-| constraint-omits-dq | §0 实现约束漏列 DQ-301—DQ-305 | Low | correctness | 首次实现 | fixed | 补齐 Q-301—Q-308 与 DQ-301—DQ-305 | verify.py | 1 | 3 | — |
-| rng-semantic-key-dependency-undeclared | 未声明"唯一差异"依赖 per-agent 语义键 RNG | Low | correctness | 首次实现 | fixed | 冻结语义键元组与 RNG 合同版本，禁止改共享计数器 | verify.py | 1 | 3 | — |
-| t903-verify-time-inversion | T903 verify 指向 T904 才创建的测试文件 | Low | quality | 症状 | 首次实现 | fixed（裁决） | 未采纳原定性：骨架先行规则已使引用合法 | tests/unit/test_spec_lifecycle.py | 1 | 3 | — |
-| treatment-bundles-three-changes | 处理打包决策来源/频率/目标函数三件事，效应不可归因 | High | correctness | 首次实现 | fixed | owner 采纳：主对照改 ALIGNED_POLICY_CONTROL，联合处理降为次要描述性 | 变异验证：Q-308 从开放问题拦截列表消失 | 1 | 4 | estimand-underspecified |
-| rare-event-power-no-gonogo | 罕见事件功效无 go/no-go 决策点 | High | correctness | 首次实现 | fixed | 先冻结资源上限再做聚类功效模拟，no-go 时禁止 freeze | verify.py | 1 | 3 | — |
-| estimand-too-narrow-for-product-thesis | 估计量与 PRD 第二层核心产出的关系未论证 | Medium | correctness | 首次实现 | fixed | 随 Q-308 落定：结论语法强制三限定词，禁用简称"人类效应" | verify.py | 1 | 4 | estimand-underspecified |
-| no-agent-ablation-reference-frame | 缺纯代理消融谱系作解释坐标系 | Medium | correctness | 首次实现 | fixed（部分吸收） | 以次要 GOAL_AGENT_CONTROL 对照臂吸收；完整消融谱系不采纳 | verify.py | 1 | 4 | — |
-| primary-endpoint-occurrence-vs-severity | 发生率二值指标被放在主要终点 | Medium | correctness | 首次实现 | tracked（T901 / Q-304、Q-307） | 未自动替换；改为二值/全样本/hurdle 同场模拟按证据选 | — | 1 | — | — |
-| non-code-critical-path-unplanned | 伦理与招募关键路径无排期与失败分支 | Low | quality | 首次实现 | fixed | 补 owner/日期/incomplete-study 非证据路径 | verify.py | 1 | 3 | — |
-| fix-question-line-wrapping-parser-unsafe | 修复时把 Q 行拆成续行，生命周期解析器无法识别 | Medium | correctness | 症状 | 修复回归 | fixed | 恢复单行标准复选框格式 | test_pending_section_standard_checkbox_ok | 2 | 3 | parser-sensitive-document-format |
-| fix-preregistration-shared-digest | 修复文本要求两份不同文档共享同一摘要 | High | correctness | 根因 | 修复回归 | fixed | 改为各存 SHA256 并由清单交叉绑定 | verify.py | 2 | 3 | cross-artifact-binding |
-| fix-no-go-failure-path-ambiguous | no-go 留痕与关闭规则不清 | Medium | correctness | 根因 | 修复回归 | fixed | incomplete-study 非证据路径，禁止进入 T918/声明/收口 | verify.py | 2 | 3 | failure-path-underspecified |
-| fix-q308-gate-coverage | 新增 Q-308 后门禁范围漏覆盖 | Medium | correctness | 根因 | 修复回归 | fixed | 全部范围扩到 Q-308 | test_open_question_fails_after_ready | 2 | 3 | cross-document-gate-drift |
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复建议 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| h2-human-slot-replacement-unmodeled | H1 新增账户而 H2 要求替换代理插槽 | High | correctness | 根因 | 首次实现 | fixed | 定义插槽替换适配器并冻结账户不变量 | 禁用目标策略；人类继承同一 agent_id/账户/资金/杠杆，禁用 extra_accounts | test_h2_paired_runs.py + verify.py | 1 | 3 | cross-feature-contract-drift |
+| tasks-missing-readiness-rules | 缺 ready 前 strict-xfail 骨架规则 | High | test-coverage | 根因 | 流程缺陷 | fixed | 继承 0.2.1 门禁并上提唯一拥有者 | 恢复规则并引用 features/README.md gate 章节 | tests/unit/test_spec_lifecycle.py | 1 | 3 | gate-lesson-not-carried-forward |
+| t925-single-file-ac-bypass | 聚合任务单文件旁路 8 个 AC | High | test-coverage | 根因 | 流程缺陷 | fixed | 统一门禁不得承担逐 AC 锚点 | T925 改 verify.py 并显式声明不作 AC 锚点 | test_non_test_path_does_not_satisfy_ac_path_gate | 1 | 3 | gate-bypass-by-aggregate-task |
+| dq305-referenced-as-q305 | 恢复策略归属标签错误 | Medium | correctness | 根因 | 首次实现 | fixed | 将恢复设计归回 DQ-305 | 纠正为 DQ-305；Q-305 只拥有补跑/排除/撤回政策 | verify.py | 1 | 3 | — |
+| existing-experiment-protocol-collision | H2 协议与既有 protocol 职责冲突 | Medium | correctness | 根因 | 契约漂移 | fixed | 指定独立模块路径与职责边界 | 落到 experiment/h2/protocol.py 并写明三类 protocol 边界 | verify.py | 1 | 3 | cross-feature-contract-drift |
+| cli-entry-three-way-drift | CLI 三处写法不一致 | Medium | correctness | 根因 | 首次实现 | fixed | 统一为仓库已有 python -m 入口 | 全部改为 python -m market_game_sim.experiment | verify.py | 1 | 3 | — |
+| outcome-gate-id-not-in-prd | H2-A/B/C 不在 PRD 唯一拥有者 | Medium | correctness | 根因 | 契约漂移 | fixed | PRD 增加拆分表与串行顺序 | PRD v0.5.1 补 H2-A/B/C | verify.py | 1 | 3 | — |
+| t922-verify-mismatch | T922 的 AC 与测试路径矛盾 | Medium | correctness | 根因 | 首次实现 | fixed | 按 AC 映射补全测试路径 | 补 protocol/evidence_guard/paired_runs 三条路径 | verify.py | 1 | 3 | — |
+| rerun-new-seed-breaks-pairing | 补跑 seed 的控制生成和平衡未定义 | Medium | correctness | 根因 | 首次实现 | fixed | 预签发结果盲备用 seed/pair 池 | 控制随 assignment 预生成并记录样本流 | verify.py | 1 | 3 | — |
+| tests-experiment-dir-off-convention | 测试目录偏离仓库分层 | Medium | quality | 根因 | 首次实现 | fixed | 按 unit/integration 现有层级落位 | 迁入 tests/unit/experiment 与 tests/integration | verify.py | 1 | 3 | — |
+| preregistration-gate-unchecked | H2 预注册是否进入机器门未定义 | Medium | test-coverage | 根因 | 首次实现 | fixed | 接入双层预注册门并绑定产物 | 两文件各存 SHA256，由清单交叉引用 | verify.py | 1 | 3 | — |
+| mechanism-metrics-not-in-dictionary | 机制指标无唯一口径拥有者 | Medium | correctness | 根因 | 首次实现 | fixed | 指定 metrics-dictionary 为唯一真源 | spec/design/tasks 同步指向指标字典 | verify.py | 1 | 3 | — |
+| constraint-omits-dq | 采样约束漏 DQ | Low | correctness | 根因 | 首次实现 | fixed | 补全 Q/DQ 范围 | 写明 Q-301—Q-308 与 DQ-301—DQ-305 | verify.py | 1 | 3 | — |
+| rng-semantic-key-dependency-undeclared | 配对依赖的 RNG 契约未声明 | Low | correctness | 根因 | 首次实现 | fixed | 冻结语义键与合同版本 | 禁止改为跨代理共享计数器 | verify.py | 1 | 3 | — |
+| t903-verify-time-inversion | T903 指向后续任务测试文件 | Low | quality | 症状 | 首次实现 | rejected（裁决 #1） | 改 verify 或合并骨架先行说明 | 未改；ready 前骨架先行使引用合法 | tests/unit/test_spec_lifecycle.py | 1 | 3 | — |
+| treatment-bundles-three-changes | 处理打包来源/频率/目标函数 | High | correctness | 根因 | 首次实现 | fixed（裁决 #2） | 对齐机会集、如实命名或增加参照臂 | 主比较改为窗口匹配参照策略，目标差异显式披露；原 goal 仅描述 | test_h2_primary_control_is_window_matched_not_goal_aligned | 1 | 4 | estimand-underspecified |
+| rare-event-power-no-gonogo | 罕见终点无功效 go/no-go | High | correctness | 根因 | 首次实现 | fixed | 协议冻结前设置资源上限和失败分支 | 聚类功效模拟超过上限即 no-go | verify.py | 1 | 3 | — |
+| estimand-too-narrow-for-product-thesis | 估计量与产品声明边界未论证 | Medium | correctness | 根因 | 首次实现 | fixed（裁决 #3） | 论证可证伪声明或如实收窄定位 | 强制参与者池/任务激励/模型族/参照策略限定 | test_h2_flagship_question_uses_the_primary_reference_policy | 1 | 4 | estimand-underspecified |
+| no-agent-ablation-reference-frame | 缺完整纯代理消融谱系 | Medium | correctness | 根因 | 首次实现 | rejected（裁决 #4） | 增加消融谱系作为解释坐标 | 不采纳完整谱系；保留 goal 对照仅作描述，未来另立研究 | 裁决记录 #4 | 1 | 4 | — |
+| primary-endpoint-occurrence-vs-severity | 二值发生与严重度主次未冻结 | Medium | correctness | 根因 | 首次实现 | tracked（T901/Q-304/Q-307；裁决 #5） | 比较二值、连续与 hurdle 功效后冻结 | 尚待 Q-304/Q-307 按证据选择 | — | 1 | — | — |
+| non-code-critical-path-unplanned | 伦理与招募无排期/失败分支 | Low | quality | 根因 | 首次实现 | fixed | 增加 owner、日期和不足样本分支 | incomplete-study 为非证据且禁止收口 | verify.py | 1 | 3 | — |
+| fix-question-line-wrapping-parser-unsafe | Q 行换行破坏生命周期解析 | Medium | correctness | 症状 | 修复回归 | fixed | 恢复解析器可识别的标准单行 | Q-304/Q-308 改回单行复选框 | test_pending_section_standard_checkbox_ok | 2 | 3 | parser-sensitive-document-format |
+| fix-preregistration-shared-digest | 两份不同文档被要求共享摘要 | High | correctness | 根因 | 修复回归 | fixed | 分别摘要并由清单绑定 | 两文件各存 SHA256 并交叉引用 | verify.py | 2 | 3 | cross-artifact-binding |
+| fix-no-go-failure-path-ambiguous | no-go 留痕和关闭规则不清 | Medium | correctness | 根因 | 修复回归 | fixed | 定义非证据失败产物和禁止路径 | incomplete-study 不得进入 T918/声明/收口 | verify.py | 2 | 3 | failure-path-underspecified |
+| fix-q308-gate-coverage | 新增 Q-308 后门禁漏覆盖 | Medium | correctness | 根因 | 修复回归 | fixed | 扩大采样门与问题范围 | 全部范围扩到 Q-308 | test_open_question_fails_after_ready | 2 | 3 | cross-document-gate-drift |
 
 ### 裁决记录（从被误删的 CURRENT-doc 恢复）
 

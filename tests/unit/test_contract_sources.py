@@ -591,6 +591,19 @@ def test_h2_retrospective_preserves_nonadoption_dispositions():
     assert "证据：" in section and "关闭路径" in section
 
 
+def test_h2_retrospective_issue_table_is_lossless():
+    """循环 21 的每条 issue 必须保持固定 13 列，不能让缺列把状态整体左移。"""
+    retrospective = (ROOT / "docs" / "reviews" / "RETROSPECTIVE.md").read_text(encoding="utf-8")
+    table = retrospective.split("## 循环 21:", 1)[1].split("### 裁决记录", 1)[0]
+    rows = [line for line in table.splitlines() if line.startswith("| ")]
+    header, *issues = rows
+    assert len(header.strip("|").split("|")) == 13
+    assert len(issues) == 25
+    assert all(len(row.strip("|").split("|")) == 13 for row in issues)
+    statuses = {row.strip("|").split("|")[6].strip() for row in issues}
+    assert all(status.startswith(("fixed", "rejected", "tracked")) for status in statuses)
+
+
 def test_v2_goal_contract_freezes_the_decisions_design_defers_to_it():
     """design 把语义"已冻结"的部分指向合同，合同就必须真的写着这些语义。
 
