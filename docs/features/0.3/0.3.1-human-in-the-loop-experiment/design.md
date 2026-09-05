@@ -40,7 +40,8 @@ updated: 2026-09-05
 - 前端：实验专用阶段、同意/训练、倒计时、退出和技术中止状态；移除正式态 pause/step。
 - 后端 / API：协议冻结、匿名 enrollment、assignment、窗口控制和样本裁决。
 - 存储 / Migration：文件型 protocol/assignment/session/evidence artifact；不引入数据库。
-- Runtime / Agent Adapter：新增 H2 专用目标插槽替换适配器；目标代理仍保留在冻结
+- Runtime / Agent Adapter：新增 H2 专用目标插槽替换适配器，以及占用同一插槽的**对齐策略
+  代理**（主对照决策生产者，须受同一窗口调度器约束）；目标代理仍保留在冻结
   `agent_specs` 与账户集合中，但正式处理运行禁用其策略决策入口，由规范人类输入接管同一
   `agent_id`、账户、初始资金、杠杆与风险参数。`human-experiment` 禁止沿用 H1
   `extra_accounts["human"]` 的新增账户路径；撮合、账本、保证金和强平生产路径保持不变。
@@ -70,7 +71,9 @@ Paired pure-agent runner --------------------+-> pair validator
 - `experiment session controller` 只负责窗口、状态和输入规范化，不复制撮合/风控业务逻辑。
 - `target-slot adapter` 只替换冻结目标插槽的决策生产者，不新增或删除账户；处理与控制运行的
   账户集合、初始资金总量、背景 `agent_specs` 和制度配置必须逐字段相同。
-- `pair validator` 比较冻结字段白名单，处理字段只允许 `decision_source` 及其派生输入不同。
+- `pair validator` 比较冻结字段白名单（含账户、初始资金、信息集、动作空间与**窗口调度
+  参数**），主要 pair 只允许 `decision_source` 及其派生输入不同；次要 `GOAL_AGENT_CONTROL`
+  额外允许目标策略字段不同，并被标记为描述性，不参与主要 pair 完整性判定。
 - `analysis` 只读取冻结 evidence index，不扫描 artifact 目录自动挑样本。
 - 三类机制指标的规范定义只写入 `docs/research/metrics-dictionary.md`；protocol 保存字典版本与
   指标 ID，分析器不得复制公式或按本地实现重新解释口径。
@@ -109,7 +112,8 @@ schema 校验参与者、assignment、窗口、停止、排除和分析的可执
   只允许从 draft 产生新冻结版。
 - `python -m market_game_sim.experiment enroll|train|assign|run|withdraw`：每步要求上一状态的
   不可伪造引用。
-- `python -m market_game_sim.experiment control-pair <assignment>`：从 assignment 生成冻结纯代理运行。
+- `python -m market_game_sim.experiment control-pair <assignment>`：从 assignment 生成两条冻结纯代理
+  运行（`--arm aligned|goal`，默认两条都生成）。
 - `python -m market_game_sim.experiment preview|adjudicate|analyze|deliver`：阶段严格分离，正式命令
   只读冻结 index。
 
@@ -129,6 +133,10 @@ schema 校验参与者、assignment、窗口、停止、排除和分析的可执
 - 客户端输入带 `window_id + input_seq`；控制器只在窗口开放、未提交时接受一次规范决定。
 - 窗口关闭与输入到达竞争由服务器提交顺序裁决并记录；迟到输入稳定拒绝，不回拨逻辑时间。
 - 控制运行可预生成，但必须使用与处理运行相同的冻结代码/config/seed；代码变化使 pair 失效。
+- 每个 assignment 预生成两条对照：`ALIGNED_POLICY_CONTROL`（主）与 `GOAL_AGENT_CONTROL`
+  （次要描述性）。主对照必须通过与参与者相同的有限窗口调度器产生决策——同窗口长度、每窗
+  至多一个动作、超时写 `NO_ACTION`；禁止让它按内核默认的逐次调度决策。窗口调度参数进入
+  pair 冻结字段白名单与 `protocol_hash`。
 - 背景代理随机数继续使用既有语义键
   `(master_seed, agent_id, mechanism, decision_index, draw_index)`；禁止改成跨代理共享的可变
   计数器。pair manifest 绑定 RNG contract 版本，确保替换目标插槽不会仅因抽样游标错位改变
@@ -165,7 +173,7 @@ schema 校验参与者、assignment、窗口、停止、排除和分析的可执
 | `AC-301` | unit / contract | `tests/unit/experiment/test_h2_protocol.py` | 完整冻结、漂移新哈希、旧 assignment 拒绝 |
 | `AC-302` | integration / UI | `tests/integration/test_experiment_session.py` | 有限窗口、超时、无特权控制 |
 | `AC-303` | integration | `tests/integration/test_h2_evidence_guard.py` | 模式/阶段/协议/pair 拒绝且零部分输出 |
-| `AC-304` | integration | `tests/integration/test_h2_paired_runs.py` | 账户/资金/代理集合相同、唯一差异、控制复现、处理重放 |
+| `AC-304` | integration | `tests/integration/test_h2_paired_runs.py` | 账户/资金/代理集合/窗口调度参数相同、唯一差异为决策来源、主对照复现、处理重放、次要对照标为描述性 |
 | `AC-305` | unit / research | `tests/unit/experiment/test_h2_outcomes.py` | 三家族、双侧区间、多重性、无综合分数 |
 | `AC-306` | unit / integration | `tests/unit/experiment/test_h2_mechanisms.py`、`tests/integration/test_h2_mechanisms.py` | 三机制及完整因果追溯 |
 | `AC-307` | E2E / research | `tests/integration/test_h2_delivery.py` | index-only 重建、哈希与结论语法 |
@@ -178,7 +186,8 @@ preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失
 
 | 决策 / 风险 | 结论或缓解 | 理由 | 替代方案 / 后续 |
 |---|---|---|---|
-| 控制设计 | 同 seed/config 纯代理配对，不把 v0.1 样本直接复用 | H2 代码和协议必须同代可比 | 预生成后以哈希锁定 |
+| 控制设计（Q-308 已裁决） | 每个人类运行配两条同 seed/config 纯代理对照：主对照 `ALIGNED_POLICY_CONTROL`、次要描述性 `GOAL_AGENT_CONTROL`；不把 v0.1 样本直接复用 | 机制归因要求处理只差决策来源；对照是纯代理运行，第二条不增加招募 | 预生成后以哈希锁定；主对照策略预注册且不为 H2 调参 |
+| 窗口对齐 | 主对照必须跑同一有限窗口调度器，调度参数进入 pair 冻结字段白名单 | 否则“决策机会对齐”只是纸面声明，识别比联合处理更差 | 由 `pair validator` 与 AC-304 断言执行 |
 | 估计单位 | participant-seed pair，分析处理参与者内重复 | 同一人多局不独立 | 具体模型由功效模拟冻结 |
 | 分配 | seed/scenario 顺序随机或平衡，分配表预先签发 | 控制学习、疲劳和场景顺序 | 算法与审计种子待冻结 |
 | 正式交互 | 固定窗口，无暂停/单步 | H1 无限思考不适合作正式比较 | 训练阶段仍可暂停讲解 |
@@ -191,10 +200,12 @@ preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失
 以下内容是对 spec Q-301—Q-308 的**建议**，用于检视和功效模拟，不代表问题已经关闭；
 只有评审通过并回写 spec 后才成为冻结合同。
 
-#### Q-301：目标代理
+#### Q-301：目标插槽与两条对照的策略实例
 
-- 建议固定替换一个具有方向性仓位目标的 `goal-driven` 代理，并在全部正式场景保持相同
-  角色、策略参数、初始账户、杠杆上限和风险参数。
+- Q-308 已定：主对照是与参与者任务对齐的策略代理，原方向性目标代理退为次要描述性对照。
+  Q-301 剩余待定的是两者各自取自哪个 v0.1 家族与参数实例。
+- 建议固定同一个目标插槽，并在全部正式场景保持相同角色、初始账户、杠杆上限和风险参数；
+  两条对照只在决策策略上不同。
 - 建议不替换做市商：撤掉做市角色会机械性改变盘口深度，难以区分人类决策效应与角色
   缺失效应。
 - 参与者不得自选被替换角色；纯代理 pair 中保留同一 target slot 的原策略。
@@ -262,13 +273,24 @@ preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失
   长度；强平账户数和名义量为次要指标。
 - 三个家族分别报告，不生成综合崩盘得分。
 
-#### Q-308：处理定义与 estimand 命名
+#### Q-308：处理定义与 estimand 命名（已裁决，正文见 spec §1/§7）
 
-- 冻结协议前必须在两种对象中明确选择：完整的“人类接管 + 标准化任务 + 有限窗口”联合
-  处理效应，或在账户、公开目标、动作空间与决策机会均对齐后的决策策略来源差异。
-- 若选择联合处理，报告不得简称为抽象“人类效应”，并须把任务、节奏和信息集写入 estimand。
-- 若选择策略来源差异，控制代理必须使用与人类相同的决策机会、动作约束和公开目标；增加
-  第三代理臂只能作为额外分解，不能仅凭目标文字相同就声称已隔离人类属性。
+裁决结果：主要估计量是**对齐后的决策来源差异**，主对照 `ALIGNED_POLICY_CONTROL`；联合
+处理降为次要描述性对照 `GOAL_AGENT_CONTROL`。人类臂只跑一次，两条对照都是纯代理运行，
+可随 assignment 预生成，因此第二条对照不增加招募范围，也不进入主要终点的多重性校正。
+
+实现侧由此产生三条硬约束（不满足则 B 只是纸面对齐，比联合处理更危险）：
+
+1. **窗口调度对齐**：`ALIGNED_POLICY_CONTROL` 必须运行在与参与者相同的有限窗口调度器下
+   ——同窗口长度、每窗至多一个动作、超时同样写 `NO_ACTION`。对照代理不得按内核默认的
+   每次调度都决策；`pair validator` 必须把窗口调度参数纳入冻结字段白名单。
+2. **对照策略来源受限**：主对照策略取自 v0.1 已验证的代理家族，参数随协议预注册并进入
+   `protocol_hash`，不得为 H2 重新调参——否则“人类比策略强/弱”的结论只反映对照被调弱。
+3. **对齐边界如实声明**：只对齐任务陈述、激励、信息集与决策机会，不声称对齐实际效用
+   函数；结论语法强制三限定词（参与者池、任务与激励、模型族），禁用简称“人类效应”。
+
+`GOAL_AGENT_CONTROL` 的定位是描述性：它回答“相对于原始市场配置发生了什么”，用于外部
+可读性与稳健性观察，其结果段落必须标注 descriptive，不得替代主要结论。
 
 ### 待确认技术设计的建议基线
 
