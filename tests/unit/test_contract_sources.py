@@ -539,6 +539,21 @@ def test_goal_model_ids_are_consistent_across_docs(doc, model_id):
     assert model_id in text, f"{doc} 未提及 {model_id}"
 
 
+H2_QUESTION_DOCS = (
+    "docs/market-game-sim-prd.md",
+    "docs/features/0.3/spec.md",
+    "docs/features/0.3/0.3.1-human-in-the-loop-experiment/spec.md",
+)
+
+
+@pytest.mark.parametrize("doc", H2_QUESTION_DOCS)
+def test_h2_flagship_question_uses_the_primary_reference_policy(doc):
+    """Q-308 改主要反事实后，PRD、父规格和里程碑不得继续提出旧问题。"""
+    text = (ROOT / doc).read_text(encoding="utf-8")
+    assert "预注册纯代理参照策略" in text, f"{doc} 未声明 H2 主要参照策略"
+    assert "以真实人类交易者替换一个目标驱动代理" not in text, f"{doc} 仍在提出旧 H2 问题"
+
+
 def test_v2_goal_contract_freezes_the_decisions_design_defers_to_it():
     """design 把语义"已冻结"的部分指向合同，合同就必须真的写着这些语义。
 
