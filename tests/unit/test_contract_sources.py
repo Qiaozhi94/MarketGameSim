@@ -545,6 +545,12 @@ H2_QUESTION_DOCS = (
     "docs/features/0.3/0.3.1-human-in-the-loop-experiment/spec.md",
 )
 
+H2_CONTROL_CONTRACT_DOCS = (
+    "docs/features/0.3/0.3.1-human-in-the-loop-experiment/spec.md",
+    "docs/features/0.3/0.3.1-human-in-the-loop-experiment/design.md",
+    "docs/features/0.3/0.3.1-human-in-the-loop-experiment/tasks.md",
+)
+
 
 @pytest.mark.parametrize("doc", H2_QUESTION_DOCS)
 def test_h2_flagship_question_uses_the_primary_reference_policy(doc):
@@ -552,6 +558,21 @@ def test_h2_flagship_question_uses_the_primary_reference_policy(doc):
     text = (ROOT / doc).read_text(encoding="utf-8")
     assert "预注册纯代理参照策略" in text, f"{doc} 未声明 H2 主要参照策略"
     assert "以真实人类交易者替换一个目标驱动代理" not in text, f"{doc} 仍在提出旧 H2 问题"
+
+
+@pytest.mark.parametrize("doc", H2_CONTROL_CONTRACT_DOCS)
+def test_h2_primary_control_is_window_matched_not_goal_aligned(doc):
+    """v0.1 没有目标对齐策略，H2 合同不得重新暗示完整效用函数已对齐。"""
+    text = (ROOT / doc).read_text(encoding="utf-8")
+    assert "WINDOW_MATCHED_POLICY_CONTROL" in text, f"{doc} 缺窗口匹配主对照"
+    assert "ALIGNED_POLICY_CONTROL" not in text, f"{doc} 仍使用无法兑现的目标对齐名称"
+
+
+def test_h2_protocol_requires_an_auditable_comparison_matrix():
+    spec = (ROOT / H2_CONTROL_CONTRACT_DOCS[0]).read_text(encoding="utf-8")
+    design = (ROOT / H2_CONTROL_CONTRACT_DOCS[1]).read_text(encoding="utf-8")
+    assert "比较矩阵" in spec and "不声称目标函数对齐" in spec
+    assert "可审计比较矩阵" in design and "不同且必须分别披露" in design
 
 
 def test_v2_goal_contract_freezes_the_decisions_design_defers_to_it():
