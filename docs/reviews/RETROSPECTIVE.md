@@ -970,3 +970,36 @@ Q-308 关闭后拦截数由 13 降为 12 且其余 Q/DQ 仍被拦（门禁没被
 
 **8. 存活轮数**：绝大多数 1→3 轮关闭；3 条研究设计问题 1→4 轮（等 owner 裁决）；1 条仍
 `tracked`。没有出现"连续 3 轮修不动"的不收敛升级情形。
+
+---
+
+## 循环 22: 0.3.1 Q-308 裁决后复检与审查证据恢复
+
+- **report_type**: doc-review
+- **周期**: 2026-09-05（2 轮：Q-308/归档 diff 复检 → 修复 → diff-only 回归复核）
+- **基线**: `ffab9c0` → `bd97c63`（最终总结提交另计）
+- **收尾状态**: 7 条全部 fixed；CURRENT/FIX-log 按用户覆盖指令持续保留
+- **机器门禁**: `python tools/verify.py` 在最终总结提交前运行；最终 CI 以包含本节的提交对应 run 为准
+
+### 完整 issue 表
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复建议 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| q308-flagship-question-comparator-drift | 旗舰问题仍写目标驱动代理，主要对照已改为参照策略 | High | correctness | 根因 | 修复回归 | fixed | 同步 PRD/父规格/子规格问题陈述 | 三层真源统一为人类相对预注册纯代理参照策略 | test_h2_flagship_question_uses_the_primary_reference_policy | 1 | 2 | cross-document-contract-drift |
+| aligned-control-policy-contract-unresolved | “对齐策略”无可执行目标合同 | High | correctness | 根因 | 修复回归 | fixed | 冻结对齐矩阵；无合格策略则改名并收窄结论 | 改为 WINDOW_MATCHED_POLICY_CONTROL，冻结账户/风险/信息/动作/窗口/目标比较矩阵 | test_h2_primary_control_is_window_matched_not_goal_aligned + test_h2_protocol_requires_an_auditable_comparison_matrix | 1 | 2 | estimand-underspecified |
+| review-artifacts-removed-against-retention | 明确保留后 CURRENT/FIX-log 仍被清理 | High | quality | 根因 | 流程缺陷 | fixed | 恢复过程稿或无损迁移裁决证据 | 重建 CURRENT/FIX-log，并把 5 条裁决理由写入 Git 可恢复的循环 21 | test_h2_retrospective_preserves_nonadoption_dispositions | 1 | 2 | review-evidence-premature-deletion |
+| retrospective-issue-table-not-lossless | 循环 21 表格错列并丢失裁决字段 | Medium | correctness | 根因 | 流程缺陷 | fixed | 按固定 13 列重建并校验 | 25 行全部恢复 root/origin/status/suggested/fix/disposition 语义 | test_h2_retrospective_issue_table_is_lossless | 1 | 2 | retrospective-schema-drift |
+| claude-ci-job-count-drift | CLAUDE 写 4 个 CI job，实际为 5 个 | Low | quality | 根因 | 契约漂移 | fixed | 补 Windows job 并改计数 | 清单加入 H1 interactive (Windows)，计数改 5 | test_claude_ci_job_inventory_matches_workflow | 1 | 2 | operational-doc-drift |
+| retrospective-partial-status-regression | 表格修复把历史 partial 错写为 fixed | Medium | correctness | 根因 | 修复回归 | fixed | 保持周期边界并给 partial 剩余载体 | treatment/estimand 改回 partial，剩余分别挂到本周期两个 finding | test_h2_retrospective_issue_table_is_lossless | 2 | 2 | retrospective-schema-drift |
+| h2-review-test-formatting-regression | 新增合同测试未通过 ruff 格式门 | Low | quality | 症状 | 修复回归 | fixed | 按项目 ruff 版本格式化目标文件 | 拆分两条长断言并统一文件换行格式 | ruff check + ruff format --check | 2 | 2 | local-gate-not-run-before-commit |
+
+### 模式教训
+
+**1. 研究问题真源必须跟着主要 comparator 一起改。** 改 arm 名称和分析式不够；PRD、父规格与
+里程碑开头仍提旧问题时，形式上正确的分析会回答错误的产品命题。跨文档断言现已锁定三层真源。
+
+**2. “对齐”必须拆成机器可比较维度。** v0.1 没有完整效用最大化策略，因此不能把同一文字任务
+当成目标函数对齐。新合同只声称账户/风险、信息、动作与窗口匹配，目标差异单独披露。
+
+**3. 忽略文件没有 Git 兜底。** 用户要求保留时，即使 CI 全绿也不得套用默认清理步骤；关键裁决
+必须同时进入 RETROSPECTIVE，过程稿则持续留在固定文件名下。
