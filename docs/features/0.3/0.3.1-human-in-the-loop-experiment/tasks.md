@@ -35,7 +35,7 @@ updated: 2026-09-05
 
 - [ ] T901 (`Q-301`, `Q-302`, `Q-303`, `Q-304`, `Q-305`, `Q-306`, `Q-307`, `DQ-301`,
       `DQ-302`, `DQ-303`, `DQ-304`, `DQ-305`): 关闭剩余阻塞研究与设计问题；`Q-308` 已裁决为
-      对齐决策来源差异（主对照 `ALIGNED_POLICY_CONTROL`），Q-301 只需选定两条对照的策略
+      窗口匹配参照策略差异（主对照 `WINDOW_MATCHED_POLICY_CONTROL`），Q-301 只需选定两条对照的策略
       家族与参数实例 — verify: `spec.md`、`design.md`
 - [ ] T902 (`FR-301`, `NFR-302`, `SC-301`): 先冻结招募/参与者小时/预算上限，再以参与者内
       重复、pair 缺失和多重性运行功效模拟；只有 go 判定后才完成协议、停止规则、同意/隐私
@@ -57,9 +57,10 @@ updated: 2026-09-05
       顺序、有序备用 seed/pair 池与结果盲纳入元数据 — verify:
       `tests/integration/test_h2_paired_runs.py`
 - [ ] T907 (`FR-301`, `FR-302`, `TR-301`, `NFR-301`, `AC-304`): 实现目标代理插槽、人类替换条件、
-      受同一窗口调度器约束的对齐策略代理，以及 `ALIGNED_POLICY_CONTROL` 主对照与
+      受同一窗口调度器约束的参照策略代理，以及 `WINDOW_MATCHED_POLICY_CONTROL` 主对照与
       `GOAL_AGENT_CONTROL` 次要对照的双臂生成与冻结字段比较（窗口调度参数必须在白名单内，
-      主对照策略取自预注册的 v0.1 家族） — verify: `tests/integration/test_h2_paired_runs.py`
+      主对照策略取自预注册的 v0.1 家族；协议须冻结账户/风险、信息、动作、窗口与目标差异的
+      比较矩阵，且不声称目标函数对齐） — verify: `tests/integration/test_h2_paired_runs.py`
 - [ ] T908 (`FR-303`, `IR-302`, `AC-303`): 实现 mode/stage/protocol/pair/inclusion 多重 evidence
       guard 和原子拒绝 — verify: `tests/integration/test_h2_evidence_guard.py`
 - [ ] T909 `[成果门:H2-A]` (`AC-301`, `AC-303`, `AC-304`): 生成可打开的冻结协议、配对
@@ -75,7 +76,7 @@ updated: 2026-09-05
       阶段提示与退出，并移除正式态 pause/step/改参 — verify:
       `tests/integration/test_experiment_session.py`
 - [ ] T912 [P] (`FR-304`, `SC-303`, `AC-305`): 实现三个独立结果家族、配对估计、不确定性、
-      多重性和缺失处理；Holm 只作用于 `HUMAN_REPLACEMENT - ALIGNED_POLICY_CONTROL` 三个
+      多重性和缺失处理；Holm 只作用于 `HUMAN_REPLACEMENT - WINDOW_MATCHED_POLICY_CONTROL` 三个
       主要终点，含 `GOAL_AGENT_CONTROL` 的两组对比输出为描述性且不得替代主要结论 — verify:
       `tests/unit/experiment/test_h2_outcomes.py`
 - [ ] T913 [P] (`FR-305`, `TR-302`, `SC-303`, `AC-306`): 实现激进订单、流动性撤回和风险减仓
