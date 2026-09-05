@@ -1014,7 +1014,7 @@ Q-308 关闭后拦截数由 13 降为 12 且其余 Q/DQ 仍被拦（门禁没被
 - **收尾状态**: 7 条全部 fixed；未决 Critical / High / Medium / Low = 0 / 0 / 0 / 0；
   CURRENT/FIX-log 按用户要求持续保留
 - **本地门禁**: `python tools/verify.py`，2333 passed；真源、生命周期、ruff check、ruff format 全绿；
-  当前 HEAD 的远端 CI 待推送后确认
+  远端 CI 已在 HEAD `8227181` 全绿（run 33963727401，5 个 job：真源与生命周期、ruff、pytest 3.11/3.13、H1 interactive (Windows)）
 
 ### 完整 issue 表
 
