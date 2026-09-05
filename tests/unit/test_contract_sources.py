@@ -575,6 +575,19 @@ def test_h2_protocol_requires_an_auditable_comparison_matrix():
     assert "可审计比较矩阵" in design and "不同且必须分别披露" in design
 
 
+def test_h2_design_matrix_covers_all_three_conditions():
+    """可审计矩阵必须集中覆盖人类、主对照和次要对照。"""
+    design = (ROOT / H2_CONTROL_CONTRACT_DOCS[1]).read_text(encoding="utf-8")
+    matrix = design.split("协议必须冻结以下可审计比较矩阵", 1)[1]
+    matrix = matrix.split("`GOAL_AGENT_CONTROL` 的定位", 1)[0]
+    rows = [line for line in matrix.splitlines() if line.startswith("| ")]
+    assert len(rows) == 5
+    assert all(len(row.strip("|").split("|")) == 5 for row in rows)
+    assert "`GOAL_AGENT_CONTROL`" in rows[0]
+    assert "同一调度器与参数" in rows[3]
+    assert "原方向性目标策略" in rows[4]
+
+
 def test_h2_secondary_control_uses_the_shared_window_scheduler():
     """次要对照也必须冻结决策机会，避免描述性差异混入调度变化。"""
     spec = (ROOT / H2_CONTROL_CONTRACT_DOCS[0]).read_text(encoding="utf-8")
