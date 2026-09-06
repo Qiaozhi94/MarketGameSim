@@ -35,9 +35,9 @@ updated: 2026-09-06
 
 - [ ] T901 (`Q-301`, `Q-302`, `Q-303`, `Q-304`, `Q-305`, `Q-306`, `Q-307`, `DQ-301`,
       `DQ-302`, `DQ-303`, `DQ-304`, `DQ-305`): 按 `H2-dual-track-contract-v1` 将 spec/design
-      中遗留的多人招募、报酬、伦理、人群推断和 `HUMAN_REPLACEMENT` 合同逐项重基线为
+      中遗留的多人招募、报酬、伦理与人群推断合同逐项重基线为
       `AI_FORMAL` 与 `OWNER_N_OF_1`；旧内容只保留在 superseded 证据中，开发代码不得实现
-      旧合同。`WINDOW_MATCHED_POLICY_CONTROL` 与 `GOAL_AGENT_CONTROL` 的策略 ID 或参数组合必须不同，
+      旧合同。两条参照策略（`risk_budget_threshold_v1` 与 `risk_budget_linear_v1`）的策略 ID 或参数组合必须不同，
       并记录主对照选择依据 — verify: `tests/unit/test_h2_dual_track_contract.py`、`spec.md`、`design.md`
 - [ ] T902 (`FR-301`, `NFR-302`, `SC-301`): 三个家族的严重程度 SESOI 已按 0.25 SD 全部冻结
       （`price_crash`/`liquidity_dry_up` = `4.5969e-3`，`liquidation_cascade` = `0.25049`），
@@ -56,7 +56,7 @@ updated: 2026-09-06
 ### Phase 1：H2-A 冻结协议与配对运行骨架
 
 - [ ] T904 (`FR-301`, `DR-301`, `AC-301`): 实现 protocol schema、完整性校验、内容哈希与不可变
-      冻结，并与仓库预注册门交叉绑定；`control_arm` 闭集为 `window-matched | goal`，CLI 复用
+      冻结，并与仓库预注册门交叉绑定；`control_arm` 闭集为 `linear | threshold | owner`，CLI 复用
       同一枚举真源 — verify: `tests/unit/experiment/test_h2_protocol.py`
 - [ ] T905 [P] (`DR-301`, `IR-301`, `AC-308`): 实现匿名 enrollment、同意/资格/理解检查和撤回状态
       — verify: `tests/unit/experiment/test_h2_privacy.py`
@@ -64,8 +64,8 @@ updated: 2026-09-06
       顺序、有序备用 seed/pair 池与结果盲纳入元数据 — verify:
       `tests/integration/test_h2_paired_runs.py`
 - [ ] T907 (`FR-301`, `FR-302`, `TR-301`, `NFR-301`, `AC-304`): 实现目标代理插槽、人类替换条件、
-      两条纯代理对照均受同一有限窗口调度器约束，以及 `WINDOW_MATCHED_POLICY_CONTROL` 主对照与
-      `GOAL_AGENT_CONTROL` 次要对照的双臂生成与冻结字段比较（窗口调度参数必须在白名单内，
+      两条纯代理参照均受同一有限窗口调度器约束（`WINDOW_MATCHED_POLICY_CONTROL` 形态），
+      以及两轨的双臂生成与冻结字段比较（窗口调度参数必须在白名单内，
       主对照策略取自预注册的 v0.1 家族；协议须冻结账户/风险、信息、动作、窗口与目标差异的
       比较矩阵，且不声称目标函数对齐） — verify: `tests/integration/test_h2_paired_runs.py`
 - [ ] T908 (`FR-303`, `IR-302`, `AC-303`): 实现 mode/stage/protocol/pair/inclusion 多重 evidence
@@ -83,8 +83,8 @@ updated: 2026-09-06
       阶段提示与退出，并移除正式态 pause/step/改参 — verify:
       `tests/integration/test_experiment_session.py`
 - [ ] T912 [P] (`FR-304`, `SC-303`, `AC-305`): 实现三个独立结果家族、配对估计、不确定性、
-      多重性和缺失处理；Holm 只作用于 `HUMAN_REPLACEMENT - WINDOW_MATCHED_POLICY_CONTROL` 三个
-      主要终点，含 `GOAL_AGENT_CONTROL` 的两组对比输出为描述性且不得替代主要结论 — verify:
+      多重性和缺失处理；Holm 只作用于 AI 轨 `risk_budget_threshold_v1 - risk_budget_linear_v1`
+      的三个主要终点，所有者轨对比输出为描述性且不得替代主要结论 — verify:
       `tests/unit/experiment/test_h2_outcomes.py`
 - [ ] T913 [P] (`FR-305`, `TR-302`, `SC-303`, `AC-306`): 实现激进订单、流动性撤回和风险减仓
       指标及因果追溯，将 ID/公式/单位/窗口/缺失语义写入指标字典唯一真源 — verify:

@@ -21,11 +21,13 @@ updated: 2026-09-06
 
 2026-09-06 方向重置后的规范输入是
 [`H2-dual-track-contract`](../../../experiments/H2-dual-track-contract.md)：AI 正式轨使用
-**不少于 158 个** paired-seed blocks（最终数由 paired-seed 校准冻结，见
-[`H2-block-power-baseline`](../../../experiments/H2-block-power-baseline.md)），所有者 N-of-1 轨
+**168 个** paired-seed blocks（三个家族的 0.25 SD SESOI 各需 168，见
+[`H2-block-power-baseline`](../../../experiments/H2-block-power-baseline.md)、
+[`H2-endpoint-calibration`](../../../experiments/H2-endpoint-calibration.md)、
+[`H2-cascade-calibration`](../../../experiments/H2-cascade-calibration.md)），所有者 N-of-1 轨
 使用 6 个训练和 24 个正式 paired blocks，两条 evidence index 严格隔离。AI 轨是
-`formal-research`，所有者轨是 `experiment-preview`，研究声明只能由 AI 轨建立。本文后续遗留的多人招募、报酬和人群推断设计只作历史审计，
-T901 必须在开发前重基线；任何冲突均以双轨合同为准。
+`formal-research`，所有者轨是 `experiment-preview`，研究声明只能由 AI 轨建立。本文已按双轨
+合同完成重基线；任何冲突均以合同为准。
 
 - **行为契约**：[`spec.md`](spec.md)。
 - **PRD / Architecture / Research**：[`PRD §15`](../../../market-game-sim-prd.md#15-交付路线图)、
@@ -35,26 +37,28 @@ T901 必须在开发前重基线；任何冲突均以双轨合同为准。
 - **上游 Contract**：[`event-schema`](../../../contracts/event-schema.md)、
   [`agent-strategy`](../../../contracts/agent-strategy.md)、
   [`interactive-session`](../../../contracts/interactive-session.md)。
-- **实现约束**：复用唯一市场内核；H1 `interactive` 保持隔离；正式实验在 Q-301—Q-308、
-  DQ-301—DQ-305 全部关闭、preview 通过和协议冻结前不可采样。
+- **实现约束**：复用唯一市场内核；H1 `interactive` 保持隔离；正式采样在剩余 Q/DQ 关闭、
+  preview 通过和协议冻结前不可开始。项目不招募外部真人，唯一真人是项目所有者本人。
 
 ## 1. 技术概要与影响面
 
-在 H1 会话适配器外新增实验编排层。编排器加载内容寻址协议和签发的 assignment，生成
-配对纯代理控制，锁定正式客户端的观察/动作窗口，并将规范人类输入送入既有生产路径。
-独立 evidence guard 对模式、阶段、协议、pair、排除状态和哈希执行 fail-closed 校验；
-分析器以 participant-seed pair 为单位生成三个结果家族和机制表。
+在 H1 会话适配器外新增实验编排层。编排器加载内容寻址协议和签发的 assignment，按 `run_mode`
+分流两条轨道：`ai-mechanism-experiment` 成对执行两个冻结策略；`owner-n-of-1` 锁定所有者
+客户端的观察/动作窗口，并把规范输入送入既有生产路径。独立 evidence guard 对轨道、模式、
+阶段、协议、pair、排除状态和哈希执行 fail-closed 校验；分析器分别以 seed block 与所有者
+场景为单位生成三个结果家族和机制表。
 
-- 前端：实验专用阶段、同意/训练、倒计时、退出和技术中止状态；移除正式态 pause/step。
-- 后端 / API：协议冻结、匿名 enrollment、assignment、窗口控制和样本裁决。
+- 前端：所有者会话的训练/正式阶段、倒计时、中止状态与解盲控制；移除正式态 pause/step。
+- 后端 / API：协议冻结、assignment、双轨窗口控制和样本裁决；无 enrollment/同意流程。
 - 存储 / Migration：文件型 protocol/assignment/session/evidence artifact；不引入数据库。
 - Runtime / Agent Adapter：新增 H2 专用目标插槽替换适配器，以及占用同一插槽的**窗口匹配
   参照代理**（主对照决策生产者，须受同一窗口调度器约束）；目标代理仍保留在冻结
   `agent_specs` 与账户集合中，但正式处理运行禁用其策略决策入口，由规范人类输入接管同一
-  `agent_id`、账户、初始资金、杠杆与风险参数。`human-experiment` 禁止沿用 H1
+  `agent_id`、账户、初始资金、杠杆与风险参数。`owner-n-of-1` 禁止沿用 H1
   `extra_accounts["human"]` 的新增账户路径；撮合、账本、保证金和强平生产路径保持不变。
-- Event / Evidence：新 `human-experiment` mode、sample stage、协议/pair 元数据与独立 guard。
-- 文档 / 配置：预注册、数据字典、运行手册、同意/保留政策和正式报告。
+- Event / Evidence：新 `ai-mechanism-experiment` 与 `owner-n-of-1` mode、sample stage、
+  协议/pair 元数据与两条互相隔离的 evidence index。
+- 文档 / 配置：预注册、数据字典、运行手册、解盲与保留政策和两份正式报告。
 
 ## 2. 架构与模块边界
 
@@ -81,7 +85,7 @@ Paired pure-agent runner --------------------+-> pair validator
   账户集合、初始资金总量、背景 `agent_specs` 和制度配置必须逐字段相同。
 - `pair validator` 要求比较矩阵中标为“相同”的字段逐字段一致（含账户、初始资金、信息集、
   动作空间与**窗口调度参数**）；决策生产者、参与者任务/激励和策略 ID/version/参数/显式目标
-  按矩阵标为不同并分别披露。次要 `GOAL_AGENT_CONTROL` 标记为描述性，不参与主要 pair
+  按矩阵标为不同并分别披露。`OWNER_N_OF_1` 轨的所有者运行标记为描述性，不参与 AI 轨 pair
   完整性判定。
 - `analysis` 只读取冻结 evidence index，不扫描 artifact 目录自动挑样本。
 - 三类机制指标的规范定义只写入 `docs/research/metrics-dictionary.md`；protocol 保存字典版本与
@@ -93,9 +97,9 @@ Paired pure-agent runner --------------------+-> pair validator
 计划新增版本化 JSON schema：
 
 - `protocol.json`：研究问题、假设、estimand、结果/机制字典、样本/停止、任务、窗口、顺序、
-  排除、分析、结论语法、伦理确认及 `protocol_hash`。
-- `participants.jsonl`：随机研究 ID、同意/资格/理解检查状态；不含姓名或联系方式。
-- `assignments.jsonl`：`assignment_id`、`participant_id`、`pair_id`、seed/config、session order、
+  排除、分析、结论语法、双轨证据级别、解盲规则及 `protocol_hash`。
+- `owner.jsonl`：所有者研究假名与训练完成状态；不采集外部参与者，不含姓名或联系方式。
+- `assignments.jsonl`：`assignment_id`、`run_mode`、`pair_id`、seed/config、session order、
   target slot、签发协议哈希。
 - session manifest：运行与阶段元数据、输入/事件/artifact 哈希、完整性、技术状态。
 - `adjudication.jsonl`：按冻结 reason code 记录 included/excluded/withdrawn，保留裁决时间和依据。
@@ -120,11 +124,10 @@ fail closed。该变更必须记录 ADR，且不得把 v4 日志迁移或重写�
 
 - `python -m market_game_sim.experiment protocol validate|freeze <path>`：验证完整性并生成内容哈希，
   只允许从 draft 产生新冻结版。
-- `python -m market_game_sim.experiment enroll|train|assign|run|withdraw`：每步要求上一状态的
-  不可伪造引用；`run <assignment>` 运行人类条件，`run <assignment> --arm window-matched|goal`
-  运行两条纯代理对照，控制参数合同为 `--arm window-matched|goal`。`control_arm` 闭集为
-  `window-matched | goal`，CLI 直接复用该枚举，不维护第二套名称映射；assignment 默认要求
-  三条件齐备。
+- `python -m market_game_sim.experiment assign|train|run|abort`：每步要求上一状态的不可伪造
+  引用；`run <assignment> --arm linear|threshold` 运行策略条件，`run <assignment> --arm owner`
+  运行所有者条件。`control_arm` 闭集为 `linear | threshold | owner`，CLI 直接复用该枚举，
+  不维护第二套名称映射；AI 轨 assignment 要求两条策略齐备，所有者轨额外要求 owner 条件。
 - `python -m market_game_sim.experiment protocol preview <path>`：只生成 `experiment-preview`
   协议与 guard 验收产物，不产生正式证据。
 - `python -m market_game_sim.experiment adjudicate|analyze|deliver`：阶段严格分离，正式命令只读
@@ -150,11 +153,11 @@ evidence-index 六类对象各自使用版本化 schema；正式写入绑定 `pr
 - 截止事件与输入竞争同一把会话锁，以谁先占用最终动作槽裁决；不设置隐藏宽限。迟到输入
   稳定返回 `WINDOW_CLOSED`，无有效输入写 `NO_ACTION`，均不回拨逻辑时间。
 - 控制运行可预生成，但必须使用与处理运行相同的冻结代码/config/seed；代码变化使 pair 失效。
-- 每个 assignment 预生成两条对照：`WINDOW_MATCHED_POLICY_CONTROL`（主）与 `GOAL_AGENT_CONTROL`
-  （次要描述性）。两条对照都必须通过与参与者相同的有限窗口调度器产生决策——同窗口长度、
-  每窗至多一个动作、超时写 `NO_ACTION`；禁止让任一对照按内核默认的逐次调度决策。
-  `GOAL_AGENT_CONTROL` 也必须使用同一有限窗口调度器，只保留方向性目标策略差异。窗口调度
-  参数进入所有三条件的冻结字段白名单与 `protocol_hash`。
+- 每个 assignment 预生成两条策略运行：`risk_budget_linear_v1` 与 `risk_budget_threshold_v1`。
+  在 `AI_FORMAL` 轨它们构成配对 block；在 `OWNER_N_OF_1` 轨它们是所有者场景的
+  `WINDOW_MATCHED_POLICY_CONTROL` 形态参照。两条策略运行都必须通过与所有者相同的有限窗口
+  调度器产生决策——同窗口长度、每窗至多一个动作、超时写 `NO_ACTION`；禁止任一条按内核默认
+  的逐次调度决策。窗口调度参数进入全部条件的冻结字段白名单与 `protocol_hash`。
 - 背景代理随机数继续使用既有语义键
   `(master_seed, agent_id, mechanism, decision_index, draw_index)`；禁止改成跨代理共享的可变
   计数器。pair manifest 绑定 RNG contract 版本，确保替换目标插槽不会仅因抽样游标错位改变
@@ -167,12 +170,12 @@ evidence-index 六类对象各自使用版本化 schema；正式写入绑定 `pr
 
 ## 6. UI 与可观测性
 
-- enrollment/training 页面：边界说明、同意状态、标准任务、理解检查、练习结果和正式态提示。
+- 训练页面：边界说明、标准任务、练习结果和正式态提示；无外部参与者，故无同意/资格流程。
 - 正式页面：只显示冻结观察子集、本人状态、逻辑进度、窗口倒计时和输入回执；隐藏 pause、
   step、配置、种子和其他代理私有信息。
-- 状态映射：waiting、active-window、submitted、no-action、completed、technical-abort、withdrawn。
-- 研究控制台只显示 session 健康、协议/assignment 哈希和故障，不显示实时盈亏或主要终点，
-  降低实验员结果驱动干预风险。
+- 状态映射：waiting、active-window、submitted、no-action、completed、technical-abort、aborted。
+- 研究控制台只显示 session 健康、协议/assignment 哈希和故障；在 24 个正式场景完成前不显示任何结果，
+  以执行解盲规则并降低结果驱动干预风险。
 - 诊断记录窗口延迟、断线和客户端版本，但不得收集键盘内容、屏幕录制或无关行为遥测。
 
 ## 7. 失败、恢复、安全与兼容
@@ -230,13 +233,13 @@ preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失
 
 #### Q-301：目标插槽与两条对照的策略实例
 
-- `WINDOW_MATCHED_POLICY_CONTROL` 固定为 `risk_budget_threshold_v1`，参数冻结为
+- 两条策略之一固定为 `risk_budget_threshold_v1`，参数冻结为
   `theta_in=3000`、`theta_out=1200`、`k_x1000=600`；它的显式无动作带与滞回比线性策略更适合
   有限窗口下的主要参照，但不声称与参与者目标对齐。
-- `GOAL_AGENT_CONTROL` 固定为 v0.1 原主方向策略 `risk_budget_linear_v1`，只作次要描述性对照。
+- 另一条固定为 v0.1 原主方向策略 `risk_budget_linear_v1`。两者在 `AI_FORMAL` 轨地位平等。
   两者沿用 v0.1 的 `risk_appetite_x1000=int(Uniform[500,20000))` 及其语义抽样键，并冻结
   `aggressiveness=10000bp`、`max_order_qty=500000000`、`ewma_half_life_trades=0`，不得为 H2 调参。
-- `WINDOW_MATCHED_POLICY_CONTROL` 与 `GOAL_AGENT_CONTROL` 的策略 ID 或参数组合必须不同；协议
+- 两条参照策略（`risk_budget_threshold_v1` 与 `risk_budget_linear_v1`）的策略 ID 或参数组合必须不同；协议
   必须记录主对照选择依据及其事前证据，禁止根据 H2 结果交换主、次标签。
 - 全部正式场景固定同一非做市目标插槽、角色、初始账户、杠杆上限与风险参数；参与者不得
   自选插槽，两条纯代理对照只在策略 ID/参数组合上不同。禁止替换做市商。
@@ -324,13 +327,13 @@ preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失
 #### Q-308：处理定义与 estimand 命名（已裁决，正文见 spec §1/§7）
 
 裁决结果：主要估计量是**匹配可观测接口与决策窗口后的人类决策相对参照策略差异**，主对照
-`WINDOW_MATCHED_POLICY_CONTROL`；联合
-处理降为次要描述性对照 `GOAL_AGENT_CONTROL`。人类臂只跑一次，两条对照都是纯代理运行，
+`WINDOW_MATCHED_POLICY_CONTROL` 形态的两条策略参照运行；
+所有者臂只跑一次，两条参照都是纯代理运行，
 可随 assignment 预生成，因此第二条对照不增加招募范围，也不进入主要终点的多重性校正。
 
 实现侧由此产生三条硬约束（不满足则 B 只是纸面对齐，比联合处理更危险）：
 
-1. **窗口调度匹配**：`WINDOW_MATCHED_POLICY_CONTROL` 必须运行在与参与者相同的有限窗口调度器下
+1. **窗口调度匹配**：`WINDOW_MATCHED_POLICY_CONTROL` 形态的两条参照必须运行在与所有者相同的有限窗口调度器下
    ——同窗口长度、每窗至多一个动作、超时同样写 `NO_ACTION`。对照代理不得按内核默认的
    每次调度都决策；`pair validator` 必须把窗口调度参数纳入冻结字段白名单。
 2. **对照策略来源受限**：主对照策略取自 v0.1 已验证的代理家族，参数随协议预注册并进入
@@ -341,14 +344,14 @@ preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失
 
 协议必须冻结以下可审计比较矩阵；任何标为“相同”的字段都由 `pair validator` 逐字段断言：
 
-| 维度 | `HUMAN_REPLACEMENT` | `WINDOW_MATCHED_POLICY_CONTROL` | `GOAL_AGENT_CONTROL` | 合同 |
-|---|---|---|---|---|
-| 账户与风险边界 | 冻结目标插槽 | 同一目标插槽 | 同一目标插槽 | 相同 |
-| 信息集与动作空间 | 冻结公开观察与订单接口 | 同一 schema 与权限 | 同一 schema 与权限 | 相同 |
-| 决策机会 | 有限窗口、每窗一次、超时 `NO_ACTION` | 同一调度器与参数 | 同一调度器与参数 | 相同 |
-| 决策目标 | 参与者文字任务、激励；实际目标不可观测 | v0.1 参照策略 ID/version/参数与显式目标 | v0.1 原方向性目标策略 ID/version/参数与显式目标 | **不同且必须分别披露；两策略必须不同** |
+| 维度 | `OWNER_DECISION` | `WINDOW_MATCHED_POLICY_CONTROL`（两条策略参照） | 合同 |
+|---|---|---|---|
+| 账户与风险边界 | 冻结目标插槽 | 同一目标插槽 | 相同 |
+| 信息集与动作空间 | 冻结公开观察与订单接口 | 同一 schema 与权限 | 相同 |
+| 决策机会 | 有限窗口、每窗一次、超时 `NO_ACTION` | 同一调度器与参数 | 相同 |
+| 决策目标 | 所有者文字任务；实际目标不可观测 | 两条 v0.1 策略各自的 ID/version/参数与显式目标 | **不同且必须分别披露；两条策略之间也必须不同** |
 
-`GOAL_AGENT_CONTROL` 的定位是描述性：它回答“相对于原方向性目标策略发生了什么”，用于外部
+所有者轨的定位是描述性：它回答“该所有者相对两条参照策略发生了什么”，用于外部
 可读性与稳健性观察；它共享有限窗口调度，只保留策略差异，其结果段落必须标注 descriptive，
 不得替代主要结论。
 
@@ -384,7 +387,7 @@ preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失
 #### DQ-304：主要统计模型
 
 - 以 participant × seed pair 为底层观察；先计算每位参与者各有效 pair 的
-  `HUMAN_REPLACEMENT - WINDOW_MATCHED_POLICY_CONTROL` 差值均值，再对参与者等权平均。
+  `risk_budget_threshold_v1 - risk_budget_linear_v1` 严重程度配对差，按 block 等权平均。
 - 主要 95% CI 与双侧检验使用按参与者整簇重抽样的 10000 次 bootstrap，并冻结随机种子；
   三个主要发生率差使用 Holm 校正，同时报告原始效应、CI、原始 p 与校正 p。
 - 人类/代理身份没有被随机互换，因此 sign-flip/标签置换不得称作主要随机化推断；可作为明确
