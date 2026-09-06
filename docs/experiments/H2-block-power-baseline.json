@@ -1,0 +1,40 @@
+{
+  "evidence_id": "H2-block-power-baseline-v1",
+  "evidence_class": "planning-sensitivity-analysis",
+  "experimental_unit": "paired_seed_block",
+  "inputs": {
+    "sesoi": 0.125,
+    "paired_discordance_assumed": 0.25,
+    "paired_discordance_grid": [
+      0.15,
+      0.25,
+      0.35
+    ],
+    "familywise_alpha": 0.05,
+    "primary_families": 3,
+    "first_step_alpha": 0.016666666666666666,
+    "target_power": 0.8,
+    "blocks_are_independent": true
+  },
+  "baseline_minimum_blocks": 158,
+  "power_by_blocks": {
+    "130": 0.7088199509459299,
+    "158": 0.8027624831161813,
+    "200": 0.8957143899462703,
+    "260": 0.961582441322746
+  },
+  "minimum_blocks_by_discordance": {
+    "0.15": 91,
+    "0.25": 158,
+    "0.35": 225
+  },
+  "superseded_unit_change": {
+    "old_unit": "participant",
+    "old_target": 130,
+    "old_paired_rounds_implied": 936.0,
+    "new_unit": "paired_seed_block",
+    "note": "130 participants implied about 936 paired rounds; 130 blocks are 130 paired rounds. The number must not survive the unit change unexamined."
+  },
+  "calibration_required": true,
+  "may_lower_baseline": false
+}

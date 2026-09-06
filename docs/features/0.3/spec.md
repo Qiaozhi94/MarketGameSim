@@ -7,25 +7,32 @@ research_claim_status: not-established
 research_claim_required: true
 evidence_class: formal-research
 created: 2026-09-04
-updated: 2026-09-05
+updated: 2026-09-06
 ---
 
-# Feature Specification: Human-in-the-loop Crash Experiment
+# Feature Specification: AI Mechanism Baseline & Personal Decision Lab
 
-**规格编号**：v0.3-human-in-the-loop-crash-experiment<br>
+**规格编号**：v0.3-human-in-the-loop-crash-experiment（**历史标识**：主证据轨道已在
+2026-09-06 重置为 AI 机制基线，编号与目录名保留只为不破坏既有 traceability 与链接，不代表
+当前范围）<br>
 **关联 PRD**：[`../../market-game-sim-prd.md`](../../market-game-sim-prd.md) §15 H2<br>
 **架构**：[`design.md`](design.md)<br>
 **首个里程碑**：[`0.3.1`](0.3.1-human-in-the-loop-experiment/spec.md)
 
 ## 问题与目标
 
-H2 回答：在无外生基本面冲击的合成永续市场中，当账户、初始状态、信息集、动作空间与
-决策窗口一致时，真实人类决策相对于预注册纯代理参照策略，是否会改变价格崩盘、流动性
-枯竭与强平连锁的发生和严重程度；若发生改变，该差异是否与人类的激进订单、流动性撤回
-或风险减仓行为相一致？相对于原方向性目标代理的差异只作次要描述。
+H2 采用双轨合同：在无外生基本面冲击的合成永续市场中，正式 AI 轨用**不少于 158 个**配对 seed
+block（最终数由 paired-seed 校准确定）检验冻结、预注册纯代理参照策略如何改变价格崩盘、流动性
+枯竭和强平连锁；所有者 N-of-1 轨用 24 个配对场景描述项目所有者相对相同 AI 反事实的个人行为。
+两轨不合并样本量，不招募外部真人，不建立人群结论。
 
-本版本把主要推断对象限定为“协议化人类决策相对于预注册纯代理参照策略”的差异，并要求
-可观测接口与决策机会对齐。完整研究问题、估计量、实验边界与验收正文由
+**研究声明只能挂在 AI 轨道上。** 所有者 N-of-1 轨的证据级别是 `experiment-preview`：它是
+n=1 自我实验，[`SOP`](../../SOP.md) §2 把样本量 1、有学习效应的运行排除在统计之外，
+[`features/README`](../README.md) 也规定只有 `formal-research` 能建立研究声明。本版本的
+`research_claim_status` 因此只由 AI 轨证据决定。
+
+本版本把主要机制推断限定为冻结 AI 策略在 paired-seed 分布上的差异；所有者结果限定为
+本人、冻结任务与场景分布，且必须声明所有者同时是设计者与被试这一不可消除偏倚。完整研究问题、估计量、实验边界与验收正文由
 [`0.3.1 spec`](0.3.1-human-in-the-loop-experiment/spec.md) 唯一拥有。
 
 ## 非目标
@@ -75,9 +82,8 @@ H2 回答：在无外生基本面冲击的合成永续市场中，当账户、�
 
 ## 已确认决策
 
-1. 主要比较是单个人类决策与预注册纯代理参照策略在同一冻结目标插槽中的差异；原方向性
-   目标代理另作次要描述性对照。
-2. 主假设为双侧：人类既可能放大，也可能抑制内生崩盘反馈。
+1. AI 正式比较是 threshold 与 linear 冻结策略在同一目标插槽、同 seed 下的差异。
+2. 所有者比较是本人决策与两条同 seed AI 反事实的个人差异，不用于人群推断。
 3. 价格崩盘、流动性枯竭与强平连锁是三个独立结果家族，不使用综合分数。
 4. 激进订单、流动性撤回和风险减仓首先作为预注册机制分析；未经额外识别设计不声称
    因果中介效应。
@@ -85,6 +91,10 @@ H2 回答：在无外生基本面冲击的合成永续市场中，当账户、�
 
 ## 待确认事项
 
-样本量、参与者激励、目标代理身份、操作窗口和伦理审查边界由 0.3.1 的开放问题决定；
-问题关闭、协议冻结并通过预览验收前，本版本保持 `draft`。
+参与者类型已由 [`H2-dual-track-contract`](../../experiments/H2-dual-track-contract.md) 重置：
+外部真人、报酬和招募平台均为零；AI 轨样本单位是 paired-seed block（下限 158，见
+[`H2-block-power-baseline`](../../experiments/H2-block-power-baseline.md)），项目所有者完成
+6 个训练和 24 个正式 N-of-1 paired blocks。旧真人功效与预算证据保留但已废止，其中的 130 是
+参与者数而非 block 数，不得沿用。paired-seed 校准、场景顺序、协议重基线和 preview 验收完成
+前，本版本保持 `draft`。
 

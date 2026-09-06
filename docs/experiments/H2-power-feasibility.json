@@ -1,0 +1,82 @@
+{
+  "assumptions": {
+    "familywise_alpha": 0.05,
+    "holm_planning_alpha": 0.016666666666666666,
+    "pair_missing_rate": 0.1,
+    "paired_discordance_probability": 0.25,
+    "participant_cap": 130,
+    "primary_families": 3,
+    "rounds_per_participant": 8,
+    "sesoi_absolute_paired_risk_difference": 0.125,
+    "target_power": 0.8,
+    "within_participant_correlations": [
+      0.2,
+      0.5,
+      0.8
+    ]
+  },
+  "decision": {
+    "active_for_current_contract": false,
+    "next_gate": "use H2-dual-track-contract.json and replace this human-participant power model with paired-seed calibration",
+    "participant_cap_meets_target_power": true,
+    "reason": "power at N=130 is at least 0.80 for every frozen correlation scenario"
+  },
+  "compensation_budget": {
+    "base_compensation_per_completer": 22.0,
+    "contingency_rate": 0.1,
+    "currency": "USD",
+    "frozen_reserve": 4100.0,
+    "max_bonus_per_completer": 4.4,
+    "max_bonus_rate": 0.2,
+    "max_compensation_per_completer": 26.4,
+    "max_preassignment_screen_outs": 26,
+    "pilot_participants": 8,
+    "platform_fee_on_frozen_reserve": 1754.8,
+    "platform_fee_rate": 0.428,
+    "platform_fees_taxes_and_fx_included": false,
+    "project_funding_required_before_vat_and_fx": 5854.8,
+    "project_funding_reserve_before_vat_and_fx": 5900.0,
+    "recruitment_platform": "Prolific",
+    "required_after_contingency": 4064.72,
+    "screen_out_compensation_per_person": 2.0,
+    "subtotal": 3695.2
+  },
+  "evidence_id": "H2-Q304-power-feasibility-v4",
+  "generated_by": "python tools/h2_power_feasibility.py",
+  "limitations": [
+    "No H1 human input or H2 pilot data exist in the repository.",
+    "The paired discordance probability q=0.25 is inherited from v0.1 planning.",
+    "This sensitivity screen does not replace the preregistered simulated-human-policy analysis.",
+    "The alpha/3 threshold is conservative relative to later Holm steps."
+  ],
+  "method": {
+    "cluster_mean_variance": "(q - delta^2) * (1 + (m - 1) * rho) / m",
+    "multiplicity": "conservative first-step Holm threshold alpha/3",
+    "observed_rounds_approximation": "m = rounds_per_participant * (1 - pair_missing_rate)",
+    "pair_difference_variance": "q - delta^2",
+    "test": "two-sided normal approximation for the participant-level mean paired difference"
+  },
+  "results": [
+    {
+      "minimum_participants_for_target_power": 49,
+      "power_at_minimum_participants": 0.801333,
+      "power_at_participant_cap": 0.998037,
+      "within_participant_correlation": 0.2
+    },
+    {
+      "minimum_participants_for_target_power": 90,
+      "power_at_minimum_participants": 0.802902,
+      "power_at_participant_cap": 0.934125,
+      "within_participant_correlation": 0.5
+    },
+    {
+      "minimum_participants_for_target_power": 130,
+      "power_at_minimum_participants": 0.80003,
+      "power_at_participant_cap": 0.80003,
+      "within_participant_correlation": 0.8
+    }
+  ],
+  "schema_version": 1,
+  "historical_planning_status": "CONSERVATIVE_GO_AT_CAP",
+  "status": "SUPERSEDED_BY_SCOPE_CLARIFICATION"
+}

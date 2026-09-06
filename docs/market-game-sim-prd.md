@@ -1,12 +1,12 @@
 # MarketGameSim 产品需求文档
 
-**文档版本**：0.5.2（**H2 主要反事实对齐**）<br>
+**文档版本**：0.5.3（**H2 双轨范围重置**）<br>
 **状态**：Active<br>
-**创建日期**：2026-07-28　**更新日期**：2026-09-05<br>
+**创建日期**：2026-07-28　**更新日期**：2026-09-06<br>
 **产品阶段**：v0.1、v0.2 H1 已签收；v0.3 H2 规格草案<br>
 **项目原则**：[`docs/SOP.md`](SOP.md)（唯一入口，含安全与合规边界 §4）  
 **当前规格**：[`docs/features/0.3/spec.md`](features/0.3/spec.md)；
-[`v0.3.1 H2 人在环崩盘反馈实验`](features/0.3/0.3.1-human-in-the-loop-experiment/spec.md)<br>
+[`v0.3.1 H2 AI 基线与所有者 N-of-1 实验`](features/0.3/0.3.1-human-in-the-loop-experiment/spec.md)<br>
 **已签收规格**：[`v0.1`](features/0.1/spec.md)、[`v0.2`](features/0.2/spec.md)<br>
 **方法论说明**：[`docs/research/methodology.md`](research/methodology.md)　
 **指标字典**：[`docs/research/metrics-dictionary.md`](research/metrics-dictionary.md)
@@ -424,8 +424,8 @@ v0.1 已完成 R1—R5 并于 2026-08-30 正式签收。当前可见交付包括
 [代表性离线回放](experiments/0.1.5-representative-replay.html)、
 [正式证据索引](experiments/0.1.5-evidence-index.json)与
 [版本签收记录](features/releases/0.1.md)。H1 手动交易沙盒亦已签收；当前下一动作是评审并
-冻结 [`v0.3.1 H2`](features/0.3/0.3.1-human-in-the-loop-experiment/spec.md) 的研究协议，
-在开放问题关闭、preview 与适用伦理/同意确认通过前不采集正式样本。
+冻结 [`v0.3.1 H2`](features/0.3/0.3.1-human-in-the-loop-experiment/spec.md) 的双轨研究协议，
+在 paired-seed 校准、所有者场景顺序冻结和双 evidence-index preview 通过前不采集正式样本。
 
 ### v0.1 用户可见成果门
 
@@ -463,13 +463,13 @@ H1 按可独立演示成果切分，合计仍为 24–40 工程小时：
 | **H1-B 本地交易界面** | 8–16 小时 | 市场/账户/订单视图与下单、撤单、暂停、单步闭环 | 在本机完成合法下单、拒单、撤单与账户审查 |
 | **H1-C 重放与交付包** | 8–12 小时 | RUN、manifest、输入日志、事件日志与离线回放 | 单命令生成；断网打开；输入与事件双哈希通过 |
 
-H2 同样按可独立复核的成果切分；工程投入不包含伦理审查等待、招募和参与者排期：
+H2 同样按可独立复核的成果切分；工程投入不包含项目所有者分四天完成 N-of-1 场景的时间：
 
 | 成果门 | 预计工程投入 | 用户会拿到什么 | 验收动作 | 证据级别 |
 |---|---:|---|---|---|
 | **H2-A 冻结协议与配对骨架** | 16–24 小时 | 可打开的冻结协议、配对 manifest diff 与 evidence guard 矩阵 | 协议漂移、H1 数据和不完整 pair 均被拒绝；控制运行可复现 | `experiment-preview` |
 | **H2-B 锁定客户端与实验预览** | 24–40 小时 | 训练/正式阶段客户端、固定假参与者会话、三结果与机制预览 | 有限窗口、阶段隔离、处理重放及中止/撤回路径通过 | `experiment-preview` |
-| **H2-C 正式采样与研究交付** | 16–24 小时 + 招募/运行时间 | 冻结 evidence index、样本流、正式报告、代表性回放与限制说明 | 按预注册停止规则完成样本；新进程从 index 重建；外部审阅通过 | `formal-research` |
+| **H2-C 双轨正式运行与研究交付** | 16–24 小时 + AI 运行及所有者参与时间 | 分离的 AI/所有者 evidence index、正式机制报告、个人报告、代表性回放与限制说明 | 完成 130 个 AI paired blocks 与 24 个所有者 paired blocks；新进程分别重建且禁止跨轨合并 | `formal-research` |
 
 顺序是严格串行的：
 `R1 → R2 → R3 → R4 → R5（v0.1 收口）→ H1-A → H1-B → H1-C → H2-A → H2-B → H2-C`。

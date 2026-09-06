@@ -1,5 +1,5 @@
 {
-  "$comment": "v0.3 需求追踪真源；当前只包含 H2 人在环崩盘反馈实验。",
+  "$comment": "v0.3 需求追踪真源；H2 采用 AI 正式机制轨与所有者 N-of-1 个人轨。",
   "matrix_version": 1,
   "statuses": ["owned", "deferred", "removed"],
   "milestones": {

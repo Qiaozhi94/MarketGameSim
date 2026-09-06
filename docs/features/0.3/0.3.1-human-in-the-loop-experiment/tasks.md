@@ -10,7 +10,7 @@ topics:
   - formal-research
 doc_kind: tasks
 created: 2026-09-04
-updated: 2026-09-05
+updated: 2026-09-06
 ---
 
 # 0.3.1：H2 人在环崩盘反馈实验 - 任务
@@ -27,22 +27,25 @@ updated: 2026-09-05
   `ready-for-development` 前须建立本文件所列的具体测试文件；未实现行为使用
   `pytest.mark.xfail(strict=True)` 骨架并写明原因。
 - 完成且验证后立即勾选；实现中契约失效时先修订三件套。
-- 首个正式参与者前必须关闭全部 Q/DQ、完成适用伦理/同意确认并冻结协议。
+- 首个正式 block 前必须关闭全部 Q/DQ、完成双轨范围重基线并冻结协议；外部真人招募为零。
 - T925 只运行统一质量门并检查验收上界，不承担任何 AC 的测试路径锚点；AC-301—AC-308
   必须由 T904—T924 所列具体测试文件覆盖。
 
 ## 1. 前置条件
 
 - [ ] T901 (`Q-301`, `Q-302`, `Q-303`, `Q-304`, `Q-305`, `Q-306`, `Q-307`, `DQ-301`,
-      `DQ-302`, `DQ-303`, `DQ-304`, `DQ-305`): 关闭剩余阻塞研究与设计问题；`Q-308` 已裁决为
-      窗口匹配参照策略差异（主对照 `WINDOW_MATCHED_POLICY_CONTROL`），Q-301 只需选定两条对照的策略
-      家族与参数实例。`WINDOW_MATCHED_POLICY_CONTROL` 与 `GOAL_AGENT_CONTROL` 的策略 ID 或参数组合必须不同，
-      并记录主对照选择依据 — verify: `spec.md`、`design.md`
-- [ ] T902 (`FR-301`, `NFR-302`, `SC-301`): 先冻结招募/参与者小时/预算上限，再以参与者内
-      重复、pair 缺失和多重性运行功效模拟；只有 go 判定后才完成协议、停止规则、同意/隐私
-      和适用伦理审查并取得可审计签字，no-go 时禁止 freeze — verify:
-      `docs/experiments/H2-preregistration.md`、
-      `python tools/validate_spec_lifecycle.py`
+      `DQ-302`, `DQ-303`, `DQ-304`, `DQ-305`): 按 `H2-dual-track-contract-v1` 将 spec/design
+      中遗留的多人招募、报酬、伦理、人群推断和 `HUMAN_REPLACEMENT` 合同逐项重基线为
+      `AI_FORMAL` 与 `OWNER_N_OF_1`；旧内容只保留在 superseded 证据中，开发代码不得实现
+      旧合同。`WINDOW_MATCHED_POLICY_CONTROL` 与 `GOAL_AGENT_CONTROL` 的策略 ID 或参数组合必须不同，
+      并记录主对照选择依据 — verify: `tests/unit/test_h2_dual_track_contract.py`、`spec.md`、`design.md`
+- [ ] T902 (`FR-301`, `NFR-302`, `SC-301`): 用冻结 AI 策略跑配对模拟，测出真实的配对不一致
+      概率 `q` 与配对差分布，把最终 block 数冻结在不低于 158 的值上（下限见
+      `H2-block-power-baseline-v1`，不得下调）；冻结 24 个所有者正式场景的顺序和备用 seed 池；
+      确认两条轨道不合并样本量或推断，且研究声明只挂 AI 轨。旧真人功效、Prolific 和
+      `$5,900`预算不得进入当前 go/no-go — verify:
+      `docs/experiments/H2-dual-track-contract.json`、`tests/unit/test_h2_block_power.py`、
+      `tests/unit/test_h2_dual_track_contract.py`、`docs/experiments/H2-preregistration.md`
 - [ ] T903 (`FR-301`, `NFR-301`, `AC-301`): 验证 v0.2.1、事件/指标合同与目标代理配置可支持
       比较矩阵中标为“相同”的字段逐字段一致，并能冻结、输出其余差异项 — verify:
       `tests/unit/experiment/test_h2_protocol.py`
@@ -67,7 +70,7 @@ updated: 2026-09-05
 - [ ] T908 (`FR-303`, `IR-302`, `AC-303`): 实现 mode/stage/protocol/pair/inclusion 多重 evidence
       guard 和原子拒绝 — verify: `tests/integration/test_h2_evidence_guard.py`
 - [ ] T909 `[成果门:H2-A]` (`AC-301`, `AC-303`, `AC-304`): 生成可打开的冻结协议、配对
-      manifest diff 与 guard 矩阵，入口 `python -m market_game_sim.experiment preview-protocol`，
+      manifest diff 与 guard 矩阵，入口 `python -m market_game_sim.experiment protocol preview`，
       验收协议漂移及 H1 数据均被拒绝，标记为 `experiment-preview` — verify:
       `tests/integration/test_h2_delivery.py`
 
@@ -100,8 +103,9 @@ updated: 2026-09-05
       首个正式样本前归档时间证据；预注册文档门和 protocol schema 门须同时通过 — verify:
       `tests/unit/experiment/test_h2_protocol.py`、`python tools/validate_spec_lifecycle.py`
 - [ ] T917 (`US-301`, `FR-302`, `NFR-302`, `NFR-303`, `AC-304`, `AC-308`): 按冻结协议完成
-      参与者训练、正式会话、配对控制与结果盲裁决，按冻结 owner、目标日期与招募台账推进
-      直至停止规则满足；若资源窗口结束仍不足，由本任务写出 `incomplete-study` 非证据样本流，
+      T902 冻结的 AI paired block 数（不少于 158），以及所有者训练和 24 个正式 paired blocks；
+      所有者在 24 个正式 block 全部完成前不得查看任何已完成场景结果。按冻结场景/备用 seed
+      台账与结果盲裁决推进至停止规则满足。若资源窗口结束仍不足，写出 `incomplete-study` 样本流，
       不得进入 T918、研究声明或版本收口 — verify:
       `tests/integration/test_h2_paired_runs.py`
 - [ ] T918 (`FR-303`, `IR-302`, `SC-302`, `AC-303`, `AC-304`): 冻结只含完整合格 pair 的 H2
@@ -129,13 +133,13 @@ updated: 2026-09-05
 - [ ] T925 (`AC-301`, `AC-302`, `AC-303`, `AC-304`, `AC-305`, `AC-306`, `AC-307`, `AC-308`):
       运行项目统一质量门 — verify: `python tools/verify.py`
 - [ ] T926 `[状态门]`: 回写 spec 验收/研究证据、版本索引和状态；研究声明仅在 H2-C 正式证据
-      与外部审阅均通过后设为 established — verify: `tools/validate_spec_lifecycle.py`
+      与双轨独立复核均通过后设为 established — verify: `tools/validate_spec_lifecycle.py`
 
 ## 4. 依赖与并行关系
 
-- `T901 -> T902 -> T904`：先关闭研究决策并取得适用审查，再冻结可执行协议。
-- `T902` 的伦理、招募和资源判据是外部关键路径：必须写明 owner、目标日期、go/no-go 结论和
-  失败分支；`python tools/verify.py` 通过不能代替这些证据。
+- `T901 -> T902 -> T904`：先完成双轨合同重基线和 paired-seed 校准，再冻结可执行协议。
+- `T902` 的 AI 方差校准、所有者场景顺序和备用 seed 池是研究关键路径：必须写明 go/no-go
+  结论和失败分支；`python tools/verify.py` 通过不能代替这些证据。
 - `T904 -> T906 -> T907 -> T909`：assignment 与 pair 必须绑定已冻结协议。
 - `T907 -> T910 -> T911 -> T915`：正式 UI 依赖窗口和目标代理插槽。
 - `T908 -> T914 -> T915`：预览必须先验证阶段隔离和裁决。

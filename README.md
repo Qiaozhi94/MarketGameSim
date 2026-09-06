@@ -27,8 +27,8 @@
 
 ## 当前规格
 
-- [`docs/features/0.3/`](docs/features/0.3/README.md)：H2 人在环崩盘反馈实验草案。
-  - `0.3.1-human-in-the-loop-experiment/`：配对纯代理反事实、受控人类替换、三类结果与机制分析
+- [`docs/features/0.3/`](docs/features/0.3/README.md)：H2 AI 机制基线与个人决策实验室草案。
+  - `0.3.1-human-in-the-loop-experiment/`：不少于 158 个 AI paired-seed blocks、所有者 N-of-1 配对体验（`experiment-preview`）、三类结果与机制分析
 - [`docs/features/0.2/`](docs/features/0.2/README.md)：已签收的 H1 手动交易沙盒。
   - `spec.md` 版本需求　`design.md` 跨里程碑约束　`traceability.json` 需求归属
   - `0.2.1-interactive-sandbox/`：观察、下单、撤单、输入重放与研究证据隔离
