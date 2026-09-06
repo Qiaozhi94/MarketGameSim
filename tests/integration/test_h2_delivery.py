@@ -1,15 +1,111 @@
-"""AC-307：从冻结 evidence index 单命令重建交付包。
+"""AC-301/AC-303/AC-304（H2-A 成果门，T909）+ AC-307（完整交付，T920/T921）。
 
-骨架状态：本文件是 `ready-for-development` 前置要求的 strict-xfail 占位（tasks §0）。
-每条测试写的是**实现后应当为真**的断言，现在因为 H2 交付入口 尚不存在而失败；
-`strict=True` 保证一旦实现并通过，测试会 XPASS 报错，提醒删掉 xfail 标记。
+T909 部分已实现：单命令 `python -m market_game_sim.experiment protocol preview`
+生成可打开的冻结协议、配对 manifest diff 与 guard 矩阵，标记 `experiment-preview`。
+AC-307 部分仍是 strict-xfail 骨架，等 T920/T921 的完整交付入口。
 
 冻结合同：`docs/experiments/H2-dual-track-contract.json`
 """
 
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
+
 import pytest
+
+from market_game_sim.experiment.h2 import preview
+
+# --------------------------------------------------------------------------- #
+# T909 `[成果门:H2-A]`：单命令生成可打开的 preview 包
+# --------------------------------------------------------------------------- #
+
+
+def test_h2a_cli_generates_the_complete_preview_bundle(tmp_path):
+    """真正跑 `python -m market_game_sim.experiment protocol preview`，不是内部函数捷径。"""
+    out = tmp_path / "H2-A"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "market_game_sim.experiment",
+            "protocol",
+            "preview",
+            "--out",
+            str(out),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert {path.name for path in out.iterdir()} == set(preview.BUNDLE_FILES)
+
+    manifest = json.loads((out / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["evidence_class"] == "experiment-preview"
+    assert len(manifest["protocol_hash"]) == 64
+
+
+def test_h2a_default_output_directory_generates_without_out_flag(tmp_path, monkeypatch):
+    """反面：不传 --out 也必须能跑，默认目录来自 preview.DEFAULT_OUT。"""
+    monkeypatch.chdir(tmp_path)
+    completed = subprocess.run(
+        [sys.executable, "-m", "market_game_sim.experiment", "protocol", "preview"],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert (tmp_path / preview.DEFAULT_OUT / "manifest.json").is_file()
+
+
+def test_h2a_protocol_json_is_openable_and_content_addressed(tmp_path):
+    target = preview.generate(tmp_path / "bundle")
+    payload = json.loads((target / "protocol.json").read_text(encoding="utf-8"))
+    assert payload["evidence_class"] == "experiment-preview"
+    assert payload["payload"]["minimum_blocks"] == 168
+    assert payload["protocol_hash"]
+
+
+def test_h2a_pair_manifest_diff_shows_matrix_same_and_different_fields(tmp_path):
+    target = preview.generate(tmp_path / "bundle")
+    diff = json.loads((target / "pair-manifest-diff.json").read_text(encoding="utf-8"))
+    assert set(diff["policies"]) == {"risk_budget_linear_v1", "risk_budget_threshold_v1"}
+    assert set(diff["identical_fields"]) == {
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_funds",
+        "window_schedule",
+    }
+    assert set(diff["disclosed_differences"]["policy_id"]) == set(diff["policies"])
+    assert len(set(diff["disclosed_differences"]["policy_id"])) == 2
+
+
+def test_h2a_guard_matrix_rejects_h1_interactive_and_protocol_drift(tmp_path):
+    """验收明文要求的两条：H1 交互数据被拒绝、协议漂移被拒绝，必须都能在产物里看到。"""
+    target = preview.generate(tmp_path / "bundle")
+    matrix = json.loads((target / "guard-matrix.json").read_text(encoding="utf-8"))["scenarios"]
+    by_label = {row["label"]: row for row in matrix}
+
+    assert by_label["h1_interactive_data_rejected"]["admitted"] is False
+    assert by_label["protocol_drift_rejected"]["admitted"] is False
+    # 正例同样必须出现，否则"全部拒绝"也能通过上面两条断言。
+    assert by_label["ai_track_formal_frozen_protocol"]["admitted"] is True
+    assert by_label["owner_track_formal_frozen_protocol"]["admitted"] is True
+
+
+def test_h2a_guard_matrix_leaves_no_residue_in_the_shared_ledger(tmp_path):
+    """preview 生成过程会调用 evidence_guard.admit 多次；这些探测不得污染共享账本。"""
+    from market_game_sim.experiment.h2 import evidence_guard
+
+    evidence_guard.reset()
+    preview.generate(tmp_path / "bundle")
+    assert evidence_guard.partial_writes() == []
+    assert evidence_guard.admitted_count() == 0
 
 
 @pytest.mark.xfail(strict=True, reason="T920/T921 未实现：H2 交付入口尚不存在")
