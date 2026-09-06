@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -111,3 +112,27 @@ def test_no_live_legacy_contract_remains_in_the_milestone():
         if lines:
             residue[name] = lines
     assert residue == {}, f"三件套仍含可执行的旧真人合同：{residue}"
+
+
+TESTS_ROOT = ROOT / "tests"
+VERIFY_PATH = re.compile(r"`(tests/[^`]+)`")
+
+
+def _declared_test_paths() -> set[str]:
+    """tasks.md 的 verify 段里列出的全部 tests/ 路径。"""
+    tasks = (MILESTONE / "tasks.md").read_text(encoding="utf-8")
+    return {match.split("::", 1)[0] for match in VERIFY_PATH.findall(tasks)}
+
+
+def test_declared_verify_paths_all_exist():
+    """骨架先行规则的真正执法点。
+
+    `spec_validation._check_ac_references` 只要求"**任一**覆盖任务的 verify 指向真实文件"，
+    所以一条 AC 被多个任务覆盖时，漏建其中某个文件门禁不会说话——实测删掉
+    tests/integration/test_h2_evidence_guard.py 后生命周期校验仍然通过。这条测试按
+    **每一条**声明路径逐个核对，补上那个粒度差。
+    """
+    declared = _declared_test_paths()
+    assert declared, "tasks.md 应至少声明一条 tests/ 路径"
+    missing = sorted(path for path in declared if not (ROOT / path).is_file())
+    assert missing == [], f"tasks.md 声明了不存在的测试文件：{missing}"
