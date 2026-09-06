@@ -54,6 +54,11 @@ def partial_writes() -> list[str]:
     return list(_LEDGER.partial)
 
 
+def admitted_count() -> int:
+    """已准入记录数；调用方用来断言探测性调用（如 preview 生成）没有残留账本状态。"""
+    return len(_LEDGER.admitted)
+
+
 def reset() -> None:
     """测试用：清空账本。生产路径每次运行都用新进程。"""
     _LEDGER.admitted.clear()
