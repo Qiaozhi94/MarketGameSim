@@ -556,7 +556,7 @@ H2_CONTROL_CONTRACT_DOCS = (
 def test_h2_flagship_question_uses_the_primary_reference_policy(doc):
     """Q-308 改主要反事实后，PRD、父规格和里程碑不得继续提出旧问题。"""
     text = (ROOT / doc).read_text(encoding="utf-8")
-    assert "预注册纯代理参照策略" in text, f"{doc} 未声明 H2 主要参照策略"
+    assert "参照策略" in text, f"{doc} 未声明 H2 参照策略"
     assert "以真实人类交易者替换一个目标驱动代理" not in text, f"{doc} 仍在提出旧 H2 问题"
 
 
@@ -575,17 +575,23 @@ def test_h2_protocol_requires_an_auditable_comparison_matrix():
     assert "可审计比较矩阵" in design and "不同且必须分别披露" in design
 
 
-def test_h2_design_matrix_covers_all_three_conditions():
-    """可审计矩阵必须集中覆盖人类、主对照和次要对照。"""
+def test_h2_design_matrix_covers_all_conditions():
+    """可审计矩阵必须集中覆盖所有者条件与窗口匹配的策略参照。
+
+    双轨重基线后 `GOAL_AGENT_CONTROL` 这个符号退役：两条策略在 AI 轨地位平等，在所有者轨
+    同为 `WINDOW_MATCHED_POLICY_CONTROL` 形态的参照，矩阵因此从三条件列收敛为两列。保护的
+    不变量没变——矩阵仍必须逐维度声明哪些相同、哪些不同。
+    """
     design = (ROOT / H2_CONTROL_CONTRACT_DOCS[1]).read_text(encoding="utf-8")
     matrix = design.split("协议必须冻结以下可审计比较矩阵", 1)[1]
-    matrix = matrix.split("`GOAL_AGENT_CONTROL` 的定位", 1)[0]
+    matrix = matrix.split("所有者轨的定位", 1)[0]
     rows = [line for line in matrix.splitlines() if line.startswith("| ")]
     assert len(rows) == 5
-    assert all(len(row.strip("|").split("|")) == 5 for row in rows)
-    assert "`GOAL_AGENT_CONTROL`" in rows[0]
+    assert all(len(row.strip("|").split("|")) == 4 for row in rows)
+    assert "`OWNER_DECISION`" in rows[0]
+    assert "`WINDOW_MATCHED_POLICY_CONTROL`" in rows[0]
     assert "同一调度器与参数" in rows[3]
-    assert "原方向性目标策略" in rows[4]
+    assert "不同且必须分别披露" in rows[4]
 
 
 def test_h2_secondary_control_uses_the_shared_window_scheduler():
@@ -593,10 +599,10 @@ def test_h2_secondary_control_uses_the_shared_window_scheduler():
     spec = (ROOT / H2_CONTROL_CONTRACT_DOCS[0]).read_text(encoding="utf-8")
     design = (ROOT / H2_CONTROL_CONTRACT_DOCS[1]).read_text(encoding="utf-8")
     tasks = (ROOT / H2_CONTROL_CONTRACT_DOCS[2]).read_text(encoding="utf-8")
-    required = "`GOAL_AGENT_CONTROL` 也必须使用同一有限窗口调度器"
-    assert required in spec
+    required = "两条策略运行都必须通过与所有者相同的有限窗口"
+    assert "两条策略参照运行必须使用与所有者相同的有限窗口调度器" in spec
     assert required in design
-    assert "两条纯代理对照均受同一有限窗口调度器约束" in tasks
+    assert "两条纯代理参照均受同一有限窗口调度器约束" in tasks
 
 
 def test_h2_pair_contract_uses_the_declared_difference_matrix():
@@ -621,18 +627,16 @@ def test_h2_us301_uses_the_registered_reference_policy():
     """用户场景必须与 Q-308 的主要参照策略和比较矩阵保持一致。"""
     spec = (ROOT / H2_CONTROL_CONTRACT_DOCS[0]).read_text(encoding="utf-8")
     us301 = spec.split("### US-301", 1)[1].split("### US-302", 1)[0]
-    assert "预注册纯代理参照策略" in us301
-    assert "人类决策相对参照策略的差异效应" in us301
+    assert "两条参照策略运行" in us301
+    assert "唯一预定差异是决策来源" in us301
     assert "比较矩阵中标为“相同”的字段" in us301
-    for obsolete in ("替换指定代理", "估计替换效应", "除决策来源外"):
+    for obsolete in ("替换指定代理", "估计替换效应", "除决策来源外", "参与者"):
         assert obsolete not in us301
 
 
 def test_h2_control_policies_cannot_collapse_to_one_instance():
     """主、次对照必须可区分，并留下主对照选择依据。"""
-    required = (
-        "`WINDOW_MATCHED_POLICY_CONTROL` 与 `GOAL_AGENT_CONTROL` 的策略 ID 或参数组合必须不同"
-    )
+    required = "策略 ID 或参数组合必须不同"
     for doc in H2_CONTROL_CONTRACT_DOCS:
         text = (ROOT / doc).read_text(encoding="utf-8")
         assert required in text, f"{doc} 未禁止两条对照退化为同一策略实例"
@@ -643,9 +647,10 @@ def test_h2_control_arm_cli_uses_the_schema_enum():
     """CLI、协议 schema 与任务必须共享改名后的 control-arm 闭集。"""
     design = (ROOT / H2_CONTROL_CONTRACT_DOCS[1]).read_text(encoding="utf-8")
     tasks = (ROOT / H2_CONTROL_CONTRACT_DOCS[2]).read_text(encoding="utf-8")
-    assert "`--arm window-matched|goal`" in design
-    assert "`--arm aligned|goal`" not in design
-    enum_contract = r"`control_arm` 闭集为\s+`window-matched \| goal`"
+    assert "--arm linear|threshold" in design
+    assert "--arm aligned|goal" not in design
+    assert "--arm window-matched|goal" not in design
+    enum_contract = r"`control_arm` 闭集为\s+`linear \| threshold \| owner`"
     assert re.search(enum_contract, design)
     assert re.search(enum_contract, tasks)
 
@@ -655,8 +660,18 @@ def test_h2_fr301_prose_has_no_accidental_indentation():
     spec = (ROOT / H2_CONTROL_CONTRACT_DOCS[0]).read_text(encoding="utf-8")
     fr301 = spec.split("### Requirement: 冻结 H2 协议与配对反事实", 1)[1]
     fr301 = fr301.split("#### Scenario", 1)[0]
-    indented = [line for line in fr301.splitlines() if line.startswith("  ")]
-    assert indented == []
+    # 列表项的续行本来就该缩进；只有散文段落被意外缩进才是 Markdown 代码块风险。
+    prose, in_list = [], False
+    for line in fr301.splitlines():
+        if line.startswith("- "):
+            in_list = True
+            continue
+        if not line.strip():
+            in_list = False
+            continue
+        if not in_list:
+            prose.append(line)
+    assert [line for line in prose if line.startswith("  ")] == []
 
 
 def test_h2_retrospective_preserves_nonadoption_dispositions():
