@@ -1008,3 +1008,40 @@ def test_decision_evidence_records_both_cursor_boundaries(goal_contract):
     assert fields["cursor_from_event_id"]["value_type"] == "str"
     assert fields["cursor_to_event_id"]["value_type"] == "str"
     assert fields["observation_event_id"]["value_type"] == "str"
+
+
+def test_h2_dq304_matches_the_frozen_block_level_severity_plan():
+    """统计模型必须与冻结的终点和推断单位一致。
+
+    DQ-304 曾按真人口径写着 participant-cluster bootstrap 与"三个主要发生率差"。
+    终点已改为严重程度、推断单位已改为配对 seed block，若这段不跟着改，分析实现会
+    照过期口径写出来——而 pytest 不会有任何意见。
+    """
+    design = (ROOT / H2_CONTROL_CONTRACT_DOCS[1]).read_text(encoding="utf-8")
+    section = design.split("#### DQ-304", 1)[1].split("#### DQ-305", 1)[0]
+    assert "观察单位是配对 seed block" in section
+    assert "block 级重抽样" in section
+    assert "严重程度" in section
+    # 与重置门同一手法：否定式引用（"不使用 participant-cluster"）是在排除旧口径，
+    # 不是在采用它，因此按行判定而不是整段 not-in。
+    negations = ("不使用", "不是", "不做", "不得", "不再")
+    for line in section.splitlines():
+        if any(word in line for word in negations):
+            continue
+        for obsolete in ("participant-cluster", "发生率差", "每位参与者"):
+            assert obsolete not in line, f"DQ-304 仍把过期口径当作方案：{line.strip()}"
+    # 发生指标只能是描述性，不能重新变成主要检验。
+    assert "发生指标不是主要检验" in section
+    # n=1 轨不得做显著性检验。
+    assert "不做" in section and "显著性检验" in section
+
+
+def test_h2_dq302_command_family_has_no_recruitment_verbs():
+    """没有外部参与者就没有报名/撤回流程；CLI 不得保留这两个动词。"""
+    design = (ROOT / H2_CONTROL_CONTRACT_DOCS[1]).read_text(encoding="utf-8")
+    section = design.split("#### DQ-302", 1)[1].split("#### DQ-303", 1)[0]
+    assert "`--arm linear|threshold|owner`" in section
+    assert "owner" in section and "participant" in section  # 说明取代关系
+    for line in section.splitlines():
+        if "`enroll`" in line or "`withdraw`" in line:
+            assert "不设" in line, f"DQ-302 仍把报名/撤回列为命令：{line.strip()}"
