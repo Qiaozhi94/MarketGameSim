@@ -1045,3 +1045,39 @@ def test_h2_dq302_command_family_has_no_recruitment_verbs():
     for line in section.splitlines():
         if "`enroll`" in line or "`withdraw`" in line:
             assert "不设" in line, f"DQ-302 仍把报名/撤回列为命令：{line.strip()}"
+
+
+def test_h2_closed_question_summaries_match_the_frozen_contract():
+    """勾成"已关闭"不等于结论还成立。
+
+    这轮里 Q-304 的摘要仍写着 130 个 block（实际 168）、Q-307 仍把 chain_depth 判据
+    当作发生条件、Q-308 仍引用已退役的 GOAL_AGENT_CONTROL。摘要行是读者最先看到的
+    东西，过期摘要会直接导致按错口径实现。
+    """
+    spec = (ROOT / H2_CONTROL_CONTRACT_DOCS[0]).read_text(encoding="utf-8")
+    summaries = [line for line in spec.splitlines() if line.startswith("- [x] Q-")]
+    assert len(summaries) == 8, "Q-301—Q-308 的关闭摘要必须齐全"
+    joined = "\n".join(summaries)
+
+    assert "168 个 paired-seed blocks" in joined, "Q-304 摘要必须写冻结后的 block 数"
+    for retired in ("130 个 paired-seed blocks", "`GOAL_AGENT_CONTROL`"):
+        assert retired not in joined, f"关闭摘要仍含已退役内容：{retired}"
+
+    q307 = next(line for line in summaries if line.startswith("- [x] Q-307"))
+    assert "最大账户数" in q307
+    assert "不得改用 chain_depth" in q307
+
+
+def test_h2_cascade_severity_metric_is_the_calibrated_one():
+    """强平连锁的主要严重度必须是 SESOI 所依据的那个量。
+
+    冻结的 0.25049 来自 chain_size（账户数）的配对差。若 design 把主要严重度写回
+    max(chain_depth)+1，该量在本模型族恒为常数，家族会退回零方差终点。
+    """
+    design = (ROOT / H2_CONTROL_CONTRACT_DOCS[1]).read_text(encoding="utf-8")
+    section = design.split("#### Q-307", 1)[1].split("#### Q-308", 1)[0]
+    assert "主要严重度是单个 `chain_id` 下被强平的最大账户数" in section
+    assert "不得**改用 `max(chain_depth)+1`" in section or "不得" in section
+    for line in section.splitlines():
+        if "max(chain_depth)+1" in line:
+            assert "不得" in line, f"chain_depth 口径必须只以禁止形式出现：{line.strip()}"
