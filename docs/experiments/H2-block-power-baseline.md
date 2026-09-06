@@ -1,7 +1,9 @@
 # H2 `AI_FORMAL` 配对 block 样本量基线
 
 **证据 ID**：`H2-block-power-baseline-v1`
-**状态**：`ACTIVE_PLANNING_BASELINE`
+**状态**：`ACTIVE_PLANNING_BASELINE`（**下限仍有效**，但本文的 `delta=0.125` / `q=0.25` 是
+**发生率口径**，该终点已被 [`H2-endpoint-calibration`](H2-endpoint-calibration.md) 判定为零方差、
+不可作主要 estimand；严重程度口径下 158 的可检测效应是 0.26 SD，下限依然成立）
 **证据类别**：规划敏感性分析；不是模拟校准结果、pilot 或正式研究结论
 **日期**：2026-09-06
 **机器结果**：[`H2-block-power-baseline.json`](H2-block-power-baseline.json)

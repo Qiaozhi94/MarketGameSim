@@ -1,0 +1,56 @@
+{
+  "evidence_id": "H2-endpoint-calibration-v1",
+  "evidence_class": "measured-calibration-from-frozen-evidence",
+  "source_evidence": "0.1.5-evidence-index.json",
+  "shared_families": [
+    "crash",
+    "liquidity_drought"
+  ],
+  "occurrence_endpoint": {
+    "hypotheses": 12,
+    "hypotheses_with_any_nonzero_block": 0,
+    "total_nonzero_blocks": 0,
+    "blocks_per_hypothesis": [
+      128
+    ],
+    "paired_difference_is_degenerate": true,
+    "usable_as_primary_estimand": false,
+    "reason": "Every occurrence hypothesis produced 0 non-zero paired blocks over 128 blocks: the paired difference has zero variance, so power is 0 at any block count and no SESOI is detectable."
+  },
+  "severity_endpoint": {
+    "hypotheses": 12,
+    "hypotheses_with_any_nonzero_block": 12,
+    "min_nonzero_blocks": 13,
+    "max_nonzero_blocks": 117,
+    "usable_as_primary_estimand": true,
+    "largest_observed_effect": {
+      "hypothesis": "liquidity_drought.risk_budget_linear_v1.severity.LxM",
+      "effect": 0.09875457873680249,
+      "ci_low": 0.06628901222181016,
+      "ci_high": 0.13327432571482403,
+      "n_blocks": 128
+    },
+    "median_implied_paired_sd": 0.018387521858379115,
+    "blocks_by_candidate_sesoi": {
+      "1sd": {
+        "sesoi": 0.018387521858379115,
+        "blocks": 11
+      },
+      "0.5sd": {
+        "sesoi": 0.009193760929189557,
+        "blocks": 42
+      },
+      "0.25sd": {
+        "sesoi": 0.004596880464594779,
+        "blocks": 168
+      }
+    },
+    "minimum_detectable_effect": {
+      "128": 0.005258636876831116,
+      "158": 0.004733142980388882,
+      "300": 0.0034349272242184493
+    }
+  },
+  "conclusion": "The AI_FORMAL primary estimand must move from occurrence to severity; occurrence stays as a descriptive secondary. The final block count follows from the severity SESOI the owner freezes, not from the retired 0.125 risk-difference number.",
+  "sesoi_still_owner_decision": true
+}

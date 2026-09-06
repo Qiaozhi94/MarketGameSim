@@ -39,8 +39,9 @@ updated: 2026-09-06
       `AI_FORMAL` 与 `OWNER_N_OF_1`；旧内容只保留在 superseded 证据中，开发代码不得实现
       旧合同。`WINDOW_MATCHED_POLICY_CONTROL` 与 `GOAL_AGENT_CONTROL` 的策略 ID 或参数组合必须不同，
       并记录主对照选择依据 — verify: `tests/unit/test_h2_dual_track_contract.py`、`spec.md`、`design.md`
-- [ ] T902 (`FR-301`, `NFR-302`, `SC-301`): 用冻结 AI 策略跑配对模拟，测出真实的配对不一致
-      概率 `q` 与配对差分布，把最终 block 数冻结在不低于 158 的值上（下限见
+- [ ] T902 (`FR-301`, `NFR-302`, `SC-301`): 按 `H2-endpoint-calibration-v1` 冻结三个家族的
+      **严重程度** SESOI（发生指标已实测为零方差，不得作主要 estimand），说明该幅度为何在
+      机制上重要；最终 block 数取 SESOI 所需值与 158 下限的较大者（下限见
       `H2-block-power-baseline-v1`，不得下调）；冻结 24 个所有者正式场景的顺序和备用 seed 池；
       确认两条轨道不合并样本量或推断，且研究声明只挂 AI 轨。旧真人功效、Prolific 和
       `$5,900`预算不得进入当前 go/no-go — verify:
