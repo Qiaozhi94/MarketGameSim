@@ -13,9 +13,20 @@
     "occurrence_role": "descriptive_secondary",
     "primary_estimand_calibration_evidence_id": "H2-endpoint-calibration-v1",
     "degenerate_primary_estimand_forbidden": true,
-    "sesoi_status": "pending_owner_decision_on_measured_sd_scale",
-    "minimum_blocks": 158,
-    "block_count_status": "provisional_pending_paired_seed_calibration",
+    "sesoi_scale": "0.25 x measured median paired SD (owner decision 2026-09-06: favour sensitivity)",
+    "measured_median_paired_sd": 0.018387521858379115,
+    "sesoi_by_family": {
+      "price_crash": 0.004596880464594779,
+      "liquidity_dry_up": 0.004596880464594779,
+      "liquidation_cascade": null
+    },
+    "sesoi_status": "frozen_for_calibrated_families_pending_cascade_calibration",
+    "uncalibrated_families": [
+      "liquidation_cascade"
+    ],
+    "minimum_blocks": 168,
+    "minimum_blocks_basis": "0.25 SD SESOI on the two families v0.1.5 measured; the final count is the maximum across all three families once liquidation_cascade is calibrated",
+    "block_count_status": "frozen_for_calibrated_families_pending_cascade_calibration",
     "may_lower_minimum_blocks": false,
     "power_basis_evidence_id": "H2-block-power-baseline-v1",
     "conditions": [

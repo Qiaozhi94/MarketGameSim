@@ -92,3 +92,32 @@ def test_contract_primary_estimand_is_severity_not_occurrence():
     assert track["primary_estimand_calibration_evidence_id"] == "H2-endpoint-calibration-v1"
     assert track["degenerate_primary_estimand_forbidden"] is True
     assert "sesoi" not in track, "旧的 0.125 风险差 SESOI 必须随终点变更一并移除"
+
+
+def test_frozen_sesoi_matches_the_measured_quarter_sd_scale(tool, evidence):
+    """owner 选的是 0.25 SD 一档；冻结值必须等于校准算出的那个数，不能手抄近似。"""
+    track = json.loads(CONTRACT.read_text(encoding="utf-8"))["formal_ai_track"]
+    quarter = evidence["severity_endpoint"]["blocks_by_candidate_sesoi"]["0.25sd"]
+    assert (
+        track["measured_median_paired_sd"]
+        == (evidence["severity_endpoint"]["median_implied_paired_sd"])
+    )
+    for family in ("price_crash", "liquidity_dry_up"):
+        assert track["sesoi_by_family"][family] == quarter["sesoi"]
+    assert track["minimum_blocks"] == quarter["blocks"]
+
+
+def test_uncalibrated_family_has_no_borrowed_sesoi(tool):
+    """v0.1.5 没有强平连锁的对应证据，它的 SESOI 不得借用另两个家族的值。"""
+    contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
+    track = contract["formal_ai_track"]
+    families = contract["shared_constraints"]["outcome_families"]
+    by_family = track["sesoi_by_family"]
+    assert set(by_family) == set(families), "每个结果家族都必须在 SESOI 表里有条目"
+
+    uncalibrated = track["uncalibrated_families"]
+    assert uncalibrated, "校准只覆盖两个家族，未覆盖的必须显式列出"
+    calibrated_values = {value for family, value in by_family.items() if family not in uncalibrated}
+    for family in uncalibrated:
+        assert by_family[family] is None, f"{family} 未校准，SESOI 必须为 null"
+        assert by_family[family] not in calibrated_values

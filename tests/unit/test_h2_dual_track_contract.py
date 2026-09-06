@@ -21,8 +21,10 @@ def test_h2_formal_ai_track_uses_paired_seed_blocks_not_ai_identities():
     assert track["human_population_inference_allowed"] is False
     # 旧真人计划的 130 是参与者数（约 936 个配对局），换单位后不得原样沿用。
     assert "target_blocks" not in track, "固定 target_blocks 已被下限 + 校准状态取代"
-    assert track["minimum_blocks"] == 158
-    assert track["block_count_status"] == "provisional_pending_paired_seed_calibration"
+    assert track["minimum_blocks"] == 168
+    assert (
+        track["block_count_status"] == "frozen_for_calibrated_families_pending_cascade_calibration"
+    )
     assert track["may_lower_minimum_blocks"] is False
 
 
