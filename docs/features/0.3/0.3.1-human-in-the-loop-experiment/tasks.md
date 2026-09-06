@@ -39,10 +39,10 @@ updated: 2026-09-06
       `AI_FORMAL` 与 `OWNER_N_OF_1`；旧内容只保留在 superseded 证据中，开发代码不得实现
       旧合同。`WINDOW_MATCHED_POLICY_CONTROL` 与 `GOAL_AGENT_CONTROL` 的策略 ID 或参数组合必须不同，
       并记录主对照选择依据 — verify: `tests/unit/test_h2_dual_track_contract.py`、`spec.md`、`design.md`
-- [ ] T902 (`FR-301`, `NFR-302`, `SC-301`): `price_crash` 与 `liquidity_dry_up` 的严重程度
-      SESOI 已按 0.25 SD 冻结为 `4.5969e-3`（block 下限 168）；本任务剩余部分是用 H2 自己的
-      配对模拟校准 `liquidation_cascade` 的严重程度 SD、冻结其 SESOI，并把最终 block 数取三个
-      家族所需值的最大值（发生指标已实测为零方差，不得作主要 estimand；下限不得下调）；冻结 24 个所有者正式场景的顺序和备用 seed 池；
+- [ ] T902 (`FR-301`, `NFR-302`, `SC-301`): 三个家族的严重程度 SESOI 已按 0.25 SD 全部冻结
+      （`price_crash`/`liquidity_dry_up` = `4.5969e-3`，`liquidation_cascade` = `0.25049`），
+      block 数冻结为 168；正式场景分布必须包含高杠杆 + `maint_bp=1200` 制度格，否则强平连锁
+      家族无数据（发生指标三家族均实测为零方差，不得作主要 estimand；block 数不得下调）；冻结 24 个所有者正式场景的顺序和备用 seed 池；
       确认两条轨道不合并样本量或推断，且研究声明只挂 AI 轨。旧真人功效、Prolific 和
       `$5,900`预算不得进入当前 go/no-go — verify:
       `docs/experiments/H2-dual-track-contract.json`、`tests/unit/test_h2_block_power.py`、
