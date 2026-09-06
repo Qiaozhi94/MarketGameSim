@@ -34,9 +34,12 @@ def test_ac302_timeout_writes_no_action_without_wall_clock_wait():
     assert session.recorded_decision(window) == "NO_ACTION"
 
 
-@pytest.mark.xfail(strict=True, reason="T911 未实现：正式态特权移除尚未落地")
 def test_ac302_formal_client_exposes_no_pause_step_or_reparameterisation():
-    """正式客户端不得暴露暂停、单步、改参或未来信息。"""
+    """正式客户端不得暴露暂停、单步、改参或未来信息。
+
+    控制项闭集已由 T905 落地（`session.formal_client_controls`），故摘除 xfail；
+    UI 层怎么渲染这个闭集仍属 T911。
+    """
     from market_game_sim.experiment.h2 import session
 
     controls = session.formal_client_controls()
