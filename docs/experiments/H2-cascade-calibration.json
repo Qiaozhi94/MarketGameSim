@@ -1,0 +1,63 @@
+{
+  "evidence_id": "H2-cascade-calibration-v1",
+  "evidence_class": "measured-calibration-from-paired-simulation",
+  "family": "liquidation_cascade",
+  "regime_cell": {
+    "maint_bp": 1200,
+    "leverage_weights": {
+      "10": 3334,
+      "20": 3333,
+      "50": 3333
+    }
+  },
+  "models": {
+    "control": "risk_budget_linear_v1",
+    "treatment": "risk_budget_threshold_v1"
+  },
+  "paired_blocks": 256,
+  "severity_metric": "max accounts liquidated under one chain_id",
+  "severity": {
+    "nonzero_paired_blocks": 128,
+    "mean_paired_difference": -1.0,
+    "paired_sd": 1.0019588657362393,
+    "blocks_with_control_chain": 131,
+    "blocks_with_treatment_chain": 3,
+    "usable_as_primary_estimand": true
+  },
+  "spec_occurrence": {
+    "condition": ">=2 accounts in one chain AND max(chain_depth) >= 1",
+    "nonzero_paired_blocks": 0,
+    "paired_difference_is_degenerate": true,
+    "usable_as_primary_estimand": false
+  },
+  "observed_chain_depths": [
+    0
+  ],
+  "true_cascade_observed": false,
+  "sesoi_scale": "0.25 x measured paired SD",
+  "sesoi": 0.2504897164340598,
+  "blocks_required": 168,
+  "cell_probe": {
+    "LL": {
+      "runs": 64,
+      "runs_with_liquidation": 0
+    },
+    "LH": {
+      "runs": 64,
+      "runs_with_liquidation": 0
+    },
+    "HL": {
+      "runs": 64,
+      "runs_with_liquidation": 0
+    },
+    "HH": {
+      "runs": 64,
+      "runs_with_liquidation": 14
+    }
+  },
+  "limitations": [
+    "Only the HH cell (high leverage, maint_bp=1200) produces liquidations; the other three cells produce none, so this SESOI applies to that cell's scenario distribution.",
+    "Every observed chain has chain_depth 0, which event-schema defines as 'not cascade-triggered': no causal cascade propagation was observed at all.",
+    "The severity metric therefore counts accounts liquidated together under one chain_id; it must not be described as cascade depth."
+  ]
+}

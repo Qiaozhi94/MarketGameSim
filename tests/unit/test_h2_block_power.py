@@ -67,7 +67,7 @@ def test_contract_block_target_is_not_below_the_baseline(tool):
     baseline = tool.minimum_blocks(tool.PAIRED_DISCORDANCE)
     assert track["minimum_blocks"] >= baseline
     assert track["minimum_blocks"] != tool.SUPERSEDED_PARTICIPANT_CAP
-    assert track["block_count_status"].endswith("pending_cascade_calibration")
+    assert track["block_count_status"] == "frozen_for_all_three_families"
     assert track["may_lower_minimum_blocks"] is False
     assert track["power_basis_evidence_id"] == tool.EVIDENCE_ID
 

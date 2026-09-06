@@ -18,15 +18,17 @@
     "sesoi_by_family": {
       "price_crash": 0.004596880464594779,
       "liquidity_dry_up": 0.004596880464594779,
-      "liquidation_cascade": null
+      "liquidation_cascade": 0.2504897164340598
     },
-    "sesoi_status": "frozen_for_calibrated_families_pending_cascade_calibration",
-    "uncalibrated_families": [
-      "liquidation_cascade"
-    ],
+    "sesoi_status": "frozen_for_all_three_families",
+    "uncalibrated_families": [],
+    "cascade_calibration_evidence_id": "H2-cascade-calibration-v1",
+    "cascade_severity_metric": "max accounts liquidated under one chain_id",
+    "cascade_true_propagation_observed": false,
+    "cascade_requires_hh_regime_cell": true,
     "minimum_blocks": 168,
-    "minimum_blocks_basis": "0.25 SD SESOI on the two families v0.1.5 measured; the final count is the maximum across all three families once liquidation_cascade is calibrated",
-    "block_count_status": "frozen_for_calibrated_families_pending_cascade_calibration",
+    "minimum_blocks_basis": "0.25 SD SESOI on all three families; each independently requires 168 paired blocks",
+    "block_count_status": "frozen_for_all_three_families",
     "may_lower_minimum_blocks": false,
     "power_basis_evidence_id": "H2-block-power-baseline-v1",
     "conditions": [
@@ -94,7 +96,7 @@
     "reason": "The owner clarified that no external human participants will be recruited."
   },
   "remaining_gates": [
-    "calibrate AI paired-seed discordance q and fix the final block count at or above the 158-block baseline",
+    "DONE 2026-09-06: all three families calibrated (H2-endpoint-calibration-v1, H2-cascade-calibration-v1); block count frozen at 168",
     "freeze the owner N-of-1 scenario order before formal owner sessions",
     "implement fail-closed separation between AI formal and owner N-of-1 evidence"
   ]

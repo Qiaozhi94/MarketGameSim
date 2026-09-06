@@ -107,17 +107,24 @@ def test_frozen_sesoi_matches_the_measured_quarter_sd_scale(tool, evidence):
     assert track["minimum_blocks"] == quarter["blocks"]
 
 
-def test_uncalibrated_family_has_no_borrowed_sesoi(tool):
-    """v0.1.5 没有强平连锁的对应证据，它的 SESOI 不得借用另两个家族的值。"""
+def test_sesoi_table_never_borrows_across_families(tool):
+    """不变量：未校准家族必须为 null，强平连锁不得复用另两个家族的值。"""
     contract = json.loads(CONTRACT.read_text(encoding="utf-8"))
     track = contract["formal_ai_track"]
     families = contract["shared_constraints"]["outcome_families"]
     by_family = track["sesoi_by_family"]
     assert set(by_family) == set(families), "每个结果家族都必须在 SESOI 表里有条目"
 
-    uncalibrated = track["uncalibrated_families"]
-    assert uncalibrated, "校准只覆盖两个家族，未覆盖的必须显式列出"
-    calibrated_values = {value for family, value in by_family.items() if family not in uncalibrated}
-    for family in uncalibrated:
-        assert by_family[family] is None, f"{family} 未校准，SESOI 必须为 null"
-        assert by_family[family] not in calibrated_values
+    uncalibrated = set(track["uncalibrated_families"])
+    for family, value in by_family.items():
+        if family in uncalibrated:
+            assert value is None, f"{family} 未校准，SESOI 必须为 null"
+        else:
+            assert value is not None, f"{family} 不在未校准列表却没有 SESOI"
+
+    # 强平连锁来自独立的配对模拟，与另两个家族的 v0.1.5 尺度无关；数值相等意味着被借用了。
+    cascade = by_family["liquidation_cascade"]
+    if cascade is not None:
+        assert cascade != by_family["price_crash"]
+        assert cascade != by_family["liquidity_dry_up"]
+        assert track["cascade_calibration_evidence_id"]
