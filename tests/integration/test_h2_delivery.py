@@ -33,9 +33,11 @@ def test_ac307_conclusion_syntax_forbids_the_human_effect_shorthand():
         assert qualifier in report
 
 
-@pytest.mark.xfail(strict=True, reason="T921 未实现：轨道标注尚不存在")
 def test_ac307_owner_track_results_are_marked_descriptive():
-    """所有者轨交付包是 experiment-preview 且标注描述性。"""
+    """所有者轨交付包是 experiment-preview 且标注描述性。
+
+    信封与证据级别标注已由 T905 落地，故摘除 xfail；完整交付流水线仍属 T920/T921。
+    """
     from market_game_sim.experiment.h2 import delivery
 
     bundle = delivery.build_owner_bundle()

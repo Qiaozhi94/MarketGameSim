@@ -58,17 +58,18 @@ updated: 2026-09-06
 - [ ] T904 (`FR-301`, `DR-301`, `AC-301`): 实现 protocol schema、完整性校验、内容哈希与不可变
       冻结，并与仓库预注册门交叉绑定；`control_arm` 闭集为 `linear | threshold | owner`，CLI 复用
       同一枚举真源 — verify: `tests/unit/experiment/test_h2_protocol.py`
-- [ ] T905 [P] (`DR-301`, `IR-301`, `AC-308`): 实现匿名 enrollment、同意/资格/理解检查和撤回状态
+- [x] T905 [P] (`DR-301`, `IR-301`, `AC-308`): 实现所有者研究假名、训练/正式阶段标识、解盲规则
+      与成果包 PII 扫描（无外部参与者，故无报名/同意/资格/撤回流程）
       — verify: `tests/unit/experiment/test_h2_privacy.py`
-- [ ] T906 (`FR-301`, `IR-301`, `NFR-303`, `AC-304`): 实现预签发 assignment、seed/scenario
-      顺序、有序备用 seed/pair 池与结果盲纳入元数据 — verify:
-      `tests/integration/test_h2_paired_runs.py`
-- [ ] T907 (`FR-301`, `FR-302`, `TR-301`, `NFR-301`, `AC-304`): 实现目标代理插槽、人类替换条件、
+- [x] T906 (`FR-301`, `IR-301`, `NFR-303`, `AC-304`): 实现预签发 assignment、seed/scenario
+      顺序、有序备用 seed/pair 池与结果盲纳入元数据；H2 使用独占的 50000 seed 段 — verify:
+      `tests/unit/experiment/test_h2_assignment.py`、`tests/integration/test_h2_paired_runs.py`
+- [x] T907 (`FR-301`, `FR-302`, `TR-301`, `NFR-301`, `AC-304`): 实现目标代理插槽、双臂生成与
       两条纯代理参照均受同一有限窗口调度器约束（`WINDOW_MATCHED_POLICY_CONTROL` 形态），
       以及两轨的双臂生成与冻结字段比较（窗口调度参数必须在白名单内，
       主对照策略取自预注册的 v0.1 家族；协议须冻结账户/风险、信息、动作、窗口与目标差异的
       比较矩阵，且不声称目标函数对齐） — verify: `tests/integration/test_h2_paired_runs.py`
-- [ ] T908 (`FR-303`, `IR-302`, `AC-303`): 实现 mode/stage/protocol/pair/inclusion 多重 evidence
+- [x] T908 (`FR-303`, `IR-302`, `AC-303`): 实现 mode/stage/protocol/pair/inclusion 多重 evidence
       guard 和原子拒绝 — verify: `tests/integration/test_h2_evidence_guard.py`
 - [ ] T909 `[成果门:H2-A]` (`AC-301`, `AC-303`, `AC-304`): 生成可打开的冻结协议、配对
       manifest diff 与 guard 矩阵，入口 `python -m market_game_sim.experiment protocol preview`，
@@ -80,7 +81,7 @@ updated: 2026-09-06
 - [ ] T910 (`FR-302`, `IR-301`, `TR-302`, `AC-302`): 实现有限决策窗口、单次提交、超时
       `NO_ACTION` 与迟到输入拒绝 — verify: `tests/integration/test_experiment_session.py`
 - [ ] T911 (`UX-301`, `UX-302`, `UX-303`, `AC-302`, `AC-308`): 实现实验训练/正式 UI、倒计时、
-      阶段提示与退出，并移除正式态 pause/step/改参 — verify:
+      阶段提示与中止入口，并移除正式态 pause/step/改参 — verify:
       `tests/integration/test_experiment_session.py`
 - [ ] T912 [P] (`FR-304`, `SC-303`, `AC-305`): 实现三个独立结果家族、配对估计、不确定性、
       多重性和缺失处理；Holm 只作用于 AI 轨 `risk_budget_threshold_v1 - risk_budget_linear_v1`
@@ -90,7 +91,7 @@ updated: 2026-09-06
       指标及因果追溯，将 ID/公式/单位/窗口/缺失语义写入指标字典唯一真源 — verify:
       `docs/research/metrics-dictionary.md`、`tests/unit/experiment/test_h2_mechanisms.py`、
       `tests/integration/test_h2_mechanisms.py`
-- [ ] T914 (`FR-303`, `NFR-303`, `AC-303`, `AC-308`): 实现技术中止、撤回、补跑与结果盲
+- [ ] T914 (`FR-303`, `NFR-303`, `AC-303`, `AC-308`): 实现技术中止、所有者中止、补跑与结果盲
       adjudication 流程；补跑只能按冻结顺序消耗备用 seed/pair 并绑定配套控制 — verify:
       `tests/integration/test_h2_evidence_guard.py`
 - [ ] T915 `[成果门:H2-B]` (`AC-302`, `AC-303`, `AC-305`, `AC-306`, `AC-308`): 用固定假参与者
@@ -126,7 +127,7 @@ updated: 2026-09-06
 - [ ] T922 (`AC-301`, `AC-303`, `AC-304`): 运行协议、证据门、配对和重放正反测试 — verify:
       `tests/unit/experiment/test_h2_protocol.py`、`tests/integration/test_h2_evidence_guard.py`、
       `tests/integration/test_h2_paired_runs.py`
-- [ ] T923 (`AC-302`, `AC-308`): 在目标 Windows 环境运行训练、正式窗口、断线、撤回与阶段
+- [ ] T923 (`AC-302`, `AC-308`): 在目标 Windows 环境运行训练、正式窗口、断线、中止与阶段
       提示验收 — verify: `tests/integration/test_experiment_session.py`
 - [ ] T924 (`AC-305`, `AC-306`): 用冻结模拟数据验证效应恢复、缺失、多重性、三机制和无综合分数
       — verify: `tests/unit/experiment/test_h2_outcomes.py`、
@@ -147,7 +148,7 @@ updated: 2026-09-06
 - `T912 [P]` 与 `T913 [P]` 可并行：结果与机制属于不同分析模块且定义已由协议冻结。
 - `T915 -> T916 -> T917 -> T918 -> T919 -> T920 -> T921`：正式协议冻结后才采样，index
   冻结后才分析，分析完成后才生成正式报告；T917 未达到冻结停止规则时不得进入 T918。
-- `T905 [P]` 可与运行骨架开发并行：只修改 enrollment/隐私模块，不共享市场运行状态。
+- `T905 [P]` 可与运行骨架开发并行：只修改会话阶段/隐私模块，不共享市场运行状态。
 
 ## 5. 明确后移
 
