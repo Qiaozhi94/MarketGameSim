@@ -43,8 +43,8 @@ updated: 2026-09-06
       （`price_crash`/`liquidity_dry_up` = `4.5969e-3`，`liquidation_cascade` = `0.25049`），
       block 数冻结为 168；正式场景分布必须包含高杠杆 + `maint_bp=1200` 制度格，否则强平连锁
       家族无数据（发生指标三家族均实测为零方差，不得作主要 estimand；block 数不得下调）；冻结 24 个所有者正式场景的顺序和备用 seed 池；
-      确认两条轨道不合并样本量或推断，且研究声明只挂 AI 轨。旧真人功效、Prolific 和
-      `$5,900`预算不得进入当前 go/no-go — verify:
+      确认两条轨道不合并样本量或推断，且研究声明只挂 AI 轨。已作废的旧真人功效、Prolific
+      与 `$5,900` 预算不得进入当前 go/no-go — verify:
       `docs/experiments/H2-dual-track-contract.json`、`tests/unit/test_h2_block_power.py`、
       `tests/unit/test_h2_dual_track_contract.py`、`docs/experiments/H2-preregistration.md`
 - [ ] T903 (`FR-301`, `NFR-301`, `AC-301`): 验证 v0.2.1、事件/指标合同与目标代理配置可支持
