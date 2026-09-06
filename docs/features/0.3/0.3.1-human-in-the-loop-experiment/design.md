@@ -102,7 +102,7 @@ Paired pure-agent runner --------------------+-> pair validator
 - `assignments.jsonl`：`assignment_id`、`run_mode`、`pair_id`、seed/config、session order、
   target slot、签发协议哈希。
 - session manifest：运行与阶段元数据、输入/事件/artifact 哈希、完整性、技术状态。
-- `adjudication.jsonl`：按冻结 reason code 记录 included/excluded/withdrawn，保留裁决时间和依据。
+- `adjudication.jsonl`：按冻结 reason code 记录 included/excluded/aborted，保留裁决时间和依据。
 - evidence index：只列纳入 pair 及协议哈希，不复制身份资料。
 
 H2 预注册采用双层机器门：`docs/experiments/H2-preregistration.md` 进入现有
@@ -359,10 +359,13 @@ preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失
 #### DQ-302：CLI、API 与对象 schema
 
 - 统一为 `python -m market_game_sim.experiment` 命令族，下设 `protocol validate/freeze/preview`、
-  `enroll`、`train`、`assign`、`run`、`withdraw`、`adjudicate`、`analyze` 和 `deliver`。
-- 采用 protocol、participant、assignment、session-manifest、adjudication、evidence-index
-  六类版本化 JSON schema。正式写入必须绑定协议哈希、原子落盘；分析只能读取显式冻结的
-  evidence index，不能扫描目录自动挑选样本。
+  `assign`、`train`、`run`、`abort`、`adjudicate`、`analyze` 和 `deliver`。`run` 用
+  `--arm linear|threshold|owner` 选择条件，枚举与协议 schema 的 `control_arm` 共用真源。
+  不设 `enroll`/`withdraw`：项目不招募外部真人，没有报名与撤回同意流程。
+- 采用 protocol、owner、assignment、session-manifest、adjudication、evidence-index 六类
+  版本化 JSON schema（`owner` 取代旧的 `participant`，只存研究假名与训练完成状态）。
+  正式写入必须绑定协议哈希、原子落盘；两条轨道各自维护 evidence index，分析只能读取显式
+  冻结的那一份，不能扫描目录自动挑选样本，也不能跨轨读取。
 
 #### DQ-303：窗口竞争与迟到输入
 
@@ -372,15 +375,22 @@ preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失
 - 每个窗口最多接受一次最终动作，迟到返回 `WINDOW_CLOSED`，无有效动作写 `NO_ACTION`。
   客户端倒计时仅作展示；开窗、截止、接收、裁决时间和 reason code 进入诊断，不回拨逻辑时间。
 
-#### DQ-304：主要统计模型
+#### DQ-304：主要统计模型（已按双轨与 severity 终点重基线）
 
-- 以 participant × seed pair 为底层观察；先计算每位参与者各有效 pair 的
-  `risk_budget_threshold_v1 - risk_budget_linear_v1` 严重程度配对差，按 block 等权平均。
-- 主要 95% CI 与双侧检验使用按参与者整簇重抽样的 10000 次 bootstrap，并冻结随机种子；
-  三个主要发生率差使用 Holm 校正，同时报告原始效应、CI、原始 p 与校正 p。
-- 人类/代理身份没有被随机互换，因此 sign-flip/标签置换不得称作主要随机化推断；可作为明确
-  披露对称性/交换性假设的敏感性分析。包含 participant 与 scenario/order 效应的分层模型作为
-  第二项敏感性分析。
+- **观察单位是配对 seed block，不是参与者。** `AI_FORMAL` 轨每个 block 产生一个
+  `risk_budget_threshold_v1 - risk_budget_linear_v1` 的**严重程度**配对差；block 之间独立，
+  没有参与者内聚类，因此不使用 participant-cluster 结构。
+- 主要 95% CI 与双侧检验使用 block 级重抽样的 10000 次 bootstrap，并冻结随机种子；三个
+  家族的**严重程度**主要检验用 Holm 校正，同时报告原始效应、CI、原始 p 与校正 p。
+- **发生指标不是主要检验**：三个家族的发生率配对差实测为零方差（见
+  [`H2-endpoint-calibration`](../../../experiments/H2-endpoint-calibration.md) 与
+  [`H2-cascade-calibration`](../../../experiments/H2-cascade-calibration.md)），只作描述性报告，
+  且必须如实呈现其零方差事实。
+- 两个策略不是随机分配到 seed 的（每个 seed 都跑两条），配对差的随机性只来自 seed 抽样，
+  因此 sign-flip/标签置换不得称作主要随机化推断；它只能作为明确披露交换性假设的敏感性
+  分析。包含 scenario/regime 效应的分层模型作为第二项敏感性分析。
+- `OWNER_N_OF_1` 轨（n=1）只报告 24 个场景的配对差分布、行为时间线与个案描述，**不做**
+  显著性检验、不给人群区间，也不与 AI 轨合并。
 
 #### DQ-305：技术中止与恢复
 
@@ -393,7 +403,7 @@ preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失
 ## 10. 待确认设计问题
 
 - [x] DQ-301: 已关闭 — 决策：事件 schema 升至 v5，v4 只读回放，H2 guard 只接受完整 v5，未知版本 fail closed。
-- [x] DQ-302: 已关闭 — 决策：统一 `python -m market_game_sim.experiment` 命令族与六类版本化 schema，分析只读冻结 evidence index。
+- [x] DQ-302: 已关闭 — 决策：统一 `python -m market_game_sim.experiment` 命令族（无 enroll/withdraw）与六类版本化 schema（owner 取代 participant），分析只读本轨冻结 evidence index。
 - [x] DQ-303: 已关闭 — 决策：服务端单调钟、半开窗口和会话锁内动作槽为唯一裁决点，无隐藏宽限。
-- [x] DQ-304: 已关闭 — 决策：参与者等权配对差与 participant-cluster bootstrap 为主要分析，Holm 控制三项主要检验。
+- [x] DQ-304: 已关闭 — 决策：观察单位为配对 seed block，严重程度配对差 + block 级 bootstrap 为主要分析，Holm 控制三项主要检验；发生指标只作描述性，所有者轨不做显著性检验。
 - [x] DQ-305: 已关闭 — 决策：正式运行不恢复或拼接，技术中止仅允许用预签发新 seed/pair 整局补跑并保留审计链。
