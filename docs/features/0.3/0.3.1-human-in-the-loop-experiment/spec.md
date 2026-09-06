@@ -3,7 +3,7 @@ kind: milestone
 id: 0.3.1
 parent: v0.3-human-in-the-loop-crash-experiment
 version: "0.3"
-status: draft
+status: ready-for-development
 research_claim_status: not-established
 research_claim_required: true
 evidence_class: formal-research
