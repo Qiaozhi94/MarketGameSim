@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "contract_id": "H2-dual-track-contract-v1",
+  "status": "FROZEN_SCOPE_BASELINE",
+  "effective_date": "2026-09-06",
+  "research_question": "How do frozen AI decision policies affect endogenous crash feedback, and how does the project owner behave relative to matched AI counterfactuals?",
+  "formal_ai_track": {
+    "run_mode": "ai-mechanism-experiment",
+    "evidence_class": "formal-research",
+    "research_claim_eligible": true,
+    "experimental_unit": "paired_seed_block",
+    "minimum_blocks": 158,
+    "block_count_status": "provisional_pending_paired_seed_calibration",
+    "may_lower_minimum_blocks": false,
+    "power_basis_evidence_id": "H2-block-power-baseline-v1",
+    "conditions": [
+      "risk_budget_threshold_v1",
+      "risk_budget_linear_v1"
+    ],
+    "required_runs_per_block": 2,
+    "claim_scope": "frozen AI policies, market model, parameter range, and seed distribution only",
+    "human_population_inference_allowed": false
+  },
+  "owner_n_of_1_track": {
+    "run_mode": "owner-n-of-1",
+    "evidence_class": "experiment-preview",
+    "research_claim_eligible": false,
+    "research_claim_exclusion_reason": "n=1 self-experiment; SOP principle 3 keeps sample-size-1 runs with learning effects out of statistics",
+    "known_uncontrollable_bias": "the owner is both experimenter and subject and knows the hypotheses",
+    "unblinding_rule": "no completed-scenario results may be viewed until all 24 formal blocks finish",
+    "human_participants": 1,
+    "participant_role": "project owner only",
+    "training_blocks": 6,
+    "formal_paired_blocks": 24,
+    "schedule": {
+      "days": 4,
+      "formal_blocks_per_day": 6,
+      "mandatory_break_after_blocks": 3
+    },
+    "conditions_per_block": [
+      "OWNER_DECISION",
+      "risk_budget_threshold_v1",
+      "risk_budget_linear_v1"
+    ],
+    "claim_scope": "this owner under the frozen task, interface, model family, and scenario distribution only",
+    "human_population_inference_allowed": false
+  },
+  "shared_constraints": {
+    "external_human_recruitment": 0,
+    "participant_compensation_usd": 0,
+    "recruitment_platform": null,
+    "external_fundamental_or_price_shock": false,
+    "outcome_families": [
+      "price_crash",
+      "liquidity_dry_up",
+      "liquidation_cascade"
+    ],
+    "paired_fields": [
+      "code_hash",
+      "config_hash",
+      "seed",
+      "initial_state",
+      "background_agents",
+      "target_slot",
+      "information_set",
+      "action_space",
+      "window_contract"
+    ],
+    "evidence_indices_must_be_separate": true,
+    "h1_free_play_is_formal_evidence": false,
+    "real_market_extrapolation_allowed": false
+  },
+  "superseded_planning": {
+    "human_participant_target_n": 130,
+    "prolific_recruitment": true,
+    "participant_compensation_reserve_usd": 4100,
+    "project_funding_reserve_usd": 5900,
+    "reason": "The owner clarified that no external human participants will be recruited."
+  },
+  "remaining_gates": [
+    "calibrate AI paired-seed discordance q and fix the final block count at or above the 158-block baseline",
+    "freeze the owner N-of-1 scenario order before formal owner sessions",
+    "implement fail-closed separation between AI formal and owner N-of-1 evidence"
+  ]
+}
