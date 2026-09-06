@@ -65,6 +65,8 @@ def test_h2_external_recruitment_and_compensation_are_zero_and_tracks_are_isolat
 
 
 MILESTONE = ROOT / "docs" / "features" / "0.3" / "0.3.1-human-in-the-loop-experiment"
+REBASELINED_DOCS = ("spec.md", "design.md", "tasks.md")
+# 旧的多人真人合同标记。重基线完成后它们只允许作为“已作废”的显式引用出现。
 LEGACY_CONTRACT_MARKERS = (
     "Prolific",
     "$22.00",
@@ -72,38 +74,40 @@ LEGACY_CONTRACT_MARKERS = (
     "$4,100",
     "招募 130",
 )
+# 把一行标注为作废引用的词；带这些词的行是在**禁止**旧合同，不是在使用它。
+RETIREMENT_WORDS = ("作废", "superseded", "SUPERSEDED", "均为零", "不得", "方向重置")
 
 
-def _milestone_status() -> str:
-    text = (MILESTONE / "spec.md").read_text(encoding="utf-8")
+def _live_legacy_lines(text: str) -> list[str]:
+    """含旧合同标记、且没有被标注为作废的行——这些才是残留的可执行旧需求。"""
+    live = []
     for line in text.splitlines():
-        if line.startswith("status:"):
-            return line.split(":", 1)[1].strip()
-    raise AssertionError("0.3.1 spec 缺 frontmatter status")
+        if not any(marker in line for marker in LEGACY_CONTRACT_MARKERS):
+            continue
+        if any(word in line for word in RETIREMENT_WORDS):
+            continue
+        live.append(line.strip())
+    return live
 
 
-def _legacy_markers_in(text: str) -> list[str]:
-    return [marker for marker in LEGACY_CONTRACT_MARKERS if marker in text]
+def test_live_legacy_detector_separates_use_from_retirement():
+    """检测器必须有牙，且必须分得清“使用旧合同”和“声明旧合同作废”。"""
+    assert _live_legacy_lines("招募平台固定为 Prolific，按 42.8% 费率计算") == [
+        "招募平台固定为 Prolific，按 42.8% 费率计算"
+    ]
+    assert _live_legacy_lines("旧的 Prolific 预算已随方向重置作废，只保留作审计") == []
+    assert _live_legacy_lines("干净的重基线文本") == []
 
 
-def test_legacy_marker_detector_actually_detects():
-    """检测函数本身必须有牙：没有这条，下面的门禁可能永远返回空列表。"""
-    assert _legacy_markers_in("招募平台固定为 Prolific") == ["Prolific"]
-    assert _legacy_markers_in("干净的重基线文本") == []
+def test_no_live_legacy_contract_remains_in_the_milestone():
+    """T901 重基线的收口判据：三件套里不得再有可执行的旧真人合同。
 
-
-def test_scope_reset_gate_blocks_promotion_while_legacy_contract_remains():
-    """方向重置门不能只是散文：status 一旦离开 draft，旧真人合同必须已被逐项重基线。"""
-    status = _milestone_status()
-    found: list[str] = []
-    for name in ("spec.md", "design.md"):
-        found.extend(_legacy_markers_in((MILESTONE / name).read_text(encoding="utf-8")))
-    if status != "draft":
-        assert found == [], (
-            f"0.3.1 status={status} 但 spec/design 仍含旧真人合同标记 {sorted(set(found))}；"
-            "推进前必须按 H2-dual-track-contract 逐项重基线"
-        )
-    else:
-        # draft 期间旧合同允许作为变更审计输入保留。这条反向断言保证：一旦真的清理干净，
-        # 本豁免会失败并提醒把门禁改成无条件断言，而不是被无声遗忘。
-        assert found, "spec/design 已无旧合同标记，请删除本 draft 豁免分支，改为无条件断言"
+    这条原本带一个 draft 豁免分支（旧合同允许作为变更审计输入保留）。重基线完成后豁免
+    被删除，改为无条件断言——这正是当初写反向断言要提醒的时刻。
+    """
+    residue = {}
+    for name in REBASELINED_DOCS:
+        lines = _live_legacy_lines((MILESTONE / name).read_text(encoding="utf-8"))
+        if lines:
+            residue[name] = lines
+    assert residue == {}, f"三件套仍含可执行的旧真人合同：{residue}"
