@@ -50,9 +50,9 @@ def _run_parameters() -> dict[str, Any]:
 
 
 def owner_window_contract() -> dict[str, Any]:
-    """窗口合同取自冻结协议，不在这里另写一份。"""
-    frozen = protocol.freeze(protocol.draft_from_contract())
-    return dict(frozen.payload["window_contract"])
+    """窗口合同取自冻结协议；实际读取逻辑由 protocol.frozen_window_contract() 唯一拥有，
+    ``session.py`` 消费同一份输出。这里保留这层薄封装只是维持既有公开名字不动。"""
+    return protocol.frozen_window_contract()
 
 
 #: 模块级常量形式的窗口合同，供断言与配置构造共用。
@@ -68,7 +68,7 @@ class PolicyRun:
     seed: int
     window_schedule: dict[str, Any]
     accounts: tuple[str, ...]
-    initial_funds: int
+    initial_price_ticks: int
     information_set: str
     action_space: tuple[str, ...]
     result: RunResult
@@ -77,7 +77,7 @@ class PolicyRun:
         """比较矩阵中标为"相同"的字段。"""
         return {
             "accounts": self.accounts,
-            "initial_funds": self.initial_funds,
+            "initial_price_ticks": self.initial_price_ticks,
             "information_set": self.information_set,
             "action_space": self.action_space,
             "window_schedule": tuple(sorted(self.window_schedule.items(), key=str)),
@@ -156,7 +156,7 @@ def _policy_run(seed: int, arm: str) -> PolicyRun:
         seed=seed,
         window_schedule=dict(OWNER_WINDOW_CONTRACT),
         accounts=tuple(sorted(spec.agent_id for spec in config.agent_specs)),
-        initial_funds=int(config.initial_price_ticks),
+        initial_price_ticks=int(config.initial_price_ticks),
         information_set="public_book_and_own_account",
         action_space=("submit_order", "cancel_order", "no_action"),
         result=result,
