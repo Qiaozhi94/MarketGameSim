@@ -1,10 +1,10 @@
 # MarketGameSim 指标字典
 
-**文档版本**：0.1.0  
+**文档版本**：0.2.0
 **状态**：Stable（跨规格口径合同；变更须记 ADR 并评估既有实验可比性）  
 **创建日期**：2026-07-29  
 **关联 PRD**：[`../market-game-sim-prd.md`](../market-game-sim-prd.md)　**关联方法论**：[`methodology.md`](methodology.md)  
-**支撑需求**：PRD / PR-014—PR-016、KPI-004、KPI-009
+**支撑需求**：PRD / PR-014—PR-016、KPI-004、KPI-009、FR-305（0.2.0 新增 §8 H2 机制指标）
 
 ## 0. 本文的作用
 
@@ -536,3 +536,31 @@ Funding（含核销） = +4635.2        # 代理侧：免除的损失，有符�
 
 MD-002 与 MD-003 的初值在 0.1.2 首次验证后可回写调整；MD-001 一经用于正式实验即冻结，
 因为改变采样间隔会使既有的自相关与波动聚集结果不可比。
+
+## 8. H2 机制指标（FR-305 / TR-302，0.3.1）
+
+三类机制指标度量决策来源（所有者或参照策略）在一次决策后的行为，用于判断主要结果的
+变化是否与预注册行为通道一致（US-302）。**只作关联与时序一致性解释，不声明因果
+中介**（FR-305）——因果中介需要独立操纵或额外假设，本文档不建立这类声明。
+
+口径唯一定义在本节；`experiment/h2/mechanisms.py` 只引用这里的指标 ID 与本文档版本号，
+不得在实现、分析脚本或报告中另行定义同名口径。
+
+| 指标 ID | 名称 | 公式 | 单位 | 缺失语义 |
+|---|---|---|---|---|
+| `H2-M-001` | 激进订单 | 该决策 `SUBMIT` 订单引发的 `TRADE_SETTLE` 中，该决策代理一侧 `postings[].role = TAKER` 的 `\|position_delta_units\|` 之和 | `quantity_units`（整数最小数量单位，账户合同 §1） | 决策事件本身无法解析（不存在或非 `AGENT_DECIDE`）时 → **缺失**；决策已解析但未提交任何订单时取值为 **0**（明确的"未激进下单"观测，不是数据缺口） |
+| `H2-M-002` | 流动性撤回 | 该决策 `CANCEL` 指令触发的 `ORDER_CANCELLED`（`reason = AGENT_REQUEST`）的 `cancelled_qty_units` 之和 | `quantity_units` | 同上；未发出撤单指令时取值为 **0**（不是缺失——"这次决策没有撤单"是一个明确的观测，不是数据缺口） |
+| `H2-M-003` | 风险减仓 | `abs(position_before) - abs(position_after)`；`position_before` 为该决策自身成交前、代理在本次运行日志内的累计仓位（无更早成交时为 0），`position_after = position_before + Σ position_delta_units`（该决策自身成交的仓位变动之和），正值表示减仓 | `position_units`（整数最小数量单位） | 决策事件本身无法解析时 → **缺失**；决策未产生任何成交（无论是否提交订单）时，`position_delta` 恒为 0，取值为 **0**（未成交不改变仓位，是明确观测） |
+
+**因果链要求**（TR-302）：三项指标都从 `decision_event_id` → `ORDER_ARRIVAL` →
+`caused_by_event_id` 回溯（成交/撤单/强平引用触发它的事件）。构建整张机制表前先跑
+[`evidence/chain_verifier.py`](../../src/market_game_sim/evidence/chain_verifier.py) 的
+因果外键闭包校验（同一套逻辑用于强平连锁审计与 KPI-006 追溯链，不重复实现）；
+链路缺失或断裂时**整份日志**拒绝产出机制表，不逐条降级为"部分缺失"（AC-306）。
+窗口是该决策的 `AGENT_DECIDE` 到其全部因果后续事件在日志序（`timestamp`,
+`transaction_seq`, `record_index`）上结算完毕。墙钟时间只作依从性诊断，不改变判定。
+
+**缺失与零值不可互换**：`decision_event_id` 无法解析（不存在或非 `AGENT_DECIDE`）时
+三项机制值必须整体标记缺失；决策已解析但没有相应订单/成交时，三项各自取值为 0——
+这是一个真实的零观测，不是缺失，混用会让"这次没有减仓"和"这次无法
+判断有没有减仓"在报告里无法区分。
