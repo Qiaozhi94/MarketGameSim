@@ -206,3 +206,14 @@ def freeze(draft: dict[str, Any]) -> FrozenProtocol:
 def accepts_assignment(protocol: FrozenProtocol, *, issued_under: str) -> bool:
     """assignment 只能在签发它的那一版协议下运行（spec §5 不变量）。"""
     return protocol.protocol_hash == issued_under
+
+
+def frozen_window_contract() -> dict[str, Any]:
+    """窗口合同的只读快照，从当前冻结协议派生。
+
+    ``session.py``（所有者窗口调度）与 ``runner.py``（AI 轨双臂调度）各自消费这份
+    输出，两者的窗口参数因此天然一致——不存在"两处各写一份、某次改动漏了一处"的
+    可能，因为它们从不各自持有数字，只持有对这个函数的调用。
+    """
+    frozen = freeze(draft_from_contract())
+    return dict(frozen.payload["window_contract"])
