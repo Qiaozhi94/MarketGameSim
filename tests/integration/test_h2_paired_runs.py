@@ -71,7 +71,7 @@ def test_matrix_same_fields_are_identical_and_diffs_are_disclosed(block):
     report = runner.validate_pair(block)
     assert report.identical_fields == {
         "accounts",
-        "initial_funds",
+        "initial_price_ticks",
         "information_set",
         "action_space",
         "window_schedule",
