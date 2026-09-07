@@ -78,23 +78,23 @@ updated: 2026-09-06
 
 ### Phase 2：H2-B 锁定客户端与实验预览
 
-- [ ] T910 (`FR-302`, `IR-301`, `TR-302`, `AC-302`): 实现有限决策窗口、单次提交、超时
+- [x] T910 (`FR-302`, `IR-301`, `TR-302`, `AC-302`): 实现有限决策窗口、单次提交、超时
       `NO_ACTION` 与迟到输入拒绝 — verify: `tests/integration/test_experiment_session.py`
-- [ ] T911 (`UX-301`, `UX-302`, `UX-303`, `AC-302`, `AC-308`): 实现实验训练/正式 UI、倒计时、
+- [x] T911 (`UX-301`, `UX-302`, `UX-303`, `AC-302`, `AC-308`): 实现实验训练/正式 UI、倒计时、
       阶段提示与中止入口，并移除正式态 pause/step/改参 — verify:
       `tests/integration/test_experiment_session.py`
-- [ ] T912 [P] (`FR-304`, `SC-303`, `AC-305`): 实现三个独立结果家族、配对估计、不确定性、
+- [x] T912 [P] (`FR-304`, `SC-303`, `AC-305`): 实现三个独立结果家族、配对估计、不确定性、
       多重性和缺失处理；Holm 只作用于 AI 轨 `risk_budget_threshold_v1 - risk_budget_linear_v1`
       的三个主要终点，所有者轨对比输出为描述性且不得替代主要结论 — verify:
       `tests/unit/experiment/test_h2_outcomes.py`
-- [ ] T913 [P] (`FR-305`, `TR-302`, `SC-303`, `AC-306`): 实现激进订单、流动性撤回和风险减仓
+- [x] T913 [P] (`FR-305`, `TR-302`, `SC-303`, `AC-306`): 实现激进订单、流动性撤回和风险减仓
       指标及因果追溯，将 ID/公式/单位/窗口/缺失语义写入指标字典唯一真源 — verify:
       `docs/research/metrics-dictionary.md`、`tests/unit/experiment/test_h2_mechanisms.py`、
       `tests/integration/test_h2_mechanisms.py`
-- [ ] T914 (`FR-303`, `NFR-303`, `AC-303`, `AC-308`): 实现技术中止、所有者中止、补跑与结果盲
+- [x] T914 (`FR-303`, `NFR-303`, `AC-303`, `AC-308`): 实现技术中止、所有者中止、补跑与结果盲
       adjudication 流程；补跑只能按冻结顺序消耗备用 seed/pair 并绑定配套控制 — verify:
       `tests/integration/test_h2_evidence_guard.py`
-- [ ] T915 `[成果门:H2-B]` (`AC-302`, `AC-303`, `AC-305`, `AC-306`, `AC-308`): 用固定假参与者
+- [x] T915 `[成果门:H2-B]` (`AC-302`, `AC-303`, `AC-305`, `AC-306`, `AC-308`): 用固定假参与者
       输入生成训练、正式会话、三结果与机制预览，入口
       `python -m market_game_sim.experiment preview`，验收有限窗口、阶段隔离、重放和报告结构，
       标记为 `experiment-preview` — verify: `tests/integration/test_h2_delivery.py`

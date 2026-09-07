@@ -15,7 +15,7 @@ import sys
 
 import pytest
 
-from market_game_sim.experiment.h2 import preview
+from market_game_sim.experiment.h2 import outcomes, preview, preview_b, session
 
 # --------------------------------------------------------------------------- #
 # T909 `[成果门:H2-A]`：单命令生成可打开的 preview 包
@@ -78,7 +78,7 @@ def test_h2a_pair_manifest_diff_shows_matrix_same_and_different_fields(tmp_path)
         "accounts",
         "action_space",
         "information_set",
-        "initial_funds",
+        "initial_price_ticks",
         "window_schedule",
     }
     assert set(diff["disclosed_differences"]["policy_id"]) == set(diff["policies"])
@@ -106,6 +106,70 @@ def test_h2a_guard_matrix_leaves_no_residue_in_the_shared_ledger(tmp_path):
     preview.generate(tmp_path / "bundle")
     assert evidence_guard.partial_writes() == []
     assert evidence_guard.admitted_count() == 0
+
+
+# --------------------------------------------------------------------------- #
+# T915 `[成果门:H2-B]`：锁定客户端、结果与机制的单命令 preview 包
+# --------------------------------------------------------------------------- #
+
+
+def test_h2b_cli_generates_the_complete_preview_bundle(tmp_path):
+    """真正跑验收入口，并检查默认路径和全部可打开产物。"""
+    completed = subprocess.run(
+        [sys.executable, "-m", "market_game_sim.experiment", "preview"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+
+    target = tmp_path / preview_b.DEFAULT_OUT
+    assert {path.name for path in target.iterdir()} == set(preview_b.BUNDLE_FILES)
+    payloads = {
+        name: json.loads((target / name).read_text(encoding="utf-8"))
+        for name in preview_b.BUNDLE_FILES
+    }
+    assert all(payload["evidence_class"] == "experiment-preview" for payload in payloads.values())
+
+
+def test_h2b_preview_exposes_window_stage_replay_outcome_and_mechanism_evidence(tmp_path):
+    """成果包本身必须足以验收 T915，不能只靠生成过程未报错。"""
+    target = preview_b.generate(tmp_path / "H2-B")
+    training = json.loads((target / "training-session.json").read_text(encoding="utf-8"))
+    formal = json.loads((target / "formal-session.json").read_text(encoding="utf-8"))
+    replay = json.loads((target / "replay-verification.json").read_text(encoding="utf-8"))
+    outcome_report = json.loads((target / "outcomes-preview.json").read_text(encoding="utf-8"))
+    mechanism_report = json.loads((target / "mechanisms-preview.json").read_text(encoding="utf-8"))
+
+    assert training["stage"] == "training"
+    assert formal["stage"] == "formal"
+    assert training["completed_windows"] == training["total_windows"]
+    assert formal["completed_windows"] == formal["total_windows"]
+    assert session.NO_ACTION in {item["decision"] for item in formal["decisions"]}
+    assert {item["intent_id"] for item in training["recorded_decisions"]}.isdisjoint(
+        {item["intent_id"] for item in formal["recorded_decisions"]}
+    )
+    for forbidden in ("pause", "step", "set_param", "reveal_future"):
+        assert forbidden not in formal["formal_client_controls"]
+
+    assert replay["states_match"] is True
+    assert replay["recorded_decisions_match"] is True
+
+    assert set(outcome_report["families"]) == set(outcomes.FAMILIES)
+    assert "composite_score" not in outcome_report
+    for family in outcome_report["families"].values():
+        assert family["primary_metric"] == "severity"
+        assert family["occurrence_role"] == "descriptive"
+        assert family["ci_low"] <= family["effect"] <= family["ci_high"]
+        assert "occurrence_rate_diff" in family
+
+    assert mechanism_report["row_count"] == len(mechanism_report["rows"])
+    mechanism_names = {"aggressive_orders", "liquidity_withdrawal", "risk_reduction"}
+    assert all(set(row["values"]) == mechanism_names for row in mechanism_report["rows"])
+    for name in mechanism_names:
+        assert any(row["values"][name]["evidence_event_ids"] for row in mechanism_report["rows"])
 
 
 @pytest.mark.xfail(strict=True, reason="T920/T921 未实现：H2 交付入口尚不存在")
