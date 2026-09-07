@@ -10,10 +10,12 @@ T904 已实现，xfail 骨架相应摘除。这里的负向用例逐个字段地
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 
 import pytest
 
-from market_game_sim.experiment.h2 import protocol
+from market_game_sim.experiment.h2 import formal_freeze, protocol
 
 
 @pytest.fixture
@@ -144,3 +146,106 @@ def test_draft_tracks_the_contract_not_a_local_copy(tmp_path, draft):
     path = tmp_path / "contract.json"
     path.write_text(json.dumps(contract, ensure_ascii=False), encoding="utf-8")
     assert protocol.draft_from_contract(contract_path=path)["minimum_blocks"] == 999
+
+
+# --------------------------------------------------------------------------- #
+# T916: final preregistration + executable protocol freeze
+# --------------------------------------------------------------------------- #
+
+
+def test_final_protocol_passes_both_gates_and_covers_formal_fields():
+    frozen = formal_freeze.build_formal_protocol()
+    assert set(formal_freeze.FORMAL_REQUIRED_FIELDS) <= set(frozen.payload)
+    assert frozen.payload["preregistration"]["id"] == "H2-preregistration-v1"
+    assert len(frozen.payload["preregistration"]["sha256"]) == 64
+    assert frozen.payload["assignment_plan"]["ai_planned_seeds"] == [50_000, 50_167]
+    assert len(frozen.payload["assignment_plan"]["owner_scenario_order"]) == 24
+    assert set(frozen.payload["analysis_plan"]["holm_scope"]) == {
+        "price_crash.severity",
+        "liquidity_dry_up.severity",
+        "liquidation_cascade.severity",
+    }
+
+
+def test_incomplete_h2_preregistration_blocks_the_protocol_gate(tmp_path):
+    incomplete = tmp_path / "H2-preregistration.md"
+    incomplete.write_text("---\nid: H2-preregistration-v1\nstatus: FROZEN\n---\n", encoding="utf-8")
+    with pytest.raises(formal_freeze.FormalFreezeError, match="incomplete"):
+        formal_freeze.build_formal_protocol(preregistration_path=incomplete)
+
+
+def test_formal_freeze_archives_protocol_assignments_analysis_and_time(tmp_path):
+    target = formal_freeze.freeze_study(
+        tmp_path / "freeze",
+        frozen_at_utc="2026-09-07T09:00:00+00:00",
+    )
+    assert {path.name for path in target.iterdir()} == set(formal_freeze.ARCHIVE_FILES)
+    manifest = formal_freeze.verify_archive(target)
+    assert manifest["formal_sample_count_at_freeze"] == 0
+    assert manifest["frozen_at_utc"] == "2026-09-07T09:00:00+00:00"
+    assignments = json.loads((target / "assignments.json").read_text(encoding="utf-8"))
+    assert len(assignments["ai_assignments"]) == 168
+    assert len(assignments["reserve_seeds"]) == 17
+    assert len(assignments["owner_scenario_order"]) == 24
+
+
+def test_preregistration_drift_invalidates_an_existing_archive(tmp_path):
+    preregistration = tmp_path / "H2-preregistration.md"
+    preregistration.write_bytes(formal_freeze.PREREGISTRATION_PATH.read_bytes())
+    target = formal_freeze.freeze_study(
+        tmp_path / "freeze",
+        preregistration_path=preregistration,
+        frozen_at_utc="2026-09-07T09:00:00+00:00",
+    )
+    preregistration.write_text(
+        preregistration.read_text(encoding="utf-8") + "\npost-freeze drift\n",
+        encoding="utf-8",
+    )
+    with pytest.raises(formal_freeze.FormalFreezeError, match="preregistration.*drifted"):
+        formal_freeze.verify_archive(target, preregistration_path=preregistration)
+
+
+def test_analysis_code_drift_invalidates_an_existing_archive(tmp_path):
+    analysis = tmp_path / "analysis.py"
+    analysis.write_text("FROZEN = True\n", encoding="utf-8")
+    target = formal_freeze.freeze_study(
+        tmp_path / "freeze",
+        analysis_paths=(analysis,),
+        frozen_at_utc="2026-09-07T09:00:00+00:00",
+    )
+    analysis.write_text("FROZEN = False\n", encoding="utf-8")
+    with pytest.raises(formal_freeze.FormalFreezeError, match="analysis code drifted"):
+        formal_freeze.verify_archive(target, analysis_paths=(analysis,))
+
+
+def test_archive_hashes_are_stable_across_git_eol_checkout_policy(tmp_path):
+    target = formal_freeze.freeze_study(
+        tmp_path / "freeze",
+        frozen_at_utc="2026-09-07T09:00:00+00:00",
+    )
+    for name in ("protocol.json", "assignments.json"):
+        path = target / name
+        path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+    formal_freeze.verify_archive(target)
+
+
+def test_protocol_freeze_cli_creates_a_verifiable_archive(tmp_path):
+    target = tmp_path / "formal-freeze"
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "market_game_sim.experiment",
+            "protocol",
+            "freeze",
+            "--out",
+            str(target),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    assert "H2 formal freeze archive written" in completed.stdout
+    formal_freeze.verify_archive(target)

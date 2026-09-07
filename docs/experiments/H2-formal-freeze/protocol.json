@@ -1,0 +1,157 @@
+{
+  "payload": {
+    "analysis_plan": {
+      "bootstrap_resamples": 10000,
+      "bootstrap_seed": 0,
+      "ci_level": 0.95,
+      "contrast": "risk_budget_threshold_v1 - risk_budget_linear_v1",
+      "holm_alpha": 0.05,
+      "holm_scope": [
+        "price_crash.severity",
+        "liquidity_dry_up.severity",
+        "liquidation_cascade.severity"
+      ],
+      "occurrence_role": "descriptive",
+      "owner_inference": "descriptive_only",
+      "source_sha256": {
+        "src/market_game_sim/experiment/h2/mechanisms.py": "65d1f6577fa9f46e0f0e6ee05d1b694f52ebe59eb1fce52fcb24fe180e164096",
+        "src/market_game_sim/experiment/h2/outcomes.py": "4a053ddfcf3e660cc7505747f673069c12f1221aa5a068b1c94c1eabfa8857cc"
+      }
+    },
+    "assignment_plan": {
+      "ai_planned_seeds": [
+        50000,
+        50167
+      ],
+      "ai_reserve_seeds": [
+        50168,
+        50184
+      ],
+      "owner_order_audit_seed": 916301,
+      "owner_scenario_order": [
+        13,
+        5,
+        4,
+        12,
+        11,
+        14,
+        6,
+        18,
+        15,
+        16,
+        2,
+        17,
+        0,
+        7,
+        21,
+        20,
+        8,
+        9,
+        19,
+        22,
+        1,
+        10,
+        3,
+        23
+      ]
+    },
+    "conclusion_syntax": {
+      "forbidden_shorthands": [
+        "人类效应",
+        "human effect"
+      ],
+      "required_qualifiers": [
+        "模型族",
+        "参数范围",
+        "seed 分布"
+      ]
+    },
+    "contract_id": "H2-dual-track-contract-v1",
+    "contract_minimum_blocks": 168,
+    "control_arms": [
+      "linear",
+      "threshold",
+      "owner"
+    ],
+    "exclusion_rules": [
+      "protocol_drift",
+      "technical_abort",
+      "owner_abort",
+      "incomplete_pair",
+      "incomplete_session"
+    ],
+    "hypothesis_sidedness": "two-sided",
+    "mechanism_metrics": {
+      "dictionary": "docs/research/metrics-dictionary.md#8-h2-机制指标fr-305--tr-30203-1",
+      "ids": [
+        "H2-M-001",
+        "H2-M-002",
+        "H2-M-003"
+      ]
+    },
+    "minimum_blocks": 168,
+    "missing_rules": {
+      "ai_track": "complete_pair_only; no imputation",
+      "owner_track": "complete owner+linear+threshold scenario only; descriptive"
+    },
+    "occurrence_role": "descriptive_secondary",
+    "outcome_families": [
+      "price_crash",
+      "liquidity_dry_up",
+      "liquidation_cascade"
+    ],
+    "policies": [
+      "risk_budget_threshold_v1",
+      "risk_budget_linear_v1"
+    ],
+    "preregistration": {
+      "id": "H2-preregistration-v1",
+      "path": "docs/experiments/H2-preregistration.md",
+      "sha256": "99c557597ce4d66635fc365bb77e07f79ce4a538d7f1a541ac4a960853161918"
+    },
+    "primary_estimand": "severity_paired_difference",
+    "research_question": "How do frozen AI decision policies affect endogenous crash feedback, and how does the project owner behave relative to matched AI counterfactuals?",
+    "retention_policy": {
+      "direct_identifiers_collected": false,
+      "formal_aborts_retained_for_audit": true,
+      "owner_pseudonym_only": true
+    },
+    "schema_version": 1,
+    "sesoi_by_family": {
+      "liquidation_cascade": 0.2504897164340598,
+      "liquidity_dry_up": 0.004596880464594779,
+      "price_crash": 0.004596880464594779
+    },
+    "tracks": {
+      "ai_formal": {
+        "evidence_class": "formal-research",
+        "experimental_unit": "paired_seed_block",
+        "research_claim_eligible": true,
+        "run_mode": "ai-mechanism-experiment"
+      },
+      "owner_n_of_1": {
+        "evidence_class": "experiment-preview",
+        "formal_paired_blocks": 24,
+        "research_claim_eligible": false,
+        "run_mode": "owner-n-of-1",
+        "training_blocks": 6
+      }
+    },
+    "unblinding_rule": "no completed-scenario results may be viewed until all 24 formal blocks finish",
+    "window_contract": {
+      "applies_to": [
+        "linear",
+        "threshold",
+        "owner"
+      ],
+      "logical_ns_per_window": 1000000000,
+      "max_actions_per_window": 1,
+      "owner_wall_clock_seconds": 8,
+      "timeout_decision": "NO_ACTION",
+      "windows_per_scenario": 60
+    }
+  },
+  "protocol_hash": "ad60ad26ab7ba02573ea20eb58da52d7bcd3b0a0474b80c8bcd0e6c13bfafb82",
+  "schema_version": 1,
+  "status": "FROZEN"
+}

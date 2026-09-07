@@ -101,7 +101,7 @@ updated: 2026-09-06
 
 ### Phase 3：H2-C 正式采样与研究交付
 
-- [ ] T916 (`FR-301`, `SC-301`, `AC-301`): 冻结最终预注册、分析代码、协议哈希与分配表，并在
+- [x] T916 (`FR-301`, `SC-301`, `AC-301`): 冻结最终预注册、分析代码、协议哈希与分配表，并在
       首个正式样本前归档时间证据；预注册文档门和 protocol schema 门须同时通过 — verify:
       `tests/unit/experiment/test_h2_protocol.py`、`python tools/validate_spec_lifecycle.py`
 - [ ] T917 (`US-301`, `FR-302`, `NFR-302`, `NFR-303`, `AC-304`, `AC-308`): 按冻结协议完成

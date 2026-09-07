@@ -1,0 +1,21 @@
+{
+  "artifacts": {
+    "analysis_code": {
+      "src/market_game_sim/experiment/h2/mechanisms.py": "65d1f6577fa9f46e0f0e6ee05d1b694f52ebe59eb1fce52fcb24fe180e164096",
+      "src/market_game_sim/experiment/h2/outcomes.py": "4a053ddfcf3e660cc7505747f673069c12f1221aa5a068b1c94c1eabfa8857cc"
+    },
+    "assignments.json": "663c608ecdc90b8d871f7bd75a51340cf4c1fe4c53728c73d92b68f7ebd8a7d0",
+    "preregistration": {
+      "id": "H2-preregistration-v1",
+      "path": "docs/experiments/H2-preregistration.md",
+      "sha256": "99c557597ce4d66635fc365bb77e07f79ce4a538d7f1a541ac4a960853161918"
+    },
+    "protocol.json": "98d674685fa31bb9137dd8dadc3972c1722726bda24d016bf0166bff5c06c3d8"
+  },
+  "first_formal_sample_allowed_after": "2026-09-07T09:04:51+00:00",
+  "formal_sample_count_at_freeze": 0,
+  "freeze_id": "H2-formal-freeze-v1",
+  "frozen_at_utc": "2026-09-07T09:04:51+00:00",
+  "protocol_hash": "ad60ad26ab7ba02573ea20eb58da52d7bcd3b0a0474b80c8bcd0e6c13bfafb82",
+  "schema_version": 1
+}
