@@ -39,7 +39,7 @@ updated: 2026-09-06
       `AI_FORMAL` 与 `OWNER_N_OF_1`；旧内容只保留在 superseded 证据中，开发代码不得实现
       旧合同。两条参照策略（`risk_budget_threshold_v1` 与 `risk_budget_linear_v1`）的策略 ID 或参数组合必须不同，
       并记录主对照选择依据 — verify: `tests/unit/test_h2_dual_track_contract.py`、`spec.md`、`design.md`
-- [ ] T902 (`FR-301`, `NFR-302`, `SC-301`): 三个家族的严重程度 SESOI 已按 0.25 SD 全部冻结
+- [x] T902 (`FR-301`, `NFR-302`, `SC-301`): 三个家族的严重程度 SESOI 已按 0.25 SD 全部冻结
       （`price_crash`/`liquidity_dry_up` = `4.5969e-3`，`liquidation_cascade` = `0.25049`），
       block 数冻结为 168；正式场景分布必须包含高杠杆 + `maint_bp=1200` 制度格，否则强平连锁
       家族无数据（发生指标三家族均实测为零方差，不得作主要 estimand；block 数不得下调）；冻结 24 个所有者正式场景的顺序和备用 seed 池；
@@ -47,7 +47,7 @@ updated: 2026-09-06
       与 `$5,900` 预算不得进入当前 go/no-go — verify:
       `docs/experiments/H2-dual-track-contract.json`、`tests/unit/test_h2_block_power.py`、
       `tests/unit/test_h2_dual_track_contract.py`、`docs/experiments/H2-preregistration.md`
-- [ ] T903 (`FR-301`, `NFR-301`, `AC-301`): 验证 v0.2.1、事件/指标合同与目标代理配置可支持
+- [x] T903 (`FR-301`, `NFR-301`, `AC-301`): 验证 v0.2.1、事件/指标合同与目标代理配置可支持
       比较矩阵中标为“相同”的字段逐字段一致，并能冻结、输出其余差异项 — verify:
       `tests/unit/experiment/test_h2_protocol.py`
 
@@ -55,7 +55,7 @@ updated: 2026-09-06
 
 ### Phase 1：H2-A 冻结协议与配对运行骨架
 
-- [ ] T904 (`FR-301`, `DR-301`, `AC-301`): 实现 protocol schema、完整性校验、内容哈希与不可变
+- [x] T904 (`FR-301`, `DR-301`, `AC-301`): 实现 protocol schema、完整性校验、内容哈希与不可变
       冻结，并与仓库预注册门交叉绑定；`control_arm` 闭集为 `linear | threshold | owner`，CLI 复用
       同一枚举真源 — verify: `tests/unit/experiment/test_h2_protocol.py`
 - [x] T905 [P] (`DR-301`, `IR-301`, `AC-308`): 实现所有者研究假名、训练/正式阶段标识、解盲规则
