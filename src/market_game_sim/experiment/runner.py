@@ -324,6 +324,9 @@ def _dispatch_agents(event: dict, world: dict, kernel: EventKernel) -> list[dict
     if et == "AGENT_DECIDE":
         if event.get("_stress_trigger") is not None:
             return _handle_stress_decide(event, world, kernel)
+        external = (world.get("external_decision_sources") or {}).get(event.get("agent_id"))
+        if external is not None:
+            return _handle_external_decide(event, world, kernel, external)
         return handle_agent_decide(
             event,
             world,
@@ -424,6 +427,88 @@ def _handle_stress_decide(event: dict, world: dict, kernel: EventKernel) -> list
     return []
 
 
+def _handle_external_decide(event: dict, world: dict, kernel: EventKernel, source_fn) -> list[dict]:
+    """T917 所有者轨：目标插槽的决策来自内核外部（真人窗口控制器）。
+
+    内核在这个 decide 事务内阻塞，等冻结窗口控制器（8 秒墙钟、单次提交、超时
+    ``NO_ACTION``）给出决定后，走与 ``handle_agent_decide`` 相同的
+    ``ORDER_ARRIVAL`` 路径。证据纪律与 stress 路径一致：cursor 取观察自身的
+    边界（事件携带的 ``_observed_cursor_*``），不取 live world；provenance 用
+    闭集内的 ``ENDOGENOUS_AGENT``（所有者是运行内的内生代理人），人类窗口的
+    审计边界记录在会话工件里（design.md "等价可审计边界"），不新增事件类型。
+
+    源回调返回 ``{"kind": "NO_ACTION"}`` 或
+    ``{"kind": "MARKET", "side": "BUY"|"SELL", "quantity_units": int,
+    "intent_id": str}``。
+    """
+    decision = source_fn(event, world)
+    agent_id = event["agent_id"]
+    spec = world["agent_specs"][agent_id]
+    decision_event_id = f"e{kernel.current_transaction_seq}_0"
+    arrival_ts = event["timestamp"] + spec.latency_ns
+    account = world["accounts"][agent_id]
+    window_index = event.get("_decision_index", 0)
+
+    if decision["kind"] == "NO_ACTION":
+        intents: list[dict] = []
+        signed_qty = 0
+    elif decision["kind"] == "MARKET":
+        signed_qty = decision["quantity_units"] * (1 if decision["side"] == "BUY" else -1)
+        intents = [decision]
+    else:
+        raise ValueError(f"未知外部决策类型 {decision['kind']!r}")
+
+    for order_seq, intent in enumerate(intents):
+        kernel.enqueue(
+            {
+                "event_type": "ORDER_ARRIVAL",
+                "timestamp": arrival_ts,
+                "agent_id": agent_id,
+                "order_id": f"o-{agent_id}-{decision_event_id}-{order_seq}",
+                "action": "SUBMIT",
+                "side": intent["side"],
+                "order_type": "MARKET",
+                "price_ticks": None,
+                "quantity_units": intent["quantity_units"],
+                "intent_id": intent["intent_id"],
+                "decision_event_id": decision_event_id,
+                "submitted_at": event["timestamp"],
+            }
+        )
+
+    event["intents"] = [
+        {
+            "intent_id": intent["intent_id"],
+            "action": "SUBMIT",
+            "side": intent["side"],
+            "order_type": "MARKET",
+            "price_ticks": None,
+            "quantity_units": intent["quantity_units"],
+        }
+        for intent in intents
+    ]
+    event["accepted"] = True
+    event["reject_reason"] = None
+    event["internal_state"] = {
+        "decision_source": "external_owner_window",
+        "window_index": window_index,
+    }
+    event["decision_evidence"] = {
+        "schema_version": 1,
+        "goal_model_id": "owner_manual_v1",
+        "goal_model_version": 1,
+        "desired_position_units": account.position_units + signed_qty,
+        "executable_position_units": account.position_units + signed_qty,
+        "constraint_binding": False,
+        "constraint_reason": None,
+        "trigger_provenance": "ENDOGENOUS_AGENT",
+        "observation_event_id": event.get("observation_event_id", ""),
+        "cursor_from_event_id": event.get("_observed_cursor_from", "e1_0"),
+        "cursor_to_event_id": event.get("_observed_cursor_to", "e1_0"),
+    }
+    return []
+
+
 def _reschedule_next_observe(event: dict, world: dict, kernel: EventKernel) -> None:
     """§2.16: keep the agent's observe cycle self-sustaining.
 
@@ -449,6 +534,12 @@ def _reschedule_next_observe(event: dict, world: dict, kernel: EventKernel) -> N
     if spec is None:
         return
     next_ts = event["timestamp"] + spec.observe_interval_ns
+    # T917 所有者轨：运行时界（每场景 60 窗 × 1 逻辑秒）到达后不再排新的观察
+    # 周期，队列里已在途的订单与清算照常处理完——市场正常收尾，只是没有
+    # 第 61 个决策窗。AI 轨不设置该字段，行为不变。
+    horizon = world.get("run_horizon_ns")
+    if horizon is not None and next_ts >= horizon:
+        return
     # R018-C001: snapshot the *latest* committed market-data boundary so the
     # next observation consumes the fresh (last_seen, current] tape interval.
     # Falls back to the bootstrap id when no MARKET_DATA_PUBLISH has been
@@ -466,7 +557,12 @@ def _reschedule_next_observe(event: dict, world: dict, kernel: EventKernel) -> N
     )
 
 
-def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None) -> RunResult:
+def run_one(
+    config: ExperimentConfig,
+    protocol: ExperimentProtocol | None = None,
+    *,
+    world_overrides: dict | None = None,
+) -> RunResult:
     """Run a single experiment seed.
 
     ``protocol`` (T603, 方法论 §10.1/§10.3): when given, wires the
@@ -564,6 +660,10 @@ def run_one(config: ExperimentConfig, protocol: ExperimentProtocol | None = None
         "behavior_mapping": get_mapping(config.behavior_mapping).target_position,
         "disabled_factor": config.disabled_factor,
     }
+    if world_overrides:
+        # H2 所有者轨（T917）：把外生决策源与运行时界注入 world。默认 None 时
+        # 不碰任何字段——AI 两臂与全部既有路径的字节级行为保持不变。
+        world.update(world_overrides)
 
     for spec in config.agent_specs:
         # Only the first observation is pre-scheduled; each subsequent one
