@@ -141,10 +141,17 @@ def test_paired_runs_are_deterministic():
     assert first == second
 
 
-@pytest.mark.xfail(strict=True, reason="T906 编排未接线：备用池消费仍在 assignment 层")
 def test_rerun_consumes_the_next_reserve_seed_in_frozen_order():
-    """备用 seed 的顺序消费已在 assignment 层实现并测试；此处等运行编排接线。"""
+    """运行编排层必须接上冻结备用池，并保留原 session/pair 审计链。"""
     first, second = runner.reserve_pool()[:2]
     rerun = runner.rerun_after_abort(original_seed=SEED_PLAIN)
+    next_rerun = runner.rerun_after_abort(
+        original_seed=SEED_PLAIN,
+        consumed=(rerun.seed,),
+        original_session_id="session-original-50000",
+    )
     assert rerun.seed == first and rerun.seed != second
+    assert next_rerun.seed == second
     assert rerun.rerun_of_session_id
+    assert rerun.supersedes_pair_id == f"h2-ai-{SEED_PLAIN}"
+    assert next_rerun.rerun_of_session_id == "session-original-50000"

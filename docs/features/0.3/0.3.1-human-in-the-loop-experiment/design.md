@@ -10,24 +10,23 @@ topics:
   - formal-research
 doc_kind: design
 created: 2026-09-04
-updated: 2026-09-06
+updated: 2026-09-12
 ---
 
-# 0.3.1：H2 人在环崩盘反馈实验 - 设计
+# 0.3.1：H2 AI 机制正式基线 - 设计
 
 > Owner: TBD | Spec: `spec.md` | Tasks: `tasks.md`
 
 ## 0. 输入与约束
 
-2026-09-06 方向重置后的规范输入是
-[`H2-dual-track-contract`](../../../experiments/H2-dual-track-contract.md)：AI 正式轨使用
+2026-09-12 范围修订后的规范输入是
+[`H2-dual-track-contract`](../../../experiments/H2-dual-track-contract.md)：当前里程碑的 AI 正式轨使用
 **168 个** paired-seed blocks（三个家族的 0.25 SD SESOI 各需 168，见
 [`H2-block-power-baseline`](../../../experiments/H2-block-power-baseline.md)、
 [`H2-endpoint-calibration`](../../../experiments/H2-endpoint-calibration.md)、
-[`H2-cascade-calibration`](../../../experiments/H2-cascade-calibration.md)），所有者 N-of-1 轨
-使用 6 个训练和 24 个正式 paired blocks，两条 evidence index 严格隔离。AI 轨是
-`formal-research`，所有者轨是 `experiment-preview`，研究声明只能由 AI 轨建立。本文已按双轨
-合同完成重基线；任何冲突均以合同为准。
+[`H2-cascade-calibration`](../../../experiments/H2-cascade-calibration.md)）。所有者 N-of-1 的
+窗口、输入链、K 线和隐私边界只作为 0.3.2 的下游合同；本里程碑只交付 AI `formal-research`，
+研究声明只能由 AI 轨建立。本文按新的范围完成重基线；任何冲突均以合同为准。
 
 - **行为契约**：[`spec.md`](spec.md)。
 - **PRD / Architecture / Research**：[`PRD §15`](../../../market-game-sim-prd.md#15-交付路线图)、
@@ -37,35 +36,34 @@ updated: 2026-09-06
 - **上游 Contract**：[`event-schema`](../../../contracts/event-schema.md)、
   [`agent-strategy`](../../../contracts/agent-strategy.md)、
   [`interactive-session`](../../../contracts/interactive-session.md)。
-- **实现约束**：复用唯一市场内核；H1 `interactive` 保持隔离；正式采样在剩余 Q/DQ 关闭、
-  preview 通过和协议冻结前不可开始。项目不招募外部真人，唯一真人是项目所有者本人。
+- **实现约束**：复用唯一市场内核；H1 `interactive` 保持隔离；AI 正式采样在剩余 Q/DQ
+  关闭、preview 通过和协议冻结前不可开始。项目不招募外部真人；所有者采集由 0.3.2 负责。
 
 ## 1. 技术概要与影响面
 
-在 H1 会话适配器外新增实验编排层。编排器加载内容寻址协议和签发的 assignment，按 `run_mode`
-分流两条轨道：`ai-mechanism-experiment` 成对执行两个冻结策略；`owner-n-of-1` 锁定所有者
-客户端的观察/动作窗口，并把规范输入送入既有生产路径。独立 evidence guard 对轨道、模式、
-阶段、协议、pair、排除状态和哈希执行 fail-closed 校验；分析器分别以 seed block 与所有者
-场景为单位生成三个结果家族和机制表。
+在 H1 会话适配器外新增实验编排层。编排器加载内容寻址协议和签发的 assignment，当前按
+`ai-mechanism-experiment` 成对执行两个冻结策略；owner 的 `run_mode`、窗口和输入合同只
+保留兼容边界，由 0.3.2 Web 终端接入。独立 evidence guard 对模式、阶段、协议、pair、排除
+状态和哈希执行 fail-closed 校验；分析器以 AI seed block 为单位生成三个结果家族和机制表。
 
-- 前端：所有者会话的训练/正式阶段、倒计时、中止状态与解盲控制；移除正式态 pause/step。
-- 后端 / API：协议冻结、assignment、双轨窗口控制和样本裁决；无 enrollment/同意流程。
+- 前端：固定假参与者 preview 状态、倒计时、中止状态与解盲合同；生产 owner Web 终端移至 0.3.2。
+- 后端 / API：协议冻结、AI assignment、窗口控制和样本裁决；无 enrollment/同意流程。
 - 存储 / Migration：文件型 protocol/assignment/session/evidence artifact；不引入数据库。
 - Runtime / Agent Adapter：新增 H2 专用目标插槽替换适配器，以及占用同一插槽的**窗口匹配
   参照代理**（主对照决策生产者，须受同一窗口调度器约束）；目标代理仍保留在冻结
   `agent_specs` 与账户集合中，但正式处理运行禁用其策略决策入口，由规范人类输入接管同一
   `agent_id`、账户、初始资金、杠杆与风险参数。`owner-n-of-1` 禁止沿用 H1
   `extra_accounts["human"]` 的新增账户路径；撮合、账本、保证金和强平生产路径保持不变。
-- Event / Evidence：新 `ai-mechanism-experiment` 与 `owner-n-of-1` mode、sample stage、
-  协议/pair 元数据与两条互相隔离的 evidence index。
-- 文档 / 配置：预注册、数据字典、运行手册、解盲与保留政策和两份正式报告。
+- Event / Evidence：新 `ai-mechanism-experiment` mode、sample stage、协议/pair 元数据与 AI
+  evidence index；owner evidence index 由 0.3.2 独立生成。
+- 文档 / 配置：预注册、数据字典、运行手册、AI 报告和下游 Web 接口边界。
 
 ## 2. 架构与模块边界
 
 ```text
 Frozen Protocol -> Assignment Ledger -> Experiment Session Controller
                                              |
-Participant Client -> canonical input -------+-> existing market runtime/event log
+Preview Client -> canonical input ------------+-> existing market runtime/event log
                                              |
 Paired pure-agent runner --------------------+-> pair validator
                                                    |
@@ -84,9 +82,8 @@ Paired pure-agent runner --------------------+-> pair validator
 - `target-slot adapter` 只替换冻结目标插槽的决策生产者，不新增或删除账户；处理与控制运行的
   账户集合、初始资金总量、背景 `agent_specs` 和制度配置必须逐字段相同。
 - `pair validator` 要求比较矩阵中标为“相同”的字段逐字段一致（含账户、初始资金、信息集、
-  动作空间与**窗口调度参数**）；决策生产者、参与者任务/激励和策略 ID/version/参数/显式目标
-  按矩阵标为不同并分别披露。`OWNER_N_OF_1` 轨的所有者运行标记为描述性，不参与 AI 轨 pair
-  完整性判定。
+  动作空间与**窗口调度参数**）；AI 决策生产者与策略 ID/version/参数/显式目标按矩阵披露。
+  `OWNER_N_OF_1` 的 owner 运行不在本里程碑进入 AI pair 完整性判定。
 - `analysis` 只读取冻结 evidence index，不扫描 artifact 目录自动挑样本。
 - 三类机制指标的规范定义只写入 `docs/research/metrics-dictionary.md`；protocol 保存字典版本与
   指标 ID，分析器不得复制公式或按本地实现重新解释口径。
@@ -153,11 +150,10 @@ evidence-index 六类对象各自使用版本化 schema；正式写入绑定 `pr
 - 截止事件与输入竞争同一把会话锁，以谁先占用最终动作槽裁决；不设置隐藏宽限。迟到输入
   稳定返回 `WINDOW_CLOSED`，无有效输入写 `NO_ACTION`，均不回拨逻辑时间。
 - 控制运行可预生成，但必须使用与处理运行相同的冻结代码/config/seed；代码变化使 pair 失效。
-- 每个 assignment 预生成两条策略运行：`risk_budget_linear_v1` 与 `risk_budget_threshold_v1`。
-  在 `AI_FORMAL` 轨它们构成配对 block；在 `OWNER_N_OF_1` 轨它们是所有者场景的
-  `WINDOW_MATCHED_POLICY_CONTROL` 形态参照。两条策略运行都必须通过与所有者相同的有限窗口
-  调度器产生决策——同窗口长度、每窗至多一个动作、超时写 `NO_ACTION`；禁止任一条按内核默认
-  的逐次调度决策。窗口调度参数进入全部条件的冻结字段白名单与 `protocol_hash`。
+- 每个 AI assignment 预生成两条策略运行：`risk_budget_linear_v1` 与
+  `risk_budget_threshold_v1`，构成配对 block。窗口调度参数进入冻结字段白名单与
+  `protocol_hash`；owner 场景所需的 `WINDOW_MATCHED_POLICY_CONTROL` 由 0.3.2 复用，不在此处
+  生成 owner 运行。
 - 背景代理随机数继续使用既有语义键
   `(master_seed, agent_id, mechanism, decision_index, draw_index)`；禁止改成跨代理共享的可变
   计数器。pair manifest 绑定 RNG contract 版本，确保替换目标插槽不会仅因抽样游标错位改变
@@ -170,12 +166,11 @@ evidence-index 六类对象各自使用版本化 schema；正式写入绑定 `pr
 
 ## 6. UI 与可观测性
 
-- 训练页面：边界说明、标准任务、练习结果和正式态提示；无外部参与者，故无同意/资格流程。
-- 正式页面：只显示冻结观察子集、本人状态、逻辑进度、窗口倒计时和输入回执；隐藏 pause、
-  step、配置、种子和其他代理私有信息。
+- Preview 页面：边界说明、标准任务、固定输入结果和正式态提示；无外部参与者，故无同意/资格流程。
+- 下游 Web 页面：只显示冻结观察子集、本人状态、逻辑进度、窗口倒计时和输入回执；隐藏 pause、
+  step、配置、种子和其他代理私有信息，由 0.3.2 具体实现。
 - 状态映射：waiting、active-window、submitted、no-action、completed、technical-abort、aborted。
-- 研究控制台只显示 session 健康、协议/assignment 哈希和故障；在 24 个正式场景完成前不显示任何结果，
-  以执行解盲规则并降低结果驱动干预风险。
+- 研究控制台只显示 AI session 健康、协议/assignment 哈希和故障；owner 解盲规则由 0.3.2 执行。
 - 诊断记录窗口延迟、断线和客户端版本，但不得收集键盘内容、屏幕录制或无关行为遥测。
 
 ## 7. 失败、恢复、安全与兼容
@@ -193,29 +188,30 @@ evidence-index 六类对象各自使用版本化 schema；正式写入绑定 `pr
 | 验收项 | 测试层级 | 计划文件 / 场景 | 关键断言 |
 |---|---|---|---|
 | `AC-301` | unit / contract | `tests/unit/experiment/test_h2_protocol.py` | 完整冻结、漂移新哈希、旧 assignment 拒绝 |
-| `AC-302` | integration / UI | `tests/integration/test_experiment_session.py` | 有限窗口、超时、无特权控制 |
+| `AC-302` | integration / preview | `tests/integration/test_experiment_session.py` | 有限窗口、超时、preview 无特权控制 |
 | `AC-303` | integration | `tests/integration/test_h2_evidence_guard.py` | 模式/阶段/协议/pair 拒绝且零部分输出 |
 | `AC-304` | integration | `tests/integration/test_h2_paired_runs.py` | 比较矩阵中标为“相同”的字段逐字段一致、目标差异分别披露、主对照复现、处理重放、次要对照标为描述性 |
 | `AC-305` | unit / research | `tests/unit/experiment/test_h2_outcomes.py` | 三家族、双侧区间、多重性、无综合分数 |
-| `AC-306` | unit / integration | `tests/unit/experiment/test_h2_mechanisms.py`、`tests/integration/test_h2_mechanisms.py` | 三机制及完整因果追溯 |
+| `AC-306` | unit / integration | `tests/unit/experiment/test_h2_mechanisms.py`、`tests/integration/test_h2_mechanisms.py` | 三机制及 AI 决策因果追溯 |
 | `AC-307` | E2E / research | `tests/integration/test_h2_delivery.py` | index-only 重建、哈希与结论语法 |
-| `AC-308` | contract / manual | `tests/unit/experiment/test_h2_privacy.py`、`tests/integration/test_experiment_session.py` | PII 拒绝、阶段提示、撤回政策 |
+| `AC-308` | contract / manual | `tests/unit/experiment/test_h2_privacy.py`、`tests/integration/test_experiment_session.py` | PII 拒绝、preview 阶段提示、下游隐私边界 |
 
-preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失 pair、断线和撤回路径；正式研究
-结果不作为单元测试 fixture 提交。真实参与者 pilot 的验收记录仅标为 `experiment-preview`。
+preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失 pair、断线和中止路径；正式研究
+结果不作为单元测试 fixture 提交。真实 owner 的 Web 训练/正式验收属于 0.3.2，仍不得回流为
+本里程碑的 preview fixture。
 
 ## 9. 已确认决策与残余风险
 
 | 决策 / 风险 | 结论或缓解 | 理由 | 替代方案 / 后续 |
 |---|---|---|---|
-| 控制设计 | AI 正式 block 配对 threshold/linear；每个所有者 block 另配同 seed 的两条 AI 反事实 | 分离模型机制与个人体验 | 预生成后以哈希锁定；策略不为 H2 调参 |
+| 控制设计 | 当前只收口 AI 正式 block 配对 threshold/linear；owner 的同 seed 反事实由 0.3.2 复用 | 先闭合可独立交付的研究包 | 0.3.2 以同一协议接口接入 |
 | 窗口匹配 | 两条纯代理对照必须跑同一有限窗口调度器，调度参数进入三条件冻结字段白名单 | 否则描述性对比会混入决策机会变化 | 由 `pair validator` 与 AC-304 断言执行 |
-| 估计单位 | AI 轨为 paired-seed block；个人轨为 owner × paired scenario | 同模型调用不是独立人类，个人多局也不独立 | 两轨分别建模且禁止合并 |
-| 分配 | AI seed 计划和所有者场景顺序预先签发 | 控制路径选择、学习和疲劳 | T902 冻结顺序与备用池 |
-| 正式交互 | 所有者固定窗口，无暂停/单步 | H1 自由操作不适合作正式个人比较 | 训练阶段仍可暂停讲解 |
+| 估计单位 | 当前为 AI paired-seed block；owner × paired scenario 属于 0.3.2 | 同模型调用不是独立人类，个人多局也不独立 | 两里程碑分别建模且禁止合并 |
+| 分配 | 当前预先签发 AI seed 计划；owner 场景顺序作为 0.3.2 输入 | 先避免 owner 时间成为 AI 研究阻塞 | 0.3.2 冻结 owner 顺序与备用池 |
+| 正式交互 | owner 固定窗口、无暂停/单步是 0.3.2 合同 | H1 自由操作不适合作正式个人比较 | 由 0.3.2 Web 终端实现 |
 | 证据准入 | 新 mode + stage + protocol + pair 多重闭锁 | mode 单字段不足以防误纳 | guard 矩阵覆盖缺失/伪装 |
-| 隐私风险 | 不收集外部身份或支付数据；个人报告默认本地保存 | 唯一真人是项目所有者 | 发布前仍运行 PII 扫描 |
-| 非代码关键路径 | T902 冻结 AI 校准和所有者场景顺序；T917 使用结果盲场景台账 | 场景选择不能由 `verify.py` 单独保证 | no-go 时仅继续 `experiment-preview`；样本不足不得建立声明或关闭 v0.3 |
+| 隐私风险 | 当前不收集 owner 会话；0.3.2 不收集外部身份或支付数据，个人报告默认本地保存 | 先收口 AI 研究包 | 发布前仍运行 PII 扫描 |
+| 非代码关键路径 | T902 冻结 AI 校准；T917 使用结果盲 AI 台账 | 场景选择不能由 `verify.py` 单独保证 | AI 样本不足时保留 `incomplete-study`，不阻塞 0.3.2 规划 |
 
 ### 研究协议裁决与剩余证据门
 

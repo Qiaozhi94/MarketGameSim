@@ -6,7 +6,7 @@
 **产品阶段**：v0.1、v0.2 H1 已签收；v0.3 H2 规格草案<br>
 **项目原则**：[`docs/SOP.md`](SOP.md)（唯一入口，含安全与合规边界 §4）  
 **当前规格**：[`docs/features/0.3/spec.md`](features/0.3/spec.md)；
-[`v0.3.1 H2 AI 基线与所有者 N-of-1 实验`](features/0.3/0.3.1-human-in-the-loop-experiment/spec.md)<br>
+[`v0.3.1 H2 AI 正式基线`](features/0.3/0.3.1-human-in-the-loop-experiment/spec.md)<br>
 **已签收规格**：[`v0.1`](features/0.1/spec.md)、[`v0.2`](features/0.2/spec.md)<br>
 **方法论说明**：[`docs/research/methodology.md`](research/methodology.md)　
 **指标字典**：[`docs/research/metrics-dictionary.md`](research/metrics-dictionary.md)
@@ -424,8 +424,9 @@ v0.1 已完成 R1—R5 并于 2026-08-30 正式签收。当前可见交付包括
 [代表性离线回放](experiments/0.1.5-representative-replay.html)、
 [正式证据索引](experiments/0.1.5-evidence-index.json)与
 [版本签收记录](features/releases/0.1.md)。H1 手动交易沙盒亦已签收；当前下一动作是评审并
-冻结 [`v0.3.1 H2`](features/0.3/0.3.1-human-in-the-loop-experiment/spec.md) 的双轨研究协议，
-在 paired-seed 校准、所有者场景顺序冻结和双 evidence-index preview 通过前不采集正式样本。
+冻结 [`v0.3.1 H2`](features/0.3/0.3.1-human-in-the-loop-experiment/spec.md) 的 AI 正式研究协议，
+在 paired-seed 校准和 AI preview 通过前不采集正式 AI 样本；所有者 Web 终端与训练由后续
+[`v0.3.2`](features/0.3/0.3.2-web-trading-terminal/spec.md) 单独承接。
 
 ### v0.1 用户可见成果门
 
@@ -453,7 +454,7 @@ v0.1 已完成 R1—R5 并于 2026-08-30 正式签收。当前可见交付包括
 |---|---|---|---|
 | **H0 实验共同设计者** | 现在 | 提供真实交易信念、审阅回放、确认界面信息 | 只影响规格与预注册，不产生实验样本 |
 | **H1 手动交易沙盒** | **现在（v0.1 已收口）**；预计 24–40 工程小时 | 在隔离运行中观察行情、提交/撤销订单并回放决策 | 教学、可用性和机制探索；`run_mode=interactive` + `engineering-demonstration`，不得进入任何研究证据 |
-| **H2-A/B/C 人在环正式实验** | H1 交付后；正式采样还要求独立协议冻结 | 按随机分组、信息权限和操作窗口参加实验 | A/B 为 `experiment-preview`；C 产生独立 `formal-research` 数据集，不与 H1 或旧纯代理样本合并 |
+| **H2-C/D 人在环正式实验** | H2-B 后；owner 正式采样还要求 Web preview 与独立协议冻结 | H2-C 先完成 AI 正式研究包；H2-D 再让项目所有者按冻结信息权限和操作窗口参加实验 | C 产生独立 AI `formal-research`；D 产生隔离的 owner `experiment-preview` 个人数据，不与 H1 或 AI 样本合并 |
 
 H1 按可独立演示成果切分，合计仍为 24–40 工程小时：
 
@@ -468,11 +469,18 @@ H2 同样按可独立复核的成果切分；工程投入不包含项目所有�
 | 成果门 | 预计工程投入 | 用户会拿到什么 | 验收动作 | 证据级别 |
 |---|---:|---|---|---|
 | **H2-A 冻结协议与配对骨架** | 16–24 小时 | 可打开的冻结协议、配对 manifest diff 与 evidence guard 矩阵 | 协议漂移、H1 数据和不完整 pair 均被拒绝；控制运行可复现 | `experiment-preview` |
-| **H2-B 锁定客户端与实验预览** | 24–40 小时 | 训练/正式阶段客户端、固定假参与者会话、三结果与机制预览 | 有限窗口、阶段隔离、处理重放及中止/撤回路径通过 | `experiment-preview` |
-| **H2-C 双轨正式运行与研究交付** | 16–24 小时 + AI 运行及所有者参与时间 | 分离的 AI/所有者 evidence index、正式机制报告、个人报告、代表性回放与限制说明 | 完成 130 个 AI paired blocks 与 24 个所有者 paired blocks；新进程分别重建且禁止跨轨合并 | `formal-research` |
+| **H2-B 锁定协议与实验预览** | 24–40 小时 | 固定假参与者会话、三结果与机制预览、owner 下游接口契约 | 有限窗口、阶段隔离、处理重放及中止路径通过；不启动所有者训练 | `experiment-preview` |
+| **H2-C AI 正式运行与研究交付** | 16–24 小时 + AI 运行时间 | AI evidence index、正式机制报告、代表性回放与限制说明 | 完成 168 个 AI paired blocks；新进程重建且不接受 owner/H1 数据 | `formal-research` |
+| **H2-D Web 交易终端与所有者采集** | 16–24 小时 + 所有者分四天场景时间 | 可见价格、K 线、交互下单按钮、训练入口和个人 N-of-1 记录 | **H2-D1** Web 页面可完成价格/K 线核对、合法下单/拒单/中止；**H2-D2** 再执行 6 个训练和 24 个正式场景 | `experiment-preview` |
 
-顺序是严格串行的：
+主研究交付顺序为：
 `R1 → R2 → R3 → R4 → R5（v0.1 收口）→ H1-A → H1-B → H1-C → H2-A → H2-B → H2-C`。
+所有者支线在 H2-B 后接入：`H2-B → H2-D（Web 终端）→ 所有者训练/正式场景`；H2-C 与
+H2-D 可并行开发，H2-C 不等待所有者四天时间。
+
+**范围调整（2026-09-12）**：`H2-C` 先以 AI 正式证据包独立闭环；价格/K 线/按钮和所有者
+训练不再作为 H2-C 的前置条件，统一移入 `H2-D`。这样训练期间不会阻塞 AI 研究收口，且 Web
+终端在所有者开始前有独立的可打开验收点。
 
 **H1 未与 R3/R4 并行，且现在才具备开工条件。** 理由是版本边界在本仓库有执行后果：
 Feature 三件套必须归属某个 `docs/features/<version>/`。若收口前开工，要么把与旗舰问题

@@ -21,7 +21,7 @@ from typing import Any
 
 from market_game_sim.agent.scheduler import AgentSpec
 from market_game_sim.experiment.config import ExperimentConfig
-from market_game_sim.experiment.h2 import protocol
+from market_game_sim.experiment.h2 import artifacts, assignment, protocol
 from market_game_sim.experiment.runner import RunResult, run_one
 from market_game_sim.ledger.account import initial_margin_bp_for_tier
 from market_game_sim.rng.distributions import discrete_choice, uniform_range
@@ -43,6 +43,24 @@ HIGH_LEVERAGE_WEIGHTS_BP: dict[int, int] = {10: 3334, 20: 3333, 50: 3333}
 
 class PairError(RuntimeError):
     """配对 block 违反了比较矩阵合同。"""
+
+
+@dataclass(frozen=True, slots=True)
+class RerunAssignment:
+    """技术中止后签发的补跑 assignment。
+
+    ``consumed`` 由调用方持有并显式传入 ``rerun_after_abort``，不使用模块级游标；
+    因此进程重启、并发 worker 和断点续跑都不会悄悄重复或跳过备用 seed。
+    """
+
+    assignment_id: str
+    seed: int
+    original_seed: int
+    order_index: int
+    arms: tuple[str, ...]
+    protocol_hash: str
+    rerun_of_session_id: str
+    supersedes_pair_id: str
 
 
 def _run_parameters() -> dict[str, Any]:
@@ -166,6 +184,66 @@ def _policy_run(seed: int, arm: str) -> PolicyRun:
 def run_ai_block(seed: int) -> PairedBlock:
     """跑一个配对 block：同 seed 上的两条冻结策略。"""
     return PairedBlock(seed=seed, runs=tuple(_policy_run(seed, arm) for arm in ARM_TO_POLICY))
+
+
+def _frozen_assignment_table() -> dict[str, Any]:
+    """读取正式冻结分配表；补跑不得从运行结果或临时目录推导 seed。"""
+    return artifacts.load_assignments()
+
+
+def reserve_pool() -> tuple[int, ...]:
+    """返回冻结正式分配表中的有序备用 seed 池。"""
+    table = _frozen_assignment_table()
+    plan = assignment.SeedPlan(
+        planned=tuple(int(item["seed"]) for item in table["ai_assignments"]),
+        reserve=tuple(int(seed) for seed in table["reserve_seeds"]),
+    )
+    plan.validate()
+    return plan.reserve
+
+
+def rerun_after_abort(
+    *,
+    original_seed: int,
+    consumed: tuple[int, ...] = (),
+    original_session_id: str | None = None,
+) -> RerunAssignment:
+    """为技术中止的正式 AI block 签发下一枚备用 seed。
+
+    这里只签发补跑 assignment，不执行市场运行；执行器随后把它交给
+    ``run_ai_block``。只有冻结 planned seed 可被替换，备用池严格按顺序消费，
+    并保留原 assignment/session 的审计引用。
+    """
+    table = _frozen_assignment_table()
+    planned = tuple(int(item["seed"]) for item in table["ai_assignments"])
+    reserve = tuple(int(seed) for seed in table["reserve_seeds"])
+    plan = assignment.SeedPlan(planned=planned, reserve=reserve)
+    plan.validate()
+
+    original_item = next(
+        (item for item in table["ai_assignments"] if int(item["seed"]) == original_seed),
+        None,
+    )
+    if original_item is None:
+        raise PairError(f"只能为冻结 planned seed 补跑，未找到 seed {original_seed}")
+    original = assignment.Assignment(
+        assignment_id=str(original_item["assignment_id"]),
+        seed=int(original_item["seed"]),
+        order_index=int(original_item["order_index"]),
+        arms=tuple(original_item["arms"]),
+        protocol_hash=str(original_item["protocol_hash"]),
+    )
+    rerun = assignment.rerun_assignment(original, plan=plan, consumed=consumed)
+    return RerunAssignment(
+        assignment_id=rerun.assignment_id,
+        seed=rerun.seed,
+        original_seed=original.seed,
+        order_index=rerun.order_index,
+        arms=rerun.arms,
+        protocol_hash=rerun.protocol_hash,
+        rerun_of_session_id=original_session_id or original.assignment_id,
+        supersedes_pair_id=original.assignment_id,
+    )
 
 
 def validate_pair(block: PairedBlock) -> PairReport:
