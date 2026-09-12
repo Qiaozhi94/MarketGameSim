@@ -602,7 +602,7 @@ def test_h2_secondary_control_uses_the_shared_window_scheduler():
     required = "两条策略运行都必须通过与所有者相同的有限窗口"
     assert "两条策略参照运行必须使用与所有者相同的有限窗口调度器" in spec
     assert required in design
-    assert "两条纯代理参照均受同一有限窗口调度器约束" in tasks
+    assert "两条纯代理运行均受同一有限窗口调度器约束" in tasks
 
 
 def test_h2_pair_contract_uses_the_declared_difference_matrix():
@@ -627,8 +627,8 @@ def test_h2_us301_uses_the_registered_reference_policy():
     """用户场景必须与 Q-308 的主要参照策略和比较矩阵保持一致。"""
     spec = (ROOT / H2_CONTROL_CONTRACT_DOCS[0]).read_text(encoding="utf-8")
     us301 = spec.split("### US-301", 1)[1].split("### US-302", 1)[0]
-    assert "两条参照策略运行" in us301
-    assert "唯一预定差异是决策来源" in us301
+    assert "两个冻结策略" in us301
+    assert "策略 ID/参数与决策输出按预注册差异披露" in us301
     assert "比较矩阵中标为“相同”的字段" in us301
     for obsolete in ("替换指定代理", "估计替换效应", "除决策来源外", "参与者"):
         assert obsolete not in us301
