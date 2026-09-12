@@ -1071,3 +1071,27 @@ Q-308 关闭后拦截数由 13 降为 12 且其余 Q/DQ 仍被拦（门禁没被
    并调用 `validate_spec_lifecycle`；Round 3 确认无回归。
 3. **本地闭环不等于远端闭环。** 未 push 前只能报告本地 `verify.py` 通过；CI 状态必须在包含最终审计
    记录的提交推送后确认。
+
+## 循环 25：v0.3 H2 Round 4 High 修复复核
+
+- **report_type**: doc-review
+- **周期**：2026-09-12（Round 4 修复 → Round 5 diff-only 复核）
+- **基线**：`d1e81ef` → `dcabf13`（本地 2 个独立修复提交）
+- **收尾状态**：H2PLAN-001—H2PLAN-005 共 5 条全部 fixed；Round 5 未发现新增问题；本地闭环候选，未 push，远端 CI 待确认
+- **本地门禁**：`2579 passed, 1 skipped, 2 xfailed`；真源、生命周期、ruff check、ruff format check 全绿
+
+### 完整 issue 表
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复建议 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| H2PLAN-001 | 0.3.2 里程碑前置条件阻断 H2-C/H2-D 并行 | High | correctness | 根因 | 规格漂移 | fixed | 改任务级依赖 | 0.3.2 前置改为 0.2.1，T927 引用 0.3.1/T915 | test_h2_web_terminal_uses_task_level_ai_dependency | 1 | 2 | milestone-vs-task-dependency |
+| H2PLAN-002 | H2-D1/H2-D2 成果门边界错位且重复 | High | correctness | 根因 | 规格漂移 | fixed | 唯一化 D1/D2 gate | T935=H2-D1、T943=H2-D2、T931 为内部 preview | test_h2_web_delivery_gates_have_unique_scope | 1 | 2 | duplicate-delivery-gate |
+| H2PLAN-003 | 0.3.2 4xx 未进入版本级追溯真源 | High | correctness | 根因 | 流程缺口 | fixed | 补根规格、traceability 和遗漏门禁 | 登记 4xx ID/owner/exit，并接入生命周期负向检查 | test_milestone_requirement_registry_rejects_unregistered_id + test_version_traceability_rejects_spec_omission | 1 | 3 | cross-feature-contract-drift |
+| H2PLAN-004 | AI 重置后仍有旧真人问题与 130 口径 | High | correctness | 根因 | 规格漂移 | fixed | 清除 owner 前置及旧两轨措辞，增加负向扫描 | `AI_FORMAL`/`OWNER_N_OF_1` 显式化；PRD/0.3.1 清除旧叙事；补旧范围扫描 | test_h2_ai_scope_detector_rejects_stale_owner_scope_mutation + test_h2_effective_docs_have_no_stale_owner_prerequisite_or_ai_two_track_estimand | 1 | 5 | partial-symmetric-fix |
+| H2PLAN-005 | 版本根 US-401—US-403 与 0.3.2 子规格语义错位 | High | correctness | 根因 | 修复回归 | fixed | 对齐根/子故事与 exit，比较列表摘要和标题 | 根/子规格标题逐 ID 对齐，US-403=E2/E3，门禁解析两种声明形式；同步 US-303 | test_version_requirement_registry_accepts_root_story_summary_and_milestone_title + test_version_requirement_registry_rejects_user_story_semantic_drift | 4 | 5 | cross-feature-contract-drift |
+
+### 模式教训
+
+1. **范围重置必须有负向扫描。** 旧 owner 前置、旧双轨 estimand 和旧 block 口径都可能在结构门禁全绿时回归；有效文档扫描与变异测试必须同时存在。
+2. **版本根登记不是只做 ID 集合。** 列表式摘要与标题式子规格需要按同一 ID 做语义比较；否则 traceability 完整也不能阻止实现者按不同成功标准开发。
+3. **修复要按 finding 分提交并做 diff-only 复核。** 本轮 H2-004/H2-005 分别提交为 `631b794` 与 `dcabf13`；Round 5 验证无新增回归，远端 CI 仍需 push 后确认。
