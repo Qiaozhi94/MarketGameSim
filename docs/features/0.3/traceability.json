@@ -12,7 +12,7 @@
     "US-303": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E5"]}]},
     "US-401": {"status": "owned", "owners": [{"milestone": "0.3.2", "exits": ["E2"]}]},
     "US-402": {"status": "owned", "owners": [{"milestone": "0.3.2", "exits": ["E2", "E3"]}]},
-    "US-403": {"status": "owned", "owners": [{"milestone": "0.3.2", "exits": ["E4"]}]},
+    "US-403": {"status": "owned", "owners": [{"milestone": "0.3.2", "exits": ["E2", "E3"]}]},
     "FR-301": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E1"]}]},
     "FR-302": {"status": "owned", "owners": [{"milestone": "0.3.2", "exits": ["E1", "E2"]}]},
     "FR-303": {"status": "owned", "owners": [{"milestone": "0.3.1", "exits": ["E2", "E5"]}]},

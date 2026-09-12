@@ -47,10 +47,10 @@ n=1 自我实验，[`SOP`](../../SOP.md) §2 把样本量 1、有学习效应的
 
 - **US-301**：执行配对的 AI 正式实验；正文见 [`0.3.1 spec §2`](0.3.1-human-in-the-loop-experiment/spec.md#2-用户场景)。
 - **US-302**：审计 AI 决策来源的行为机制；正文见 [`0.3.1 spec §2`](0.3.1-human-in-the-loop-experiment/spec.md#2-用户场景)。
-- **US-303**：生成边界清晰的 AI 正式结论；正文见 [`0.3.1 spec §2`](0.3.1-human-in-the-loop-experiment/spec.md#2-用户场景)。
-- **US-401**：先查看冻结行情与 K 线，再在本地 Web 终端完成所有者决策；正文见 [`0.3.2 spec §2`](0.3.2-web-trading-terminal/spec.md#2-用户场景)。
-- **US-402**：在不泄露参照策略和未来信息的前提下提交规范动作；正文见 [`0.3.2 spec §2`](0.3.2-web-trading-terminal/spec.md#2-用户场景)。
-- **US-403**：从所有者 session artifact 重建个人描述性结果；正文见 [`0.3.2 spec §2`](0.3.2-web-trading-terminal/spec.md#2-用户场景)。
+- **US-303**：生成边界清晰的 AI 结论；正文见 [`0.3.1 spec §2`](0.3.1-human-in-the-loop-experiment/spec.md#2-用户场景)。
+- **US-401**：先确认行情再交易；正文见 [`0.3.2 spec §2`](0.3.2-web-trading-terminal/spec.md#2-用户场景)。
+- **US-402**：用按钮提交规范动作；正文见 [`0.3.2 spec §2`](0.3.2-web-trading-terminal/spec.md#2-用户场景)。
+- **US-403**：页面通过后再开始所有者训练；正文见 [`0.3.2 spec §2`](0.3.2-web-trading-terminal/spec.md#2-用户场景)。
 
 ## 功能需求
 
