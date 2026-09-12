@@ -3,128 +3,131 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>0.3.2 H2 所有者 Web 交易终端 · 交互设计原型 v3（真实终端形态）</title>
+<title>0.3.2 H2 所有者 Web 交易终端 · 交互设计原型 v4</title>
 <style>
 :root{
-  --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --line:#2b3444;
+  --bg:#0b0e11; --panel:#131722; --panel2:#1c2330; --line:#2b3444;
   --fg:#d7dee8; --dim:#8b97a8; --faint:#5b6676;
-  --green:#3fb970; --red:#e5534b; --blue:#4c8dff; --amber:#d9a53f; --purple:#a371f7;
+  --green:#2ebd85; --red:#f6465d; --blue:#4c8dff; --amber:#f0b90b; --purple:#a371f7;
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}
-button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--fg);border-radius:6px;padding:6px 12px}
+body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--fg);border-radius:5px;padding:4px 10px}
 button:disabled{cursor:not-allowed;opacity:.45}
-input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:4px 8px}
+input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:5px;padding:4px 8px}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 
-/* ---------- 原型工具条（评审用，非产品 UI） ---------- */
+/* ---------- 评审工具条 ---------- */
 #proto-bar{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:8px;align-items:center;
-  padding:8px 14px;background:#10151d;border-bottom:1px solid var(--line)}
+  padding:6px 12px;background:#0e1218;border-bottom:1px solid var(--line)}
 #proto-bar .tag{font-size:12px;color:var(--amber);border:1px solid var(--amber);border-radius:4px;padding:1px 6px}
-#proto-bar select{max-width:360px}
+#proto-bar select{max-width:340px}
 #proto-bar .hint{font-size:12px;color:var(--faint)}
 
-/* ---------- 顶栏 ---------- */
-#stage-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 16px;
-  background:var(--panel);border-bottom:1px solid var(--line)}
-.sim-badge{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--amber);
-  border:1px solid var(--amber);border-radius:4px;padding:1px 7px}
-#stage-bar .meta{color:var(--dim);font-size:13px}
-#stage-bar .spacer{flex:1}
+/* ---------- 顶部导航（交易所样式） ---------- */
+#topnav{display:flex;align-items:center;gap:14px;padding:6px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+#topnav .logo{font-weight:700;letter-spacing:.04em}
+#topnav nav{display:flex;gap:14px;color:var(--dim)}
+#topnav nav b{color:var(--fg)}
+#topnav .spacer{flex:1}
+.sim-badge{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--amber);border:1px solid var(--amber);border-radius:4px;padding:1px 7px}
 #conn{font-size:12px;color:var(--dim)}
-#exit-btn{padding:3px 10px;font-size:12px}
-#info-btn{padding:3px 10px;font-size:12px}
-.disclaimer{font-size:12px;color:var(--faint)}
+#exit-btn,#info-btn{padding:2px 9px;font-size:12px}
 
-/* 市场说明弹层 */
-#info-pop{display:none;position:absolute;top:46px;right:16px;z-index:60;width:400px;
-  background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:0 8px 30px #000a}
-#info-pop.show{display:block}
-#info-pop h4{margin:10px 0 4px;font-size:13px;color:var(--blue)}
-#info-pop .kv{font-size:12px}
-#info-pop p{font-size:12px;color:var(--dim);margin:6px 0 0}
-#info-pop ul{margin:4px 0;padding-left:18px;font-size:12px;color:var(--dim)}
+/* ---------- 行情 ticker 条 ---------- */
+#ticker{display:flex;flex-wrap:wrap;align-items:center;gap:22px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line)}
+#tick-sym{display:flex;flex-direction:column}
+#tick-sym b{font-size:16px}
+#tick-sym span{font-size:11px;color:var(--faint)}
+#tick-last{font-family:var(--mono);font-size:24px;font-weight:700}
+#tick-last.up{color:var(--green)} #tick-last.down{color:var(--red)}
+@keyframes flashup{0%{color:#6fe3b8}}
+@keyframes flashdn{0%{color:#ff8f9f}}
+.flash-up{animation:flashup .45s} .flash-dn{animation:flashdn .45s}
+.tk{display:flex;flex-direction:column}
+.tk .l{font-size:11px;color:var(--faint)}
+.tk .v{font-family:var(--mono);font-size:13px}
+.tk .v.sel{color:var(--dim)}
 
-/* ---------- 三栏终端 ---------- */
-#terminal{display:grid;grid-template-columns:290px 1fr 360px;gap:12px;padding:12px 16px;max-width:1520px;margin:0 auto}
-.col{display:flex;flex-direction:column;gap:12px;min-width:0}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;position:relative}
-.card h3{margin:0 0 8px;font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.08em;display:flex;align-items:center;gap:8px}
+/* ---------- 主布局 ---------- */
+#terminal{display:grid;grid-template-columns:285px 1fr 300px;gap:10px;padding:10px 14px;max-width:1600px;margin:0 auto}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;position:relative}
+.card h3{margin:0 0 6px;font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.05em;display:flex;align-items:center;gap:8px}
 .card h3 .aux{margin-left:auto;font-weight:400;letter-spacing:0}
-.kv{display:flex;justify-content:space-between;gap:8px;padding:2px 0;font-size:13px}
+.kv{display:flex;justify-content:space-between;gap:8px;padding:2px 0;font-size:12px}
 .kv .k{color:var(--dim)}
 .up{color:var(--green)} .down{color:var(--red)}
-.big-quote{display:flex;gap:10px;margin:2px 0 8px}
-.qbox{flex:1;border:1px solid var(--line);border-radius:6px;padding:8px;text-align:center}
-.qbox .lbl{font-size:11px;color:var(--dim)}
-.qbox .val{font-family:var(--mono);font-size:20px;font-weight:600}
-.qbox.bid .val{color:var(--green)} .qbox.ask .val{color:var(--red)}
-#last-row{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--dim)}
-.depth{margin-top:8px}
-.depth .row{display:grid;grid-template-columns:1fr 64px 40px;gap:6px;font-family:var(--mono);font-size:12px;padding:1px 4px;position:relative;cursor:pointer}
-.depth .row:hover{background:#1c2330}
-.depth .row .bar{position:absolute;right:0;top:1px;bottom:1px;border-radius:2px;opacity:.15}
-.depth .row.bid .bar{background:var(--green)} .depth .row.ask .bar{background:var(--red)}
-.depth .sep{text-align:center;color:var(--faint);font-size:11px;margin:2px 0}
-.oobs{color:var(--faint);font-style:italic;padding:6px 4px;font-size:13px}
 
-/* 当前挂单 */
-.order-row{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;
-  border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin-top:6px;font-size:12px}
-.order-row .side-buy{color:var(--green);font-weight:600}.order-row .side-sell{color:var(--red);font-weight:600}
-.order-row button{padding:2px 8px;font-size:12px}
+/* tab 组件 */
+.tabs{display:flex;gap:2px;margin-bottom:6px;border-bottom:1px solid var(--line)}
+.tabs button{border:none;background:transparent;border-radius:0;padding:5px 10px;font-size:12px;color:var(--dim);border-bottom:2px solid transparent}
+.tabs button.on{color:var(--fg);border-bottom:2px solid var(--amber)}
 
-/* K 线 */
+/* ---------- 盘口 / 成交（左栏） ---------- */
+.book{font-family:var(--mono);font-size:11.5px}
+.book .row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;padding:1px 6px;position:relative;cursor:pointer}
+.book .row:hover{background:#1c2330}
+.book .row span{text-align:right;position:relative;z-index:1}
+.book .row .p{text-align:left}
+.book .row .bar{position:absolute;right:0;top:1px;bottom:1px;opacity:.12;border-radius:1px}
+.book .row.a .bar{background:var(--red)} .book .row.b .bar{background:var(--green)}
+.book .row.a .p{color:var(--red)} .book .row.b .p{color:var(--green)}
+#book-mid{display:flex;align-items:center;justify-content:space-between;padding:3px 6px;margin:2px 0}
+#book-mid .lp{font-family:var(--mono);font-size:16px;font-weight:700}
+#book-mid .mk{font-size:11px;color:var(--faint)}
+#depth-ratio{display:flex;height:4px;border-radius:2px;overflow:hidden;margin:2px 0 4px}
+#depth-ratio .b{background:var(--green)} #depth-ratio .a{background:var(--red);flex:1}
+#depth-legend{display:flex;justify-content:space-between;font-size:11px;color:var(--faint);font-family:var(--mono);padding:0 2px 2px}
+#trades-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11.5px}
+#trades-table th{color:var(--faint);font-weight:400;text-align:right;padding:2px 6px;border-bottom:1px solid var(--line);font-size:11px}
+#trades-table th:first-child,#trades-table td:first-child{text-align:left}
+#trades-table td{padding:1px 6px;text-align:right}
+#trades-scroll{max-height:340px;overflow-y:auto}
+
+/* ---------- 图表（TradingView 风格） ---------- */
+#chart-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px}
 #tf-tabs{display:flex;gap:2px}
-#tf-tabs button{padding:2px 9px;font-size:12px;border-radius:4px;background:transparent;border-color:transparent;color:var(--dim)}
+#tf-tabs button{padding:2px 8px;font-size:12px;border-radius:4px;background:transparent;border-color:transparent;color:var(--dim)}
 #tf-tabs button.on{color:var(--fg);background:var(--panel2);border-color:var(--line)}
+#chart-type{font-size:12px;color:var(--dim)}
+#ohlc-legend{font-family:var(--mono);font-size:11.5px;color:var(--dim);display:flex;gap:10px;flex-wrap:wrap;margin-bottom:2px;min-height:16px}
 #kline-wrap{position:relative}
-#kline{width:100%;height:320px;display:block;background:#0a0e14;border:1px solid var(--line);border-radius:6px}
-#kline-tip{position:absolute;display:none;pointer-events:none;background:#0a0e14ee;border:1px solid var(--line);
-  border-radius:6px;padding:6px 10px;font-family:var(--mono);font-size:12px;z-index:5}
-#kline-note{display:flex;gap:12px;align-items:center;margin-top:6px;font-size:12px;color:var(--dim)}
-.legend{display:inline-flex;align-items:center;gap:4px}
-.swatch{width:10px;height:10px;border-radius:2px;display:inline-block}
-#tape-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:12px;margin-top:4px}
-#tape-table th{color:var(--faint);font-weight:400;text-align:right;padding:2px 6px;border-bottom:1px solid var(--line);font-size:11px}
-#tape-table th:first-child,#tape-table td:first-child{text-align:left}
-#tape-table td{padding:1px 6px;text-align:right}
-#tape-scroll{max-height:120px;overflow-y:auto}
+#kline{width:100%;height:430px;display:block;background:#0b0e14;border:1px solid var(--line);border-radius:6px;cursor:crosshair}
 
-/* 下单卡 */
-#type-tabs{display:flex;gap:2px}
-#type-tabs button{padding:3px 12px;font-size:12px;border-radius:4px;background:transparent;border-color:transparent;color:var(--dim)}
-#type-tabs button.on{color:var(--fg);background:var(--panel2);border-color:var(--line)}
-.price-row,.qty-row{display:flex;gap:6px;align-items:center;margin:8px 0}
-.price-row input,.qty-row input{width:92px;text-align:right;font-family:var(--mono)}
-.price-row .step,.qty-row .step{padding:2px 9px}
-.price-row .hint{font-size:11px;color:var(--faint)}
-.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.btn-buy{background:#12351f;border-color:var(--green);color:var(--green);font-weight:700;padding:12px 0;font-size:15px}
-.btn-buy .px{display:block;font-size:11px;font-weight:400;color:var(--dim)}
-.btn-sell{background:#3a1512;border-color:var(--red);color:var(--red);font-weight:700;padding:12px 0;font-size:15px}
-.btn-sell .px{display:block;font-size:11px;font-weight:400;color:var(--dim)}
-.btn-state-submitting{opacity:.7;pointer-events:none}
+/* ---------- 下单（右栏，币安式） ---------- */
+#avail-line{font-size:12px;color:var(--dim);margin:6px 0 2px}
+.price-row,.qty-row{display:flex;gap:6px;align-items:center;margin:6px 0}
+.price-row input,.qty-row input{flex:1;width:70px;text-align:right;font-family:var(--mono)}
+.price-row .step,.qty-row .step{padding:2px 8px}
+.px-quick{display:flex;gap:4px;margin-bottom:2px}
+.px-quick button{font-size:11px;padding:2px 7px}
+.pct-row{display:flex;gap:4px;margin:2px 0 6px}
+.pct-row button{flex:1;font-size:11px;padding:2px 0;color:var(--dim)}
+.est{font-size:12px;color:var(--dim);margin:4px 0}
+.est b{color:var(--fg);font-family:var(--mono)}
+.action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.btn-buy{background:#123a28;border-color:var(--green);color:var(--green);font-weight:700;padding:10px 0;font-size:14px}
+.btn-sell{background:#3a1713;border-color:var(--red);color:var(--red);font-weight:700;padding:10px 0;font-size:14px}
+.btn-buy .px,.btn-sell .px{display:block;font-size:11px;font-weight:400;font-family:var(--mono)}
 #submit-hint{font-size:12px;color:var(--faint);margin-top:8px;min-height:18px}
 #submit-hint.err{color:var(--red)} #submit-hint.ok{color:var(--green)}
-.state-locked{border:1px solid var(--amber);background:#d9a53f14;color:var(--amber);border-radius:6px;
-  padding:8px 10px;font-size:12px;margin-top:8px}
 
-/* 操作回报 */
-#returns-wrap{max-height:200px;overflow-y:auto}
-#returns-table{width:100%;border-collapse:collapse;font-size:12px}
-#returns-table th{position:sticky;top:0;background:var(--panel);color:var(--faint);font-weight:400;text-align:left;
-  padding:3px 6px;border-bottom:1px solid var(--line);font-size:11px}
-#returns-table td{padding:3px 6px;border-bottom:1px solid #1d2430;font-family:var(--mono)}
-#returns-table tr{cursor:pointer}
-#returns-table tr.sel{background:#1c2330}
-.st-ok{color:var(--green);font-weight:600}.st-rej{color:var(--red);font-weight:600}.st-open{color:var(--blue);font-weight:600}.st-info{color:var(--amber);font-weight:600}
+/* ---------- 底部：挂单 / 回报 ---------- */
+#bottom-card table{width:100%;border-collapse:collapse;font-size:12px}
+#bottom-card th{color:var(--faint);font-weight:400;text-align:left;padding:3px 8px;border-bottom:1px solid var(--line);font-size:11px;position:sticky;top:0;background:var(--panel)}
+#bottom-card td{padding:3px 8px;border-bottom:1px solid #1a2029;font-family:var(--mono)}
+#bottom-card tbody tr{cursor:pointer}
+#bottom-card tbody tr.sel{background:#1c2330}
+#bottom-scroll{max-height:180px;overflow-y:auto}
+.st-ok{color:var(--green);font-weight:600}.st-rej{color:var(--red);font-weight:600}
+.st-open{color:var(--blue);font-weight:600}.st-info{color:var(--amber);font-weight:600}
 #return-detail{margin-top:8px;border-top:1px dashed var(--line);padding-top:8px;font-family:var(--mono);
-  font-size:12px;line-height:1.7;color:var(--dim);word-break:break-all;min-height:52px}
+  font-size:12px;line-height:1.7;color:var(--dim);word-break:break-all;min-height:40px}
 
 /* 断线遮罩 */
-#conn-overlay{display:none;position:absolute;inset:0;background:#0d1117e0;z-index:20;
+#conn-overlay{display:none;position:absolute;inset:0;background:#0b0e11e0;z-index:20;
   flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
 #conn-overlay.show{display:flex}
 #conn-overlay .title{font-size:18px;font-weight:700;color:var(--amber)}
@@ -137,27 +140,34 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 .modal h2{margin:0 0 10px;font-size:16px}
 .modal p{color:var(--dim);font-size:13px}
 .modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
-.modal .danger{background:#3a1512;border-color:var(--red);color:var(--red)}
+.modal .danger{background:#3a1713;border-color:var(--red);color:var(--red)}
 
 /* 整卡 */
 .full-card{grid-column:1 / -1}
 .gate-list{list-style:none;padding:0;margin:8px 0 0;font-size:13px}
 .gate-list li{display:flex;gap:8px;align-items:baseline;padding:3px 0}
 .gate-list .st{font-family:var(--mono);font-size:12px}
-.day-strip{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
-.day-chip{border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12px;color:var(--dim)}
+.day-chip{border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12px;color:var(--dim);display:inline-block}
 .day-chip.today{border-color:var(--blue);color:var(--fg)}
 .day-chip.done{opacity:.55;text-decoration:line-through}
 
-/* 标注热点 */
+/* 标注 */
 .pin{display:none;position:absolute;z-index:30;width:20px;height:20px;border-radius:50%;
   background:var(--amber);color:#000;font-size:12px;font-weight:700;text-align:center;line-height:20px;cursor:pointer}
 body.show-pins .pin{display:block}
 
-/* ---------- 设计说明抽屉 ---------- */
+/* 市场说明弹层 */
+#info-pop{display:none;position:absolute;top:40px;right:14px;z-index:60;width:400px;
+  background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:0 8px 30px #000a}
+#info-pop.show{display:block}
+#info-pop h4{margin:10px 0 4px;font-size:13px;color:var(--blue)}
+#info-pop .kv{font-size:12px}
+#info-pop p{font-size:12px;color:var(--dim);margin:6px 0 0}
+
+/* 设计说明抽屉 */
 #notes-toggle{position:fixed;right:18px;bottom:18px;z-index:60;border-radius:20px;padding:10px 18px;
   background:var(--blue);border:none;color:#fff;font-weight:600}
-#notes{position:fixed;top:0;right:-560px;width:560px;max-width:95vw;height:100vh;z-index:70;
+#notes{position:fixed;top:0;right:-580px;width:560px;max-width:95vw;height:100vh;z-index:70;
   background:#10151d;border-left:1px solid var(--line);transition:right .25s ease;display:flex;flex-direction:column}
 #notes.open{right:0}
 #notes header{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
@@ -172,144 +182,174 @@ body.show-pins .pin{display:block}
 #notes table{border-collapse:collapse;width:100%;font-size:12px;margin:6px 0}
 #notes th,#notes td{border:1px solid var(--line);padding:4px 6px;text-align:left;vertical-align:top;color:var(--dim)}
 #notes th{color:var(--fg);background:var(--panel2)}
-#notes .flow{border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-family:var(--mono);font-size:12px;
-  color:var(--fg);overflow-x:auto;white-space:pre;margin:6px 0}
 #notes .decision{border-left:3px solid var(--amber);padding:6px 10px;margin:8px 0;color:var(--dim)}
 #notes .decision b{color:var(--amber)}
 </style>
 </head>
 <body>
 
-<!-- ======= 原型评审工具条（非产品 UI） ======= -->
 <div id="proto-bar">
-  <span class="tag">交互设计原型 v3</span>
-  <b>0.3.2 H2 所有者 Web 交易终端 · 真实终端形态</b>
+  <span class="tag">交互设计原型 v4</span>
+  <b>0.3.2 H2 所有者 Web 交易终端</b>
   <select id="state-select" aria-label="切换会话状态"></select>
   <button id="pin-toggle">显示标注</button>
   <button id="notes-btn-open">设计说明</button>
-  <span class="hint">评审工具条仅用于检视，不属于产品界面 · 确定性合成样例（seed 7）</span>
+  <span class="hint">评审工具条不属于产品界面 · 参考 TradingView / 币安 / OKX 交易页布局 · 确定性合成样例（seed 7）</span>
 </div>
 
 <div id="app">
-
-  <!-- ======= 顶栏（对齐真实终端：品种 + 环境角标） ======= -->
-  <div id="stage-bar">
+  <!-- 顶部导航 -->
+  <div id="topnav">
     <span class="sim-badge">SIM</span>
-    <span class="meta"><b>PERPETUAL-SIM-1</b> · 模拟市场</span>
+    <span class="logo">模拟交易所</span>
+    <nav><b>交易</b><span>行情</span><span>合约</span><span>资产</span></nav>
     <span class="spacer"></span>
-    <span class="disclaimer">合成市场 · 无真实资金 · 不构成投资建议</span>
     <span id="conn">● 已连接</span>
     <button id="info-btn">ⓘ 市场说明</button>
     <button id="exit-btn">退出</button>
   </div>
 
+  <!-- 行情 ticker -->
+  <div id="ticker">
+    <div id="tick-sym"><b>PERPETUAL-SIM-1</b><span>永续 · 全仓</span></div>
+    <div id="tick-last" class="num up">—</div>
+    <div class="tk"><span class="l">24h 涨跌</span><span class="v num" id="tick-chg">—</span></div>
+    <div class="tk"><span class="l">24h 最高</span><span class="v num" id="tick-hi">—</span></div>
+    <div class="tk"><span class="l">24h 最低</span><span class="v num" id="tick-lo">—</span></div>
+    <div class="tk"><span class="l">24h 成交量</span><span class="v num" id="tick-vol">—</span></div>
+    <div class="tk"><span class="l">标记价格</span><span class="v num sel" id="tick-mark">—</span></div>
+    <div class="tk"><span class="l">资金费率 / 倒计时</span><span class="v num" id="tick-fund">0.0100% · —</span></div>
+  </div>
+
+  <!-- 市场说明弹层 -->
   <div id="info-pop">
     <h4>市场信息</h4>
     <div class="kv"><span class="k">品种</span><span class="num">PERPETUAL-SIM-1（合成本位永续）</span></div>
-    <div class="kv"><span class="k">最小变动</span><span class="num">0.01（tick）· 单笔上限 1.000 · 挂单上限 8</span></div>
+    <div class="kv"><span class="k">最小变动</span><span class="num">0.01 · 单笔上限 1.000 · 挂单上限 8</span></div>
+    <div class="kv"><span class="k">手续费</span><span class="num">Taker 0.05% / Maker 0.02%（演示）</span></div>
     <div class="kv"><span class="k">K 线数据源</span><span class="num">冻结 public tape b7f3…c21a</span></div>
     <div class="kv"><span class="k">市场时钟</span><span class="num">合成交易所时间（演示 1 tick≈1m）</span></div>
     <h4>关于 SIM 环境</h4>
-    <p>这是确定性合成的模拟市场：不接入真实行情与资金，所有对手方均为可复现的 AI 代理
-    （做市商、因子策略、噪声/情绪交易者）。全部操作进入可审计记录。</p>
-    <p id="info-experiment" style="display:none">当前为<b>采集模式</b>：会话绑定实验协议，
-    参照策略状态、随机种子、未来事件与未解盲结果对您隐藏（FR-403）。</p>
+    <p>确定性合成的模拟市场：不接入真实行情与资金，所有对手方均为可复现的 AI 代理（做市商、
+    因子策略、噪声/情绪交易者）。全部操作进入可审计记录。</p>
+    <p id="info-experiment" style="display:none">当前为<b>采集模式</b>：会话绑定实验协议，参照策略状态、
+    随机种子、未来事件与未解盲结果对您隐藏（FR-403）。</p>
   </div>
 
-  <!-- ======= 三栏终端 ======= -->
   <div id="terminal-wrap">
     <main id="terminal">
 
-      <!-- 左栏：报价 / 账户 / 挂单 -->
+      <!-- 左栏：盘口 / 最近成交 -->
       <div class="col">
-        <section class="card" id="card-quote">
-          <span class="pin" data-note="q" style="right:10px;top:10px">1</span>
-          <h3>行情 · PERPETUAL-SIM-1<span class="aux num" id="q-clock">—</span></h3>
-          <div class="big-quote">
-            <div class="qbox bid"><div class="lbl">买一 bid</div><div class="val num" id="q-bid">—</div><div class="lbl num" id="q-bid-sz">—</div></div>
-            <div class="qbox ask"><div class="lbl">卖一 ask</div><div class="val num" id="q-ask">—</div><div class="lbl num" id="q-ask-sz">—</div></div>
+        <section class="card" style="flex:1">
+          <span class="pin" data-note="q" style="right:8px;top:8px">1</span>
+          <div class="tabs" id="book-tabs">
+            <button data-t="book" class="on">盘口</button>
+            <button data-t="trades">最近成交</button>
           </div>
-          <div id="last-row"><span>最新 <span class="num" id="q-last">—</span></span><span>价差 <span class="num" id="q-spread">—</span></span><span>24h 高低 <span class="num" id="q-range">—</span></span></div>
-          <div class="depth" id="depth"></div>
-        </section>
-
-        <section class="card" id="card-account">
-          <span class="pin" data-note="acc" style="right:10px;top:10px">2</span>
-          <h3>账户<span class="aux">全仓 · USDT 本位（模拟）</span></h3>
-          <div id="account-kv"></div>
-        </section>
-
-        <section class="card" id="card-orders">
-          <span class="pin" data-note="ord" style="right:10px;top:10px">3</span>
-          <h3>当前挂单<span class="aux num" id="orders-count"></span></h3>
-          <div id="orders-list"></div>
+          <div id="pane-book">
+            <div class="book">
+              <div class="row" style="cursor:default;color:var(--faint);border-bottom:1px solid var(--line)">
+                <span class="p">价格</span><span>数量</span><span>累计</span>
+              </div>
+              <div id="asks-host"></div>
+              <div id="book-mid"><span class="lp" id="mid-last">—</span><span class="mk" id="mid-spread">价差 —</span></div>
+              <div id="bids-host"></div>
+            </div>
+            <div id="depth-ratio"><div class="b" style="width:50%"></div><div class="a"></div></div>
+            <div id="depth-legend"><span id="ratio-b">买 50%</span><span id="ratio-a">卖 50%</span></div>
+          </div>
+          <div id="pane-trades" style="display:none">
+            <div id="trades-scroll">
+              <table id="trades-table">
+                <thead><tr><th>时间</th><th>价格</th><th>数量</th><th>方向</th></tr></thead>
+                <tbody id="tape-body"></tbody>
+              </table>
+            </div>
+          </div>
         </section>
       </div>
 
-      <!-- 中栏：K 线 / 最近成交 -->
+      <!-- 中栏：图表 + 底部挂单/回报 -->
       <div class="col">
         <section class="card" id="card-kline">
-          <span class="pin" data-note="k" style="right:10px;top:10px">4</span>
-          <h3>K 线 · PERPETUAL-SIM-1<span class="aux" id="tf-tabs"></span></h3>
-          <div id="kline-wrap">
-            <canvas id="kline" width="780" height="330"></canvas>
-            <div id="kline-tip"></div>
-            <div id="kline-empty" class="empty-box" style="display:none">数据不足：公开成交 tape 尚无数据，<br>不显示占位行情。</div>
+          <span class="pin" data-note="k" style="right:8px;top:8px">2</span>
+          <div id="chart-head">
+            <b style="font-size:13px">PERPETUAL-SIM-1</b>
+            <span id="chart-type">· 模拟永续 ·</span>
+            <span id="tf-tabs"></span>
+            <span style="margin-left:auto;font-size:11px;color:var(--faint)">MA(7) <i style="color:#f0b90b">—</i> MA(25) <i style="color:#e543d0">—</i> MA(99) <i style="color:#7c8ce0">—</i></span>
           </div>
-          <div id="kline-note">
-            <span class="legend"><span class="swatch" style="background:var(--green)"></span>阳线</span>
-            <span class="legend"><span class="swatch" style="background:var(--red)"></span>阴线</span>
-            <span style="margin-left:auto">最新 K 线随成交实时更新 · 点击盘口价可填入下单价格 · 悬停查看 OHLC</span>
+          <div id="ohlc-legend"></div>
+          <div id="kline-wrap">
+            <canvas id="kline" width="840" height="430"></canvas>
+            <div id="kline-empty" style="display:none;border:1px dashed var(--line);border-radius:6px;padding:40px;text-align:center;color:var(--dim)">数据不足：公开成交 tape 尚无数据，不显示占位行情。</div>
           </div>
         </section>
-        <section class="card" id="card-tape">
-          <h3>最近成交<span class="aux">公开成交 tape（taker 视角）</span></h3>
-          <div id="tape-scroll">
-            <table id="tape-table">
-              <thead><tr><th>时间</th><th>价格</th><th>数量</th><th>方向</th></tr></thead>
-              <tbody id="tape-body"></tbody>
-            </table>
+
+        <section class="card" id="bottom-card">
+          <span class="pin" data-note="r" style="right:8px;top:8px">3</span>
+          <div class="tabs" id="bottom-tabs">
+            <button data-t="orders" class="on">当前挂单 (<span id="orders-count">0</span>)</button>
+            <button data-t="returns">操作回报</button>
+          </div>
+          <div id="pane-orders">
+            <div id="bottom-scroll">
+              <table>
+                <thead><tr><th>时间</th><th>委托号</th><th>方向</th><th>价格</th><th>数量</th><th>状态</th><th>操作</th></tr></thead>
+                <tbody id="orders-body"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="pane-returns" style="display:none">
+            <div id="bottom-scroll">
+              <table>
+                <thead><tr><th>时间</th><th>操作</th><th>状态</th><th>说明</th></tr></thead>
+                <tbody id="returns-body"></tbody>
+              </table>
+            </div>
+            <div id="return-detail">暂无操作。委托、成交、撤单与拒绝都会在这里留下回报；以服务端裁决为准。</div>
           </div>
         </section>
       </div>
 
-      <!-- 右栏：下单 / 操作回报 -->
+      <!-- 右栏：下单 + 资产 -->
       <div class="col">
         <section class="card" id="card-trade">
-          <span class="pin" data-note="w" style="right:10px;top:10px">5</span>
-          <h3>下单<span class="aux" id="type-tabs"></span></h3>
+          <span class="pin" data-note="w" style="right:8px;top:8px">4</span>
+          <div class="tabs" id="type-tabs"></div>
+          <div id="avail-line">可用 <b class="num" id="avail-usdt">—</b> USDT · 全仓 5×</div>
           <div class="price-row" id="price-row">
             <span style="color:var(--dim)">价格</span>
             <button class="step" id="px-minus">−</button>
-            <input id="px" class="num" value="101.50" inputmode="decimal">
+            <input id="px" class="num" value="" inputmode="decimal">
             <button class="step" id="px-plus">+</button>
-            <span class="hint">点盘口价自动填入</span>
+          </div>
+          <div class="px-quick" id="px-quick">
+            <button data-px="last">最后价</button><button data-px="ask">卖一价</button><button data-px="bid">买一价</button>
           </div>
           <div class="qty-row">
             <span style="color:var(--dim)">数量</span>
             <button class="step" id="qty-minus">−</button>
             <input id="qty" class="num" value="0.100" inputmode="decimal">
             <button class="step" id="qty-plus">+</button>
-            <span style="color:var(--faint);font-size:12px">≤ 1.000/笔</span>
           </div>
+          <div class="pct-row" id="pct-row">
+            <button data-pct="25">25%</button><button data-pct="50">50%</button>
+            <button data-pct="75">75%</button><button data-pct="100">100%</button>
+          </div>
+          <div class="est">预估占用保证金 <b id="est-margin">—</b> · Taker 费率 0.05%</div>
           <div class="action-grid">
-            <button class="btn-buy" id="btn-buy">买入 / 做多<span class="px num" id="buy-px"></span></button>
-            <button class="btn-sell" id="btn-sell">卖出 / 做空<span class="px num" id="sell-px"></span></button>
+            <button class="btn-buy" id="btn-buy">买入 / 做多<span class="px" id="buy-px">—</span></button>
+            <button class="btn-sell" id="btn-sell">卖出 / 做空<span class="px" id="sell-px">—</span></button>
           </div>
           <div id="submit-hint"></div>
-          <div id="window-locked" class="state-locked" style="display:none"></div>
         </section>
 
-        <section class="card" id="card-returns">
-          <span class="pin" data-note="r" style="right:10px;top:10px">6</span>
-          <h3>操作回报<span class="aux">点击行查看详情</span></h3>
-          <div id="returns-wrap">
-            <table id="returns-table">
-              <thead><tr><th>时间</th><th>操作</th><th>状态</th><th>说明</th></tr></thead>
-              <tbody id="returns-body"></tbody>
-            </table>
-          </div>
-          <div id="return-detail">暂无操作。委托、成交、撤单与拒绝都会在这里留下回报；以服务端裁决为准。</div>
+        <section class="card" id="card-account">
+          <span class="pin" data-note="acc" style="right:8px;top:8px">5</span>
+          <h3>资产<span class="aux">USDT 本位（模拟）</span></h3>
+          <div id="account-kv"></div>
         </section>
       </div>
 
@@ -325,15 +365,12 @@ body.show-pins .pin{display:block}
   </div>
 </div>
 
-<!-- ======= 模态 ======= -->
 <div id="modal-root"><div class="modal" id="modal"></div></div>
-
 <button id="notes-toggle">设计说明</button>
 
-<!-- ======= 设计说明抽屉 ======= -->
 <aside id="notes">
   <header>
-    <h2>交互设计说明 · 真实终端形态（v3）</h2>
+    <h2>交互设计说明 · 真实终端形态（v4）</h2>
     <button id="notes-close">关闭</button>
   </header>
   <div class="tabs" id="notes-tabs">
@@ -354,8 +391,8 @@ body.show-pins .pin{display:block}
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
   t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const rnd=mulberry32(7);
-const TICK=0.01, MULT=1000, M1_MS=60000, DAY_MS=86400000;
-const SESSION_T0=Date.UTC(2026,8,14,0,0,0);
+const TICK=0.01, MULT=1000, M1_MS=60000;
+const SESSION_T0=Date.UTC(2026,9,14,0,0,0);
 const fmtP=t=>(t*TICK).toFixed(2);
 const fmtQ=u=>(u/MULT).toFixed(3);
 const fmtM=u=>(u/MULT).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -363,14 +400,14 @@ const fmtClock=ms=>{const d=new Date(ms);const p=n=>String(n).padStart(2,"0");
   return p(d.getUTCHours())+":"+p(d.getUTCMinutes())+":"+p(d.getUTCSeconds())};
 const $=id=>document.getElementById(id);
 
-/* ---------- 行情 ---------- */
-let price=10000;
+/* ---------- 行情模拟 ---------- */
+let price=10000, prevPrice=10000;
 let m1=[], cur=null, clockMin=0;
 let bidTicks=null, askTicks=null, lastTicks=null, bids=[], asks=[], tape=[];
-let hi24=-1e9, lo24=1e9;
-const DEPTH_N=5;
+let hi24=-1e9, lo24=1e9, open24=null, vol24=0;
+const DEPTH_N=8;
 let tfKey="1m";
-const TFS=[["1m",1],["5m",5],["15m",15],["1h",60],["4h",240]];
+const TFS=[["1m",1],["5m",5],["15m",15],["1h",60],["4h",240],["1D",1440]];
 
 function mkLevel(p,q){return{price_ticks:p,quantity_units:q,order_count:1+Math.floor(rnd()*3)}}
 function refreshBook(){
@@ -382,6 +419,7 @@ function refreshBook(){
     asks.push(mkLevel(askTicks+i,80+Math.floor(rnd()*500)));}
 }
 function tickMarket(){
+  prevPrice=price;
   price+=Math.round((rnd()-0.5)*6);
   hi24=Math.max(hi24,price);lo24=Math.min(lo24,price);
   refreshBook();
@@ -392,20 +430,21 @@ function tickMarket(){
       price_ticks:price,quantity_units:5+Math.floor(rnd()*180),taker_side:rnd()<.5?"buy":"sell"});
   }
   if(tape.length>60)tape.length=60;
-  if(cur){cur.v+=nTrades*40;m1.push(cur);}
+  if(cur){cur.v+=nTrades*40;vol24+=nTrades*40;m1.push(cur);}
   clockMin+=1;
   cur={t:SESSION_T0+clockMin*M1_MS,o:price,h:price,l:price,c:price,v:nTrades*40};
   matchResting();
 }
-/* 预置 1440 根历史 1m K 线（覆盖 24h 高低与 4h 周期） */
 function seedHistory(){
   let p=10040;
   for(let b=0;b<1440;b++){
     const o=p,h=o+Math.floor(rnd()*30)+4,l=o-Math.floor(rnd()*30)-4,c=o+Math.round((rnd()-0.5)*22);
     m1.push({t:SESSION_T0+b*M1_MS,open:o,high:Math.max(h,c),low:Math.min(l,c),close:c,volume:60+Math.floor(rnd()*240)});
     hi24=Math.max(hi24,Math.max(h,c));lo24=Math.min(lo24,Math.min(l,c));
+    vol24+=60;
     p=c;
   }
+  open24=m1[m1.length-1440].close;
   price=p;clockMin=1440;refreshBook();
   cur={t:SESSION_T0+clockMin*M1_MS,o:price,h:price,l:price,c:price,v:80};
 }
@@ -423,35 +462,48 @@ function seriesFor(tf){
       out.push({t:bucket,o:b.open??b.o,h:b.high??b.h,l:b.low??b.l,c:b.close??b.c,v:b.volume??b.v});
     }
   }
-  return out.slice(-42);
+  return out.slice(-60);
+}
+function maSeries(all,period){
+  const out=[];
+  for(let i=0;i<all.length;i++){
+    if(i<period-1){out.push(null);continue}
+    let s=0;for(let k=i-period+1;k<=i;k++)s+=all[k].c;
+    out.push(s/period);
+  }
+  return out;
 }
 
 /* ---------- 账户与委托 ---------- */
 const account={
   wallet_units:9847120, position_units:350, entry_ticks:9987,
   reserved_units:120000, margin_ratio_bp:3240, state:"NORMAL",
-  qty_max:1000, orders_max:8
+  qty_max:1000, orders_max:8, leverage:5
 };
-const resting=[];   // 限价挂单 {id,side,price_ticks,qty,t}
+const resting=[];
 let orderSeq=1100;
+function availableUnits(){return account.wallet_units-account.reserved_units}
 function unrealizedTicks(){return account.position_units*(price-account.entry_ticks)}
 function equityUnits(){return account.wallet_units+unrealizedTicks()}
+function liqEstTicks(){
+  const dir=account.position_units>=0?-1:1;
+  return Math.round(account.entry_ticks*(1+dir*0.9/account.leverage));
+}
 
 /* ---------- 操作回报 ---------- */
 const returns=[];
 function pushReturn(kind,action,note,detailHtml){
-  const time=fmtClock(SESSION_T0+clockMin*M1_MS);
-  returns.unshift({time,action,kind,note,detailHtml});
+  returns.unshift({time:fmtClock(SESSION_T0+clockMin*M1_MS),action,kind,note,detailHtml});
   if(returns.length>30)returns.pop();
   renderReturns(0);
 }
+const KIND={accepted:["已成交","st-ok"],rejected:["已拒绝","st-rej"],open:["委托中","st-open"],
+  canceled:["已撤单","st-info"],info:["记录","st-info"]};
 function renderReturns(sel){
-  const KIND={accepted:["已成交","st-ok"],rejected:["已拒绝","st-rej"],open:["委托中","st-open"],
-    canceled:["已撤单","st-info"],info:["记录","st-info"]};
   const body=$("returns-body");
   body.innerHTML=returns.map((r,i)=>{
-    const [label,cls]=KIND[r.kind]||[r.kind,""];
-    return `<tr class="${i===sel?"sel":""}" data-idx="${i}"><td>${r.time}</td><td>${r.action}</td><td class="${cls}">${label}</td><td style="color:var(--faint)">${r.note}</td></tr>`;
+    const label=KIND[r.kind]||[r.kind,""];
+    return `<tr class="${i===sel?"sel":""}" data-idx="${i}"><td>${r.time}</td><td>${r.action}</td><td class="${label[1]}">${label[0]}</td><td style="color:var(--faint)">${r.note}</td></tr>`;
   }).join("")||'<tr><td colspan="4" style="color:var(--faint)">暂无操作</td></tr>';
   body.querySelectorAll("tr[data-idx]").forEach(tr=>tr.onclick=()=>{
     const r=returns[+tr.dataset.idx];
@@ -459,142 +511,242 @@ function renderReturns(sel){
     renderReturns(+tr.dataset.idx);
   });
 }
+function renderResting(){
+  $("orders-count").textContent=resting.length;
+  $("orders-body").innerHTML=resting.map(o=>
+    `<tr><td>${fmtClock(o.t)}</td><td>${o.id}</td><td class="${o.side==="BUY"?"up":"down"}">${o.side==="BUY"?"买入":"卖出"}</td><td>${fmtP(o.price_ticks)}</td><td>${fmtQ(o.qty)}</td><td class="st-open">委托中</td><td><button data-cancel="${o.id}" style="padding:1px 8px;font-size:11px">撤单</button></td></tr>`).join("")
+    ||'<tr><td colspan="7" style="color:var(--faint)">无当前挂单</td></tr>';
+  $("orders-body").querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>cancelOrder(b.dataset.cancel));
+}
 
 /* ---------- 渲染 ---------- */
-const el={
-  bid:$("q-bid"),ask:$("q-ask"),bidSz:$("q-bid-sz"),askSz:$("q-ask-sz"),last:$("q-last"),
-  spread:$("q-spread"),range:$("q-range"),clock:$("q-clock"),depth:$("depth"),
-  acc:$("account-kv"),orders:$("orders-list"),ordersCount:$("orders-count"),
-  qty:$("qty"),px:$("px"),hint:$("submit-hint"),wlocked:$("window-locked")
-};
-function renderQuote(){
-  $("q-clock").textContent=fmtClock(SESSION_T0+clockMin*M1_MS);
-  $("q-range").textContent=fmtP(lo24)+"~"+fmtP(hi24);
+function renderTicker(){
+  if(lastTicks===null){
+    $("tick-last").textContent="—";return;
+  }
+  const elTick=$("tick-last");
+  elTick.textContent=fmtP(lastTicks);
+  elTick.className="num "+(price>=open24?"up":"down");
+  if(price>prevPrice){elTick.classList.remove("flash-up","flash-dn");void elTick.offsetWidth;elTick.classList.add("flash-up")}
+  else if(price<prevPrice){elTick.classList.remove("flash-up","flash-dn");void elTick.offsetWidth;elTick.classList.add("flash-dn")}
+  const chg=(price-open24)/open24*100;
+  const chgEl=$("tick-chg");
+  chgEl.textContent=(chg>=0?"+":"")+chg.toFixed(2)+"%";
+  chgEl.className="num "+(chg>=0?"up":"down");
+  $("tick-hi").textContent=fmtP(hi24);
+  $("tick-lo").textContent=fmtP(lo24);
+  $("tick-vol").textContent=Math.round(vol24/MULT).toLocaleString();
+  $("tick-mark").textContent=fmtP(price+(price%3===0?1:0));
+  const fundAt=Math.ceil((SESSION_T0+clockMin*M1_MS)/(8*3600000))*(8*3600000);
+  const diff=Math.max(0,fundAt-(SESSION_T0+clockMin*M1_MS));
+  const hh=String(Math.floor(diff/3600000)).padStart(2,"0");
+  const mm=String(Math.floor(diff%3600000/60000)).padStart(2,"0");
+  const ss=String(Math.floor(diff%60000/1000)).padStart(2,"0");
+  $("tick-fund").textContent="0.0100% · "+hh+":"+mm+":"+ss;
+  const mid=$("mid-last");
+  mid.textContent=fmtP(lastTicks);
+  mid.className=(price>=prevPrice?"up":"down");
+  $("mid-spread").textContent="价差 "+fmtP(askTicks-bidTicks);
+}
+function renderBook(){
+  const hostA=$("asks-host"),hostB=$("bids-host");
   if(bidTicks===null){
-    el.bid.textContent="—";el.ask.textContent="—";el.last.textContent="—";el.spread.textContent="—";
-    el.bidSz.textContent="—";el.askSz.textContent="—";
-    el.depth.innerHTML='<div class="oobs">等待首笔公开成交（不显示占位行情）</div>';
+    hostA.innerHTML=hostB.innerHTML='<div style="color:var(--faint);font-style:italic;padding:8px 4px">等待首笔公开成交（不显示占位行情）</div>';
     return;
   }
-  el.bid.textContent=fmtP(bidTicks);el.ask.textContent=fmtP(askTicks);
-  el.bidSz.textContent=fmtQ(bids[0].quantity_units);el.askSz.textContent=fmtQ(asks[0].quantity_units);
-  el.last.textContent=fmtP(lastTicks);el.spread.textContent=fmtP(askTicks-bidTicks);
-  let html="";
-  for(let i=DEPTH_N-1;i>=0;i--)html+=depthRow(bids[i],"bid");
-  html+='<div class="sep">—— 价差 '+fmtP(askTicks-bidTicks)+' ——</div>';
-  for(let i=0;i<DEPTH_N;i++)html+=depthRow(asks[i],"ask");
-  el.depth.innerHTML=html;
-  el.depth.querySelectorAll(".row.bid").forEach((r,i)=>r.onclick=()=>fillPrice(bids[DEPTH_N-1-i].price_ticks));
-  el.depth.querySelectorAll(".row.ask").forEach((r,i)=>r.onclick=()=>fillPrice(asks[i].price_ticks));
-  renderButtonPx();
+  const mk=(levels,cls)=>{
+    let cum=0;
+    const rows=levels.map(l=>{cum+=l.quantity_units;return{l,cum}});
+    const ordered=cls==="a"?rows.slice().reverse():rows;
+    let html="";
+    for(const {l,cum} of ordered){
+      const w=Math.min(100,cum/8);
+      html+=`<div class="row ${cls}" data-px="${l.price_ticks}"><span class="p">${fmtP(l.price_ticks)}</span><span>${fmtQ(l.quantity_units)}</span><span style="color:var(--faint)">${fmtQ(cum)}</span><i class="bar" style="width:${w}%"></i></div>`;
+    }
+    return html;
+  };
+  hostA.innerHTML=mk(asks,"a");
+  hostB.innerHTML=mk(bids,"b");
+  const bq=bids.reduce((s,l)=>s+l.quantity_units,0), aq=asks.reduce((s,l)=>s+l.quantity_units,0);
+  const bp=Math.round(bq/(bq+aq)*100);
+  $("depth-ratio").querySelector(".b").style.width=bp+"%";
+  $("ratio-b").textContent="买 "+bp+"%";
+  $("ratio-a").textContent="卖 "+(100-bp)+"%";
+  document.querySelectorAll("#pane-book .row[data-px]").forEach(r=>r.onclick=()=>{
+    setOrderType("limit");
+    $("px").value=(parseInt(r.dataset.px)/100).toFixed(2);
+    renderButtonPx();
+  });
 }
-function depthRow(l,cls){
-  if(!l)return"";
-  const w=Math.min(100,Math.round(l.quantity_units/6));
-  return `<div class="row ${cls}"><span>${fmtP(l.price_ticks)}</span><span>${fmtQ(l.quantity_units)}</span><span style="color:var(--faint)">${l.order_count}</span><i class="bar" style="width:${w}%"></i></div>`;
-}
-function fillPrice(t){setOrderType("limit");el.px.value=fmtP(t)}
 function renderTape(){
-  $("tape-body").innerHTML=tape.slice(0,16).map(t=>
+  $("tape-body").innerHTML=tape.slice(0,24).map(t=>
     `<tr><td>${fmtClock(t.t)}</td><td class="${t.taker_side==="buy"?"up":"down"}">${fmtP(t.price_ticks)}</td><td>${fmtQ(t.quantity_units)}</td><td class="${t.taker_side==="buy"?"up":"down"}">${t.taker_side==="buy"?"B 买":"S 卖"}</td></tr>`).join("")
     ||'<tr><td colspan="4" style="color:var(--faint);text-align:left">尚无公开成交</td></tr>';
 }
 function renderAccount(){
   const un=unrealizedTicks(),cls=un>=0?"up":"down";
   const rows=[
-    ["可用现金",fmtM(account.wallet_units)],
-    ["账户权益",`<span class="${cls}">${fmtM(equityUnits())}</span>`],
+    ["账户权益",`<b class="${cls}">${fmtM(equityUnits())}</b>`],
+    ["可用余额",fmtM(availableUnits())],
     ["未实现盈亏",`<span class="${cls}">${un>=0?"+":""}${fmtM(un)}</span>`],
     ["当前仓位",account.position_units===0?"空仓":`${account.position_units>0?"多":"空"} ${fmtQ(Math.abs(account.position_units))} @ ${fmtP(account.entry_ticks)}`],
     ["占用保证金",fmtM(account.reserved_units)],
-    ["保证金比率",`<span class="num">${(account.margin_ratio_bp/100).toFixed(2)}%</span>（${account.margin_ratio_bp}bp）`],
+    ["保证金比率",`<span class="num">${(account.margin_ratio_bp/100).toFixed(2)}%</span>`],
+    ["预估强平价",`<span class="num">${fmtP(liqEstTicks())}</span>`],
     ["账户状态",`<span class="num">${account.state}</span>`],
-    ["预估强平价",`<span class="num">${fmtP(account.position_units>=0?Math.floor(account.entry_ticks*0.90):Math.ceil(account.entry_ticks*1.10))}</span>`],
   ];
-  el.acc.innerHTML=rows.map(r=>`<div class="kv"><span class="k">${r[0]}</span><span class="num">${r[1]}</span></div>`).join("");
-  el.ordersCount.textContent=`${resting.length}/${account.orders_max}`;
-  el.orders.innerHTML=resting.map(o=>
-    `<div class="order-row"><span><span class="${o.side==="BUY"?"side-buy":"side-sell"}">${o.side==="BUY"?"买入":"卖出"}</span> <span class="num">${fmtQ(o.qty)}</span> @ <span class="num">${fmtP(o.price_ticks)}</span><br><span style="color:var(--faint)" class="num">${o.id} · 限价</span></span><button data-cancel="${o.id}">撤单</button></div>`).join("")
-    ||'<div class="oobs">无挂单</div>';
-  el.orders.querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>cancelOrder(b.dataset.cancel));
-}
-function renderButtonPx(){
-  if(orderType==="market"){
-    $("buy-px").textContent=askTicks!==null?("市价 ≈ "+fmtP(askTicks)):"—";
-    $("sell-px").textContent=bidTicks!==null?("市价 ≈ "+fmtP(bidTicks)):"—";
-  }else{
-    $("buy-px").textContent="限价 "+(el.px.value||"—");
-    $("sell-px").textContent="限价 "+(el.px.value||"—");
-  }
+  $("account-kv").innerHTML=rows.map(r=>`<div class="kv"><span class="k">${r[0]}</span><span class="num">${r[1]}</span></div>`).join("");
+  $("avail-usdt").textContent=fmtM(availableUnits());
 }
 
-/* ---------- K 线 ---------- */
+/* ---------- 图表 ---------- */
 const cvs=$("kline"),ctx=cvs.getContext("2d");
+let hover=null;
+function updateLegend(b,mas){
+  if(!b){$("ohlc-legend").innerHTML="";return}
+  const up=b.c>=b.o,col=up?"var(--green)":"var(--red)";
+  const ma=p=>(mas&&mas[p]!=null)?fmtP(Math.round(mas[p])):"—";
+  $("ohlc-legend").innerHTML=
+    `<span>${tfKey} · ${fmtClock(b.t).slice(0,5)}</span>`+
+    `<span>开 <span style="color:${col}">${fmtP(b.o)}</span></span>`+
+    `<span>高 <span style="color:${col}">${fmtP(b.h)}</span></span>`+
+    `<span>低 <span style="color:${col}">${fmtP(b.l)}</span></span>`+
+    `<span>收 <span style="color:${col}">${fmtP(b.c)}</span></span>`+
+    `<span>量 ${b.v}</span>`+
+    `<span style="color:#f0b90b">MA7 ${ma(7)}</span>`+
+    `<span style="color:#e543d0">MA25 ${ma(25)}</span>`+
+    `<span style="color:#7c8ce0">MA99 ${ma(99)}</span>`;
+}
+function masOf(all,i){
+  const out={};
+  for(const p of [7,25,99]){
+    if(i>=p-1){let s=0;for(let k=i-p+1;k<=i;k++)s+=all[k].c;out[p]=s/p}
+    else out[p]=null;
+  }
+  return out;
+}
 function drawKline(){
   const W=cvs.width,H=cvs.height;
   ctx.clearRect(0,0,W,H);
   const all=seriesFor(tfKey);
-  if(all.length===0){$("kline-empty").style.display="block";return}
+  if(all.length===0){$("kline-empty").style.display="block";updateLegend(null);return}
   $("kline-empty").style.display="none";
-  const padL=8,padR=8,padT=12,padB=30,ch=H-padT-padB;
+  const padR=62,padT=10,padB=26,chH=H-padT-padB,volH=Math.round(chH*0.16),gap=4;
+  const ch=chH-volH-gap;
   let hi=-1e9,lo=1e9,maxV=0;
   all.forEach(b=>{hi=Math.max(hi,b.h);lo=Math.min(lo,b.l);maxV=Math.max(maxV,b.v)});
-  const range=(hi-lo)||1;hi+=range*.06;lo-=range*.06;
+  const range=(hi-lo)||1;hi+=range*.05;lo-=range*.05;
   const y=p=>padT+(hi-p)/(hi-lo)*ch;
-  ctx.strokeStyle="#1d2430";ctx.fillStyle="#5b6676";ctx.font="10px ui-monospace,monospace";
-  for(let i=0;i<=4;i++){const py=padT+i*ch/4;ctx.beginPath();ctx.moveTo(padL,py);ctx.lineTo(W-padR,py);ctx.stroke();
-    ctx.fillText(fmtP(hi-(hi-lo)*i/4),W-52,py-3);}
-  const bw=(W-padL-padR)/all.length,body=Math.max(3,bw*.55);
+  const yVol=v=>H-padB-(v/maxV)*volH;
+  ctx.strokeStyle="#1c222c";ctx.fillStyle="#5b6676";ctx.font="10px ui-monospace,monospace";ctx.textAlign="left";
+  for(let i=0;i<=4;i++){const py=padT+i*ch/4;ctx.beginPath();ctx.moveTo(0,py);ctx.lineTo(W-padR,py);ctx.stroke();
+    ctx.fillText(fmtP(hi-(hi-lo)*i/4),W-padR+6,py-3);}
+  const bw=(W-padR)/all.length,body=Math.max(2,bw*.6);
+  const xAt=i=>bw*i+bw/2;
   all.forEach((b,i)=>{
-    const x=padL+bw*i+bw/2,up=b.c>=b.o,col=up?"#3fb970":"#e5534b";
-    ctx.strokeStyle=col;ctx.fillStyle=col;
+    const up=b.c>=b.o,col=up?"#2ebd85":"#f6465d";
+    ctx.fillStyle=col+"3a";
+    ctx.fillRect(xAt(i)-body/2,yVol(b.v),body,H-padB-yVol(b.v));
+  });
+  all.forEach((b,i)=>{
+    const x=xAt(i),up=b.c>=b.o,col=up?"#2ebd85":"#f6465d";
+    ctx.strokeStyle=col;ctx.fillStyle=col;ctx.lineWidth=1;
     ctx.beginPath();ctx.moveTo(x,y(b.h));ctx.lineTo(x,y(b.l));ctx.stroke();
     const top=y(Math.max(b.o,b.c)),bot=y(Math.min(b.o,b.c));
     ctx.fillRect(x-body/2,top,body,Math.max(1,bot-top));
-    const vh=(b.v/maxV)*24;
-    ctx.fillStyle=col+"44";ctx.fillRect(x-body/2,H-padB-vh,body,vh);
-    b._x=x;b._bw=bw;
   });
+  for(const [p,col] of [[7,"#f0b90b"],[25,"#e543d0"],[99,"#7c8ce0"]]){
+    const mas=maSeries(all,p);
+    ctx.strokeStyle=col;ctx.beginPath();
+    let started=false;
+    for(let i=0;i<all.length;i++){
+      if(mas[i]==null)continue;
+      if(!started){ctx.moveTo(xAt(i),y(mas[i]));started=true}else ctx.lineTo(xAt(i),y(mas[i]));
+    }
+    ctx.stroke();
+  }
   ctx.fillStyle="#5b6676";
-  const step=Math.max(1,Math.floor(all.length/4));
-  for(let i=0;i<all.length;i+=step){ctx.fillText(fmtClock(all[i].t).slice(0,5),padL+bw*i,H-8);}
-  if(lastTicks!==null){ctx.strokeStyle="#4c8dffaa";ctx.setLineDash([4,4]);
-    ctx.beginPath();ctx.moveTo(padL,y(lastTicks));ctx.lineTo(W-padR,y(lastTicks));ctx.stroke();ctx.setLineDash([]);}
+  const step=Math.max(1,Math.floor(all.length/6));
+  for(let i=0;i<all.length;i+=step){ctx.fillText(fmtClock(all[i].t).slice(0,5),Math.max(2,xAt(i)-14),H-8);}
+  if(lastTicks!==null&&lastTicks>=lo&&lastTicks<=hi){
+    const yy=y(lastTicks),upTick=price>=prevPrice;
+    ctx.strokeStyle=upTick?"#2ebd85aa":"#f6465daa";ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(W-padR,yy);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=upTick?"#2ebd85":"#f6465d";
+    ctx.fillRect(W-padR+2,yy-8,padR-4,14);
+    ctx.fillStyle="#0b0e14";ctx.fillText(fmtP(lastTicks),W-padR+6,yy+2);
+  }
+  ctx.fillStyle="#ffffff08";ctx.font="700 32px system-ui";ctx.textAlign="center";
+  ctx.fillText("PERPETUAL-SIM-1 · SIM",W/2,padT+ch/2+40);
+  ctx.textAlign="left";
+  if(hover&&hover.i<all.length){
+    const b=all[hover.i],x=xAt(hover.i);
+    ctx.strokeStyle="#8b97a866";ctx.setLineDash([3,3]);
+    ctx.beginPath();ctx.moveTo(x,padT);ctx.lineTo(x,H-padB);ctx.stroke();
+    if(hover.py!=null&&hover.py>=padT&&hover.py<=padT+ch){
+      const pv=hi-(hover.py-padT)/ch*(hi-lo);
+      ctx.beginPath();ctx.moveTo(0,hover.py);ctx.lineTo(W-padR,hover.py);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle="#2b3444";ctx.fillRect(W-padR+2,hover.py-8,padR-4,14);
+      ctx.fillStyle="#d7dee8";ctx.fillText(fmtP(Math.round(pv)),W-padR+6,hover.py+2);
+    }
+    ctx.setLineDash([]);
+    ctx.fillStyle="#2b3444";ctx.fillRect(Math.max(0,x-23),H-padB+2,46,14);
+    ctx.fillStyle="#d7dee8";ctx.fillText(fmtClock(b.t).slice(0,5),Math.max(4,x-19),H-padB+12);
+    updateLegend(b,masOf(all,hover.i));
+  }else{
+    updateLegend(all[all.length-1],masOf(all,all.length-1));
+  }
 }
 cvs.addEventListener("mousemove",ev=>{
-  const r=cvs.getBoundingClientRect(),mx=(ev.clientX-r.left)*(cvs.width/r.width);
+  const r=cvs.getBoundingClientRect();
+  const mx=(ev.clientX-r.left)*(cvs.width/r.width), my=(ev.clientY-r.top)*(cvs.height/r.height);
   const all=seriesFor(tfKey);
-  const b=all.find(b=>Math.abs(mx-b._x)<(b._bw/2));
-  const tip=$("kline-tip");
-  if(!b){tip.style.display="none";return}
-  tip.innerHTML=`<b>${tfKey} · ${fmtClock(b.t).slice(0,5)}</b><br>O ${fmtP(b.o)} H ${fmtP(b.h)}<br>L ${fmtP(b.l)} C ${fmtP(b.c)}<br>量 ${b.v}`;
-  tip.style.display="block";
-  const wrap=$("kline-wrap").getBoundingClientRect();
-  tip.style.left=Math.min(mx+14,wrap.width-150)+"px";tip.style.top="10px";
+  if(!all.length)return;
+  const bw=(cvs.width-62)/all.length;
+  const i=Math.max(0,Math.min(all.length-1,Math.floor(mx/bw)));
+  hover={i,py:my};
+  drawKline();
 });
-cvs.addEventListener("mouseleave",()=>$("kline-tip").style.display="none");
+cvs.addEventListener("mouseleave",()=>{hover=null;drawKline()});
 
 /* 周期页签 */
+function renderTfTabs(){
+  document.querySelectorAll("#tf-tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tf===tfKey));
+}
 function initTfTabs(){
   const host=$("tf-tabs");
   for(const [label] of TFS){
     const b=document.createElement("button");
     b.textContent=label;b.dataset.tf=label;
-    b.onclick=()=>{tfKey=label;drawKline();renderTfTabs();};
+    b.onclick=()=>{tfKey=label;hover=null;drawKline();renderTfTabs();};
     host.appendChild(b);
   }
   renderTfTabs();
 }
-function renderTfTabs(){
-  document.querySelectorAll("#tf-tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tf===tfKey));
-}
 
-/* ---------- 下单：市价 / 限价 ---------- */
+/* ---------- 下单 ---------- */
 let orderType="market";
+function renderButtonPx(){
+  if(orderType==="market"){
+    $("buy-px").textContent=askTicks!==null?("市价 ≈ "+fmtP(askTicks)):"—";
+    $("sell-px").textContent=bidTicks!==null?("市价 ≈ "+fmtP(bidTicks)):"—";
+  }else{
+    const v=parseFloat($("px").value||"0");
+    const pv=v>0?fmtP(Math.round(v*100)):"—";
+    $("buy-px").textContent="限价 "+pv;
+    $("sell-px").textContent="限价 "+pv;
+  }
+  const qty=parseFloat($("qty").value||"0");
+  const px=orderType==="limit"?parseFloat($("px").value||"0"):(lastTicks||0)/100;
+  const notional=qty*px;
+  $("est-margin").textContent=notional>0?(notional/account.leverage).toFixed(2)+" USDT":"—";
+}
 function setOrderType(t){
   orderType=t;
   document.querySelectorAll("#type-tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
   $("price-row").style.display=t==="limit"?"flex":"none";
+  $("px-quick").style.display=t==="limit"?"flex":"none";
   renderButtonPx();
 }
 function initTypeTabs(){
@@ -610,10 +762,10 @@ function initTypeTabs(){
 function hintErr(msg){$("submit-hint").textContent=msg;$("submit-hint").className="err"}
 function hintOk(msg){$("submit-hint").textContent=msg;$("submit-hint").className="ok"}
 function submitOrder(side){
-  const qty=Math.round(parseFloat(el.qty.value||"0")*MULT);
+  const qty=Math.round(parseFloat($("qty").value||"0")*MULT);
   if(!(qty>0)){hintErr("数量必须大于 0（INVALID_QTY · 本地预检）");return}
   if(qty>account.qty_max){hintErr(`单笔数量超过上限 ${fmtQ(account.qty_max)}（INVALID_QTY）`);return}
-  if(resting.length>=account.orders_max && orderType==="limit"){hintErr(`挂单数量达到上限 ${account.orders_max}（ORDER_LIMIT）`);return}
+  if(resting.length>=account.orders_max&&orderType==="limit"){hintErr(`挂单数量达到上限 ${account.orders_max}（ORDER_LIMIT）`);return}
   if(bidTicks===null){hintErr("暂无行情报价，暂不能下单（MARKET_WARMING）");return}
   if(orderType==="market"){
     const fill=side==="BUY"?askTicks:bidTicks;
@@ -622,9 +774,8 @@ function submitOrder(side){
       `action PLACE_ORDER·${side} qty ${fmtQ(qty)}（市价）<br>成交 ${fmtP(fill)} · event_ids [ORD/TRD/ACC]`);
     hintOk(`已成交：${side==="BUY"?"买入":"卖出"} ${fmtQ(qty)} @ ${fmtP(fill)}`);
   }else{
-    const px=Math.round(parseFloat(el.px.value||"0")*100);
+    const px=Math.round(parseFloat($("px").value||"0")*100);
     if(!(px>0)){hintErr("限价价格必须大于 0（INVALID_PRICE · 本地预检）");return}
-    // 限价立即穿越按市价即时成交（对齐真实撮合语义）
     if((side==="BUY"&&px>=askTicks)||(side==="SELL"&&px<=bidTicks)){
       applyFill(side,qty,px);
       pushReturn("accepted",side==="BUY"?"限价买入":"限价卖出",`${fmtQ(qty)} @ ${fmtP(px)}`,
@@ -635,10 +786,10 @@ function submitOrder(side){
       resting.push({id:"o-"+orderSeq,side,price_ticks:px,qty,t:SESSION_T0+clockMin*M1_MS});
       pushReturn("open",side==="BUY"?"限价买入委托":"限价卖出委托",`${fmtQ(qty)} @ ${fmtP(px)}`,
         `action PLACE_ORDER·${side} LIMIT ${fmtP(px)} qty ${fmtQ(qty)}<br>订单 ${"o-"+orderSeq} 已进入撮合队列，等待价格触及`);
-      hintOk("限价委托已提交，可在「当前挂单」查看或撤单。");
+      hintOk("限价委托已提交，可在底部「当前挂单」查看或撤单。");
     }
   }
-  renderAccount();
+  renderAccount();renderResting();
 }
 function applyFill(side,qty,fillTicks){
   account.position_units+=side==="BUY"?qty:-qty;
@@ -650,7 +801,7 @@ function cancelOrder(id){
   resting.splice(resting.indexOf(o),1);
   pushReturn("canceled",o.side==="BUY"?"撤买":"撤卖",`${fmtQ(o.qty)} @ ${fmtP(o.price_ticks)}`,
     `action CANCEL_ORDER(order_id=${o.id})<br>限价委托 ${fmtQ(o.qty)} @ ${fmtP(o.price_ticks)} 已撤销 · 零成交`);
-  renderAccount();
+  renderResting();
 }
 function matchResting(){
   let changed=false;
@@ -663,19 +814,21 @@ function matchResting(){
       resting.splice(i,1);changed=true;
     }
   }
-  if(changed)renderAccount();
+  if(changed)renderResting();
 }
 
-/* ---------- 状态（评审切换器） ---------- */
+/* ---------- 状态机（评审切换） ---------- */
 let state="trading", stateFlags={};
+function connRefresh(){
+  $("conn").innerHTML=state==="disconnected"?"● 连接中断":"● 已连接";
+  $("conn").style.color=state==="disconnected"?"var(--red)":"var(--dim)";
+}
 function render(){
-  renderQuote();renderTape();renderAccount();drawKline();renderReturns();
+  renderTicker();renderBook();renderTape();renderAccount();drawKline();renderResting();renderReturns();
   $("state-select").value=state;
   $("fullcard-host").innerHTML="";
   $("conn-overlay").classList.remove("show");
-  $("wlocked").style.display="none";$("submit-hint").textContent="";
-  ["card-quote","card-account","card-orders","card-kline","card-tape","card-trade","card-returns"]
-    .forEach(id=>$(id).style.display="");
+  $("submit-hint").textContent="";
   if(state!=="warming"){$("btn-buy").disabled=false;$("btn-sell").disabled=false;}
   if(state==="warming")return renderWarming();
   if(state==="risk-rejected")return renderRiskRejected();
@@ -686,13 +839,9 @@ function render(){
   if(state==="exp-break")return renderExpBreak();
   if(state==="exp-completed")return renderExpCompleted();
 }
-function stageConn(){
-  $("conn").innerHTML=state==="disconnected"?"● 连接中断":"● 已连接";
-  $("conn").style.color=state==="disconnected"?"var(--red)":"var(--dim)";
-}
 function renderWarming(){
   bidTicks=null;askTicks=null;lastTicks=null;bids=[];asks=[];tape=[];
-  renderQuote();renderTape();
+  renderTicker();renderBook();renderTape();drawKline();
   $("btn-buy").disabled=$("btn-sell").disabled=true;
   hintErr("暂无行情报价：下单暂不可用（真实市场开盘前同样如此）");
 }
@@ -702,14 +851,14 @@ function renderRiskRejected(){
   hintErr("委托被风控拒绝：保证金不足。可降低数量或减仓后重试。");
 }
 function renderDisconnected(){
-  stageConn();
+  connRefresh();
   $("conn-overlay").classList.add("show");
   let s=3;$("reconnect-sec").textContent="已断开 3s";
   stateFlags.reconn=setInterval(()=>{s++;$("reconnect-sec").textContent=`已断开 ${s}s`;},1000);
   $("reconnect-btn").onclick=()=>{clearInterval(stateFlags.reconn);setState("refresh-resume");};
 }
 function renderRefreshResume(){
-  stageConn();
+  connRefresh();
   pushReturn("accepted","会话恢复","无重复委托",
     `刷新恢复：GET session → status<br>挂单与成交以服务端快照重建<br>客户端未重发任何委托（幂等键 client_request_id）`);
   hintOk("会话已恢复：挂单、仓位与回报已从服务端重建。");
@@ -735,19 +884,19 @@ function renderExpGate(){
 function renderExpBreak(){
   $("fullcard-host").innerHTML=`<section class="card full-card">
     <h3>［采集模式专用］每日节奏（Q-303）</h3>
-    <div class="day-strip">
+    <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap">
       <span class="day-chip done">第 1 天 场景 1–6 ✓</span>
       <span class="day-chip done">第 2 天 场景 7–12 ✓</span>
       <span class="day-chip today">第 3 天 场景 13–15 ✓ · 休息中 · 16–18 待开始</span>
       <span class="day-chip">第 4 天 场景 19–24</span>
     </div>
-    <p style="color:var(--dim);font-size:13px;margin-bottom:0">采集模式下：4 天 × 6 场、每场 60 个 8 秒决策时点、第 3 场后强制休息——这些约束只存在于采集模式，自由模拟不使用。</p>
+    <p style="color:var(--dim);font-size:13px;margin-bottom:0">采集模式下：4 天 × 6 场、每场为冻结的市场时间跨度、第 3 场后强制休息——这些约束只存在于采集模式，自由模拟不使用。</p>
   </section>`;
 }
 function renderExpCompleted(){
   $("fullcard-host").innerHTML=`<section class="card full-card">
     <h3>［采集模式专用］场景完成 · 结果盲（SC-404）</h3>
-    <div class="kv"><span class="k">本场景时点收口</span><span class="num">60 决定 + 0 缺失</span></div>
+    <div class="kv"><span class="k">本场景收口</span><span class="num">市场时间跨度走完 · 采样快照完整</span></div>
     <div class="kv"><span class="k">个人结果</span><span>解盲前隐藏；交付为个人描述性报告，不外推人群</span></div>
     <p style="color:var(--dim);font-size:13px;margin-bottom:0">采集模式下完成页不显示任何权益/收益数字（结果盲）；自由模拟没有此限制。</p>
   </section>`;
@@ -769,24 +918,60 @@ STATES.forEach(([k,label])=>{const o=document.createElement("option");o.value=k;
 $("state-select").onchange=()=>setState($("state-select").value);
 function setState(s){
   if(stateFlags.reconn)clearInterval(stateFlags.reconn);
-  stateFlags={};state=s;render();
+  stateFlags={};state=s;render();connRefresh();
 }
+
+/* ---------- 输入绑定 ---------- */
 $("btn-buy").onclick=()=>submitOrder("BUY");
 $("btn-sell").onclick=()=>submitOrder("SELL");
-$("qty-minus").onclick=()=>{const v=Math.max(1,Math.round(parseFloat(el.qty.value||"0")*MULT)-100);el.qty.value=fmtQ(v)};
-$("qty-plus").onclick=()=>{const v=Math.min(account.qty_max,Math.round(parseFloat(el.qty.value||"0")*MULT)+100);el.qty.value=fmtQ(v)};
-$("px-minus").onclick=()=>{const v=Math.max(1,Math.round(parseFloat(el.px.value||"0")*100)-1);el.px.value=fmtP(v)};
-$("px-plus").onclick=()=>{const v=Math.round(parseFloat(el.px.value||"0")*100)+1;el.px.value=fmtP(v)};
+$("qty-minus").onclick=()=>{const v=Math.max(1,Math.round(parseFloat($("qty").value||"0")*MULT)-100);$("qty").value=fmtQ(v);renderButtonPx()};
+$("qty-plus").onclick=()=>{const v=Math.min(account.qty_max,Math.round(parseFloat($("qty").value||"0")*MULT)+100);$("qty").value=fmtQ(v);renderButtonPx()};
+$("px-minus").onclick=()=>{const v=Math.max(1,Math.round(parseFloat($("px").value||"0")*100)-1);$("px").value=fmtP(v);renderButtonPx()};
+$("px-plus").onclick=()=>{const v=Math.round(parseFloat($("px").value||"0")*100)+1;$("px").value=fmtP(v);renderButtonPx()};
+$("px").oninput=renderButtonPx;
+$("qty").oninput=renderButtonPx;
+$("px-quick").querySelectorAll("[data-px]").forEach(b=>b.onclick=()=>{
+  if(b.dataset.px==="last"&&lastTicks!==null)$("px").value=fmtP(lastTicks);
+  if(b.dataset.px==="ask"&&askTicks!==null)$("px").value=fmtP(askTicks);
+  if(b.dataset.px==="bid"&&bidTicks!==null)$("px").value=fmtP(bidTicks);
+  renderButtonPx();
+});
+$("pct-row").querySelectorAll("[data-pct]").forEach(b=>b.onclick=()=>{
+  const pct=+b.dataset.pct/100;
+  const px=orderType==="limit"?parseFloat($("px").value||"0"):(lastTicks||0)/100;
+  if(!(px>0))return;
+  const usdt=availableUnits()/MULT*0.95*pct;
+  let q=Math.min(usdt/px,account.qty_max/1000);
+  $("qty").value=q.toFixed(3);
+  renderButtonPx();
+});
 $("exit-btn").onclick=()=>setState("exit-confirm");
 $("info-btn").onclick=()=>$("info-pop").classList.toggle("show");
 function openModal(html){$("modal").innerHTML=html;$("modal-root").classList.add("show")}
 function closeModal(){$("modal-root").classList.remove("show")}
 
+/* tab 切换 */
+function bindTabs(hostId,onSwitch){
+  const host=$(hostId);
+  host.querySelectorAll("button").forEach(b=>b.onclick=()=>{
+    host.querySelectorAll("button").forEach(x=>x.classList.toggle("on",x===b));
+    onSwitch(b.dataset.t);
+  });
+}
+bindTabs("book-tabs",t=>{
+  $("pane-book").style.display=t==="book"?"block":"none";
+  $("pane-trades").style.display=t==="trades"?"block":"none";
+});
+bindTabs("bottom-tabs",t=>{
+  $("pane-orders").style.display=t==="orders"?"block":"none";
+  $("pane-returns").style.display=t==="returns"?"block":"none";
+});
+
 /* ---------- 行情节拍 ---------- */
 setInterval(()=>{
   if(["warming","exp-gate","exp-break","exp-completed"].includes(state))return;
   tickMarket();
-  renderQuote();renderTape();drawKline();
+  renderTicker();renderBook();renderTape();renderAccount();drawKline();
 },1000);
 
 /* ---------- 标注 ---------- */
@@ -798,46 +983,47 @@ document.querySelectorAll(".pin").forEach(p=>p.onclick=()=>openNotes("arch"));
  * ===================================================================*/
 const NOTES={
 audit:`
-<h4>核心结论：把实验约束从交易 UI 中拆出去</h4>
-<p>真实交易系统里不存在的东西，根源都是把 <b>H2 采集协议</b>直接搬进了终端 UI。解决方式不是隐藏，
-而是<b>拆成两个形态</b>：<b>自由模拟终端</b>（默认，本次 v3 就是它）与<b>采集模式</b>（只有做正式 N-of-1 记录时才进入，
-其专属约束在那一形态里出现）。本项目的市场内核、撮合/账本/风控路径两者完全共用。</p>
-<h4>逐项审查：非真实终端元素 → 处置</h4>
+<h4>核心结论：把实验约束从交易 UI 中拆出去（已落档 ADR-006）</h4>
+<p>真实交易系统里不存在的东西，根源是把 H2 采集协议直接搬进了终端 UI。v3 起拆成两个形态：
+<b>自由模拟终端</b>（默认）与<b>采集模式</b>（实验约束唯一载体），共用同一市场内核。
+裁决于 2026-09-13 记录为 <code>docs/decisions/006-realtime-free-trading-owner-terminal.md</code>（Q-403）。</p>
+<h4>逐项审查：非真实终端元素 → 处置（已完成）</h4>
 <table>
-<tr><th>元素（上一版）</th><th>为什么曾存在</th><th>处置</th></tr>
-<tr><td>8 秒提交倒计时 / 决策窗口</td><td>采集协议的“决策机会匹配”合同（0.3.1 Q-303/Q-308）</td><td><b>彻底删除（含采集模式）</b>：自由连续交易 + 服务端逻辑时点静默采样（ADR-006/Q-403，2026-09-13 裁决）；采样不约束用户操作节奏</td></tr>
-<tr><td>“本时点不操作”按钮</td><td>协议要求显式 NO_ACTION</td><td><b>删除</b>：自由交易里“不操作”就是不点按钮；采集模式由服务端在时点收口时自动记录，不再要求点击</td></tr>
-<tr><td>每时点一次的锁定态 / 迟到 / 重复错误</td><td>一次性动作槽</td><td><b>自由模式删除</b>。委托幂等仍由服务端 client_request_id 保证，但不再是用户可见概念</td></tr>
-<tr><td>阶段徽标 preview/training/formal</td><td>UX-403 要求阶段恒可见</td><td>改为真实终端惯用的<b>SIM 环境角标</b>（类似测试网标记）；实验阶段信息移入采集模式</td></tr>
-<tr><td>信息边界 / 解盲清单卡片</td><td>FR-403 正式阶段隔离</td><td>移入采集模式；自由模式只有「ⓘ 市场说明」（品种、限额、数据源、AI 对手方说明）</td></tr>
-<tr><td>门禁阻断 / 每日强制休息 / 结果盲完成页</td><td>E2 gate、Q-303 节奏、SC-404</td><td>全部归入<b>采集模式</b>流程页（切换器［实验模式］组保留供检视）</td></tr>
-<tr><td>中止会话 + OWNER_ABORT 原因枚举</td><td>实验中止审计</td><td>自由模式弱化为普通「退出」（挂单自动撤、仓位入档）；带原因的中止只在采集模式出现</td></tr>
-<tr><td>单笔上限 1.000 / 挂单上限 8</td><td>合同限额</td><td><b>保留</b>：真实交易所也有最小/最大下单量与频率限制，属正常风控；数值可配置</td></tr>
+<tr><th>元素（v2 及以前）</th><th>为什么曾存在</th><th>处置</th></tr>
+<tr><td>8 秒提交倒计时 / 决策窗口</td><td>采集协议“决策机会匹配”合同（Q-303）</td><td><b>彻底删除（含采集模式）</b>：自由连续交易 + 服务端逻辑时点静默采样，采样不约束用户节奏</td></tr>
+<tr><td>“本时点不操作”按钮</td><td>协议显式 NO_ACTION</td><td><b>删除</b>：不操作就是不点按钮；采样在服务端完成</td></tr>
+<tr><td>每时点一次的锁定态 / 迟到 / 重复错误</td><td>一次性动作槽</td><td><b>删除</b>；委托幂等由服务端 client_request_id 保证</td></tr>
+<tr><td>阶段徽标 preview/training/formal</td><td>UX-403</td><td>改为 <b>SIM 环境角标</b>（对齐交易所测试网标记习惯）；阶段信息只在采集模式出现</td></tr>
+<tr><td>信息边界 / 解盲清单卡片</td><td>FR-403</td><td>移入采集模式；自由模式只有「ⓘ 市场说明」</td></tr>
+<tr><td>门禁阻断 / 每日强制休息 / 结果盲完成页</td><td>E2 gate、Q-303、SC-404</td><td>全部归入采集模式（切换器［实验模式］组保留检视）</td></tr>
+<tr><td>中止会话 + OWNER_ABORT 原因枚举</td><td>实验中止审计</td><td>自由模式弱化为普通「退出」；带原因的中止只在采集模式</td></tr>
+<tr><td>单笔上限 1.000 / 挂单上限 8</td><td>合同限额</td><td><b>保留</b>：真实交易所也有下单量与频率限制</td></tr>
 </table>
-<h4>反向补齐：真实终端有、之前缺的</h4>
+<h4>v4 参考 TradingView / 币安 / OKX 补齐的能力</h4>
 <table>
-<tr><th>能力</th><th>本版处理</th></tr>
-<tr><td>限价单（挂单等待成交）</td><td>新增市价/限价页签；点击盘口任意档位自动填价；限价穿越盘口即时成交、否则挂单等待，价格触及自动成交（撮合内核本就支持 order_type/price_ticks，H1 合同已有限价 payload，此前只是 UI 没暴露）</td></tr>
-<tr><td>挂单管理</td><td>当前挂单列表 + 逐笔撤单 + 委托中/已成交/已撤单回报状态流转</td></tr>
-<tr><td>强平价 / 保证金状态</td><td>账户卡显示预估强平价与保证金比率（内核有保证金/强平/穿仓/连锁路径）</td></tr>
-<tr><td>24h 高低 / 市场时钟</td><td>行情卡补 24h 高低与合成交易所时钟</td></tr>
+<tr><th>参考对象</th><th>本版实现</th></tr>
+<tr><td>币安行情 ticker 条</td><td>最新价大字（涨跌色 + 跳动闪烁）、24h 涨跌/最高/最低/成交量、标记价格、资金费率与倒计时</td></tr>
+<tr><td>币安盘口</td><td>卖盘降序在上 / 最新价与价差行 / 买盘在下；三列（价格/数量/累计）+ 深度横条 + 买卖比条；点任意档位填入限价</td></tr>
+<tr><td>TradingView 图表</td><td>OHLC + MA(7/25/99) 图例、十字光标（价格/时间轴标签）、最新价标签、成交量柱、水印、周期工具条（1m—1D）</td></tr>
+<tr><td>币安下单面板</td><td>市价/限价页签、价格快捷（最后价/卖一/买一）、数量 25/50/75/100% 快捷、可用余额、预估占用保证金与费率、买卖按钮带价格</td></tr>
+<tr><td>币安底部面板</td><td>当前挂单（含逐笔撤单）与操作回报两个页签，状态流转 委托中→已成交/已撤单/已拒绝</td></tr>
 </table>`,
 
 arch:`
-<h4>布局：与主流交易终端一致的分区</h4>
-<p>左栏「账户与挂单」，中栏「行情图与成交」，右栏「下单与回报」。全部信息一屏可见（UX-401）。</p>
+<h4>布局（对齐币安合约交易页三段式）</h4>
+<p>顶部导航 + 行情 ticker 条；左栏盘口/成交（页签切换）；中栏图表（TradingView 风格）+
+底部「当前挂单 / 操作回报」；右栏下单面板 + 账户资产。一屏可见价格、K 线、账户与提交入口（UX-401）。</p>
 <h4>标注对照</h4>
 <table>
 <tr><th>#</th><th>区域</th><th>关键交互</th></tr>
-<tr><td>1</td><td>报价卡</td><td>买一/卖一、5 档盘口（可点价填单）、24h 高低；无报价不显示占位数据</td></tr>
-<tr><td>2</td><td>账户卡</td><td>现金/权益/未实现盈亏/仓位/保证金比率/预估强平价——对应 <code>HumanAccountObservation</code> + 内核风控字段</td></tr>
-<tr><td>3</td><td>当前挂单</td><td>限价委托列表，逐笔撤单；状态流转进回报表</td></tr>
-<tr><td>4</td><td>K 线</td><td>1m/5m/15m/1h/4h 周期、时间轴、OHLC tooltip；最新一根实时更新</td></tr>
-<tr><td>5</td><td>下单卡</td><td>市价/限价页签；买一卖一参考价直接印在按钮上；本地预检数量/价格</td></tr>
-<tr><td>6</td><td>操作回报</td><td>委托中→已成交/已撤单/已拒绝全流转；点击行展开服务端回执（幂等键/事件 ID）</td></tr>
+<tr><td>1</td><td>盘口 / 成交</td><td>累计深度 + 买卖比；k≤10 档（默认渲染 8 档）；点档位填价；无报价空态不造假（FR-401）</td></tr>
+<tr><td>2</td><td>图表</td><td>多周期、MA 与成交量、十字光标、最新价标签；最新 K 线实时更新（收口后才入 artifact）</td></tr>
+<tr><td>3</td><td>挂单 / 回报</td><td>限价委托等待与撤单；回报全流转（委托中/已成交/已撤单/已拒绝）；点行展开服务端回执</td></tr>
+<tr><td>4</td><td>下单面板</td><td>市价/限价、价格与数量快捷（%、盘口价）、预估占用保证金；本地预检数量/价格</td></tr>
+<tr><td>5</td><td>资产</td><td>权益/可用/未实现/仓位/保证金比率/预估强平价，对应 <code>HumanAccountObservation</code> + 风控字段</td></tr>
 </table>
 <h4>顶栏</h4>
-<p><code>SIM</code> 角标 + 品种名（对齐真实交易所的测试网/模拟盘标记习惯）；右侧连接状态、「ⓘ 市场说明」、「退出」。
+<p><code>SIM</code> 角标 + 「模拟交易所」导航（交易/行情/合约为装饰位）；右侧连接状态、市场说明、退出。
 合成市场与无真实资金声明常驻。</p>
 <h4>两种形态</h4>
 <table>
@@ -850,60 +1036,58 @@ arch:`
 
 flows:`
 <h4>流 A · 市价单</h4>
-<div class="flow">看盘 → 选数量 → [买入]（按钮印有市价参考价）→ 即时成交 → 回报“已成交”行 → 仓位/权益更新</div>
+<div class="flow">看盘 → 数量输入或 % 快捷 → [买入]（按钮印市价参考价）→ 即时成交 → 回报“已成交”行 → 仓位/权益更新</div>
 <h4>流 B · 限价单</h4>
-<div class="flow">点击盘口档位填价（或手输/步进）→ [买入] → 穿越盘口？即时成交 : 进入「当前挂单」
- → 价格触及自动成交（回报新增“已成交”行，注明订单号）；或手动撤单 → “已撤单”行</div>
+<div class="flow">切「限价」→ 点盘口档位/最后价快捷填价 → 数量 → [买入] → 穿越盘口？即时成交 : 进入「当前挂单」
+ → 价格触及自动成交（回报新增“已成交”行，注明订单号）；或底部面板撤单 → “已撤单”行</div>
 <h4>流 C · 拒单</h4>
 <p>保证金不足等风控拒绝：回报表红色行 + 可读原因 + 零副作用；本地可判定的数量/价格错误在点击瞬间预检拦截，不发请求。</p>
-<h4>流 D · 断线与刷新</h4>
+<h4>流 D · 断线与刷新（NFR-402）</h4>
 <p>断线遮罩说明「行情不暂停、挂单仍生效」；恢复后从服务端快照重建挂单/仓位/回报，幂等键保证不重复提交。</p>
 <h4>流 E · 退出</h4>
-<p>退出确认 → 挂单自动撤销并入回报、仓位权益入会话存档。采集模式下退出语义由实验协议约束（需选择原因、进入裁决）。</p>
+<p>退出确认 → 挂单自动撤销并入回报、仓位权益入会话存档。采集模式下退出语义由实验协议约束。</p>
 <h4>流 F · 等待行情</h4>
-<p>场景开头无成交时：报价/盘口/K 线显示空态，下单禁用；首笔成交出现后自动点亮——与真实市场开盘前的体验一致。</p>`,
+<p>场景开头无成交时：ticker/盘口/K 线显示空态，下单禁用；首笔成交后自动点亮——与真实市场开盘前一致。</p>`,
 
 spec:`
-<h4>需求变更已于 2026-09-13 落档（ADR-006 + Q-403）</h4>
-<p>0.3.2 的 <code>spec.md</code> 仍为 <code>status: draft</code>，本变更赶在 E1 冻结前完成并已写入规格正文（2026-09-13）；
-0.3.1 的 <b>AI_FORMAL 轨</b>（两个策略的 168 个配对 block）不受影响；owner 轨在 Q-308 中本来就只承担
-<b>描述性</b>结论，不承载研究声明。裁决全文见 <code>docs/decisions/006-realtime-free-trading-owner-terminal.md</code>。</p>
-<h4>规格条目修订状态（2026-09-13 已落笔）</h4>
+<h4>需求变更已落档（ADR-006 + Q-403，2026-09-13）</h4>
+<p>0.3.2 spec/design/tasks、v0.3 版本根登记表与 PRD 已按本形态修订；裁决全文见
+<code>docs/decisions/006-realtime-free-trading-owner-terminal.md</code>。0.3.1 AI_FORMAL 轨不受影响。</p>
+<h4>已修订的规格条目</h4>
 <table>
-<tr><th>位置</th><th>修订前</th><th>已修订（2026-09-13）</th></tr>
-<tr><td>0.3.2 FR-302</td><td>“所有窗口必须接受至多一次规范动作”</td><td>拆成两个模式：自由模拟终端（无窗口，自由连续交易，服务端幂等）；采集模式保留窗口合同或改为“自由交易 + 服务端时点采样”</td></tr>
-<tr><td>0.3.2 FR-402 / 动作空间</td><td>MVP 只有市价买/卖/不行动/撤销</td><td>限价单进入 MVP 动作空间（内核与 H1 合同已支持 order_type/price_ticks，无内核改动）</td></tr>
-<tr><td>0.3.2 UX-403</td><td>阶段徽标恒可见</td><td>自由模式用 SIM 环境角标；阶段标识只在采集模式可见</td></tr>
-<tr><td>0.3.2 Q-401 / DQ-401</td><td>K 线 5 窗 preview 周期待裁决</td><td>一并裁决：可选周期集合（1m/5m/15m/1h/4h）、市场时钟映射、参照策略同信息集方案</td></tr>
-<tr><td>0.2.1 合同（引用）</td><td>H1 固定 8s/限额等演示参数</td><td>不回改历史合同；0.3.2 以新合同版本继承撮合/账本/风控路径</td></tr>
+<tr><th>位置</th><th>修订后</th></tr>
+<tr><td>FR-302</td><td>自由连续交易的所有者会话；采集会话按冻结市场时间跨度推进；服务端逻辑时点采样</td></tr>
+<tr><td>FR-402 / IR-402</td><td>市价/限价委托与撤单映射 canonical input；幂等键约束；稳定错误码</td></tr>
+<tr><td>FR-401 / DR-402</td><td>多周期 K 线（同一冻结 tape 派生视图）+ 时间压缩比；artifact 绑定周期/压缩比/哈希</td></tr>
+<tr><td>UX-403</td><td>自由模式 SIM 角标；采集模式持续显示阶段并隐藏参照策略/种子/未来/结果</td></tr>
+<tr><td>Q-401 / Q-403</td><td>已关闭：周期集合与压缩比随 E1 冻结；owner 窗口合同修订</td></tr>
 </table>
 <h4>需求映射（保留项）</h4>
 <table>
 <tr><th>需求</th><th>落点</th></tr>
-<tr><td>FR-401 / AC-401（行情真实性、空态）</td><td>报价/盘口/K 线/成交均来自同一冻结 tape；无报价空态不造假</td></tr>
-<tr><td>FR-402 / IR-402 / AC-402（动作经服务端）</td><td>委托→撮合→账本→风控走既有内核路径；稳定错误码、回报表</td></tr>
-<tr><td>NFR-402（刷新/断线不重复提交）</td><td>幂等键 + resume-status 重建</td></tr>
-<tr><td>NFR-401 / NFR-403（loopback、零外部依赖）</td><td>单文件原生原型，与实现同原则</td></tr>
-<tr><td>FR-403 / SC-403/404（阶段隔离与解盲）</td><td>全部移入采集模式</td></tr>
+<tr><td>FR-401 / AC-401</td><td>报价/盘口/K 线/成交来自同一冻结 tape；无报价空态不造假</td></tr>
+<tr><td>FR-402 / IR-402 / AC-402</td><td>委托进入既有撮合/账本/风控路径；稳定错误码；回报状态流转</td></tr>
+<tr><td>NFR-402 / AC-405</td><td>幂等键 + resume-status 重建；刷新/断线不重复委托</td></tr>
+<tr><td>NFR-401 / NFR-403</td><td>零依赖单文件原型，原生 loopback、无外部行情/凭据</td></tr>
+<tr><td>FR-403 / SC-403/404</td><td>采集模式专属：门控、解盲、结果盲</td></tr>
 </table>`,
 
 open:`
 <h4>DQ-H · owner 轨窗口合同 —— 已裁决（2026-09-13，ADR-006/Q-403）</h4>
-<div class="decision">采纳 <b>(b) 的确认版</b>（2026-09-13）：自由连续交易 + 服务端按冻结粒度对逻辑时点静默采样；
-市场层使用合成交易所墙钟，由冻结的时间压缩比连接内核逻辑步进（采集 1:1 实时，自由模拟可选加速）；
-场景定义为冻结的市场时间跨度，取代“60 窗”计数。AI_FORMAL 轨不受影响；0.3.1 正文不回改，仅追加修订记录。
-裁决全文见 <code>docs/decisions/006-realtime-free-trading-owner-terminal.md</code> 与 0.3.2 spec Q-403。</div>
+<div class="decision">采纳「自由连续交易 + 服务端按冻结粒度对逻辑时点静默采样」；市场层使用合成交易所墙钟，
+由冻结的时间压缩比连接内核逻辑步进（采集 1:1 实时，自由模拟可选加速）；场景定义为冻结的市场时间跨度，
+取代“60 窗”计数。AI_FORMAL 轨不受影响；0.3.1 正文不回改，仅追加修订记录。</div>
 <h4>DQ-F · K 线多周期与市场时钟映射 —— 已裁决（并入 Q-401/E1）</h4>
-<p>多周期均为同一冻结 public tape 的聚合视图，不新增信息源；可选周期集合（1m/5m/15m/1h/4h）
+<p>多周期均为同一冻结 public tape 的聚合视图，不新增信息源；可选周期集合（1m/5m/15m/1h/4h/1D）
 与时间压缩比已入 E1 冻结清单；参照策略对比为场景级描述性并声明机会集差异。
 演示口径（1 tick≈1m）仅为原型快进，正式映射随 E1 冻结。</p>
 <h4>DQ-I · 限价单进入 MVP 动作空间 —— 已采纳（ADR-006 决策 3）</h4>
 <p>内核与 H1 合同已支持限价，0.3.2 FR-402/IR-402 已按市价/限价 + 撤单修订；
 部分成交语义（原型未演示）留待 T932 实现时定义并补测试。</p>
-<h4>DQ-A · 拒绝是否消耗动作机会 —— 已消解</h4>
-<p>窗口与一次性动作槽已删除，该问题不复存在；委托幂等由 <code>client_request_id</code> 保证，
-重复请求重放原结果，不是用户可见错误。</p>
-<h4>DQ-J · AI 对手方家族（alphamill 因子导入）</h4>
+<h4>DQ-C · 盘口渲染档位数（待 E1 冻结）</h4>
+<p>观察集允许 k≤10 档；v4 默认渲染 8 档。若深度/K 线被认定为新增观察信息，
+必须升级 owner observation/协议版本并让参照策略获得同一信息集。</p>
+<h4>DQ-J · AI 对手方家族（alphamill 因子导入）（待新 feature）</h4>
 <p>自由模拟的“陪玩”由可复现 AI 代理承担：做市商 + 因子策略（alphamill FactorDef 导入，过滤模拟市场
 不具备的数据列）+ 噪声/情绪交易者。需新开 feature 冻结参与者家族、RNG 语义键与证据隔离
 （engineering-demonstration，不进 H2 正式样本）。</p>`
@@ -923,7 +1107,7 @@ $("notes-close").onclick=()=>$("notes").classList.remove("open");
 seedHistory();
 initTfTabs();
 initTypeTabs();
-renderQuote();renderTape();renderAccount();drawKline();renderReturns();
+render();
 </script>
 </body>
 </html>
