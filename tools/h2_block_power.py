@@ -46,6 +46,11 @@ REPORTED_BLOCK_COUNTS = (130, 158, 200, 260)
 SUPERSEDED_PARTICIPANT_CAP = 130
 SUPERSEDED_ROUNDS_PER_PARTICIPANT = 8
 SUPERSEDED_PAIR_MISSING_RATE = 0.10
+# ``statistics.NormalDist`` can differ by one IEEE-754 ulp between supported
+# CPython versions.  Evidence is a committed, cross-version contract, so
+# canonicalize only at the serialization boundary; internal calculations keep
+# their full float precision.
+EVIDENCE_FLOAT_DECIMAL_PLACES = 15
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_OUTPUT = ROOT / "docs" / "experiments" / "H2-block-power-baseline.json"
@@ -88,6 +93,11 @@ def superseded_paired_rounds() -> float:
     )
 
 
+def canonical_evidence_float(value: float) -> float:
+    """Return a stable JSON number for evidence generated across Python versions."""
+    return round(value, EVIDENCE_FLOAT_DECIMAL_PLACES)
+
+
 def build_evidence() -> dict[str, Any]:
     """Machine-readable baseline consumed by the dual-track contract."""
     return {
@@ -106,7 +116,8 @@ def build_evidence() -> dict[str, Any]:
         },
         "baseline_minimum_blocks": minimum_blocks(PAIRED_DISCORDANCE),
         "power_by_blocks": {
-            str(blocks): block_power(blocks, PAIRED_DISCORDANCE) for blocks in REPORTED_BLOCK_COUNTS
+            str(blocks): canonical_evidence_float(block_power(blocks, PAIRED_DISCORDANCE))
+            for blocks in REPORTED_BLOCK_COUNTS
         },
         "minimum_blocks_by_discordance": {str(q): minimum_blocks(q) for q in DISCORDANCE_GRID},
         "superseded_unit_change": {

@@ -40,6 +40,16 @@ def test_recorded_evidence_matches_the_calculation(tool):
     assert recorded == tool.build_evidence()
 
 
+def test_recorded_power_uses_cross_python_canonical_precision(tool):
+    power = tool.build_evidence()["power_by_blocks"]
+    assert power == {
+        "130": 0.70881995094593,
+        "158": 0.802762483116181,
+        "200": 0.89571438994627,
+        "260": 0.961582441322746,
+    }
+
+
 def test_130_blocks_do_not_reach_target_power(tool):
     """The retired participant number is under-powered once the unit changes."""
     power = tool.block_power(130, tool.PAIRED_DISCORDANCE)
