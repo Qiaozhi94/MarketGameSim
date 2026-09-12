@@ -1267,7 +1267,8 @@ def validate_spec_lifecycle(
     validate_new_task_ids_unique_across_milestones(all_ids, errors)
     validate_versions(features_dir, root, errors)
     for version_dir in discover_versions(features_dir):
-        validate_version_traceability(version_dir, root, errors)
+        if (version_dir / "traceability.json").is_file():
+            validate_version_traceability(version_dir, root, errors)
     check_ownership_index(features_dir, root, errors)
     check_docs_links(root, errors)
     validate_preregistrations(root, errors)
