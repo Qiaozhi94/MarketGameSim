@@ -454,7 +454,7 @@ v0.1 已完成 R1—R5 并于 2026-08-30 正式签收。当前可见交付包括
 |---|---|---|---|
 | **H0 实验共同设计者** | 现在 | 提供真实交易信念、审阅回放、确认界面信息 | 只影响规格与预注册，不产生实验样本 |
 | **H1 手动交易沙盒** | **现在（v0.1 已收口）**；预计 24–40 工程小时 | 在隔离运行中观察行情、提交/撤销订单并回放决策 | 教学、可用性和机制探索；`run_mode=interactive` + `engineering-demonstration`，不得进入任何研究证据 |
-| **H2-C AI 正式研究与 H2-D 所有者采集** | H2-B 后；H2-D 的 owner 采集还要求 Web preview 与独立协议冻结 | H2-C 先完成 AI 正式研究包；H2-D 再让项目所有者按冻结信息权限和操作窗口参加实验 | C 产生独立 AI `formal-research`；D 产生隔离的 owner `experiment-preview` 个人数据，不与 H1 或 AI 样本合并 |
+| **H2-C AI 正式研究与 H2-D 所有者采集** | H2-B 后；H2-C 与 H2-D 均可独立开始，H2-D 的 owner 采集还要求 Web preview 与独立协议冻结 | H2-C 交付 AI 正式研究包；H2-D 按冻结信息权限和操作窗口交付 owner 个人采集 | C 产生独立 AI `formal-research`；D 产生隔离的 owner `experiment-preview` 个人数据，不与 H1 或 AI 样本合并 |
 
 H1 按可独立演示成果切分，合计仍为 24–40 工程小时：
 
