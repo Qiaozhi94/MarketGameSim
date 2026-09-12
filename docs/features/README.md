@@ -170,8 +170,8 @@ docs/features/
 ## 需求追踪
 
 - `traceability.json` 是 requirement → milestone → exit 的机器追踪真源。
-- `UX` 是里程碑本地家族，只在里程碑 spec 声明并由 AC 认领，不进入版本级
-  `traceability.json`；版本级矩阵只追踪跨里程碑归属的家族。
+- `UX` 默认是里程碑本地家族，只在里程碑 spec 声明并由 AC 认领；若某版本根为跨里程碑
+  需求显式登记 UX，则必须同时进入版本级 `traceability.json`，并由门禁校验两处集合一致。
 - requirement `statuses` 只表示 `owned/deferred/removed`；milestone 生命周期由各
   milestone `spec.md` frontmatter 表示；release 生命周期由版本根 `spec.md` 与
   `releases/<version>.md` 表示。

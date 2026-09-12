@@ -78,6 +78,46 @@ def test_h2_web_delivery_gates_have_unique_scope(sv):
     assert "[成果门:" not in blocks["T931"]
 
 
+def test_declared_ids_accept_bullet_user_stories(sv):
+    """版本根允许列表形态的 US 声明，不能因标题形态不同而漏追踪。"""
+    text = "- **US-401**：查看行情。\n\n### US-402：提交动作\n"
+    assert sv.declared_ids(text, ["US"]) == {"US-401", "US-402"}
+
+
+def test_milestone_requirement_registry_rejects_unregistered_id(sv):
+    """新增里程碑需求必须先进入版本根登记表。"""
+    errors: list[str] = []
+    sv._check_milestone_requirement_registry(
+        "- **FR-401**：行情。\n",
+        "- **FR-401**：行情。\n- **FR-402**：动作。\n",
+        "0.3.2-web-trading-terminal",
+        errors,
+        "milestone 0.3.2",
+    )
+    assert any("FR-402" in error and "版本根规格" in error for error in errors)
+
+
+def test_version_traceability_rejects_spec_omission(sv, tmp_path):
+    """生命周期入口必须实际执行版本根 traceability 的遗漏检查。"""
+    version_dir = tmp_path / "0.9"
+    version_dir.mkdir()
+    (version_dir / "spec.md").write_text("- **FR-901**：未登记需求。\n", encoding="utf-8")
+    (version_dir / "traceability.json").write_text(
+        json.dumps(
+            {
+                "statuses": ["owned", "deferred", "removed"],
+                "milestones": {},
+                "requirements": {},
+                "tracked_id_families": ["FR"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    errors: list[str] = []
+    sv.validate_version_traceability(version_dir, tmp_path, errors)
+    assert any("遗漏 spec 已声明的 ID" in error and "FR-901" in error for error in errors)
+
+
 # --------------------------------------------------------------------------- #
 # frontmatter 解析
 # --------------------------------------------------------------------------- #
