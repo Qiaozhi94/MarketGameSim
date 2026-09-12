@@ -11,7 +11,7 @@ topics:
   - human-in-the-loop
 doc_kind: design
 created: 2026-09-12
-updated: 2026-09-12
+updated: 2026-09-13
 ---
 
 # 0.3.2：Web 交易终端与所有者 N-of-1 采集 - 设计
@@ -97,6 +97,11 @@ public tape -------------------------> Kline projector
 
 ## 6. UI 与可观测性
 
+- **交互设计原型（可离线打开的 HTML）**：[`interaction-design.html`](interaction-design.html) ——
+  按本节三栏布局实现的可点击原型，覆盖 §5 会话状态的全部页面态（门禁阻断、waiting、market
+  warming、交易中、提交/拒单/重复/迟到/超时、断线、刷新恢复、中止、技术中止、完成、每日休息）、
+  按钮五态与稳定错误码文案，并内置需求映射表与待裁决设计问题（DQ-A—DQ-E）；作为 T930/T934 的
+  布局与状态清单输入，E1 冻结动作空间与提示文案前先评审该原型。
 - 桌面优先三栏：左侧报价/账户，中间 K 线与最近成交，右侧窗口状态和买卖按钮。
 - K 线使用明确的 OHLC tooltip/空态；没有完整 bar 时显示数据不足，不绘制看似真实的占位蜡烛。
 - 按钮状态至少有 enabled、submitting、submitted、disabled、rejected；中止按钮始终可见但需确认。
