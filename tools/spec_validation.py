@@ -433,11 +433,10 @@ def check_links_out_of_repo(
 
 def declared_ids(spec_text: str, families: list[str]) -> set[str]:
     heading = [f for f in families if f in HEADING_FAMILIES]
-    inline = [f for f in families if f not in HEADING_FAMILIES]
     found: set[str] = set()
-    if inline:
+    if families:
         found |= set(
-            re.findall(FR_LIKE_TEMPLATE.format(families="|".join(inline)), spec_text, re.M)
+            re.findall(FR_LIKE_TEMPLATE.format(families="|".join(families)), spec_text, re.M)
         )
     if heading:
         found |= set(
@@ -631,6 +630,52 @@ def _check_version_requirement_registry(
     for rid in sorted(version_titles.keys() & milestone_titles.keys()):
         if version_titles[rid] != milestone_titles[rid]:
             fail(errors, f"{where}: {rid} 在版本根与里程碑的标题不一致")
+
+
+VERSION_REQUIREMENT_FAMILIES = ("US", "FR", "DR", "TR", "IR", "NFR", "SC", "UX")
+
+
+def _check_milestone_requirement_registry(
+    version_spec_text: str,
+    milestone_spec_text: str,
+    milestone_dirname: str,
+    errors: list[str],
+    where: str,
+) -> None:
+    """里程碑新增需求必须先登记在版本根规格。"""
+    families = list(VERSION_REQUIREMENT_FAMILIES)
+    if not re.search(r"^- \*\*UX-\d+\*\*", version_spec_text, re.M):
+        families.remove("UX")
+    version_ids = declared_ids(version_spec_text, families)
+    milestone_ids = declared_ids(milestone_spec_text, families)
+    if missing := milestone_ids - version_ids:
+        fail(
+            errors,
+            f"{where}: 里程碑新增需求未登记到版本根规格：{sorted(missing)}",
+        )
+
+
+def validate_version_traceability(
+    version_dir: pathlib.Path,
+    root: pathlib.Path,
+    errors: list[str],
+) -> None:
+    """校验版本根 spec 与其 traceability.json 的 ID 集合和 owner/exit 合同。"""
+    trace_path = version_dir / "traceability.json"
+    spec_path = version_dir / "spec.md"
+    where = f"version {version_dir.name}"
+    if not trace_path.is_file():
+        fail(errors, f"{where}: 缺 traceability.json")
+        return
+    try:
+        data = json.loads(trace_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        fail(errors, f"{where}: traceability.json 无法解析：{exc}")
+        return
+    if not isinstance(data, dict) or not spec_path.is_file():
+        fail(errors, f"{where}: traceability.json 或版本 spec 根格式非法")
+        return
+    validate_trace_data(data, spec_path.read_text(encoding="utf-8"), errors, root)
 
 
 def _ac_task_coverage(tasks_text: str) -> dict[int, list[str]]:
@@ -1221,6 +1266,8 @@ def validate_spec_lifecycle(
     validate_prerequisites(all_ids, errors)
     validate_new_task_ids_unique_across_milestones(all_ids, errors)
     validate_versions(features_dir, root, errors)
+    for version_dir in discover_versions(features_dir):
+        validate_version_traceability(version_dir, root, errors)
     check_ownership_index(features_dir, root, errors)
     check_docs_links(root, errors)
     validate_preregistrations(root, errors)
@@ -1271,6 +1318,9 @@ def validate_spec_lifecycle(
                 and version_spec_text
             ):
                 _check_version_requirement_registry(
+                    version_spec_text, spec_text, mdir.name, errors, where
+                )
+                _check_milestone_requirement_registry(
                     version_spec_text, spec_text, mdir.name, errors, where
                 )
 
