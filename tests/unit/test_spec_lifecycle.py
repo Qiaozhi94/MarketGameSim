@@ -47,6 +47,17 @@ def test_repository_lifecycle_consistent(sv):
     assert errors == []
 
 
+def test_h2_web_terminal_uses_task_level_ai_dependency(sv):
+    """Web 终端不能被整条尚未收口的 0.3.1 里程碑阻塞。"""
+    spec_path = ROOT / "docs" / "features" / "0.3" / "0.3.2-web-trading-terminal" / "spec.md"
+    tasks_path = spec_path.parent / "tasks.md"
+    front = sv.parse_frontmatter(spec_path.read_text(encoding="utf-8"))
+    assert front["prerequisites"] == ["0.2.1"]
+    tasks = tasks_path.read_text(encoding="utf-8")
+    assert "0.3.1/T915" in tasks
+    assert "prerequisites:\n  - 0.3.1" not in spec_path.read_text(encoding="utf-8")
+
+
 # --------------------------------------------------------------------------- #
 # frontmatter 解析
 # --------------------------------------------------------------------------- #
