@@ -92,9 +92,14 @@ def test_milestone_requirement_registry_rejects_unregistered_id(sv):
 
 def test_version_traceability_rejects_spec_omission(sv, tmp_path):
     """生命周期入口必须实际执行版本根 traceability 的遗漏检查。"""
-    version_dir = tmp_path / "0.9"
-    version_dir.mkdir()
-    (version_dir / "spec.md").write_text("- **FR-901**：未登记需求。\n", encoding="utf-8")
+    features = tmp_path / "docs" / "features"
+    version_dir = features / "0.9"
+    version_dir.mkdir(parents=True)
+    (version_dir / "spec.md").write_text(
+        '---\nkind: version-spec\nid: v0.9\nversion: "0.9"\nstatus: in-progress\n'
+        "research_claim_status: not-applicable\n---\n- **FR-901**：未登记需求。\n",
+        encoding="utf-8",
+    )
     (version_dir / "traceability.json").write_text(
         json.dumps(
             {
@@ -106,8 +111,9 @@ def test_version_traceability_rejects_spec_omission(sv, tmp_path):
         ),
         encoding="utf-8",
     )
+    (tmp_path / "docs" / "README.md").write_text("map\n", encoding="utf-8")
     errors: list[str] = []
-    sv.validate_version_traceability(version_dir, tmp_path, errors)
+    sv.validate_spec_lifecycle(features, tmp_path, errors)
     assert any("遗漏 spec 已声明的 ID" in error and "FR-901" in error for error in errors)
 
 
