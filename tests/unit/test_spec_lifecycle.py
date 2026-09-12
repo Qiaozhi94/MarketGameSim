@@ -60,14 +60,7 @@ def test_h2_web_terminal_uses_task_level_ai_dependency(sv):
 
 def test_h2_web_delivery_gates_have_unique_scope(sv):
     """H2-D1 只收口可交易预览，H2-D2 只收口所有者交付。"""
-    tasks_path = (
-        ROOT
-        / "docs"
-        / "features"
-        / "0.3"
-        / "0.3.2-web-trading-terminal"
-        / "tasks.md"
-    )
+    tasks_path = ROOT / "docs" / "features" / "0.3" / "0.3.2-web-trading-terminal" / "tasks.md"
     tasks = tasks_path.read_text(encoding="utf-8")
     blocks = {tid: block for _mark, tid, block in sv._task_blocks(tasks)}
     gates = re.findall(r"\[成果门:([A-Za-z0-9-]+)\]", tasks)
