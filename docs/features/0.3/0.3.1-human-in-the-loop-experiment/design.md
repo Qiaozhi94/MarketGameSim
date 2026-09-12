@@ -94,7 +94,7 @@ Paired pure-agent runner --------------------+-> pair validator
 计划新增版本化 JSON schema：
 
 - `protocol.json`：研究问题、假设、estimand、结果/机制字典、样本/停止、任务、窗口、顺序、
-  排除、分析、结论语法、双轨证据级别、解盲规则及 `protocol_hash`。
+  排除、分析、结论语法、`AI_FORMAL`/`OWNER_N_OF_1` 证据级别、解盲规则及 `protocol_hash`。
 - `owner.jsonl`：所有者研究假名与训练完成状态；不采集外部参与者，不含姓名或联系方式。
 - `assignments.jsonl`：`assignment_id`、`run_mode`、`pair_id`、seed/config、session order、
   target slot、签发协议哈希。
@@ -345,8 +345,8 @@ preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失
   不设 `enroll`/`withdraw`：项目不招募外部真人，没有报名与撤回同意流程。
 - 采用 protocol、owner、assignment、session-manifest、adjudication、evidence-index 六类
   版本化 JSON schema（`owner` 取代旧的 `participant`，只存研究假名与训练完成状态）。
-  正式写入必须绑定协议哈希、原子落盘；两条轨道各自维护 evidence index，分析只能读取显式
-  冻结的那一份，不能扫描目录自动挑选样本，也不能跨轨读取。
+  正式写入必须绑定协议哈希、原子落盘；`AI_FORMAL` 与 `OWNER_N_OF_1` 各自维护 evidence index，
+  分析只能读取显式冻结的那一份，不能扫描目录自动挑选样本，也不能跨轨读取。
 
 #### DQ-303：窗口竞争与迟到输入
 
@@ -356,7 +356,7 @@ preview 使用固定假参与者输入覆盖放大、稳定、无检出、缺失
 - 每个窗口最多接受一次最终动作，迟到返回 `WINDOW_CLOSED`，无有效动作写 `NO_ACTION`。
   客户端倒计时仅作展示；开窗、截止、接收、裁决时间和 reason code 进入诊断，不回拨逻辑时间。
 
-#### DQ-304：主要统计模型（已按双轨与 severity 终点重基线）
+#### DQ-304：AI_FORMAL 主要统计模型（已按 severity 终点重基线）
 
 - **观察单位是配对 seed block，不是参与者。** `AI_FORMAL` 轨每个 block 产生一个
   `risk_budget_threshold_v1 - risk_budget_linear_v1` 的**严重程度**配对差；block 之间独立，

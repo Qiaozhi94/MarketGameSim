@@ -68,7 +68,7 @@ updated: 2026-09-12
       `tests/unit/experiment/test_h2_assignment.py`、`tests/integration/test_h2_paired_runs.py`
 - [x] T907 (`FR-301`, `TR-301`, `NFR-301`, `AC-304`): 实现目标代理插槽、AI 双臂生成与
       两条纯代理运行均受同一有限窗口调度器约束（`WINDOW_MATCHED_POLICY_CONTROL` 形态），
-      以及两轨的双臂生成与冻结字段比较（窗口调度参数必须在白名单内，
+      以及 `AI_FORMAL` 的双臂 manifest 生成与冻结字段比较（窗口调度参数必须在白名单内，
       主对照策略取自预注册的 v0.1 家族；协议须冻结账户/风险、信息、动作、窗口与目标差异的
       比较矩阵，且不声称目标函数对齐） — verify: `tests/integration/test_h2_paired_runs.py`
 - [x] T908 (`FR-303`, `IR-302`, `AC-303`): 实现 mode/stage/protocol/pair/inclusion 多重 evidence
