@@ -28,7 +28,8 @@ updated: 2026-09-12
 
 ## 1. 前置条件
 
-- [ ] T927 (`FR-302`, `IR-301`, `AC-405`): 验证 0.3.1 session controller、assignment、窗口锁和
+- [ ] T927 (`FR-302`, `IR-301`, `AC-405`): 在任务级接入已完成的 `0.3.1/T915` preview contract，
+      验证 session controller、assignment、窗口锁和
       canonical input contract 可供 Web adapter 复用 — verify: `docs/features/0.3/0.3.1-human-in-the-loop-experiment/design.md`
 - [ ] T928 (`FR-401`, `NFR-403`, `AC-401`): 在 Python 3.11/3.14 的目标环境确认 loopback 服务、
       时间单调钟和静态资源加载约束 — verify: `tests/integration/test_h2_owner_web.py`

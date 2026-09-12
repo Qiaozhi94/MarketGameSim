@@ -11,7 +11,7 @@ gate_version: 1
 created: 2026-09-12
 updated: 2026-09-12
 prerequisites:
-  - 0.3.1
+  - 0.2.1
 ---
 
 # 0.3.2：Web 交易终端与所有者 N-of-1 采集
