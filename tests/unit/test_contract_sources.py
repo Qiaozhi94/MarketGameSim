@@ -563,6 +563,7 @@ H2_STALE_SCOPE_MARKERS = (
     "130 个 paired-seed blocks",
     "130 个 block",
 )
+H2_SERIAL_PLAN_MARKERS = ("H2-C 先完成 AI 正式研究包；H2-D 再让项目所有者",)
 
 
 def _h2_stale_scope_lines(text: str) -> list[str]:
@@ -571,6 +572,15 @@ def _h2_stale_scope_lines(text: str) -> list[str]:
         line.strip()
         for line in text.splitlines()
         if any(marker in line for marker in H2_STALE_SCOPE_MARKERS)
+    ]
+
+
+def _h2_serial_plan_lines(text: str) -> list[str]:
+    """找出把 H2-C/H2-D 错写成串行交付的有效行。"""
+    return [
+        line.strip()
+        for line in text.splitlines()
+        if any(marker in line for marker in H2_SERIAL_PLAN_MARKERS)
     ]
 
 
@@ -596,6 +606,19 @@ def test_h2_effective_docs_have_no_stale_owner_prerequisite_or_ai_two_track_esti
         for doc in H2_AI_SCOPE_DOCS
     }
     assert residue == {doc: [] for doc in H2_AI_SCOPE_DOCS}
+
+
+def test_h2_parallel_plan_detector_rejects_serial_scope_mutation():
+    """负向变异：把 H2-C/H2-D 改回串行措辞时必须被扫描挡住。"""
+    mutated = "H2-C 先完成 AI 正式研究包；H2-D 再让项目所有者按冻结协议参加实验"
+    assert _h2_serial_plan_lines(mutated) == [mutated]
+
+
+def test_h2_prd_declares_ai_and_owner_paths_parallel_after_h2b():
+    """H2-B 后两条路径可并行，owner 只受自身 Web/协议门控。"""
+    text = (ROOT / "docs/market-game-sim-prd.md").read_text(encoding="utf-8")
+    assert "H2-C 与 H2-D 均可独立开始" in text
+    assert _h2_serial_plan_lines(text) == []
 
 
 @pytest.mark.parametrize("doc", H2_CONTROL_CONTRACT_DOCS)
