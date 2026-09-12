@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>0.3.2 H2 所有者 Web 交易终端 · 交互设计原型</title>
+<title>0.3.2 H2 所有者 Web 交易终端 · 交互设计原型 v3（真实终端形态）</title>
 <style>
 :root{
   --bg:#0d1117; --panel:#161b22; --panel2:#1c2330; --line:#2b3444;
@@ -22,34 +22,32 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 #proto-bar{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:8px;align-items:center;
   padding:8px 14px;background:#10151d;border-bottom:1px solid var(--line)}
 #proto-bar .tag{font-size:12px;color:var(--amber);border:1px solid var(--amber);border-radius:4px;padding:1px 6px}
-#proto-bar select{max-width:340px}
+#proto-bar select{max-width:360px}
 #proto-bar .hint{font-size:12px;color:var(--faint)}
 
-/* ---------- 顶部：阶段 + 账户信息（对齐交易软件顶栏） ---------- */
+/* ---------- 顶栏 ---------- */
 #stage-bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:8px 16px;
   background:var(--panel);border-bottom:1px solid var(--line)}
-.badge{font-size:12px;font-weight:600;border-radius:4px;padding:2px 8px;letter-spacing:.05em}
-.badge.preview{color:var(--amber);border:1px solid var(--amber)}
-.badge.training{color:var(--blue);border:1px solid var(--blue)}
-.badge.formal{color:var(--purple);border:1px solid var(--purple)}
+.sim-badge{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--amber);
+  border:1px solid var(--amber);border-radius:4px;padding:1px 7px}
 #stage-bar .meta{color:var(--dim);font-size:13px}
 #stage-bar .spacer{flex:1}
 #conn{font-size:12px;color:var(--dim)}
-#abort-btn{border-color:var(--red);color:var(--red)}
-#session-info-btn{padding:3px 10px;font-size:12px}
+#exit-btn{padding:3px 10px;font-size:12px}
+#info-btn{padding:3px 10px;font-size:12px}
 .disclaimer{font-size:12px;color:var(--faint)}
 
-/* 会话说明弹层（信息边界的载体） */
-#session-pop{display:none;position:absolute;top:46px;right:16px;z-index:60;width:380px;
+/* 市场说明弹层 */
+#info-pop{display:none;position:absolute;top:46px;right:16px;z-index:60;width:400px;
   background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;box-shadow:0 8px 30px #000a}
-#session-pop.show{display:block}
-#session-pop h4{margin:10px 0 4px;font-size:13px;color:var(--blue)}
-#session-pop .kv{font-size:12px}
-#session-pop p{font-size:12px;color:var(--dim);margin:6px 0 0}
-#session-pop ul{margin:4px 0;padding-left:18px;font-size:12px;color:var(--dim)}
+#info-pop.show{display:block}
+#info-pop h4{margin:10px 0 4px;font-size:13px;color:var(--blue)}
+#info-pop .kv{font-size:12px}
+#info-pop p{font-size:12px;color:var(--dim);margin:6px 0 0}
+#info-pop ul{margin:4px 0;padding-left:18px;font-size:12px;color:var(--dim)}
 
 /* ---------- 三栏终端 ---------- */
-#terminal{display:grid;grid-template-columns:290px 1fr 340px;gap:12px;padding:12px 16px;max-width:1500px;margin:0 auto}
+#terminal{display:grid;grid-template-columns:290px 1fr 360px;gap:12px;padding:12px 16px;max-width:1520px;margin:0 auto}
 .col{display:flex;flex-direction:column;gap:12px;min-width:0}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px;position:relative}
 .card h3{margin:0 0 8px;font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.08em;display:flex;align-items:center;gap:8px}
@@ -63,22 +61,21 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 .qbox .val{font-family:var(--mono);font-size:20px;font-weight:600}
 .qbox.bid .val{color:var(--green)} .qbox.ask .val{color:var(--red)}
 #last-row{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--dim)}
-#last-price{font-family:var(--mono);font-size:16px;color:var(--fg)}
 .depth{margin-top:8px}
-.depth .row{display:grid;grid-template-columns:1fr 64px 40px;gap:6px;font-family:var(--mono);font-size:12px;padding:1px 4px;position:relative}
+.depth .row{display:grid;grid-template-columns:1fr 64px 40px;gap:6px;font-family:var(--mono);font-size:12px;padding:1px 4px;position:relative;cursor:pointer}
+.depth .row:hover{background:#1c2330}
 .depth .row .bar{position:absolute;right:0;top:1px;bottom:1px;border-radius:2px;opacity:.15}
 .depth .row.bid .bar{background:var(--green)} .depth .row.ask .bar{background:var(--red)}
 .depth .sep{text-align:center;color:var(--faint);font-size:11px;margin:2px 0}
 .oobs{color:var(--faint);font-style:italic;padding:6px 4px;font-size:13px}
 
-/* 活动订单（挂单） */
+/* 当前挂单 */
 .order-row{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;
   border:1px solid var(--line);border-radius:6px;padding:6px 8px;margin-top:6px;font-size:12px}
 .order-row .side-buy{color:var(--green);font-weight:600}.order-row .side-sell{color:var(--red);font-weight:600}
 .order-row button{padding:2px 8px;font-size:12px}
-.slot-warning{font-size:11px;color:var(--amber);margin-top:6px}
 
-/* K 线：周期页签 + 时间轴 */
+/* K 线 */
 #tf-tabs{display:flex;gap:2px}
 #tf-tabs button{padding:2px 9px;font-size:12px;border-radius:4px;background:transparent;border-color:transparent;color:var(--dim)}
 #tf-tabs button.on{color:var(--fg);background:var(--panel2);border-color:var(--line)}
@@ -95,37 +92,34 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 #tape-table td{padding:1px 6px;text-align:right}
 #tape-scroll{max-height:120px;overflow-y:auto}
 
-/* 下单卡（含提交倒计时） */
-#cd-line{display:flex;align-items:center;gap:8px;margin:2px 0 6px}
-#cd-num{font-family:var(--mono);font-size:24px;font-weight:700;min-width:52px}
-#cd-num.warn{color:var(--amber)} #cd-num.crit{color:var(--red)}
-#cd-track{flex:1;height:4px;background:var(--panel2);border-radius:2px;overflow:hidden}
-#cd-fill{height:100%;width:100%;background:var(--blue)}
-#cd-fill.warn{background:var(--amber)} #cd-fill.crit{background:var(--red)}
-#cd-help{color:var(--faint);cursor:help;font-size:12px;border:1px solid var(--line);border-radius:50%;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center}
-#cd-caption{font-size:12px;color:var(--faint);margin-bottom:8px}
-.qty-row{display:flex;gap:6px;align-items:center;margin:8px 0}
-.qty-row input{width:90px;text-align:right;font-family:var(--mono)}
-.qty-row .step{padding:2px 9px}
+/* 下单卡 */
+#type-tabs{display:flex;gap:2px}
+#type-tabs button{padding:3px 12px;font-size:12px;border-radius:4px;background:transparent;border-color:transparent;color:var(--dim)}
+#type-tabs button.on{color:var(--fg);background:var(--panel2);border-color:var(--line)}
+.price-row,.qty-row{display:flex;gap:6px;align-items:center;margin:8px 0}
+.price-row input,.qty-row input{width:92px;text-align:right;font-family:var(--mono)}
+.price-row .step,.qty-row .step{padding:2px 9px}
+.price-row .hint{font-size:11px;color:var(--faint)}
 .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .btn-buy{background:#12351f;border-color:var(--green);color:var(--green);font-weight:700;padding:12px 0;font-size:15px}
+.btn-buy .px{display:block;font-size:11px;font-weight:400;color:var(--dim)}
 .btn-sell{background:#3a1512;border-color:var(--red);color:var(--red);font-weight:700;padding:12px 0;font-size:15px}
-.btn-noaction{grid-column:1 / -1;padding:9px 0;color:var(--dim)}
+.btn-sell .px{display:block;font-size:11px;font-weight:400;color:var(--dim)}
 .btn-state-submitting{opacity:.7;pointer-events:none}
 #submit-hint{font-size:12px;color:var(--faint);margin-top:8px;min-height:18px}
 #submit-hint.err{color:var(--red)} #submit-hint.ok{color:var(--green)}
 .state-locked{border:1px solid var(--amber);background:#d9a53f14;color:var(--amber);border-radius:6px;
   padding:8px 10px;font-size:12px;margin-top:8px}
 
-/* 操作回报（对齐交易软件的委托/回报表） */
-#returns-wrap{max-height:170px;overflow-y:auto}
+/* 操作回报 */
+#returns-wrap{max-height:200px;overflow-y:auto}
 #returns-table{width:100%;border-collapse:collapse;font-size:12px}
 #returns-table th{position:sticky;top:0;background:var(--panel);color:var(--faint);font-weight:400;text-align:left;
   padding:3px 6px;border-bottom:1px solid var(--line);font-size:11px}
 #returns-table td{padding:3px 6px;border-bottom:1px solid #1d2430;font-family:var(--mono)}
 #returns-table tr{cursor:pointer}
 #returns-table tr.sel{background:#1c2330}
-.st-ok{color:var(--green);font-weight:600}.st-rej{color:var(--red);font-weight:600}.st-info{color:var(--amber);font-weight:600}
+.st-ok{color:var(--green);font-weight:600}.st-rej{color:var(--red);font-weight:600}.st-open{color:var(--blue);font-weight:600}.st-info{color:var(--amber);font-weight:600}
 #return-detail{margin-top:8px;border-top:1px dashed var(--line);padding-top:8px;font-family:var(--mono);
   font-size:12px;line-height:1.7;color:var(--dim);word-break:break-all;min-height:52px}
 
@@ -143,10 +137,9 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 .modal h2{margin:0 0 10px;font-size:16px}
 .modal p{color:var(--dim);font-size:13px}
 .modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
-.modal select{width:100%}
 .modal .danger{background:#3a1512;border-color:var(--red);color:var(--red)}
 
-/* 门禁/休息/完成整卡 */
+/* 整卡 */
 .full-card{grid-column:1 / -1}
 .gate-list{list-style:none;padding:0;margin:8px 0 0;font-size:13px}
 .gate-list li{display:flex;gap:8px;align-items:baseline;padding:3px 0}
@@ -164,7 +157,7 @@ body.show-pins .pin{display:block}
 /* ---------- 设计说明抽屉 ---------- */
 #notes-toggle{position:fixed;right:18px;bottom:18px;z-index:60;border-radius:20px;padding:10px 18px;
   background:var(--blue);border:none;color:#fff;font-weight:600}
-#notes{position:fixed;top:0;right:-560px;width:540px;max-width:95vw;height:100vh;z-index:70;
+#notes{position:fixed;top:0;right:-560px;width:560px;max-width:95vw;height:100vh;z-index:70;
   background:#10151d;border-left:1px solid var(--line);transition:right .25s ease;display:flex;flex-direction:column}
 #notes.open{right:0}
 #notes header{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
@@ -189,42 +182,38 @@ body.show-pins .pin{display:block}
 
 <!-- ======= 原型评审工具条（非产品 UI） ======= -->
 <div id="proto-bar">
-  <span class="tag">交互设计原型</span>
-  <b>0.3.2 H2 所有者 Web 交易终端</b>
+  <span class="tag">交互设计原型 v3</span>
+  <b>0.3.2 H2 所有者 Web 交易终端 · 真实终端形态</b>
   <select id="state-select" aria-label="切换会话状态"></select>
   <button id="pin-toggle">显示标注</button>
   <button id="notes-btn-open">设计说明</button>
-  <span class="hint">评审工具条仅用于检视状态，不属于产品界面 · 数据为确定性合成样例（seed 7）</span>
+  <span class="hint">评审工具条仅用于检视，不属于产品界面 · 确定性合成样例（seed 7）</span>
 </div>
 
 <div id="app">
 
-  <!-- ======= 顶栏：阶段徽标 + 会话说明 + 中止（UX-403：阶段恒可见） ======= -->
+  <!-- ======= 顶栏（对齐真实终端：品种 + 环境角标） ======= -->
   <div id="stage-bar">
-    <span class="badge training" id="stage-badge">TRAINING</span>
-    <span class="meta" id="stage-meta">training · 场景 3/6</span>
-    <span class="meta num" id="schedule-meta">第 1 天 / 共 4 天 · 今日第 3 场</span>
+    <span class="sim-badge">SIM</span>
+    <span class="meta"><b>PERPETUAL-SIM-1</b> · 模拟市场</span>
     <span class="spacer"></span>
     <span class="disclaimer">合成市场 · 无真实资金 · 不构成投资建议</span>
     <span id="conn">● 已连接</span>
-    <button id="session-info-btn">ⓘ 会话说明</button>
-    <button id="abort-btn">中止会话</button>
+    <button id="info-btn">ⓘ 市场说明</button>
+    <button id="exit-btn">退出</button>
   </div>
 
-  <!-- 会话说明弹层（承载原“信息边界”内容） -->
-  <div id="session-pop">
-    <h4>会话信息</h4>
-    <div class="kv"><span class="k">阶段</span><span class="num" id="pop-stage">training</span></div>
-    <div class="kv"><span class="k">场景 / 分配</span><span class="num" id="pop-assign">blk-t03 · w-017/60</span></div>
-    <div class="kv"><span class="k">协议哈希</span><span class="num" id="pop-phash">9de2…a071</span></div>
+  <div id="info-pop">
+    <h4>市场信息</h4>
+    <div class="kv"><span class="k">品种</span><span class="num">PERPETUAL-SIM-1（合成本位永续）</span></div>
+    <div class="kv"><span class="k">最小变动</span><span class="num">0.01（tick）· 单笔上限 1.000 · 挂单上限 8</span></div>
     <div class="kv"><span class="k">K 线数据源</span><span class="num">冻结 public tape b7f3…c21a</span></div>
-    <h4>本会话不显示（正式阶段隔离规则 FR-403）</h4>
-    <ul>
-      <li>参照策略（两条 policy control）的任何状态与产出</li>
-      <li>随机种子、未来事件、未解盲的已完成场景结果</li>
-      <li>他人仓位与任何真实身份信息</li>
-    </ul>
-    <p>您交易的是确定性合成的模拟市场，不接入真实行情与资金；全部操作进入可审计记录。</p>
+    <div class="kv"><span class="k">市场时钟</span><span class="num">合成交易所时间（演示 1 tick≈1m）</span></div>
+    <h4>关于 SIM 环境</h4>
+    <p>这是确定性合成的模拟市场：不接入真实行情与资金，所有对手方均为可复现的 AI 代理
+    （做市商、因子策略、噪声/情绪交易者）。全部操作进入可审计记录。</p>
+    <p id="info-experiment" style="display:none">当前为<b>采集模式</b>：会话绑定实验协议，
+    参照策略状态、随机种子、未来事件与未解盲结果对您隐藏（FR-403）。</p>
   </div>
 
   <!-- ======= 三栏终端 ======= -->
@@ -235,18 +224,18 @@ body.show-pins .pin{display:block}
       <div class="col">
         <section class="card" id="card-quote">
           <span class="pin" data-note="q" style="right:10px;top:10px">1</span>
-          <h3>行情 · PERPETUAL-SIM-1<span class="aux">逻辑时钟（演示 1 窗=1m）</span></h3>
+          <h3>行情 · PERPETUAL-SIM-1<span class="aux num" id="q-clock">—</span></h3>
           <div class="big-quote">
-            <div class="qbox bid"><div class="lbl">买一 best bid</div><div class="val num" id="q-bid">—</div><div class="lbl num" id="q-bid-sz">—</div></div>
-            <div class="qbox ask"><div class="lbl">卖一 best ask</div><div class="val num" id="q-ask">—</div><div class="lbl num" id="q-ask-sz">—</div></div>
+            <div class="qbox bid"><div class="lbl">买一 bid</div><div class="val num" id="q-bid">—</div><div class="lbl num" id="q-bid-sz">—</div></div>
+            <div class="qbox ask"><div class="lbl">卖一 ask</div><div class="val num" id="q-ask">—</div><div class="lbl num" id="q-ask-sz">—</div></div>
           </div>
-          <div id="last-row"><span>最新 last <span class="num" id="q-last">—</span></span><span>价差 <span class="num" id="q-spread">—</span></span><span>市场时间 <span class="num" id="q-clock">—</span></span></div>
+          <div id="last-row"><span>最新 <span class="num" id="q-last">—</span></span><span>价差 <span class="num" id="q-spread">—</span></span><span>24h 高低 <span class="num" id="q-range">—</span></span></div>
           <div class="depth" id="depth"></div>
         </section>
 
         <section class="card" id="card-account">
           <span class="pin" data-note="acc" style="right:10px;top:10px">2</span>
-          <h3>账户权益（owner 目标插槽）</h3>
+          <h3>账户<span class="aux">全仓 · USDT 本位（模拟）</span></h3>
           <div id="account-kv"></div>
         </section>
 
@@ -254,26 +243,23 @@ body.show-pins .pin{display:block}
           <span class="pin" data-note="ord" style="right:10px;top:10px">3</span>
           <h3>当前挂单<span class="aux num" id="orders-count"></span></h3>
           <div id="orders-list"></div>
-          <div class="slot-warning">撤销挂单同样占用本时点唯一的一次提交机会（见标注 5）。</div>
         </section>
       </div>
 
-      <!-- 中栏：K 线（多周期）/ 最近成交 -->
+      <!-- 中栏：K 线 / 最近成交 -->
       <div class="col">
         <section class="card" id="card-kline">
           <span class="pin" data-note="k" style="right:10px;top:10px">4</span>
-          <h3>K 线 · PERPETUAL-SIM-1
-            <span class="aux" id="tf-tabs"></span>
-          </h3>
+          <h3>K 线 · PERPETUAL-SIM-1<span class="aux" id="tf-tabs"></span></h3>
           <div id="kline-wrap">
             <canvas id="kline" width="780" height="330"></canvas>
             <div id="kline-tip"></div>
-            <div id="kline-empty" class="empty-box" style="display:none">数据不足：公开成交 tape 尚无数据，<br>不显示占位行情（FR-401 空态合同）。</div>
+            <div id="kline-empty" class="empty-box" style="display:none">数据不足：公开成交 tape 尚无数据，<br>不显示占位行情。</div>
           </div>
           <div id="kline-note">
             <span class="legend"><span class="swatch" style="background:var(--green)"></span>阳线</span>
             <span class="legend"><span class="swatch" style="background:var(--red)"></span>阴线</span>
-            <span style="margin-left:auto">最新一根 K 线随成交实时更新 · 悬停查看 OHLC</span>
+            <span style="margin-left:auto">最新 K 线随成交实时更新 · 点击盘口价可填入下单价格 · 悬停查看 OHLC</span>
           </div>
         </section>
         <section class="card" id="card-tape">
@@ -287,62 +273,59 @@ body.show-pins .pin{display:block}
         </section>
       </div>
 
-      <!-- 右栏：下单（含提交倒计时）/ 操作回报 -->
+      <!-- 右栏：下单 / 操作回报 -->
       <div class="col">
         <section class="card" id="card-trade">
           <span class="pin" data-note="w" style="right:10px;top:10px">5</span>
-          <h3>下单<span class="aux">市价单</span></h3>
-          <div id="cd-line">
-            <span id="cd-num" class="num">8.0</span>
-            <div id="cd-track"><div id="cd-fill"></div></div>
-            <span id="cd-help" title="本实验的每个决策时点为 8 秒：时点内可提交一次市价单/撤单或“不操作”，到点未操作按“不操作”记录。这是为了与参照策略保持完全相同的决策机会（协议冻结合同），不是系统卡顿。">?</span>
+          <h3>下单<span class="aux" id="type-tabs"></span></h3>
+          <div class="price-row" id="price-row">
+            <span style="color:var(--dim)">价格</span>
+            <button class="step" id="px-minus">−</button>
+            <input id="px" class="num" value="101.50" inputmode="decimal">
+            <button class="step" id="px-plus">+</button>
+            <span class="hint">点盘口价自动填入</span>
           </div>
-          <div id="cd-caption">本时点可提交一次 · 剩余 <span id="cd-remain">5.2s</span> · 时点 <span id="win-slot" class="num">17/60</span></div>
-          <div id="window-body">
-            <div class="qty-row">
-              <span style="color:var(--dim)">数量</span>
-              <button class="step" id="qty-minus">−</button>
-              <input id="qty" class="num" value="0.100" inputmode="decimal">
-              <button class="step" id="qty-plus">+</button>
-              <span style="color:var(--faint);font-size:12px">≤ <span id="qty-max">1.000</span>/笔</span>
-            </div>
-            <div class="action-grid">
-              <button class="btn-buy" id="btn-buy">买入</button>
-              <button class="btn-sell" id="btn-sell">卖出</button>
-              <button class="btn-noaction" id="btn-noaction">本时点不操作</button>
-            </div>
-            <div id="submit-hint"></div>
+          <div class="qty-row">
+            <span style="color:var(--dim)">数量</span>
+            <button class="step" id="qty-minus">−</button>
+            <input id="qty" class="num" value="0.100" inputmode="decimal">
+            <button class="step" id="qty-plus">+</button>
+            <span style="color:var(--faint);font-size:12px">≤ 1.000/笔</span>
           </div>
+          <div class="action-grid">
+            <button class="btn-buy" id="btn-buy">买入 / 做多<span class="px num" id="buy-px"></span></button>
+            <button class="btn-sell" id="btn-sell">卖出 / 做空<span class="px num" id="sell-px"></span></button>
+          </div>
+          <div id="submit-hint"></div>
           <div id="window-locked" class="state-locked" style="display:none"></div>
         </section>
 
         <section class="card" id="card-returns">
           <span class="pin" data-note="r" style="right:10px;top:10px">6</span>
-          <h3>操作回报<span class="aux">点击行查看回执详情</span></h3>
+          <h3>操作回报<span class="aux">点击行查看详情</span></h3>
           <div id="returns-wrap">
             <table id="returns-table">
               <thead><tr><th>时间</th><th>操作</th><th>状态</th><th>说明</th></tr></thead>
               <tbody id="returns-body"></tbody>
             </table>
           </div>
-          <div id="return-detail">暂无操作。每次提交（含“不操作”与撤单）都会生成一条回报；服务端裁决为准。</div>
+          <div id="return-detail">暂无操作。委托、成交、撤单与拒绝都会在这里留下回报；以服务端裁决为准。</div>
         </section>
       </div>
 
-      <!-- 整卡状态区（门禁阻断 / 中止 / 完成 / 休息，按状态注入） -->
       <div id="fullcard-host" style="display:contents"></div>
     </main>
 
     <div id="conn-overlay">
       <div class="title">连接中断</div>
-      <div style="color:var(--dim);max-width:420px">行情与市场不会因断线暂停：本时点到期照常按“不操作”记录。<br>正在重连……恢复后以服务端会话为准，不会重复提交已使用的提交机会。</div>
+      <div style="color:var(--dim);max-width:420px">行情与市场不会因断线暂停：您的挂单仍在市场中生效。<br>正在重连……恢复后以服务端会话为准，不会重复提交委托。</div>
       <div class="num" style="color:var(--faint)" id="reconnect-sec">已断开 3s</div>
       <button id="reconnect-btn">模拟恢复连接</button>
     </div>
   </div>
 </div>
 
-<!-- ======= 中止确认 ======= -->
+<!-- ======= 模态 ======= -->
 <div id="modal-root"><div class="modal" id="modal"></div></div>
 
 <button id="notes-toggle">设计说明</button>
@@ -350,15 +333,14 @@ body.show-pins .pin{display:block}
 <!-- ======= 设计说明抽屉 ======= -->
 <aside id="notes">
   <header>
-    <h2>交互设计说明 · 0.3.2 Web 交易终端</h2>
+    <h2>交互设计说明 · 真实终端形态（v3）</h2>
     <button id="notes-close">关闭</button>
   </header>
   <div class="tabs" id="notes-tabs">
-    <button data-tab="arch" class="on">信息架构</button>
-    <button data-tab="fsm">会话状态机</button>
+    <button data-tab="audit" class="on">真实终端对齐审查</button>
+    <button data-tab="arch">信息架构</button>
     <button data-tab="flows">关键交互流</button>
-    <button data-tab="codes">错误码与按钮态</button>
-    <button data-tab="trace">需求映射</button>
+    <button data-tab="spec">需求与规格影响</button>
     <button data-tab="open">待裁决</button>
   </div>
   <div class="body" id="notes-body"></div>
@@ -368,14 +350,12 @@ body.show-pins .pin{display:block}
 "use strict";
 /* =====================================================================
  * 确定性合成样例（seed 7，mulberry32）——仅用于原型演示，非市场实现
- * 市场时钟映射：1 个决策时点（1s 墙钟）对应 1 分钟市场时间（演示口径，
- * 正式映射在 E1 随 K 线周期语义一并冻结，见 Q-401）。
  * ===================================================================*/
 function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);
   t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const rnd=mulberry32(7);
-const TICK=0.01, MULT=1000, M1_MS=60000;
-const SESSION_T0=Date.UTC(2026,8,14,9,30,0); // 合成交易所时钟起点（演示）
+const TICK=0.01, MULT=1000, M1_MS=60000, DAY_MS=86400000;
+const SESSION_T0=Date.UTC(2026,8,14,0,0,0);
 const fmtP=t=>(t*TICK).toFixed(2);
 const fmtQ=u=>(u/MULT).toFixed(3);
 const fmtM=u=>(u/MULT).toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -383,12 +363,11 @@ const fmtClock=ms=>{const d=new Date(ms);const p=n=>String(n).padStart(2,"0");
   return p(d.getUTCHours())+":"+p(d.getUTCMinutes())+":"+p(d.getUTCSeconds())};
 const $=id=>document.getElementById(id);
 
-/* ---------- 行情模拟：分钟级基础序列 + 多周期聚合 ---------- */
-let price=10000;                 // ticks
-let m1=[];                       // 已收口的 1m K 线 {t,o,h,l,c,v}
-let cur=null;                    // 当前（未收口）分钟 K 线，渲染为普通蜡烛
-let clockMin=0;                  // 市场时间（分钟）
+/* ---------- 行情 ---------- */
+let price=10000;
+let m1=[], cur=null, clockMin=0;
 let bidTicks=null, askTicks=null, lastTicks=null, bids=[], asks=[], tape=[];
+let hi24=-1e9, lo24=1e9;
 const DEPTH_N=5;
 let tfKey="1m";
 const TFS=[["1m",1],["5m",5],["15m",15],["1h",60],["4h",240]];
@@ -404,6 +383,7 @@ function refreshBook(){
 }
 function tickMarket(){
   price+=Math.round((rnd()-0.5)*6);
+  hi24=Math.max(hi24,price);lo24=Math.min(lo24,price);
   refreshBook();
   if(cur){cur.c=price;cur.h=Math.max(cur.h,price);cur.l=Math.min(cur.l,price);}
   const nTrades=1+Math.floor(rnd()*3);
@@ -412,23 +392,23 @@ function tickMarket(){
       price_ticks:price,quantity_units:5+Math.floor(rnd()*180),taker_side:rnd()<.5?"buy":"sell"});
   }
   if(tape.length>60)tape.length=60;
-  if(cur){cur.v+=nTrades*40;
-    m1.push(cur);}                      // 每个决策时点收口一根 1m K 线（快进口径）
+  if(cur){cur.v+=nTrades*40;m1.push(cur);}
   clockMin+=1;
   cur={t:SESSION_T0+clockMin*M1_MS,o:price,h:price,l:price,c:price,v:nTrades*40};
+  matchResting();
 }
-/* 预置 300 根历史 1m K 线，保证 4h 周期也有可见历史 */
-(function(){
-  let p=9950;
-  for(let b=0;b<300;b++){
-    const o=p,h=o+Math.floor(rnd()*30)+4,l=o-Math.floor(rnd()*30)-4,c=o+Math.round((rnd()-0.48)*22);
-    m1.push({t:SESSION_T0+(b)*M1_MS,open:o,high:Math.max(h,c),low:Math.min(l,c),close:c,volume:60+Math.floor(rnd()*240)});
+/* 预置 1440 根历史 1m K 线（覆盖 24h 高低与 4h 周期） */
+function seedHistory(){
+  let p=10040;
+  for(let b=0;b<1440;b++){
+    const o=p,h=o+Math.floor(rnd()*30)+4,l=o-Math.floor(rnd()*30)-4,c=o+Math.round((rnd()-0.5)*22);
+    m1.push({t:SESSION_T0+b*M1_MS,open:o,high:Math.max(h,c),low:Math.min(l,c),close:c,volume:60+Math.floor(rnd()*240)});
+    hi24=Math.max(hi24,Math.max(h,c));lo24=Math.min(lo24,Math.min(l,c));
     p=c;
   }
-  price=p;clockMin=300;refreshBook();
+  price=p;clockMin=1440;refreshBook();
   cur={t:SESSION_T0+clockMin*M1_MS,o:price,h:price,l:price,c:price,v:80};
-})();
-
+}
 function seriesFor(tf){
   const unit=TFS.find(x=>x[0]===tf)[1]*M1_MS;
   const all=m1.concat(cur?[cur]:[]);
@@ -446,35 +426,50 @@ function seriesFor(tf){
   return out.slice(-42);
 }
 
-/* ---------- 账户（owner 目标插槽 · 冻结边界） ---------- */
+/* ---------- 账户与委托 ---------- */
 const account={
   wallet_units:9847120, position_units:350, entry_ticks:9987,
   reserved_units:120000, margin_ratio_bp:3240, state:"NORMAL",
-  active_orders:[{order_id:"o-1042",side:"SELL",price_ticks:10045,quantity_units:200}],
-  qty_max:1000
+  qty_max:1000, orders_max:8
 };
+const resting=[];   // 限价挂单 {id,side,price_ticks,qty,t}
+let orderSeq=1100;
 function unrealizedTicks(){return account.position_units*(price-account.entry_ticks)}
 function equityUnits(){return account.wallet_units+unrealizedTicks()}
 
-/* ---------- 决策时点（协议冻结：每 8s 一个动作机会） ---------- */
-const win={id:17,total:60,wall:8.0,left:8.0,inputSeq:42};
-let state="active", stateFlags={}, cdTimer=null, mktTimer=null;
+/* ---------- 操作回报 ---------- */
+const returns=[];
+function pushReturn(kind,action,note,detailHtml){
+  const time=fmtClock(SESSION_T0+clockMin*M1_MS);
+  returns.unshift({time,action,kind,note,detailHtml});
+  if(returns.length>30)returns.pop();
+  renderReturns(0);
+}
+function renderReturns(sel){
+  const KIND={accepted:["已成交","st-ok"],rejected:["已拒绝","st-rej"],open:["委托中","st-open"],
+    canceled:["已撤单","st-info"],info:["记录","st-info"]};
+  const body=$("returns-body");
+  body.innerHTML=returns.map((r,i)=>{
+    const [label,cls]=KIND[r.kind]||[r.kind,""];
+    return `<tr class="${i===sel?"sel":""}" data-idx="${i}"><td>${r.time}</td><td>${r.action}</td><td class="${cls}">${label}</td><td style="color:var(--faint)">${r.note}</td></tr>`;
+  }).join("")||'<tr><td colspan="4" style="color:var(--faint)">暂无操作</td></tr>';
+  body.querySelectorAll("tr[data-idx]").forEach(tr=>tr.onclick=()=>{
+    const r=returns[+tr.dataset.idx];
+    $("return-detail").innerHTML=r.detailHtml||"（无更多信息）";
+    renderReturns(+tr.dataset.idx);
+  });
+}
 
+/* ---------- 渲染 ---------- */
 const el={
-  select:$("state-select"),stageBadge:$("stage-badge"),stageMeta:$("stage-meta"),sched:$("schedule-meta"),
-  bid:$("q-bid"),ask:$("q-ask"),bidSz:$("q-bid-sz"),askSz:$("q-ask-sz"),last:$("q-last"),spread:$("q-spread"),clock:$("q-clock"),
-  depth:$("depth"),acc:$("account-kv"),orders:$("orders-list"),ordersCount:$("orders-count"),
-  cdNum:$("cd-num"),cdFill:$("cd-fill"),cdRemain:$("cd-remain"),slot:$("win-slot"),
-  wbody:$("window-body"),wlocked:$("window-locked"),hint:$("submit-hint"),
-  returnsBody:$("returns-body"),detail:$("return-detail"),tapeBody:$("tape-body"),
-  qty:$("qty"),full:$("fullcard-host"),overlay:$("conn-overlay"),conn:$("conn"),
-  kEmpty:$("kline-empty")
+  bid:$("q-bid"),ask:$("q-ask"),bidSz:$("q-bid-sz"),askSz:$("q-ask-sz"),last:$("q-last"),
+  spread:$("q-spread"),range:$("q-range"),clock:$("q-clock"),depth:$("depth"),
+  acc:$("account-kv"),orders:$("orders-list"),ordersCount:$("orders-count"),
+  qty:$("qty"),px:$("px"),hint:$("submit-hint"),wlocked:$("window-locked")
 };
-
-/* ---------- 渲染：行情 / 深度 / 成交 ---------- */
 function renderQuote(){
-  const nowMs=SESSION_T0+clockMin*M1_MS;
-  el.clock.textContent=fmtClock(nowMs);
+  $("q-clock").textContent=fmtClock(SESSION_T0+clockMin*M1_MS);
+  $("q-range").textContent=fmtP(lo24)+"~"+fmtP(hi24);
   if(bidTicks===null){
     el.bid.textContent="—";el.ask.textContent="—";el.last.textContent="—";el.spread.textContent="—";
     el.bidSz.textContent="—";el.askSz.textContent="—";
@@ -489,19 +484,21 @@ function renderQuote(){
   html+='<div class="sep">—— 价差 '+fmtP(askTicks-bidTicks)+' ——</div>';
   for(let i=0;i<DEPTH_N;i++)html+=depthRow(asks[i],"ask");
   el.depth.innerHTML=html;
+  el.depth.querySelectorAll(".row.bid").forEach((r,i)=>r.onclick=()=>fillPrice(bids[DEPTH_N-1-i].price_ticks));
+  el.depth.querySelectorAll(".row.ask").forEach((r,i)=>r.onclick=()=>fillPrice(asks[i].price_ticks));
+  renderButtonPx();
 }
 function depthRow(l,cls){
   if(!l)return"";
   const w=Math.min(100,Math.round(l.quantity_units/6));
   return `<div class="row ${cls}"><span>${fmtP(l.price_ticks)}</span><span>${fmtQ(l.quantity_units)}</span><span style="color:var(--faint)">${l.order_count}</span><i class="bar" style="width:${w}%"></i></div>`;
 }
+function fillPrice(t){setOrderType("limit");el.px.value=fmtP(t)}
 function renderTape(){
-  const rows=tape.slice(0,16).map(t=>
-    `<tr><td>${fmtClock(t.t)}</td><td class="${t.taker_side==="buy"?"up":"down"}">${fmtP(t.price_ticks)}</td><td>${fmtQ(t.quantity_units)}</td><td class="${t.taker_side==="buy"?"up":"down"}">${t.taker_side==="buy"?"B 买":"S 卖"}</td></tr>`);
-  el.tapeBody.innerHTML=rows.join("")||'<tr><td colspan="4" style="color:var(--faint);text-align:left">尚无公开成交</td></tr>';
+  $("tape-body").innerHTML=tape.slice(0,16).map(t=>
+    `<tr><td>${fmtClock(t.t)}</td><td class="${t.taker_side==="buy"?"up":"down"}">${fmtP(t.price_ticks)}</td><td>${fmtQ(t.quantity_units)}</td><td class="${t.taker_side==="buy"?"up":"down"}">${t.taker_side==="buy"?"B 买":"S 卖"}</td></tr>`).join("")
+    ||'<tr><td colspan="4" style="color:var(--faint);text-align:left">尚无公开成交</td></tr>';
 }
-
-/* ---------- 渲染：账户 / 挂单 ---------- */
 function renderAccount(){
   const un=unrealizedTicks(),cls=un>=0?"up":"down";
   const rows=[
@@ -512,53 +509,33 @@ function renderAccount(){
     ["占用保证金",fmtM(account.reserved_units)],
     ["保证金比率",`<span class="num">${(account.margin_ratio_bp/100).toFixed(2)}%</span>（${account.margin_ratio_bp}bp）`],
     ["账户状态",`<span class="num">${account.state}</span>`],
+    ["预估强平价",`<span class="num">${fmtP(account.position_units>=0?Math.floor(account.entry_ticks*0.90):Math.ceil(account.entry_ticks*1.10))}</span>`],
   ];
   el.acc.innerHTML=rows.map(r=>`<div class="kv"><span class="k">${r[0]}</span><span class="num">${r[1]}</span></div>`).join("");
-  el.ordersCount.textContent=`${account.active_orders.length}/8`;
-  el.orders.innerHTML=account.active_orders.map(o=>
-    `<div class="order-row"><span><span class="${o.side==="BUY"?"side-buy":"side-sell"}">${o.side==="BUY"?"买入":"卖出"}</span> <span class="num">${fmtQ(o.quantity_units)}</span> @ <span class="num">${fmtP(o.price_ticks)}</span><br><span style="color:var(--faint)" class="num">${o.order_id}</span></span><button data-cancel="${o.order_id}" ${stateFlags.locked?"disabled":""}>撤销</button></div>`).join("")
+  el.ordersCount.textContent=`${resting.length}/${account.orders_max}`;
+  el.orders.innerHTML=resting.map(o=>
+    `<div class="order-row"><span><span class="${o.side==="BUY"?"side-buy":"side-sell"}">${o.side==="BUY"?"买入":"卖出"}</span> <span class="num">${fmtQ(o.qty)}</span> @ <span class="num">${fmtP(o.price_ticks)}</span><br><span style="color:var(--faint)" class="num">${o.id} · 限价</span></span><button data-cancel="${o.id}">撤单</button></div>`).join("")
     ||'<div class="oobs">无挂单</div>';
-  el.orders.querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>submitCancel(b.dataset.cancel));
+  el.orders.querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>cancelOrder(b.dataset.cancel));
+}
+function renderButtonPx(){
+  if(orderType==="market"){
+    $("buy-px").textContent=askTicks!==null?("市价 ≈ "+fmtP(askTicks)):"—";
+    $("sell-px").textContent=bidTicks!==null?("市价 ≈ "+fmtP(bidTicks)):"—";
+  }else{
+    $("buy-px").textContent="限价 "+(el.px.value||"—");
+    $("sell-px").textContent="限价 "+(el.px.value||"—");
+  }
 }
 
-/* ---------- 操作回报（委托回报表） ---------- */
-const returns=[];
-function pushReturn(kind,action,note,detailHtml){
-  const time=fmtClock(SESSION_T0+clockMin*M1_MS);
-  returns.unshift({time,action,kind,note,detailHtml});
-  if(returns.length>30)returns.pop();
-  renderReturns(0);
-}
-function renderReturns(sel){
-  el.returnsBody.innerHTML=returns.map((r,i)=>
-    `<tr class="${i===sel?"sel":""}" data-idx="${i}"><td>${r.time}</td><td>${r.action}</td><td class="st-${r.kind}">${r.kind==="accepted"?"成功":r.kind==="rejected"?"已拒绝":"已记录"}</td><td style="color:var(--faint)">${r.note}</td></tr>`).join("")
-    ||'<tr><td colspan="4" style="color:var(--faint)">暂无操作</td></tr>';
-  el.returnsBody.querySelectorAll("tr[data-idx]").forEach(tr=>tr.onclick=()=>{
-    const r=returns[+tr.dataset.idx];
-    el.detail.innerHTML=r.detailHtml||"（无更多信息）";
-    renderReturns(+tr.dataset.idx);
-  });
-}
-
-/* ---------- 提交倒计时渲染 ---------- */
-function renderCountdown(){
-  const r=Math.max(0,win.left),ratio=r/win.wall;
-  el.cdNum.textContent=r.toFixed(1);
-  el.cdFill.style.width=(ratio*100)+"%";
-  el.cdRemain.textContent=r.toFixed(1)+"s";
-  el.slot.textContent=`${win.id}/${win.total}`;
-  el.cdNum.className="num "+(r<=2?"crit":r<=4?"warn":"");
-  el.cdFill.className=r<=2?"crit":r<=4?"warn":"";
-}
-
-/* ---------- K 线（普通蜡烛；最新一根实时更新） ---------- */
+/* ---------- K 线 ---------- */
 const cvs=$("kline"),ctx=cvs.getContext("2d");
 function drawKline(){
   const W=cvs.width,H=cvs.height;
   ctx.clearRect(0,0,W,H);
   const all=seriesFor(tfKey);
-  if(all.length===0){el.kEmpty.style.display="block";return}
-  el.kEmpty.style.display="none";
+  if(all.length===0){$("kline-empty").style.display="block";return}
+  $("kline-empty").style.display="none";
   const padL=8,padR=8,padT=12,padB=30,ch=H-padT-padB;
   let hi=-1e9,lo=1e9,maxV=0;
   all.forEach(b=>{hi=Math.max(hi,b.h);lo=Math.min(lo,b.l);maxV=Math.max(maxV,b.v)});
@@ -567,7 +544,7 @@ function drawKline(){
   ctx.strokeStyle="#1d2430";ctx.fillStyle="#5b6676";ctx.font="10px ui-monospace,monospace";
   for(let i=0;i<=4;i++){const py=padT+i*ch/4;ctx.beginPath();ctx.moveTo(padL,py);ctx.lineTo(W-padR,py);ctx.stroke();
     ctx.fillText(fmtP(hi-(hi-lo)*i/4),W-52,py-3);}
-  const plotW=W-padL-padR-54,bw=plotW/all.length,body=Math.max(3,bw*.55);
+  const bw=(W-padL-padR)/all.length,body=Math.max(3,bw*.55);
   all.forEach((b,i)=>{
     const x=padL+bw*i+bw/2,up=b.c>=b.o,col=up?"#3fb970":"#e5534b";
     ctx.strokeStyle=col;ctx.fillStyle=col;
@@ -578,11 +555,9 @@ function drawKline(){
     ctx.fillStyle=col+"44";ctx.fillRect(x-body/2,H-padB-vh,body,vh);
     b._x=x;b._bw=bw;
   });
-  // 时间轴
   ctx.fillStyle="#5b6676";
   const step=Math.max(1,Math.floor(all.length/4));
-  for(let i=0;i<all.length;i+=step){ctx.fillText(fmtClock(all[i].t).slice(0,5),padL+bw*i, H-8);}
-  // 最新价虚线
+  for(let i=0;i<all.length;i+=step){ctx.fillText(fmtClock(all[i].t).slice(0,5),padL+bw*i,H-8);}
   if(lastTicks!==null){ctx.strokeStyle="#4c8dffaa";ctx.setLineDash([4,4]);
     ctx.beginPath();ctx.moveTo(padL,y(lastTicks));ctx.lineTo(W-padR,y(lastTicks));ctx.stroke();ctx.setLineDash([]);}
 }
@@ -600,7 +575,7 @@ cvs.addEventListener("mousemove",ev=>{
 cvs.addEventListener("mouseleave",()=>$("kline-tip").style.display="none");
 
 /* 周期页签 */
-(function(){
+function initTfTabs(){
   const host=$("tf-tabs");
   for(const [label] of TFS){
     const b=document.createElement("button");
@@ -609,370 +584,209 @@ cvs.addEventListener("mouseleave",()=>$("kline-tip").style.display="none");
     host.appendChild(b);
   }
   renderTfTabs();
-})();
+}
 function renderTfTabs(){
   document.querySelectorAll("#tf-tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tf===tfKey));
 }
 
-/* ---------- 提交动作（演示服务端裁决时序） ---------- */
-function canonicalSubmit(side){
+/* ---------- 下单：市价 / 限价 ---------- */
+let orderType="market";
+function setOrderType(t){
+  orderType=t;
+  document.querySelectorAll("#type-tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
+  $("price-row").style.display=t==="limit"?"flex":"none";
+  renderButtonPx();
+}
+function initTypeTabs(){
+  const host=$("type-tabs");
+  for(const t of [["market","市价"],["limit","限价"]]){
+    const b=document.createElement("button");
+    b.textContent=t[1];b.dataset.t=t[0];
+    b.onclick=()=>setOrderType(t[0]);
+    host.appendChild(b);
+  }
+  setOrderType("market");
+}
+function hintErr(msg){$("submit-hint").textContent=msg;$("submit-hint").className="err"}
+function hintOk(msg){$("submit-hint").textContent=msg;$("submit-hint").className="ok"}
+function submitOrder(side){
   const qty=Math.round(parseFloat(el.qty.value||"0")*MULT);
-  if(!(qty>0)){hintErr("数量必须大于 0（INVALID_QTY · 本地预检，不占用提交机会）");return}
-  if(qty>account.qty_max){hintErr(`单笔数量超过上限 ${fmtQ(account.qty_max)}（INVALID_QTY · 本地预检）`);return}
+  if(!(qty>0)){hintErr("数量必须大于 0（INVALID_QTY · 本地预检）");return}
+  if(qty>account.qty_max){hintErr(`单笔数量超过上限 ${fmtQ(account.qty_max)}（INVALID_QTY）`);return}
+  if(resting.length>=account.orders_max && orderType==="limit"){hintErr(`挂单数量达到上限 ${account.orders_max}（ORDER_LIMIT）`);return}
   if(bidTicks===null){hintErr("暂无行情报价，暂不能下单（MARKET_WARMING）");return}
-  transitionSubmitting(side,qty);
-}
-function submitCancel(orderId){
-  if(stateFlags.locked)return;
-  transitionSubmitting("CANCEL-"+orderId,null);
-}
-function hintErr(msg){el.hint.textContent=msg;el.hint.className="err"}
-function setBtn(btn,txt,cls){btn.textContent=txt;btn.className=cls}
-function transitionSubmitting(side,qty){
-  stateFlags.locked=true;
-  const btns=[$("btn-buy"),$("btn-sell"),$("btn-noaction")];
-  btns.forEach(x=>{x.disabled=true;x.classList.add("btn-state-submitting")});
-  if(side==="BUY")setBtn($("btn-buy"),"提交中…","btn-buy btn-state-submitting");
-  else if(side==="SELL")setBtn($("btn-sell"),"提交中…","btn-sell btn-state-submitting");
-  else if(String(side).startsWith("CANCEL"))setBtn($("btn-noaction"),"撤单提交中…","btn-noaction btn-state-submitting");
-  else setBtn($("btn-noaction"),"记录中…","btn-noaction btn-state-submitting");
-  el.hint.textContent="已提交，等待服务端确认…";el.hint.className="";
-  setTimeout(()=>decide(side,qty),450);
-}
-function btnReset(){
-  [$("btn-buy"),$("btn-sell"),$("btn-noaction")].forEach(x=>{x.disabled=false;x.classList.remove("btn-state-submitting")});
-  setBtn($("btn-buy"),"买入","btn-buy");setBtn($("btn-sell"),"卖出","btn-sell");
-  setBtn($("btn-noaction"),"本时点不操作","btn-noaction");
-}
-function locked(msg){el.wlocked.style.display="block";el.wlocked.textContent=msg;el.wbody.style.display="none"}
-function unlock(){el.wlocked.style.display="none";el.wbody.style.display="";el.hint.textContent="";el.hint.className=""}
-
-function decide(side,qty){
-  const seq=win.inputSeq++,w="w-"+String(win.id).padStart(3,"0");
-  const intent="itn-"+Math.floor(rnd()*9e5+1e5);
-  const detail=(extra)=>`input_seq <b>${seq}</b> · window_id <b>${w}</b><br>intent_id ${intent} · client_request_id crq-${seq}${extra}`;
-  if(state==="risk-rejected"&&(side==="BUY"||side==="SELL")){
-    btnReset();
-    pushReturn("rejected",side==="BUY"?"买入":"卖出",`RISK_REJECTED · ${fmtQ(qty||100)}`,
-      detail(`<br>action PLACE_ORDER·${side==="BUY"?"BUY":"SELL"} qty ${fmtQ(qty||100)}（市价）<br>reason_code <b>RISK_REJECTED</b> · 保证金不足 · 零订单副作用<br>本时点提交机会已被该次拒绝裁决占用（DQ-A 待冻结）`));
-    locked("本次委托被风控拒绝：保证金不足。本时点提交机会已消耗（DQ-A 待冻结：拒绝是否释放机会，见设计说明）。");
-    return;
+  if(orderType==="market"){
+    const fill=side==="BUY"?askTicks:bidTicks;
+    applyFill(side,qty,fill);
+    pushReturn("accepted",side==="BUY"?"市价买入":"市价卖出",`${fmtQ(qty)} @ ${fmtP(fill)}`,
+      `action PLACE_ORDER·${side} qty ${fmtQ(qty)}（市价）<br>成交 ${fmtP(fill)} · event_ids [ORD/TRD/ACC]`);
+    hintOk(`已成交：${side==="BUY"?"买入":"卖出"} ${fmtQ(qty)} @ ${fmtP(fill)}`);
+  }else{
+    const px=Math.round(parseFloat(el.px.value||"0")*100);
+    if(!(px>0)){hintErr("限价价格必须大于 0（INVALID_PRICE · 本地预检）");return}
+    // 限价立即穿越按市价即时成交（对齐真实撮合语义）
+    if((side==="BUY"&&px>=askTicks)||(side==="SELL"&&px<=bidTicks)){
+      applyFill(side,qty,px);
+      pushReturn("accepted",side==="BUY"?"限价买入":"限价卖出",`${fmtQ(qty)} @ ${fmtP(px)}`,
+        `action PLACE_ORDER·${side} LIMIT ${fmtP(px)} qty ${fmtQ(qty)}<br>委托即穿越盘口 → 即时成交 ${fmtP(px)}`);
+      hintOk(`已成交：${side==="BUY"?"买入":"卖出"} ${fmtQ(qty)} @ ${fmtP(px)}`);
+    }else{
+      orderSeq+=1;
+      resting.push({id:"o-"+orderSeq,side,price_ticks:px,qty,t:SESSION_T0+clockMin*M1_MS});
+      pushReturn("open",side==="BUY"?"限价买入委托":"限价卖出委托",`${fmtQ(qty)} @ ${fmtP(px)}`,
+        `action PLACE_ORDER·${side} LIMIT ${fmtP(px)} qty ${fmtQ(qty)}<br>订单 ${"o-"+orderSeq} 已进入撮合队列，等待价格触及`);
+      hintOk("限价委托已提交，可在「当前挂单」查看或撤单。");
+    }
   }
-  if(state==="late"){
-    btnReset();
-    pushReturn("rejected","委托",`WINDOW_CLOSED · 迟到`,detail(`<br>reason_code <b>WINDOW_CLOSED</b> · received ≥ deadline · 无宽限<br>不推进逻辑时间 · 不产生订单`));
-    locked("本时点已关闭：这次操作被拒绝，服务端已按“不操作”记录。请等待下一个时点。");
-    return;
-  }
-  if(state==="duplicate"){
-    btnReset();
-    pushReturn("rejected","委托（重复）",`DUPLICATE_INPUT`,detail(`<br>reason_code <b>DUPLICATE_INPUT</b> · 同一时点重复请求返回原结果`));
-    locked("本时点的提交机会已使用过；重复提交被服务端稳定拒绝。");
-    return;
-  }
-  if(side==="NO_ACTION"){
-    btnReset();
-    pushReturn("info","不操作",`NO_ACTION · 时点 ${w}`,detail(`<br>显式“不操作”已写入记录链`));
-    locked("已记录本时点不操作。时点结束后行情继续推进。");
-    return;
-  }
-  if(String(side).startsWith("CANCEL")){
-    const oid=side.split("-")[1];
-    account.active_orders=account.active_orders.filter(o=>o.order_id!==oid);
-    btnReset();
-    pushReturn("accepted","撤单",oid,detail(`<br>action CANCEL_ORDER(order_id=${oid}) · 状态成功`));
-    locked("撤单已成交确认。本时点提交机会已消耗。");
-    renderAccount();return;
-  }
-  // 市价单成功
-  const fillTicks=side==="BUY"?askTicks:bidTicks;
-  const q=qty||100;
-  account.position_units+=side==="BUY"?q:-q;
-  account.entry_ticks=fillTicks||account.entry_ticks;
-  btnReset();
-  pushReturn("accepted",side==="BUY"?"买入":"卖出",`${fmtQ(q)} @ ${fmtP(fillTicks)}`,
-    detail(`<br>action PLACE_ORDER·${side==="BUY"?"BUY":"SELL"} qty ${fmtQ(q)}（市价）<br>成交 ${fmtP(fillTicks)} · event_ids [ORD/TRD/ACC] · snapshot ${(9000+seq)}`));
-  locked(`已成交：${side==="BUY"?"买入":"卖出"} ${fmtQ(q)} @ ${fmtP(fillTicks)}。本时点提交机会已使用，下一时点自动恢复。`);
   renderAccount();
 }
+function applyFill(side,qty,fillTicks){
+  account.position_units+=side==="BUY"?qty:-qty;
+  account.entry_ticks=fillTicks;
+}
+function cancelOrder(id){
+  const o=resting.find(x=>x.id===id);
+  if(!o)return;
+  resting.splice(resting.indexOf(o),1);
+  pushReturn("canceled",o.side==="BUY"?"撤买":"撤卖",`${fmtQ(o.qty)} @ ${fmtP(o.price_ticks)}`,
+    `action CANCEL_ORDER(order_id=${o.id})<br>限价委托 ${fmtQ(o.qty)} @ ${fmtP(o.price_ticks)} 已撤销 · 零成交`);
+  renderAccount();
+}
+function matchResting(){
+  let changed=false;
+  for(let i=resting.length-1;i>=0;i--){
+    const o=resting[i];
+    if((o.side==="BUY"&&price<=o.price_ticks)||(o.side==="SELL"&&price>=o.price_ticks)){
+      applyFill(o.side,o.qty,o.price_ticks);
+      pushReturn("accepted",o.side==="BUY"?"限价买入":"限价卖出",`${fmtQ(o.qty)} @ ${fmtP(o.price_ticks)}`,
+        `订单 ${o.id} · 限价 ${fmtP(o.price_ticks)} 被市场触及<br>成交 ${fmtQ(o.qty)} @ ${fmtP(o.price_ticks)} · event_ids [ORD/TRD/ACC]`);
+      resting.splice(i,1);changed=true;
+    }
+  }
+  if(changed)renderAccount();
+}
 
-/* ---------- 倒计时 ---------- */
-function startCountdown(){
-  stopCountdown();
-  cdTimer=setInterval(()=>{
-    if(state!=="active"&&state!=="client-invalid")return;
-    win.left=Math.round((win.left-0.1)*10)/10;
-    renderCountdown();
-    if(win.left<=0){stopCountdown();onWindowTimeout();}
-  },100);
-}
-function stopCountdown(){if(cdTimer){clearInterval(cdTimer);cdTimer=null}}
-function onWindowTimeout(){
-  pushReturn("info","不操作（到点）",`NO_ACTION · 自动记录`,`window_id <b>w-${String(win.id).padStart(3,"0")}</b><br>时点到期未操作，服务端自动记录 NO_ACTION（与显式不操作等效，来源标记不同）`);
-  locked("本时点结束：未操作已按“不操作”记录，市场继续推进。");
-  $("btn-buy").disabled=$("btn-sell").disabled=$("btn-noaction").disabled=true;
-  setTimeout(()=>{if(state==="timeout"||state==="active")advanceWindow();},2200);
-  state="timeout";
-}
-function advanceWindow(){
-  win.id=Math.min(win.total,win.id+1);win.left=win.wall;
-  unlock();
-  if(state!=="active")setState("active");else render();
-}
-
-/* ---------- 状态渲染入口 ---------- */
+/* ---------- 状态（评审切换器） ---------- */
+let state="trading", stateFlags={};
 function render(){
-  renderQuote();renderTape();renderAccount();renderCountdown();drawKline();renderReturns();
+  renderQuote();renderTape();renderAccount();drawKline();renderReturns();
   $("state-select").value=state;
-  el.full.innerHTML="";
-  el.overlay.classList.remove("show");
-  unlock();btnReset();stateFlags={};
+  $("fullcard-host").innerHTML="";
+  $("conn-overlay").classList.remove("show");
+  $("wlocked").style.display="none";$("submit-hint").textContent="";
   ["card-quote","card-account","card-orders","card-kline","card-tape","card-trade","card-returns"]
     .forEach(id=>$(id).style.display="");
-
-  if(state==="gate-blocked")return renderGateBlocked();
+  if(state!=="warming"){$("btn-buy").disabled=false;$("btn-sell").disabled=false;}
   if(state==="warming")return renderWarming();
-  if(state==="submitted"||state==="risk-rejected")return renderLockedDemo(state);
-  if(state==="duplicate")return demoDuplicate();
-  if(state==="late")return demoLate();
-  if(state==="timeout")return renderTimeout();
+  if(state==="risk-rejected")return renderRiskRejected();
   if(state==="disconnected")return renderDisconnected();
   if(state==="refresh-resume")return renderRefreshResume();
-  if(state==="abort-confirm")return renderAbortConfirm();
-  if(state==="tech-abort")return renderTechAbort();
-  if(state==="completed")return renderCompleted();
-  if(state==="daily-break")return renderDailyBreak();
-  if(state==="waiting")return renderWaiting();
-  if(state==="client-invalid"){
-    startCountdown();
-    el.qty.value="2.500";
-    hintErr("预检示例：数量 2.500 超过单笔上限 1.000 —— INVALID_QTY（本地拦截，不占用提交机会、不发请求，改小数量后可直接重试）");
-    return;
-  }
-  startCountdown();
+  if(state==="exit-confirm")return renderExitConfirm();
+  if(state==="exp-gate")return renderExpGate();
+  if(state==="exp-break")return renderExpBreak();
+  if(state==="exp-completed")return renderExpCompleted();
 }
-
-/* ---------- 各状态 ---------- */
-function renderGateBlocked(){
-  stopCountdown();el.cdNum.textContent="—";el.cdFill.style.width="0%";
-  stage("preview","PREVIEW","web-preview · 门禁校验失败");
-  el.wbody.style.display="none";
-  locked("请求进入训练阶段被拒绝：preview 门禁未通过（fail closed）。缺少证据：E2 browser preview bundle。");
-  pushReturn("rejected","进入训练","PREVIEW_GATE_NOT_PASSED","stage=training 请求 · reason_code <b>PREVIEW_GATE_NOT_PASSED</b><br>缺少 gate 证据：AC-402 / AC-406 通过记录");
-  el.full.innerHTML=`<section class="card full-card">
-    <h3>阶段门控（US-403 · FR-403 · 生命周期 PREVIEW_BLOCKED）</h3>
-    <ul class="gate-list">
-      <li><span class="st" style="color:var(--red)">✗</span><span><b>E2 Web preview</b>：页面可打开 ✗ · 行情/K 线/账户 ✓ · 按钮状态 ✓ · 时点门控 ✗（超时路径未验收）</span></li>
-      <li><span class="st" style="color:var(--green)">✓</span><span>E1 owner observation / K 线周期语义、协议版本、动作空间与隐私边界已冻结</span></li>
-      <li><span class="st" style="color:var(--red)">✗</span><span><b>训练入口</b>：fail closed —— 6 个训练场景在 E2 通过前不可开始</span></li>
-      <li><span class="st" style="color:var(--red)">✗</span><span><b>正式入口</b>：不可达 —— 仅在训练完成且 assignment/协议版本匹配后签发</span></li>
-    </ul>
-    <p style="color:var(--dim);font-size:13px;margin-bottom:0">交互要点：页面在门禁未通过时仍可打开（便于排查），但阶段入口拒绝必须可读——说明缺少哪条 gate 证据，而不是笼统报错。</p>
-  </section>`;
+function stageConn(){
+  $("conn").innerHTML=state==="disconnected"?"● 连接中断":"● 已连接";
+  $("conn").style.color=state==="disconnected"?"var(--red)":"var(--dim)";
 }
-
-function renderWaiting(){
-  win.left=win.wall;
-  stage("training","TRAINING","training · 场景 3/6 · 等待开场");
-  el.cdNum.textContent="—";el.cdFill.style.width="0%";stopCountdown();
-  pushReturn("info","等待开场","assignment 已签发","会话建立后等待态：<br>assignment <b>blk-t03</b> 已签发 · 等待首个决策时点开放");
-  el.hint.textContent="时点未开放：下单按钮保持禁用（UX-402）。";
-  $("btn-buy").disabled=$("btn-sell").disabled=$("btn-noaction").disabled=true;
-  el.full.innerHTML=`<section class="card full-card">
-    <h3>等待开场</h3>
-    <p style="color:var(--dim)">会话已绑定分配、协议与时点合同，市场尚未进入本场景第一个可交易时点。
-    页面只读展示行情；「开始」由服务端时点调度触发——正式阶段不提供暂停/单步/改参（FR-302）。</p>
-    <div class="day-strip">
-      <span class="day-chip done">第 1 天 6/6</span><span class="day-chip done">第 2 天 6/6</span>
-      <span class="day-chip today">第 3 天 · 场景 13–18</span><span class="day-chip">第 4 天 · 场景 19–24</span>
-    </div>
-  </section>`;
-}
-
 function renderWarming(){
-  stage("training","TRAINING","training · 场景 1/6 · 首个时点尚无成交");
   bidTicks=null;askTicks=null;lastTicks=null;bids=[];asks=[];tape=[];
-  m1=[];cur=null;
-  renderQuote();renderTape();drawKline();
-  $("btn-buy").disabled=$("btn-sell").disabled=$("btn-noaction").disabled=true;
-  el.hint.textContent="暂无行情报价：下单按钮禁用（AC-401 边界场景）。";
-  pushReturn("info","等待行情","market warming","时点已开放，但公开成交 tape 尚无报价：<br>页面显示等待行情空态，不伪造价格");
-  el.full.innerHTML=`<section class="card full-card">
-    <h3>等待行情空态（US-401 · FR-401）</h3>
-    <p style="color:var(--dim)">场景开头可能没有成交与报价。合同要求：不显示占位价格、不绘制占位 K 线；
-    报价卡与盘口显示「等待首笔公开成交」，下单按钮禁用；倒计时照常——时点到期仍按“不操作”记录。
-    一旦出现报价，行情卡自动点亮、按钮恢复（空态→可用为无闪烁单次切换）。</p>
-  </section>`;
+  renderQuote();renderTape();
+  $("btn-buy").disabled=$("btn-sell").disabled=true;
+  hintErr("暂无行情报价：下单暂不可用（真实市场开盘前同样如此）");
 }
-
-function renderLockedDemo(kind){
-  stopCountdown();
-  if(kind==="submitted"){
-    pushReturn("accepted","买入","0.100 @ 99.96",`input_seq <b>41</b> · window_id <b>w-016</b><br>action PLACE_ORDER·BUY qty 0.100（市价）· 成交 99.96<br>event_ids [ORD-83210, TRD-51007, ACC-20448] · snapshot 9041`);
-    locked("已成交。本时点提交机会已使用；刷新或断线不会重复提交（NFR-402）。下一时点自动恢复。");
-    setTimeout(()=>{if(state==="submitted")advanceWindow();},4000);
-  }else{
-    pushReturn("rejected","买入","RISK_REJECTED · 1.000",`input_seq <b>41</b> · window_id <b>w-016</b><br>action PLACE_ORDER·BUY qty 1.000（市价）<br>reason_code <b>RISK_REJECTED</b> · 保证金不足 · 零订单副作用`);
-    locked("委托被风控拒绝。本时点提交机会已消耗（DQ-A 待冻结：拒绝是否释放机会）。");
-    setTimeout(()=>{if(state==="risk-rejected")advanceWindow();},6000);
-  }
-  $("btn-buy").disabled=$("btn-sell").disabled=$("btn-noaction").disabled=true;
+function renderRiskRejected(){
+  pushReturn("rejected","市价买入","RISK_REJECTED · 1.000",
+    `action PLACE_ORDER·BUY qty 1.000（市价）<br>reason_code <b>RISK_REJECTED</b> · 保证金不足<br>拒绝事件 [REJ-11032] · 零订单副作用`);
+  hintErr("委托被风控拒绝：保证金不足。可降低数量或减仓后重试。");
 }
-
-function demoDuplicate(){
-  pushReturn("rejected","委托（重复）","DUPLICATE_INPUT",`input_seq <b>41</b>（重复）· window_id <b>w-016</b><br>reason_code <b>DUPLICATE_INPUT</b><br>同一时点重复请求返回原结果 · 无新副作用`);
-  locked("本时点提交机会已使用；按钮在提交后即锁定，此处展示绕过前端直接重发时服务端的稳定拒绝。");
-  $("btn-buy").disabled=$("btn-sell").disabled=$("btn-noaction").disabled=true;
-}
-
-function demoLate(){
-  pushReturn("rejected","委托","WINDOW_CLOSED · 迟到",`input_seq <b>42</b> · window_id <b>w-017</b><br>reason_code <b>WINDOW_CLOSED</b><br>received ≥ deadline · 无宽限 · 不产生订单`);
-  locked("本时点已关闭（到点即收口，无隐藏宽限）：迟到操作被稳定拒绝，时点已按“不操作”记录。");
-  $("btn-buy").disabled=$("btn-sell").disabled=$("btn-noaction").disabled=true;
-}
-
-function renderTimeout(){
-  stopCountdown();win.left=0;renderCountdown();
-  pushReturn("info","不操作（到点）","NO_ACTION · 自动记录",`window_id <b>w-017</b> · 时点到期未操作<br>服务端自动记录 NO_ACTION · 逻辑时间照常推进`);
-  locked("时点结束：未操作已按“不操作”记录，不由任何人代为操作。下一时点由调度器推进。");
-  $("btn-buy").disabled=$("btn-sell").disabled=$("btn-noaction").disabled=true;
-  setTimeout(()=>{if(state==="timeout")advanceWindow();},3000);
-}
-
 function renderDisconnected(){
-  stage("formal","FORMAL","formal · 场景 14/24 · 连接中断");
-  el.overlay.classList.add("show");
+  stageConn();
+  $("conn-overlay").classList.add("show");
   let s=3;$("reconnect-sec").textContent="已断开 3s";
   stateFlags.reconn=setInterval(()=>{s++;$("reconnect-sec").textContent=`已断开 ${s}s`;},1000);
   $("reconnect-btn").onclick=()=>{clearInterval(stateFlags.reconn);setState("refresh-resume");};
 }
-
 function renderRefreshResume(){
-  stage("formal","FORMAL","formal · 场景 14/24 · 会话已恢复");
-  pushReturn("accepted","会话恢复","无重复提交",`刷新恢复：GET /api/v1/h2/owner/session → status<br>input_seq <b>41</b> 已在服务端提交（w-016）<br>客户端未重发 · 无重复订单 · 行情/账户按服务端快照重绘`);
-  locked("页面刷新后从服务端重建视图：已使用的提交机会保持已消耗（NFR-402 · IR-301 resume-status）。");
-  $("btn-buy").disabled=$("btn-sell").disabled=$("btn-noaction").disabled=true;
-  setTimeout(()=>{if(state==="refresh-resume")advanceWindow();},4000);
+  stageConn();
+  pushReturn("accepted","会话恢复","无重复委托",
+    `刷新恢复：GET session → status<br>挂单与成交以服务端快照重建<br>客户端未重发任何委托（幂等键 client_request_id）`);
+  hintOk("会话已恢复：挂单、仓位与回报已从服务端重建。");
 }
-
-function renderAbortConfirm(){
-  stage("formal","FORMAL","formal · 场景 14/24 · 等待确认");
+function renderExitConfirm(){
   openModal(`
-    <h2>中止当前会话？</h2>
-    <p>中止按钮始终可见。中止会写入稳定 reason code 并进入裁决；
-    已完成的正式场景按<b>冻结规则</b>保留或排除——裁决不读取结果字段。</p>
-    <p><label style="color:var(--dim)">中止原因（写入会话记录）</label><br>
-    <select id="abort-reason">
-      <option>OWNER_ABORT · 所有者主动停止（今日不再继续）</option>
-      <option>OWNER_ABORT · 身体不适 / 需要休息</option>
-      <option>OWNER_ABORT · 对界面或任务说明有疑问</option>
-    </select></p>
-    <p style="font-size:12px">注意：正式阶段不提供暂停/单步（FR-302）。中止是唯一可随时使用的退出动作，当前时点会被按“不操作”收口。</p>
-    <div class="row"><button id="abort-cancel">继续交易</button><button class="danger" id="abort-ok">确认中止</button></div>`);
-  $("abort-cancel").onclick=()=>{closeModal();setState("active")};
-  $("abort-ok").onclick=()=>{closeModal();setState("tech-abort");};
+    <h2>退出当前会话？</h2>
+    <p>退出后行情停止，当前挂单将被撤销并记录在回报中；仓位与权益保留在会话存档里。</p>
+    <p style="font-size:12px;color:var(--faint)">若进入「采集模式」（正式 N-of-1 记录），退出语义由实验协议约束：需选择原因并进入裁决流程。</p>
+    <div class="row"><button id="exit-cancel">返回交易</button><button class="danger" id="exit-ok">退出</button></div>`);
+  $("exit-cancel").onclick=()=>{closeModal();setState("trading")};
+  $("exit-ok").onclick=()=>{closeModal();setState("trading");hintOk("（演示）已退出会话。");};
 }
-
-function renderTechAbort(){
-  stage("formal","FORMAL","formal · 技术中止 · adjudication 待定");
-  pushReturn("info","会话中止","TECHNICAL_ABORT",`POST .../abort · reason_code <b>TECHNICAL_ABORT</b><br>完整性校验失败 · 结果字段对裁决不可见<br>会话记录已写入 abort_code 与 artifact 哈希`);
-  el.wbody.style.display="none";locked("会话已技术中止。市场与会话不再推进；补跑裁决只读冻结规则与备用池。");
-  $("btn-buy").disabled=$("btn-sell").disabled=$("btn-noaction").disabled=true;
-  el.full.innerHTML=`<section class="card full-card">
-    <h3>技术中止与备用池补跑（DR-401 · 边界场景 · SC-403）</h3>
+function renderExpGate(){
+  $("fullcard-host").innerHTML=`<section class="card full-card">
+    <h3>［采集模式专用］阶段门控（US-403 · FR-403）</h3>
     <ul class="gate-list">
-      <li><span class="st" style="color:var(--red)">■</span><span><b>TECHNICAL_ABORT</b>：断线/完整性/服务故障命中冻结无效条件；不拼接半局日志。</span></li>
-      <li><span class="st" style="color:var(--green)">→</span><span><b>RERUN_PENDING</b>：仅技术原因且备用池仍有可用项 → 以预签发备用 seed 整局补跑（不是重跑同一 seed）。</span></li>
-      <li><span class="st" style="color:var(--green)">→</span><span>裁决、纳入、排除<b>不读取结果字段</b>；已完成场景按冻结规则保留或排除，全程留审计记录。</span></li>
-      <li><span class="st" style="color:var(--red)">■</span><span>所有者主动中止（OWNER_ABORT）：不自动补跑；当日剩余场景顺延或按冻结规则结束（E4 允许 incomplete-study，不伪造完成）。</span></li>
+      <li><span class="st" style="color:var(--red)">✗</span><span>训练/正式采集入口 fail closed：preview 门禁未通过时拒绝，并列明缺失证据（E2 bundle）。</span></li>
+      <li><span class="st" style="color:var(--dim)">i</span><span>自由模拟终端不涉及本页；只有进入正式 N-of-1 采集时，阶段门控才出现。</span></li>
     </ul>
   </section>`;
 }
-
-function renderCompleted(){
-  stage("formal","FORMAL","formal · 场景 14/24 已完成 · 结果盲");
-  el.cdNum.textContent="—";el.cdFill.style.width="100%";stopCountdown();
-  pushReturn("info","场景完成","60/60 时点收口",`window_id <b>w-060</b> · 场景收口<br>60/60 时点均有操作或“不操作”<br>输入/事件哈希已并入会话记录`);
-  el.wbody.style.display="none";locked("场景完成。结果与参照策略对照在解盲前不可见——完成页只确认会话完整性。");
-  $("btn-buy").disabled=$("btn-sell").disabled=$("btn-noaction").disabled=true;
-  el.full.innerHTML=`<section class="card full-card">
-    <h3>场景完成 · 结果盲（US-403 · AC-403 · SC-404）</h3>
-    <div class="kv"><span class="k">本场景时点收口</span><span class="num">60 操作/不操作 + 0 缺失</span></div>
-    <div class="kv"><span class="k">今日进度</span><span class="num">第 3 场 / 6 场 · 完成 3 场后进入 30 分钟强制休息</span></div>
-    <div class="kv"><span class="k">个人结果</span><span>解盲前隐藏；终局交付为个人描述性报告，不与 AI 样本合并、不外推人群</span></div>
-    <div class="kv"><span class="k">下一场景</span><span>休息倒计时后由服务端签发下一分配（时点从 1/60 重新开始）</span></div>
-    <p style="color:var(--dim);font-size:13px;margin-bottom:0">交互要点：完成页刻意不显示任何权益/收益数字，防止已完成场景的结果影响后续场景决策（结果盲不变量）。</p>
-  </section>`;
-}
-
-function renderDailyBreak(){
-  stage("formal","FORMAL","formal · 今日 3/6 场完成 · 强制休息 30:00");
-  el.cdNum.textContent="30:00";el.cdFill.style.width="0%";stopCountdown();
-  el.wbody.style.display="none";locked("休息中：会话入口关闭，倒计时结束前无法开始第 4 场（Q-303 冻结节奏）。");
-  pushReturn("info","强制休息","每日节奏冻结","每日节奏冻结：4 天 × 6 场，第 3 场后强制休息；<br>所有者中止或缺席按冻结规则顺延/收口");
-  el.full.innerHTML=`<section class="card full-card">
-    <h3>4 天日程（Q-303）</h3>
+function renderExpBreak(){
+  $("fullcard-host").innerHTML=`<section class="card full-card">
+    <h3>［采集模式专用］每日节奏（Q-303）</h3>
     <div class="day-strip">
       <span class="day-chip done">第 1 天 场景 1–6 ✓</span>
       <span class="day-chip done">第 2 天 场景 7–12 ✓</span>
       <span class="day-chip today">第 3 天 场景 13–15 ✓ · 休息中 · 16–18 待开始</span>
       <span class="day-chip">第 4 天 场景 19–24</span>
     </div>
-    <p style="color:var(--dim);font-size:13px;margin-bottom:0">休息不可跳过——页面把冻结节奏显示为硬边界，而不是可协商的提示。</p>
+    <p style="color:var(--dim);font-size:13px;margin-bottom:0">采集模式下：4 天 × 6 场、每场 60 个 8 秒决策时点、第 3 场后强制休息——这些约束只存在于采集模式，自由模拟不使用。</p>
+  </section>`;
+}
+function renderExpCompleted(){
+  $("fullcard-host").innerHTML=`<section class="card full-card">
+    <h3>［采集模式专用］场景完成 · 结果盲（SC-404）</h3>
+    <div class="kv"><span class="k">本场景时点收口</span><span class="num">60 决定 + 0 缺失</span></div>
+    <div class="kv"><span class="k">个人结果</span><span>解盲前隐藏；交付为个人描述性报告，不外推人群</span></div>
+    <p style="color:var(--dim);font-size:13px;margin-bottom:0">采集模式下完成页不显示任何权益/收益数字（结果盲）；自由模拟没有此限制。</p>
   </section>`;
 }
 
-/* ---------- 顶栏 ---------- */
-function stage(kind,cls,text){
-  el.stageBadge.className="badge "+kind;el.stageBadge.textContent=cls;
-  el.stageMeta.textContent=text;
-  el.conn.innerHTML=state==="disconnected"?"● 连接中断":"● 已连接";
-  el.conn.style.color=state==="disconnected"?"var(--red)":"var(--dim)";
-  const phash=kind==="formal"?"formal 态隐藏":"9de2…a071";
-  $("pop-stage").textContent=kind;$("pop-phash").textContent=phash;
+/* ---------- 状态切换器 ---------- */
+const STATES=[
+  ["trading","交易中 · 自由连续交易"],
+  ["warming","等待行情 · 无报价空态"],
+  ["risk-rejected","风控拒单 · RISK_REJECTED"],
+  ["disconnected","断线 · 服务端为准"],
+  ["refresh-resume","刷新恢复"],
+  ["exit-confirm","退出确认"],
+  ["exp-gate","［实验模式］门禁阻断"],
+  ["exp-break","［实验模式］每日节奏"],
+  ["exp-completed","［实验模式］完成 · 结果盲"],
+];
+STATES.forEach(([k,label])=>{const o=document.createElement("option");o.value=k;o.textContent=label;$("state-select").appendChild(o)});
+$("state-select").onchange=()=>setState($("state-select").value);
+function setState(s){
+  if(stateFlags.reconn)clearInterval(stateFlags.reconn);
+  stateFlags={};state=s;render();
 }
-$("session-info-btn").onclick=()=>$("session-pop").classList.toggle("show");
-
-/* ---------- 模态 ---------- */
+$("btn-buy").onclick=()=>submitOrder("BUY");
+$("btn-sell").onclick=()=>submitOrder("SELL");
+$("qty-minus").onclick=()=>{const v=Math.max(1,Math.round(parseFloat(el.qty.value||"0")*MULT)-100);el.qty.value=fmtQ(v)};
+$("qty-plus").onclick=()=>{const v=Math.min(account.qty_max,Math.round(parseFloat(el.qty.value||"0")*MULT)+100);el.qty.value=fmtQ(v)};
+$("px-minus").onclick=()=>{const v=Math.max(1,Math.round(parseFloat(el.px.value||"0")*100)-1);el.px.value=fmtP(v)};
+$("px-plus").onclick=()=>{const v=Math.round(parseFloat(el.px.value||"0")*100)+1;el.px.value=fmtP(v)};
+$("exit-btn").onclick=()=>setState("exit-confirm");
+$("info-btn").onclick=()=>$("info-pop").classList.toggle("show");
 function openModal(html){$("modal").innerHTML=html;$("modal-root").classList.add("show")}
 function closeModal(){$("modal-root").classList.remove("show")}
 
-/* ---------- 输入与入口 ---------- */
-$("abort-btn").onclick=()=>setState("abort-confirm");
-$("qty-minus").onclick=()=>{const v=Math.max(1,Math.round(parseFloat(el.qty.value||"0")*MULT)-100);el.qty.value=fmtQ(v)};
-$("qty-plus").onclick=()=>{const v=Math.min(account.qty_max,Math.round(parseFloat(el.qty.value||"0")*MULT)+100);el.qty.value=fmtQ(v)};
-$("btn-buy").onclick=()=>canonicalSubmit("BUY");
-$("btn-sell").onclick=()=>canonicalSubmit("SELL");
-$("btn-noaction").onclick=()=>{if(stateFlags.locked)return;transitionSubmitting("NO_ACTION",null)};
-
-/* ---------- 状态切换器 ---------- */
-const STATES=[
-  ["gate-blocked","① 门禁阻断 · preview 未通过"],
-  ["waiting","② 等待开场"],
-  ["warming","③ 等待行情 · 无报价空态"],
-  ["active","④ 交易中"],
-  ["client-invalid","⑤ 数量非法 · 本地预检"],
-  ["submitted","⑥ 已成交 · 等待下一时点"],
-  ["risk-rejected","⑦ 拒单 · RISK_REJECTED"],
-  ["duplicate","⑧ 重复提交 · DUPLICATE_INPUT"],
-  ["late","⑨ 迟到 · WINDOW_CLOSED"],
-  ["timeout","⑩ 到点未操作 · NO_ACTION"],
-  ["disconnected","⑪ 断线 · 服务端为准"],
-  ["refresh-resume","⑫ 刷新恢复"],
-  ["abort-confirm","⑬ 所有者中止 · 确认"],
-  ["tech-abort","⑭ 技术中止 · 补跑"],
-  ["completed","⑮ 场景完成 · 结果盲"],
-  ["daily-break","⑯ 每日强制休息"],
-];
-STATES.forEach(([k,label])=>{const o=document.createElement("option");o.value=k;o.textContent=label;el.select.appendChild(o)});
-el.select.onchange=()=>setState(el.select.value);
-function setState(s){stopCountdown();if(stateFlags.reconn)clearInterval(stateFlags.reconn);state=s;render()}
-
-/* ---------- 行情节拍（1 时点/秒的快进演示） ---------- */
-mktTimer=setInterval(()=>{
-  if(["gate-blocked","tech-abort","completed","daily-break","warming","disconnected"].includes(state))return;
+/* ---------- 行情节拍 ---------- */
+setInterval(()=>{
+  if(["warming","exp-gate","exp-break","exp-completed"].includes(state))return;
   tickMarket();
-  renderQuote();renderTape();drawKline();renderAccount();
+  renderQuote();renderTape();drawKline();
 },1000);
 
 /* ---------- 标注 ---------- */
@@ -980,164 +794,119 @@ $("pin-toggle").onclick=()=>{document.body.classList.toggle("show-pins")};
 document.querySelectorAll(".pin").forEach(p=>p.onclick=()=>openNotes("arch"));
 
 /* =====================================================================
- * 设计说明内容
+ * 设计说明
  * ===================================================================*/
 const NOTES={
-arch:`
-<h4>本round与日常交易终端对齐的改动（2026-09-13 反馈）</h4>
+audit:`
+<h4>核心结论：把实验约束从交易 UI 中拆出去</h4>
+<p>真实交易系统里不存在的东西，根源都是把 <b>H2 采集协议</b>直接搬进了终端 UI。解决方式不是隐藏，
+而是<b>拆成两个形态</b>：<b>自由模拟终端</b>（默认，本次 v3 就是它）与<b>采集模式</b>（只有做正式 N-of-1 记录时才进入，
+其专属约束在那一形态里出现）。本项目的市场内核、撮合/账本/风控路径两者完全共用。</p>
+<h4>逐项审查：非真实终端元素 → 处置</h4>
 <table>
-<tr><th>反馈</th><th>处理</th></tr>
-<tr><td>K 线要多档时间可选</td><td>增加 <code>1m / 5m / 15m / 1h / 4h</code> 周期页签与时间轴；同一冻结 public tape 的不同聚合视图（不新增信息源）。注意：正式协议目前只冻结了 5 窗一柱的 preview 周期（Q-401 未关闭），多周期上线前需把所选周期集合写入协议并让参照策略获得同一序列（见待裁决 DQ-F）</td></tr>
-<tr><td>图里是什么时间</td><td>K 线/成交/回报统一使用合成交易所时钟（时间轴 + tooltip + 行情卡右上角）；演示口径 1 个决策时点 = 1 分钟市场时间，正式映射随 Q-401 冻结</td></tr>
-<tr><td>正常 K 线没有“形成中”类型</td><td>已去掉特殊“形成中”蜡烛——最新一根与普通蜡烛同样绘制、随成交实时更新（与主流交易软件一致）。“未收口 K 线不进入 artifact”降级为内部 artifact 语义，不再做成可见类型</td></tr>
-<tr><td>最近成交加列名</td><td>改为表格：时间 / 价格 / 数量 / 方向（B 买 / S 卖）</td></tr>
-<tr><td>“决策窗口”看不懂</td><td>协议概念保留但改用交易语言呈现：下单卡内一行“提交倒计时 + 细进度条 + ? 帮助”。真实含义：与参照策略对齐的<b>决策机会节拍</b>——每 8 秒一个时点、每时点至多一次市价单/撤单/不操作，到点未操作按“不操作”记录。它不是系统卡顿也不是限频，是实验的匹配合同（0.3.1 Q-303/Q-308）</td></tr>
-<tr><td>“输入回执”没太懂</td><td>改为交易软件常见的<b>操作回报</b>表（时间/操作/状态/说明，点击行展开 input_seq/intent_id/event_ids 详情）。审计字段保留但收纳进详情层</td></tr>
-<tr><td>“信息边界”没太懂</td><td>从常驻卡片降级为顶栏「ⓘ 会话说明」弹层：阶段、分配、协议哈希、K 线数据源，以及“本会话不显示”清单（参照策略状态、种子、未来事件、未解盲结果）。这是正式阶段的解盲隔离规则（FR-403），不是功能缺失</td></tr>
+<tr><th>元素（上一版）</th><th>为什么曾存在</th><th>处置</th></tr>
+<tr><td>8 秒提交倒计时 / 决策窗口</td><td>采集协议的“决策机会匹配”合同（0.3.1 Q-303/Q-308）</td><td><b>自由模式删除</b>：随时下单、随时撤单、限价可挂。采集模式如继续保留窗口合同，则只在采集模式 UI 中出现（本页［实验模式］状态组）</td></tr>
+<tr><td>“本时点不操作”按钮</td><td>协议要求显式 NO_ACTION</td><td><b>删除</b>：自由交易里“不操作”就是不点按钮；采集模式由服务端在时点收口时自动记录，不再要求点击</td></tr>
+<tr><td>每时点一次的锁定态 / 迟到 / 重复错误</td><td>一次性动作槽</td><td><b>自由模式删除</b>。委托幂等仍由服务端 client_request_id 保证，但不再是用户可见概念</td></tr>
+<tr><td>阶段徽标 preview/training/formal</td><td>UX-403 要求阶段恒可见</td><td>改为真实终端惯用的<b>SIM 环境角标</b>（类似测试网标记）；实验阶段信息移入采集模式</td></tr>
+<tr><td>信息边界 / 解盲清单卡片</td><td>FR-403 正式阶段隔离</td><td>移入采集模式；自由模式只有「ⓘ 市场说明」（品种、限额、数据源、AI 对手方说明）</td></tr>
+<tr><td>门禁阻断 / 每日强制休息 / 结果盲完成页</td><td>E2 gate、Q-303 节奏、SC-404</td><td>全部归入<b>采集模式</b>流程页（切换器［实验模式］组保留供检视）</td></tr>
+<tr><td>中止会话 + OWNER_ABORT 原因枚举</td><td>实验中止审计</td><td>自由模式弱化为普通「退出」（挂单自动撤、仓位入档）；带原因的中止只在采集模式出现</td></tr>
+<tr><td>单笔上限 1.000 / 挂单上限 8</td><td>合同限额</td><td><b>保留</b>：真实交易所也有最小/最大下单量与频率限制，属正常风控；数值可配置</td></tr>
 </table>
-<h4>布局：桌面优先三栏（design.md §6 · UX-401）</h4>
-<p>一个视图内同时可见：价格、K 线、账户、剩余提交时间。左栏「我的账户与市场」，中栏「行情图与成交」，
-右栏「下单与回报」——与主流交易终端的信息分区一致。</p>
+<h4>反向补齐：真实终端有、之前缺的</h4>
+<table>
+<tr><th>能力</th><th>本版处理</th></tr>
+<tr><td>限价单（挂单等待成交）</td><td>新增市价/限价页签；点击盘口任意档位自动填价；限价穿越盘口即时成交、否则挂单等待，价格触及自动成交（撮合内核本就支持 order_type/price_ticks，H1 合同已有限价 payload，此前只是 UI 没暴露）</td></tr>
+<tr><td>挂单管理</td><td>当前挂单列表 + 逐笔撤单 + 委托中/已成交/已撤单回报状态流转</td></tr>
+<tr><td>强平价 / 保证金状态</td><td>账户卡显示预估强平价与保证金比率（内核有保证金/强平/穿仓/连锁路径）</td></tr>
+<tr><td>24h 高低 / 市场时钟</td><td>行情卡补 24h 高低与合成交易所时钟</td></tr>
+</table>`,
+
+arch:`
+<h4>布局：与主流交易终端一致的分区</h4>
+<p>左栏「账户与挂单」，中栏「行情图与成交」，右栏「下单与回报」。全部信息一屏可见（UX-401）。</p>
 <h4>标注对照</h4>
 <table>
-<tr><th>#</th><th>区域</th><th>关键交互决定</th></tr>
-<tr><td>1</td><td>报价卡</td><td>买一/卖一 + 盘口（观察集 k≤10 档，默认渲染 5 档）；<b>无报价不显示占位价格</b>（FR-401）</td></tr>
-<tr><td>2</td><td>账户卡</td><td>可用现金/权益/未实现盈亏/仓位/占用保证金/保证金比率/状态，与 <code>HumanAccountObservation</code> 字段一一对应</td></tr>
-<tr><td>3</td><td>当前挂单</td><td>行内撤销；<b>撤单与买卖共用本时点唯一提交机会</b>，点击前可见代价提示</td></tr>
-<tr><td>4</td><td>K 线</td><td>多周期页签 + 时间轴 + OHLC tooltip；最新一根实时更新（收口后才进入 artifact，不做可见的特殊类型）</td></tr>
-<tr><td>5</td><td>下单卡</td><td>提交倒计时为视觉锚点；≤4s 变黄、≤2s 变红；按钮紧贴倒计时，缩短「看价→决策→点击」路径</td></tr>
-<tr><td>6</td><td>操作回报</td><td>每次提交（含不操作/撤单）一行回报；点击行查看服务端回执详情（input_seq / intent_id / 事件 ID）</td></tr>
+<tr><th>#</th><th>区域</th><th>关键交互</th></tr>
+<tr><td>1</td><td>报价卡</td><td>买一/卖一、5 档盘口（可点价填单）、24h 高低；无报价不显示占位数据</td></tr>
+<tr><td>2</td><td>账户卡</td><td>现金/权益/未实现盈亏/仓位/保证金比率/预估强平价——对应 <code>HumanAccountObservation</code> + 内核风控字段</td></tr>
+<tr><td>3</td><td>当前挂单</td><td>限价委托列表，逐笔撤单；状态流转进回报表</td></tr>
+<tr><td>4</td><td>K 线</td><td>1m/5m/15m/1h/4h 周期、时间轴、OHLC tooltip；最新一根实时更新</td></tr>
+<tr><td>5</td><td>下单卡</td><td>市价/限价页签；买一卖一参考价直接印在按钮上；本地预检数量/价格</td></tr>
+<tr><td>6</td><td>操作回报</td><td>委托中→已成交/已撤单/已拒绝全流转；点击行展开服务端回执（幂等键/事件 ID）</td></tr>
 </table>
-<h4>视觉基调</h4>
-<p>沿用 <code>docs/experiments/0.1.5-representative-replay.html</code> 的暗色 canvas 风格；原生 HTML/CSS/Canvas，
-零第三方依赖，满足 NFR-401（无外部网络/凭据）与 Windows/POSIX 本地 loopback 启动。</p>`,
-
-fsm:`
-<h4>会话级状态（UX-302 合同 + 0.3.2 生命周期）</h4>
-<div class="flow">PREVIEW_BLOCKED → PREVIEW_READY → TRAINING → FORMAL_ARMED → FORMAL_RUNNING → COMPLETED
-                                        └────────────────→ TECHNICAL_ABORT → RERUN_PENDING</div>
-<p>原型顶部切换器按<b>页面态</b>组织：</p>
+<h4>顶栏</h4>
+<p><code>SIM</code> 角标 + 品种名（对齐真实交易所的测试网/模拟盘标记习惯）；右侧连接状态、「ⓘ 市场说明」、「退出」。
+合成市场与无真实资金声明常驻。</p>
+<h4>两种形态</h4>
 <table>
-<tr><th>页面态</th><th>合同状态</th><th>用户看到什么</th></tr>
-<tr><td>① 门禁阻断</td><td>PREVIEW_BLOCKED</td><td>入口可打开但训练/正式拒绝，列明缺失的 gate 证据</td></tr>
-<tr><td>② 等待开场</td><td>waiting</td><td>分配已签发，等待调度器开放首时点；按钮禁用</td></tr>
-<tr><td>③ 等待行情</td><td>active（无报价）</td><td>不伪造价格，按钮禁用，倒计时照常</td></tr>
-<tr><td>④ 交易中</td><td>active</td><td>主界面：行情/K 线/账户 + 提交倒计时 + 买卖按钮</td></tr>
-<tr><td>⑥⑦⑧⑨⑩</td><td>submitted / rejected / no-action</td><td>操作回报表显示服务端裁决；每时点一次提交机会</td></tr>
-<tr><td>⑪ 断线</td><td>connection lost</td><td>遮罩说明「行情不暂停」；恢复后以服务端为准</td></tr>
-<tr><td>⑫ 刷新恢复</td><td>resume-status</td><td>从服务端重建；已消耗提交机会不重发</td></tr>
-<tr><td>⑬ 中止确认</td><td>（前置 OWNER_ABORT）</td><td>中止恒可见，需显式确认 + 选择 reason</td></tr>
-<tr><td>⑭ 技术中止</td><td>TECHNICAL_ABORT → RERUN_PENDING</td><td>冻结规则裁决；备用 seed 整局补跑</td></tr>
-<tr><td>⑮ 场景完成</td><td>COMPLETED（场景级）</td><td>结果盲：只确认完整性，不显示任何收益数字</td></tr>
-<tr><td>⑯ 每日休息</td><td>（Q-303 冻结节奏）</td><td>4 天 × 6 场、第 3 场后强制休息 30 分钟，硬边界</td></tr>
-</table>
-<h4>时点内提交机会状态机（右栏）</h4>
-<div class="flow">时点开放 ──提交──▶ submitting ──服务端裁决──▶ 成交/记录 ─▶ 本时点锁定（等待收口）
-                        │                       └▶ 拒绝 ─▶ 本时点锁定（DQ-A 待冻结）
-                        └─8s 到点──▶ 自动记为“不操作” ─▶ 时点收口</div>
-<p>关键不变量：<b>每个时点至多一次提交</b>；前端 submitting 态只是视觉过渡，唯一线性化点是服务端
-session lock 内占用提交机会；迟到/重复/非法操作返回稳定错误码且无副作用（TR-302 · NFR-402）。</p>`,
+<tr><th></th><th>自由模拟终端（默认）</th><th>采集模式（正式 N-of-1）</th></tr>
+<tr><td>交易节奏</td><td>自由连续交易，限价可挂</td><td>8s 决策时点、每时点一次动作（或按新协议改为服务端采样）</td></tr>
+<tr><td>可见性</td><td>全部自己的账户与市场信息</td><td>参照策略/种子/未来事件/未解盲结果隐藏（FR-403）</td></tr>
+<tr><td>流程约束</td><td>无</td><td>阶段门控、每日 6 场节奏、强制休息、中止裁决</td></tr>
+<tr><td>证据级别</td><td>engineering-demonstration</td><td>experiment-preview（个人描述性）</td></tr>
+</table>`,
 
 flows:`
-<h4>流 A · 一次市价买入（US-402 验收 1）</h4>
-<div class="flow">看盘(倒计时) → 输入/步进数量 → [买入] → 按钮全部 submitting(≈450ms)
- → 服务端裁决 → 回报表新增“成功”行（点击行看回执详情）→ 时点锁定
- → 时点收口 → 下一时点自动解锁</div>
-<h4>流 B · 拒单（AC-402 零副作用）</h4>
-<p>服务端裁决 <code>RISK_REJECTED</code>：回报表红色行 + 说明（保证金不足）；订单零副作用。
-本地可判定的数量非法在<b>点击瞬间</b>由前端预检拦截（不占用提交机会、不发请求），
-服务端 <code>INVALID_QTY</code> 只兜底——两条路径的文案都写明「是否消耗提交机会」（DQ-A）。</p>
-<h4>流 C · 到点与迟到</h4>
-<p>倒计时归零 → 服务端记“不操作”→ 回报表新增一行 → 下一时点。迟到操作返回
-<code>WINDOW_CLOSED</code>：无隐藏宽限、不回拨逻辑时间。最后 2 秒红色 + 按钮禁用阈值由服务端
-<code>deadline_monotonic_ns</code> 驱动，不由浏览器时钟自行判断。</p>
-<h4>流 D · 断线与刷新（NFR-402）</h4>
-<p>断线遮罩明确「行情不暂停、时点照常收口」；恢复后从服务端重建视图，已消耗的提交机会显示“已使用”，
-客户端绝不重发。<b>刷新不产生任何提交副作用</b>是 E2 preview 的固定验收输入之一（SC-402）。</p>
-<h4>流 E · 撤单（CANCEL_ORDER）</h4>
-<p>挂单行内联撤单 → 回报“成功”行 → 挂单从列表消失。撤单与买卖共用本时点提交机会；
-若机会已消耗，撤单按钮禁用并显示原因。</p>
-<h4>流 F · 中止与补跑</h4>
-<p>中止按钮恒可见 + 模态确认 + reason 枚举（写入会话记录）。技术中止走冻结无效条件 →
-备用池 seed 整局补跑；所有者主动中止不自动补跑，允许以 <code>incomplete-study</code> 收口而不伪造完成（E4）。</p>`,
+<h4>流 A · 市价单</h4>
+<div class="flow">看盘 → 选数量 → [买入]（按钮印有市价参考价）→ 即时成交 → 回报“已成交”行 → 仓位/权益更新</div>
+<h4>流 B · 限价单</h4>
+<div class="flow">点击盘口档位填价（或手输/步进）→ [买入] → 穿越盘口？即时成交 : 进入「当前挂单」
+ → 价格触及自动成交（回报新增“已成交”行，注明订单号）；或手动撤单 → “已撤单”行</div>
+<h4>流 C · 拒单</h4>
+<p>保证金不足等风控拒绝：回报表红色行 + 可读原因 + 零副作用；本地可判定的数量/价格错误在点击瞬间预检拦截，不发请求。</p>
+<h4>流 D · 断线与刷新</h4>
+<p>断线遮罩说明「行情不暂停、挂单仍生效」；恢复后从服务端快照重建挂单/仓位/回报，幂等键保证不重复提交。</p>
+<h4>流 E · 退出</h4>
+<p>退出确认 → 挂单自动撤销并入回报、仓位权益入会话存档。采集模式下退出语义由实验协议约束（需选择原因、进入裁决）。</p>
+<h4>流 F · 等待行情</h4>
+<p>场景开头无成交时：报价/盘口/K 线显示空态，下单禁用；首笔成交出现后自动点亮——与真实市场开盘前的体验一致。</p>`,
 
-codes:`
-<h4>按钮状态（UX-402）</h4>
+spec:`
+<h4>这是需求变更，且变更时机合法</h4>
+<p>0.3.2 的 <code>spec.md</code> frontmatter 是 <code>status: draft</code>，E1（owner observation/K 线语义/动作空间冻结）尚未发生——
+现在把终端改为真实终端形态，正好赶在冻结前。0.3.1 已冻结的是 <b>AI_FORMAL 轨</b>（两个策略的 168 个配对 block），
+与本变更无关；owner 轨在 Q-308 中本来就只承担<b>描述性</b>结论，不承载研究声明，放宽窗口合同的科学代价很小。</p>
+<h4>需要随之修订的规格条目（建议，待你裁决后落笔）</h4>
 <table>
-<tr><th>状态</th><th>触发</th><th>表现</th></tr>
-<tr><td>enabled</td><td>有报价 且 时点开放 且 提交机会未消耗</td><td>正常可点</td></tr>
-<tr><td>submitting</td><td>已提交等待服务端</td><td>全部动作按钮禁用 + 提交中文案（防重复点击）</td></tr>
-<tr><td>locked</td><td>本时点机会已消耗</td><td>动作区替换为琥珀色锁定说明条；下一时点恢复</td></tr>
-<tr><td>disabled</td><td>无报价 / 时点未开放 / 门禁阻断 / 休息中</td><td>半透明禁用 + 原因写在按钮下方提示行</td></tr>
+<tr><th>位置</th><th>现行</th><th>建议修订</th></tr>
+<tr><td>0.3.2 FR-302</td><td>“所有窗口必须接受至多一次规范动作”</td><td>拆成两个模式：自由模拟终端（无窗口，自由连续交易，服务端幂等）；采集模式保留窗口合同或改为“自由交易 + 服务端时点采样”</td></tr>
+<tr><td>0.3.2 FR-402 / 动作空间</td><td>MVP 只有市价买/卖/不行动/撤销</td><td>限价单进入 MVP 动作空间（内核与 H1 合同已支持 order_type/price_ticks，无内核改动）</td></tr>
+<tr><td>0.3.2 UX-403</td><td>阶段徽标恒可见</td><td>自由模式用 SIM 环境角标；阶段标识只在采集模式可见</td></tr>
+<tr><td>0.3.2 Q-401 / DQ-401</td><td>K 线 5 窗 preview 周期待裁决</td><td>一并裁决：可选周期集合（1m/5m/15m/1h/4h）、市场时钟映射、参照策略同信息集方案</td></tr>
+<tr><td>0.2.1 合同（引用）</td><td>H1 固定 8s/限额等演示参数</td><td>不回改历史合同；0.3.2 以新合同版本继承撮合/账本/风控路径</td></tr>
 </table>
-<h4>稳定错误码 → 用户文案（IR-402 · AC-402）</h4>
+<h4>需求映射（保留项）</h4>
 <table>
-<tr><th>reason_code</th><th>回报表说明（示例）</th><th>副作用</th></tr>
-<tr><td><code>WINDOW_CLOSED</code></td><td>本时点已关闭，操作迟到（无宽限）</td><td>无</td></tr>
-<tr><td><code>DUPLICATE_INPUT</code></td><td>本时点已提交过，重复请求已忽略</td><td>无</td></tr>
-<tr><td><code>INVALID_ACTION</code></td><td>操作不在当前阶段允许的动作空间内</td><td>无</td></tr>
-<tr><td><code>INVALID_QTY</code></td><td>数量非法或超过单笔上限 1.000</td><td>无</td></tr>
-<tr><td><code>RISK_REJECTED</code></td><td>账户/保证金/风控拒绝（显示具体规则）</td><td>拒绝事件</td></tr>
-<tr><td><code>UNKNOWN_ORDER</code></td><td>撤单目标不存在或不属于本人账户</td><td>拒绝事件</td></tr>
-<tr><td><code>QUEUE_FULL</code></td><td>服务端队列已满（64）</td><td>无</td></tr>
-<tr><td><code>IDEMPOTENCY_CONFLICT</code></td><td>同键不同 payload，已拒绝</td><td>无</td></tr>
-<tr><td><code>PREVIEW_GATE_NOT_PASSED</code></td><td>训练/正式入口拒绝 + 缺失证据清单</td><td>无</td></tr>
-<tr><td><code>TECHNICAL_ABORT</code></td><td>技术中止 + 补跑裁决说明</td><td>会话终止</td></tr>
-</table>
-<p>原则：文案 = 发生了什么 + 现在能做什么 + 对提交机会/时点的影响；禁止只弹错误号。</p>`,
-
-trace:`
-<h4>需求 → 界面/交互映射</h4>
-<table>
-<tr><th>需求</th><th>原型落点</th></tr>
-<tr><td>US-401 / FR-401 / AC-401</td><td>报价卡买一/卖一/最新/时间、盘口、多周期 K 线（含 ③ 无报价空态、无占位行情）</td></tr>
-<tr><td>US-402 / FR-402 / IR-402 / AC-402</td><td>下单卡 + 操作回报表：每时点一次提交、数量预检、稳定错误码、服务端裁决展示</td></tr>
-<tr><td>US-403 / FR-403 / IR-301 / AC-403</td><td>① 门禁阻断整卡、⑮ 完成结果盲、ⓘ 会话说明弹层（隐藏清单）</td></tr>
-<tr><td>FR-302 / TR-302 / NFR-402 / AC-405</td><td>⑪⑫ 断线/刷新不重复提交；时点收口由服务端调度；无暂停/单步入口</td></tr>
-<tr><td>UX-401</td><td>三栏一屏：价格+K 线+账户+提交倒计时同视口</td></tr>
-<tr><td>UX-402</td><td>按钮 enabled/submitting/locked/disabled 态；无报价/时点关闭禁用；中止恒可见+确认</td></tr>
-<tr><td>UX-403</td><td>阶段徽标恒可见（preview/training/formal）</td></tr>
-<tr><td>UX-404 / AC-406</td><td>①—⑯ 全部状态可读：loading/empty/error/timeout/abort/completed/disconnect</td></tr>
-<tr><td>TR-401</td><td>回报详情即回执字段（input_seq/window_id/intent_id/裁决/事件 ID）</td></tr>
-<tr><td>DR-401 / DR-402 / AC-404</td><td>ⓘ 弹层展示协议哈希与 K 线数据源（冻结 tape 哈希）</td></tr>
-<tr><td>NFR-401 / NFR-403</td><td>零依赖单文件原型，与实现同原则：原生 loopback、无外部行情/凭据</td></tr>
-<tr><td>SC-402</td><td>切换器 ⑥⑦⑧⑨⑩ 即固定验收输入的可演示版本</td></tr>
-<tr><td>Q-303 节奏</td><td>⑯ 日程条：4 天 × 6 场、第 3 场后强制休息</td></tr>
-</table>
-<h4>实现落点提示（T929—T935）</h4>
-<p>区域划分与 <code>OwnerWebSessionView</code> 字段一一对应（stage/window/market/kline/account/actions/status/server_time），
-可直接作为 T930 页面骨架的布局合同、T934 的状态清单与 T935 固定输入验收的演示脚本；
-多周期 K 线的周期集合与市场时钟映射需在 T929 冻结（见 DQ-F）。</p>`,
+<tr><th>需求</th><th>落点</th></tr>
+<tr><td>FR-401 / AC-401（行情真实性、空态）</td><td>报价/盘口/K 线/成交均来自同一冻结 tape；无报价空态不造假</td></tr>
+<tr><td>FR-402 / IR-402 / AC-402（动作经服务端）</td><td>委托→撮合→账本→风控走既有内核路径；稳定错误码、回报表</td></tr>
+<tr><td>NFR-402（刷新/断线不重复提交）</td><td>幂等键 + resume-status 重建</td></tr>
+<tr><td>NFR-401 / NFR-403（loopback、零外部依赖）</td><td>单文件原生原型，与实现同原则</td></tr>
+<tr><td>FR-403 / SC-403/404（阶段隔离与解盲）</td><td>全部移入采集模式</td></tr>
+</table>`,
 
 open:`
-<h4>DQ-A · 服务端拒绝是否消耗本时点提交机会？（建议 E1 前裁决）</h4>
-<div class="decision"><b>冲突</b>：<code>INVALID_QTY/INVALID_ACTION</code> 在写入前失败（非法操作无副作用），不应消耗机会；
-但 <code>RISK_REJECTED</code> 发生在生产订单路径上且写拒绝事件——若允许重试，“每时点至多一次提交”
-需要定义为“至多一次<b>被接受</b>的规范动作”并同步比较矩阵（决策机会=相同维度）。
-本原型按保守口径演示：进入生产路径的拒绝占用机会。建议 T932 冻结时显式写死并加入回归测试。</div>
-<h4>DQ-B · 显式“不操作”与到点自动“不操作”的记录差异</h4>
-<p>两者最终都写 <code>NO_ACTION</code>，但显式点击有 input_seq（可审计的主动决策），到点没有输入记录。
-回报表当前区分「不操作」与「不操作（到点）」。需确认 artifact 是否区分来源（机制分析可能关心主动不操作比例）。</p>
-<h4>DQ-C · 盘口渲染档位数</h4>
-<p>观察集允许 k≤10 档；原型默认渲染 5 档。若深度/K 线被认为构成新的观察信息，
-必须升级 owner observation/协议版本并让参照策略获得同一信息集。</p>
-<h4>DQ-D · 倒计时红色阈值是否构成行为干预</h4>
-<p>≤4s 变黄、≤2s 变红可能影响决策节奏。参照策略不消费颜色，不属于信息集差异，
-但建议在训练手册中统一说明，避免“训练没注意、正式被催单”的系统性偏移。</p>
-<h4>DQ-E · 完成页结果盲边界</h4>
-<p>完成页不显示任何权益数字。训练阶段是否允许更早的个人信息反馈属于解盲规则细节，建议随 T936 冻结。</p>
-<h4>DQ-F · K 线多周期与市场时钟映射（本轮新增，2026-09-13 反馈）</h4>
-<p>原型提供 1m/5m/15m/1h/4h 页签，均为<b>同一冻结 public tape 的聚合视图</b>，不新增信息源；
-但“所有者可选周期”本身改变观察方式——正式协议需：(a) 冻结可选周期集合与缺省周期；
-(b) 冻结市场时钟映射（演示口径：1 决策时点 = 1 分钟市场时间）；(c) 参照策略获得同一聚合序列或
-证明仅 UI 视图差异不构成信息差。此为 Q-401 的直接输入。</p>
-<h4>DQ-G · 实验概念的交易语言包装限度（本轮新增）</h4>
-<p>“决策窗口”呈现为“提交倒计时”、“信息边界”收纳进会话说明，都是为了贴近日常交易体验；
-但训练前必须向所有者如实说明：每 8 秒一个时点、每时点一次动作、正式阶段隐藏对照与结果
-是实验合同而非产品限制。建议把「ⓘ 会话说明」作为训练前必读检查项（E3 前）。</p>`
+<h4>DQ-H · owner 轨是否放弃“8 秒窗口”合同？（需你裁决——本轮最关键）</h4>
+<div class="decision">两个选项：<b>(a)</b> 采集模式继续用 8s 窗口（保持与参照策略的机会匹配，UI 在采集模式里保留倒计时）；
+<b>(b)</b> owner 轨改为“自由交易 + 服务端按逻辑时点采样净头寸/成交”，参照策略对比时声明机会差异。
+owner 轨是描述性结论，两者都成立；(b) 的终端体验与自由模拟完全一致。裁决后写入 0.3.2 spec（draft）并同步 0.3.1 的下游合同记录，不回改 0.3.1 已冻结文本。</div>
+<h4>DQ-F · K 线多周期与市场时钟映射</h4>
+<p>多周期均为同一冻结 public tape 的聚合视图，不新增信息源；需冻结：可选周期集合、缺省周期、
+时钟映射（演示 1 tick≈1m）、以及采集模式下参照策略的同信息集方案（Q-401 直接输入）。</p>
+<h4>DQ-I · 限价单进入 MVP 动作空间</h4>
+<p>内核与 H1 合同已支持限价；需在 0.3.2 冻结：限价动作的 canonical payload、回报状态机
+（委托中/已成交/已撤单/已拒绝）与部分成交语义（原型未演示部分成交，实现时需定义）。</p>
+<h4>DQ-A（采集模式专用）· 拒绝是否消耗时点动作机会</h4>
+<p>若采集模式保留窗口合同：INVALID_* 不消耗、RISK_REJECTED 是否消耗需显式裁决（同前版 DQ-A）。</p>
+<h4>DQ-J · AI 对手方家族（alphamill 因子导入）</h4>
+<p>自由模拟的“陪玩”由可复现 AI 代理承担：做市商 + 因子策略（alphamill FactorDef 导入，过滤模拟市场
+不具备的数据列）+ 噪声/情绪交易者。需新开 feature 冻结参与者家族、RNG 语义键与证据隔离
+（engineering-demonstration，不进 H2 正式样本）。</p>`
 };
 
-function openNotes(tab){$("notes").classList.add("open");showNotes(tab||"arch")}
+function openNotes(tab){$("notes").classList.add("open");showNotes(tab||"audit")}
 function showNotes(tab){
   document.querySelectorAll("#notes-tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
   $("notes-body").innerHTML=NOTES[tab];$("notes-body").scrollTop=0;
@@ -1148,7 +917,10 @@ $("notes-btn-open").onclick=()=>openNotes();
 $("notes-close").onclick=()=>$("notes").classList.remove("open");
 
 /* ---------- 启动 ---------- */
-refreshBook();setState("active");
+seedHistory();
+initTfTabs();
+initTypeTabs();
+renderQuote();renderTape();renderAccount();drawKline();renderReturns();
 </script>
 </body>
 </html>
