@@ -551,6 +551,28 @@ H2_CONTROL_CONTRACT_DOCS = (
     "docs/features/0.3/0.3.1-human-in-the-loop-experiment/tasks.md",
 )
 
+H2_AI_SCOPE_DOCS = (
+    "docs/market-game-sim-prd.md",
+    *H2_CONTROL_CONTRACT_DOCS,
+)
+H2_STALE_SCOPE_MARKERS = (
+    "H2-C/D 人在环正式实验",
+    "冻结独立的人在环协议并开始 H2 正式实验",
+    "两条轨道的估计量",
+    "两轨 manifest",
+    "130 个 paired-seed blocks",
+    "130 个 block",
+)
+
+
+def _h2_stale_scope_lines(text: str) -> list[str]:
+    """找出会把 AI_FORMAL 重新写回旧 owner/真人研究范围的有效行。"""
+    return [
+        line.strip()
+        for line in text.splitlines()
+        if any(marker in line for marker in H2_STALE_SCOPE_MARKERS)
+    ]
+
 
 @pytest.mark.parametrize("doc", H2_QUESTION_DOCS)
 def test_h2_flagship_question_uses_the_primary_reference_policy(doc):
@@ -558,6 +580,22 @@ def test_h2_flagship_question_uses_the_primary_reference_policy(doc):
     text = (ROOT / doc).read_text(encoding="utf-8")
     assert "参照策略" in text, f"{doc} 未声明 H2 参照策略"
     assert "以真实人类交易者替换一个目标驱动代理" not in text, f"{doc} 仍在提出旧 H2 问题"
+
+
+def test_h2_ai_scope_detector_rejects_stale_owner_scope_mutation():
+    """负向变异：旧 owner 前置或旧 block 口径回归时必须被扫描挡住。"""
+    mutated = "H2-C/D 人在环正式实验；130 个 paired-seed blocks；两轨 manifest"
+    residue = _h2_stale_scope_lines(mutated)
+    assert residue == [mutated]
+
+
+def test_h2_effective_docs_have_no_stale_owner_prerequisite_or_ai_two_track_estimand():
+    """当前有效规划只能把 owner 作为 H2-D 下游，AI_FORMAL 使用 168 个 paired block。"""
+    residue = {
+        doc: _h2_stale_scope_lines((ROOT / doc).read_text(encoding="utf-8"))
+        for doc in H2_AI_SCOPE_DOCS
+    }
+    assert residue == {doc: [] for doc in H2_AI_SCOPE_DOCS}
 
 
 @pytest.mark.parametrize("doc", H2_CONTROL_CONTRACT_DOCS)
