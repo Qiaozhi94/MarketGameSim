@@ -1044,3 +1044,30 @@ Q-308 关闭后拦截数由 13 降为 12 且其余 Q/DQ 仍被拦（门禁没被
 **4. 开发就绪与文档缺陷分开统计。** 0.3.1 仍有 Q-301—Q-307、DQ-301—DQ-305 共 12 个计划内
 决策，Owner/H2 预注册/9 个严格 xfail 测试骨架也未落地；它们由 T901/T902 与 ready gate 追踪，
 不重新记为产品缺陷，但在关闭前里程碑必须保持 `draft`。
+
+## 循环 24: v0.3 H2 需求排序调整检视与修复
+
+- **report_type**: doc-review
+- **周期**: 2026-09-12（Round 1 full-scan → 修复；Round 2 diff-only → 修复测试覆盖；Round 3 diff-only）
+- **基线**: `bed85e8` → `4a91896`
+- **收尾状态**: 4 条 High 已 fixed；本地闭环候选，未 push，CI 待远端确认
+- **本地门禁**: `verify.py` 全部通过；2575 passed、1 skipped、2 xfailed；真源、生命周期、ruff check、
+  ruff format check 全绿
+
+### 完整 issue 表
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复建议 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| H2PLAN-001 | 0.3.2 整里程碑前置阻断 H2-D 并行 | High | correctness | 根因 | 规格漂移 | fixed | 改任务级依赖 | 0.3.2 前置改为 0.2.1，T927 引用 0.3.1/T915 | test_h2_web_terminal_uses_task_level_ai_dependency | 1 | 1 | milestone-vs-task-dependency |
+| H2PLAN-002 | H2-D 成果门边界错位且重复 | High | correctness | 根因 | 规格漂移 | fixed | 唯一化 D1/D2 gate | T935=H2-D1、T943=H2-D2、T931 为内部 preview | test_h2_web_delivery_gates_have_unique_scope | 1 | 1 | duplicate-delivery-gate |
+| H2PLAN-003 | 0.3.2 4xx 未进入版本级追溯真源 | High | correctness | 根因 | 流程缺口 | fixed | 补根规格、traceability 和遗漏门禁 | v0.3 登记 US/FR/DR/TR/IR/NFR/SC/UX-4xx，并接入两层集合检查 | test_milestone_requirement_registry_rejects_unregistered_id + test_version_traceability_rejects_spec_omission | 1 | 2 | cross-feature-contract-drift |
+| H2PLAN-004 | AI 重置后仍有旧真人问题与 130 口径 | High | correctness | 根因 | 规格漂移 | fixed | 统一 AI/168 口径并下移 owner 合同 | PRD/0.3.1 有效文档改为 AI-only，owner 归 0.3.2 | test_h2_flagship_question_uses_the_primary_reference_policy + test_h2_us301_uses_the_registered_reference_policy | 1 | 1 | partial-symmetric-fix |
+
+### 模式教训
+
+1. **需求重排必须同时修改调度、成果门和追溯真源。** 只改执行顺序会留下可通过门禁的跨层遗漏；
+   本轮新增 milestone-to-root 和 version traceability 负向检查。
+2. **审计测试必须走真实入口。** Round 2 发现 traceability 测试只调用 helper，随后改为构造版本树
+   并调用 `validate_spec_lifecycle`；Round 3 确认无回归。
+3. **本地闭环不等于远端闭环。** 未 push 前只能报告本地 `verify.py` 通过；CI 状态必须在包含最终审计
+   记录的提交推送后确认。
