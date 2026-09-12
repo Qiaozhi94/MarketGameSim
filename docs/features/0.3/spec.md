@@ -7,7 +7,7 @@ research_claim_status: not-established
 research_claim_required: true
 evidence_class: formal-research
 created: 2026-09-04
-updated: 2026-09-12
+updated: 2026-09-13
 ---
 
 # Feature Specification: AI Mechanism Baseline & Web Trading Terminal
@@ -23,8 +23,8 @@ updated: 2026-09-12
 ## 问题与目标
 
 H2 分成两个可独立收口的里程碑：`0.3.1` 在无外生基本面冲击的合成永续市场中，用 **168 个**
-配对 seed block 检验冻结纯代理策略的价格崩盘、流动性枯竭和强平机制；`0.3.2` 再提供可见价格、
-K 线和交互按钮，让项目所有者完成个人 N-of-1 场景。两者不合并样本量，不招募外部真人，不建立
+配对 seed block 检验冻结纯代理策略的价格崩盘、流动性枯竭和强平机制；`0.3.2` 再提供真实终端形态的可见价格、
+多周期 K 线与自由连续交易，让项目所有者完成个人 N-of-1 场景。两者不合并样本量，不招募外部真人，不建立
 人群结论。
 
 **研究声明只能挂在 AI 轨道上。** 所有者 N-of-1 轨的证据级别是 `experiment-preview`：它是
@@ -49,33 +49,33 @@ n=1 自我实验，[`SOP`](../../SOP.md) §2 把样本量 1、有学习效应的
 - **US-302**：审计 AI 决策来源的行为机制；正文见 [`0.3.1 spec §2`](0.3.1-human-in-the-loop-experiment/spec.md#2-用户场景)。
 - **US-303**：生成边界清晰的 AI 结论；正文见 [`0.3.1 spec §2`](0.3.1-human-in-the-loop-experiment/spec.md#2-用户场景)。
 - **US-401**：先确认行情再交易；正文见 [`0.3.2 spec §2`](0.3.2-web-trading-terminal/spec.md#2-用户场景)。
-- **US-402**：用按钮提交规范动作；正文见 [`0.3.2 spec §2`](0.3.2-web-trading-terminal/spec.md#2-用户场景)。
+- **US-402**：自由提交买卖委托；正文见 [`0.3.2 spec §2`](0.3.2-web-trading-terminal/spec.md#2-用户场景)。
 - **US-403**：页面通过后再开始所有者训练；正文见 [`0.3.2 spec §2`](0.3.2-web-trading-terminal/spec.md#2-用户场景)。
 
 ## 功能需求
 
 - **FR-301**：冻结 H2 协议与配对反事实；正文见 [`0.3.1 spec §4`](0.3.1-human-in-the-loop-experiment/spec.md#4-需求)。
-- **FR-302**：运行受控的所有者替换会话；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **FR-302**：运行自由连续交易的所有者会话；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 - **FR-303**：隔离培训、预览与正式样本；正文见 [`0.3.1 spec §4`](0.3.1-human-in-the-loop-experiment/spec.md#4-需求)。
 - **FR-304**：分别计算三个结果家族；正文见 [`0.3.1 spec §4`](0.3.1-human-in-the-loop-experiment/spec.md#4-需求)。
 - **FR-305**：记录并分析预注册机制指标；正文见 [`0.3.1 spec §4`](0.3.1-human-in-the-loop-experiment/spec.md#4-需求)。
 - **FR-306**：生成 H2 正式证据包；正文见 [`0.3.1 spec §4`](0.3.1-human-in-the-loop-experiment/spec.md#4-需求)。
-- **FR-401**：展示冻结行情、账户与 K 线；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
-- **FR-402**：将所有者动作映射为可审计的规范输入；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **FR-401**：展示冻结行情、账户与多周期 K 线；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **FR-402**：将所有者市价/限价委托映射为可审计的规范输入；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 - **FR-403**：门控所有者训练与正式阶段，隔离结果和未来信息；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 
 ## 数据、事件与接口需求
 
 - **DR-301**：协议、参与者、分配与会话数据最小化；正文见 [`0.3.1 spec §4`](0.3.1-human-in-the-loop-experiment/spec.md#4-需求)。
 - **TR-301**：正式运行头绑定协议与配对标识；正文见 [`0.3.1 spec §4`](0.3.1-human-in-the-loop-experiment/spec.md#4-需求)。
-- **TR-302**：所有者行动保留完整因果链；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
-- **IR-301**：提供锁定的所有者 Web 会话入口；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **TR-302**：所有者行动与时点采样保留完整因果链；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **IR-301**：提供受控的所有者 Web 会话入口；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 - **IR-302**：正式证据入口 fail closed；正文见 [`0.3.1 spec §4`](0.3.1-human-in-the-loop-experiment/spec.md#4-需求)。
 - **DR-401**：最小化并假名化所有者 session artifact；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
-- **DR-402**：绑定 K 线 artifact 的 tape、窗口与内容哈希；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **DR-402**：绑定 K 线 artifact 的 tape、周期与内容哈希；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 - **TR-401**：记录带稳定裁决码的 Web 动作回执；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 - **IR-401**：提供不泄露未来信息的 owner view 接口；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
-- **IR-402**：以窗口和序号约束所有者决策提交；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **IR-402**：以幂等键约束所有者委托提交；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 
 ## 非功能需求
 
@@ -91,10 +91,10 @@ n=1 自我实验，[`SOP`](../../SOP.md) §2 把样本量 1、有学习效应的
 - **UX-301**：AI preview 显示冻结可见信息、逻辑进度和输入回执；正文见 [`0.3.1 spec §4`](0.3.1-human-in-the-loop-experiment/spec.md#4-需求)。
 - **UX-302**：AI preview 覆盖各窗口状态；正文见 [`0.3.1 spec §4`](0.3.1-human-in-the-loop-experiment/spec.md#4-需求)。
 - **UX-303**：AI preview 持续显示阶段并保持正式证据隔离；正文见 [`0.3.1 spec §4`](0.3.1-human-in-the-loop-experiment/spec.md#4-需求)。
-- **UX-401**：所有者在一个视图中看到价格、K 线、账户和剩余时间；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
-- **UX-402**：交易按钮显示并阻止 disabled/loading/submitted/error 状态；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
-- **UX-403**：持续显示阶段且不泄露参照策略、未来事件或结果；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
-- **UX-404**：可读呈现断线、空行情、拒单、超时、中止和完成状态；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **UX-401**：所有者在一个视图中看到价格、K 线、账户和市场时钟；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **UX-402**：交易按钮具备 enabled/submitting/disabled/rejected 状态并阻止误操作；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **UX-403**：自由模拟以 SIM 角标标识，采集模式持续显示阶段且不泄露参照策略、未来事件或结果；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **UX-404**：可读呈现断线、空行情、拒单、中止和完成状态；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 
 ## 成功与退出
 
@@ -103,7 +103,7 @@ n=1 自我实验，[`SOP`](../../SOP.md) §2 把样本量 1、有学习效应的
 - **SC-303**：三类结果与机制指标按预注册方法独立报告；正文见 [`0.3.1 spec §6`](0.3.1-human-in-the-loop-experiment/spec.md#6-成功与验收)。
 - **SC-304**：证据包可复建、可审计且不越过模型边界；正文见 [`0.3.1 spec §6`](0.3.1-human-in-the-loop-experiment/spec.md#6-成功与验收)。
 - **SC-401**：本地 Web 终端显示合成报价、账户和 K 线；正文见 [`0.3.2 spec §6`](0.3.2-web-trading-terminal/spec.md#6-成功与验收)。
-- **SC-402**：固定输入覆盖合法动作、拒单、超时、重复点击、断线和中止；正文见 [`0.3.2 spec §6`](0.3.2-web-trading-terminal/spec.md#6-成功与验收)。
+- **SC-402**：固定输入覆盖合法市价/限价委托、撤单、拒单、断线、刷新恢复和退出；正文见 [`0.3.2 spec §6`](0.3.2-web-trading-terminal/spec.md#6-成功与验收)。
 - **SC-403**：训练与正式场景受阶段、assignment 和解盲门控；正文见 [`0.3.2 spec §6`](0.3.2-web-trading-terminal/spec.md#6-成功与验收)。
 - **SC-404**：个人描述性结果可从 session artifact 重建且不产生人群声明；正文见 [`0.3.2 spec §6`](0.3.2-web-trading-terminal/spec.md#6-成功与验收)。
 
