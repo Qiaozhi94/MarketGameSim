@@ -9,7 +9,7 @@ research_claim_required: true
 evidence_class: formal-research
 gate_version: 1
 created: 2026-09-04
-updated: 2026-09-12
+updated: 2026-09-13
 prerequisites:
   - 0.2.1
 ---
@@ -46,6 +46,14 @@ prerequisites:
   后移到 [`0.3.2 Web trading terminal`](../0.3.2-web-trading-terminal/spec.md)。
 - 当前保留所有者字段和窗口合同作为下游接口边界，但不启动所有者训练，不把训练产物计入
   当前 `formal-research` 证据包。
+
+### 2026-09-13 owner 窗口合同修订记录
+
+- [`0.3.2`](../0.3.2-web-trading-terminal/spec.md) 以 Q-403/`ADR-006` 裁决：owner 轨改为
+  自由连续交易 + 服务端逻辑时点静默采样，场景定义为冻结的市场时间跨度；Q-303 中
+  "所有者会话墙钟窗 8 秒、每窗至多一次动作"的 owner 部分由该裁决取代。
+- 本里程碑正文（含 Q-303 已关闭记录）不回改；**AI_FORMAL 轨的窗口调度、冻结策略与
+  168 block 合同完全不受影响**。owner 轨复用的窗口合同字段以下游 0.3.2 的修订版本为准。
 
 ## 1. 问题、目标与非目标
 
