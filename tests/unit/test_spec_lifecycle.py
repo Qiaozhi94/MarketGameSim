@@ -77,6 +77,32 @@ def test_declared_ids_accept_bullet_user_stories(sv):
     assert sv.declared_ids(text, ["US"]) == {"US-401", "US-402"}
 
 
+def test_version_requirement_registry_accepts_root_story_summary_and_milestone_title(sv):
+    """版本根列表摘要与子规格标题相同语义时应通过。"""
+    errors: list[str] = []
+    sv._check_version_requirement_registry(
+        "- **US-401**：先确认行情再交易；正文见 0.3.2/spec.md。\n",
+        "### US-401：先确认行情再交易（Priority: P1）\n",
+        "0.3.2-web-trading-terminal",
+        errors,
+        "milestone 0.3.2",
+    )
+    assert errors == []
+
+
+def test_version_requirement_registry_rejects_user_story_semantic_drift(sv):
+    """负向变异：只改版本根列表摘要也必须触发同 ID 语义漂移。"""
+    errors: list[str] = []
+    sv._check_version_requirement_registry(
+        "- **US-401**：从 artifact 重建个人结果；正文见 0.3.2/spec.md。\n",
+        "### US-401：先确认行情再交易（Priority: P1）\n",
+        "0.3.2-web-trading-terminal",
+        errors,
+        "milestone 0.3.2",
+    )
+    assert any("US-401" in error and "标题不一致" in error for error in errors)
+
+
 def test_milestone_requirement_registry_rejects_unregistered_id(sv):
     """新增里程碑需求必须先进入版本根登记表。"""
     errors: list[str] = []

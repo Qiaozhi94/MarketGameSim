@@ -584,6 +584,10 @@ _REQUIREMENT_DECL = re.compile(
     re.M,
 )
 _US_HEADING = re.compile(r"^### (?P<id>US-\d+)[：:](?P<title>[^\n]+)", re.M)
+_US_BULLET = re.compile(
+    r"^- \*\*(?P<id>US-\d+)\*\*\s*[：:](?P<title>[^\n；;]+)",
+    re.M,
+)
 _EXIT_ROW = re.compile(r"^\|\s*(E\d+)\s*\|", re.M)
 _VERIFY_TOKENS = re.compile(r"—\s*verify:\s*(?P<verify>[^\n]*(?:\n\s{6,}[^\n]*)*)", re.M)
 
@@ -620,10 +624,20 @@ def _check_version_requirement_registry(
             )
 
     def user_story_titles(text: str) -> dict[str, str]:
-        return {
-            match.group("id"): re.sub(r"\s*[（(][^）)]*[）)]\s*$", "", match.group("title")).strip()
+        def normalize(title: str) -> str:
+            return re.sub(r"\s*[（(][^）)]*[）)]\s*$", "", title).strip()
+
+        titles = {
+            match.group("id"): normalize(match.group("title"))
             for match in _US_HEADING.finditer(text)
         }
+        titles.update(
+            {
+                match.group("id"): normalize(match.group("title"))
+                for match in _US_BULLET.finditer(text)
+            }
+        )
+        return titles
 
     version_titles = user_story_titles(version_body)
     milestone_titles = user_story_titles(milestone_body)
