@@ -36,18 +36,16 @@ updated: 2026-09-12
 
 ## 2. 实现任务
 
-### Phase 1：H2-D1 行情与 Web preview contract
+### Phase 1：H2-D1 Web 终端与交易预览
 
 - [ ] T929 (`FR-401`, `DR-402`, `UX-401`, `AC-401`): 实现 public tape → OHLC K 线投影器、5 窗
       preview 周期、无报价/不足周期空态和源哈希 — verify: `tests/unit/interactive/test_kline_projection.py`
 - [ ] T930 (`IR-301`, `IR-401`, `UX-401`, `UX-403`, `AC-403`): 实现 H2 owner view/start/status
       路由和 loopback 页面骨架，页面显示报价、账户、窗口、阶段与 K 线，不返回参照策略/未来信息
       — verify: `tests/integration/test_h2_owner_web.py`
-- [ ] T931 `[成果门:H2-D1]` (`SC-401`, `AC-401`, `AC-403`, `AC-404`): 生成可打开的本地 Web preview
-      页面，入口和验收命令写入 `RUN.md`；固定假参与者可看到价格/K 线/账户，证据标签为
-      `experiment-preview` — verify: `tests/e2e/test_h2_owner_terminal.py`
-
-### Phase 2：H2-D2 交易按钮与安全会话
+- [ ] T931 (`SC-401`, `AC-401`, `AC-403`, `AC-404`): 生成可打开的本地 Web preview
+      页面，作为内部 preview contract 验收；入口和验收命令写入 `RUN.md`；固定假参与者可看到价格/
+      K 线/账户，证据标签为 `experiment-preview` — verify: `tests/e2e/test_h2_owner_terminal.py`
 
 - [ ] T932 (`FR-402`, `IR-402`, `TR-401`, `AC-402`): 将买入/卖出/不行动/撤销（按动作空间允许）
       映射到 canonical input，并实现数量、窗口、重复点击和稳定错误码校验 — verify:
@@ -56,11 +54,11 @@ updated: 2026-09-12
       验证刷新、断线和迟到输入不重复提交或推进逻辑时间 — verify: `tests/integration/test_h2_owner_web.py`
 - [ ] T934 (`UX-402`, `UX-404`, `AC-406`): 完成按钮 loading/submitted/rejected、无报价禁用、超时、
       中止、完成、断线和错误空态 — verify: `tests/e2e/test_h2_owner_terminal.py`
-- [ ] T935 `[成果门:H2-D2]` (`SC-402`, `AC-402`, `AC-405`, `AC-406`): 生成可交互的本地交易终端
+- [ ] T935 `[成果门:H2-D1]` (`SC-402`, `AC-402`, `AC-405`, `AC-406`): 生成可交互的本地交易终端
       preview，固定输入完成合法动作/拒单/超时/重复点击/中止；证据标签为 `experiment-preview`
       — verify: `tests/e2e/test_h2_owner_terminal.py`
 
-### Phase 3：所有者训练、正式采集与个人交付
+### Phase 2：H2-D2 所有者训练、正式采集与个人交付
 
 - [ ] T936 (`FR-403`, `DR-401`, `NFR-302`, `AC-403`, `AC-407`): 实现 preview gate、training/formal
       assignment、阶段解盲、假名化和 owner artifact PII guard — verify:
