@@ -99,7 +99,8 @@ AI_FORMAL 的窗口调度与 168 block 合同不受影响。
 ## 5. Runtime、Workflow 与并发
 
 - `view` 是只读；`orders`、`abort` 竞争同一 session lock；市场推进由服务端调度驱动。
-- 浏览器可轮询或重连，但委托幂等键不可复用；服务端以 assignment/session 状态为准。
+- 浏览器可轮询或重连；同一逻辑委托在断线/重连后的重试必须复用原 `client_request_id` 以命中
+  幂等重放，只有新委托或不同 payload 才使用新键；服务端以 assignment/session 状态为准。
 - 页面断线不暂停市场；挂单在服务端继续生效，技术故障是否补跑由冻结 adjudication 决定。
 - preview、training、formal 使用不同 stage guard；正式结果字段永不放入 owner view。
 - 开发顺序是 `contract/Kline -> preview -> training -> formal`，E2 未通过时启动入口 fail closed。
