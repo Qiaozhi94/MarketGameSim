@@ -151,6 +151,20 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 .day-chip{border:1px solid var(--line);border-radius:6px;padding:4px 8px;font-size:12px;color:var(--dim);display:inline-block}
 .day-chip.today{border-color:var(--blue);color:var(--fg)}
 .day-chip.done{opacity:.55;text-decoration:line-through}
+#topnav nav [data-view]{cursor:pointer}
+#topnav nav .v-on{color:var(--fg);font-weight:700}
+.page{padding:14px 16px;max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:12px}
+.page[hidden]{display:none}
+.mkt-table{width:100%;border-collapse:collapse;font-size:13px}
+.mkt-table th{color:var(--faint);font-weight:400;text-align:left;padding:6px 10px;border-bottom:1px solid var(--line);font-size:12px}
+.mkt-table td{padding:8px 10px;border-bottom:1px solid #1a2029;font-family:var(--mono)}
+.mkt-table td:first-child,.mkt-table td:last-child{font-family:inherit}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.unit-btn{padding:2px 8px;font-size:11px;border-radius:4px;cursor:pointer;user-select:none}
+.unit-btn.on{border-color:var(--blue);color:var(--blue)}
+.lev-btn{padding:4px 14px}
+.lev-btn.on{border-color:var(--amber);color:var(--amber)}
+.btn-danger{background:#3a1713;border-color:var(--red);color:var(--red)}
 
 /* 标注 */
 .pin{display:none;position:absolute;z-index:30;width:20px;height:20px;border-radius:50%;
@@ -206,7 +220,7 @@ body.coll-mode .free-only{display:none !important}
     <span id="sim-badge" class="sim-badge">SIM</span>
     <span id="stage-badge" class="stage-badge" style="display:none"></span>
     <span class="logo">模拟交易所</span>
-    <nav><b>交易</b><span>行情</span><span>合约</span><span>资产</span></nav>
+    <nav><span data-view="trade" class="v-on">交易</span><span data-view="markets" id="nav-markets" class="free-only">行情</span><span data-view="contract">合约</span><span data-view="assets">资产</span><span data-view="research" id="nav-research" class="free-only">研究</span></nav>
     <span class="spacer"></span>
     <span id="conn">● 已连接</span>
     <button id="info-btn">ⓘ 市场说明</button>
@@ -322,7 +336,7 @@ body.coll-mode .free-only{display:none !important}
         <section class="card" id="card-trade">
           <span class="pin" data-note="w" style="right:8px;top:8px">4</span>
           <div class="tabs" id="type-tabs"></div>
-          <div id="avail-line">可用 <b class="num" id="avail-usdt">—</b> USDT · 全仓 5×</div>
+          <div id="avail-line">可用 <b class="num" id="avail-usdt">—</b> USDT · 全仓 <span class="unit-btn" id="lev-chip" style="cursor:pointer">5×</span></div>
           <div class="price-row" id="price-row">
             <span style="color:var(--dim)">价格</span>
             <button class="step" id="px-minus">−</button>
@@ -333,11 +347,14 @@ body.coll-mode .free-only{display:none !important}
             <button data-px="last">最后价</button><button data-px="ask">卖一价</button><button data-px="bid">买一价</button>
           </div>
           <div class="qty-row">
-            <span style="color:var(--dim)">数量</span>
-            <button class="step" id="qty-minus">−</button>
+            <span style="color:var(--dim)" id="qty-label">数量</span>
             <input id="qty" class="num" value="0.100" inputmode="decimal">
+            <button class="step" id="qty-minus">−</button>
             <button class="step" id="qty-plus">+</button>
+            <span class="unit-btn on" data-u="base" id="u-base">PERP</span>
+            <span class="unit-btn" data-u="usdt" id="u-usdt">USDT</span>
           </div>
+          <div id="qty-conv" style="font-size:11px;color:var(--faint);margin:-2px 0 4px"></div>
           <div class="pct-row" id="pct-row">
             <button data-pct="25">25%</button><button data-pct="50">50%</button>
             <button data-pct="75">75%</button><button data-pct="100">100%</button>
@@ -365,6 +382,89 @@ body.coll-mode .free-only{display:none !important}
       <div style="color:var(--dim);max-width:420px">行情与市场不会因断线暂停：您的挂单仍在市场中生效。<br>正在重连……恢复后以服务端会话为准，不会重复提交委托。</div>
       <div class="num" style="color:var(--faint)" id="reconnect-sec">已断开 3s</div>
       <button id="reconnect-btn">模拟恢复连接</button>
+    </div>
+  </div>
+
+  <!-- 行情页 -->
+  <div id="view-markets" class="page free-only" hidden>
+    <div class="card">
+      <h3>行情 · 模拟市场</h3>
+      <table class="mkt-table">
+        <thead><tr><th>品种</th><th>最新价</th><th>24h 涨跌</th><th>24h 高</th><th>24h 低</th><th>24h 量</th><th>资金费率</th><th></th></tr></thead>
+        <tbody id="mkt-body"></tbody>
+      </table>
+      <p style="color:var(--faint);font-size:12px;margin:8px 0 0">更多品种与 AI 对手方家族（因子策略 / 噪声 / 情绪交易者）待接入：见设计说明「待裁决」DQ-J。</p>
+    </div>
+  </div>
+
+  <!-- 合约页 -->
+  <div id="view-contract" class="page" hidden>
+    <div class="two-col">
+      <div class="card">
+        <h3>合约规格</h3>
+        <div class="kv"><span class="k">品种</span><span class="num">PERPETUAL-SIM-1（合成本位永续）</span></div>
+        <div class="kv"><span class="k">保证金模式</span><span>全仓 · USDT 结算</span></div>
+        <div class="kv"><span class="k">杠杆范围</span><span class="num">1–10×（自由模拟可调；采集模式由协议冻结）</span></div>
+        <div class="kv"><span class="k">最小变动</span><span class="num">0.01（tick）</span></div>
+        <div class="kv"><span class="k">单笔上限</span><span class="num">1.000 PERP · 挂单上限 8</span></div>
+        <div class="kv"><span class="k">手续费</span><span class="num">Taker 0.05% / Maker 0.02%（演示）</span></div>
+        <div class="kv free-only" id="contract-funding"><span class="k">资金费用</span><span class="num">每 8h 市场时间结算（演示 0.0100%）</span></div>
+      </div>
+      <div class="card">
+        <h3>市场机制（内核映射）</h3>
+        <div class="kv"><span class="k">撮合 / 账本</span><span>内核既有 orderbook 与 ledger 路径</span></div>
+        <div class="kv"><span class="k">保证金 / 强平</span><span>0.1.2 全仓杠杆路径（含穿仓与连锁）</span></div>
+        <div class="kv"><span class="k">行情来源</span><span>冻结 public tape（哈希绑定，DR-402）</span></div>
+        <div class="kv"><span class="k">时间模型</span><span>内核逻辑步进 + 合成交易所墙钟（ADR-006）</span></div>
+        <div class="kv"><span class="k">K 线</span><span>同一 tape 的多周期派生视图（Q-401）</span></div>
+        <div class="kv"><span class="k">证据边界</span><span>自由模拟永不进入实验证据索引</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 资产页 -->
+  <div id="view-assets" class="page" hidden>
+    <div class="card">
+      <h3>资产总览</h3>
+      <div id="assets-kv"></div>
+    </div>
+    <div class="two-col">
+      <div class="card free-only" id="assets-capital">
+        <h3>初始资金（自由模拟可配）</h3>
+        <div class="qty-row">
+          <span style="color:var(--dim)">金额</span>
+          <input id="dep-input" class="num" value="10000" inputmode="decimal">
+          <span style="color:var(--faint)">USDT</span>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button id="dep-btn">模拟入金</button>
+          <button id="reset-btn" class="btn-danger">重置为此初始资金</button>
+        </div>
+        <div id="assets-msg" style="font-size:12px;color:var(--amber);min-height:16px;margin-top:6px"></div>
+        <p style="color:var(--faint);font-size:12px;margin-bottom:0">重置会撤销全部挂单、清空仓位，并按输入金额重建账户；采集模式下初始资金由协议冻结，入口不可用。</p>
+      </div>
+      <div class="card free-only" id="assets-leverage">
+        <h3>杠杆（全仓 · 1–10×）</h3>
+        <div id="lev-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div>
+        <p style="color:var(--faint);font-size:12px;margin-bottom:0">杠杆决定初始保证金与预估强平价；强平、穿仓与连锁沿内核 0.1.2 既有路径执行。下单面板的杠杆角标也可直达此设置。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 研究页 -->
+  <div id="view-research" class="page free-only" hidden>
+    <div class="card">
+      <h3>研究交付物（项目既有成果入口）</h3>
+      <table class="mkt-table">
+        <thead><tr><th>里程碑</th><th>交付物</th><th>状态 / 证据级别</th></tr></thead>
+        <tbody>
+          <tr><td>v0.1 旗舰研究</td><td><a href="../../../experiments/0.1.5-flagship-report.md">正式总结报告</a> · <a href="../../../experiments/0.1.5-representative-replay.html">代表性回放</a> · <a href="../../../experiments/0.1.5-evidence-index.json">证据索引</a></td><td>formal-research · 已签收</td></tr>
+          <tr><td>H1 手动沙盒</td><td>interactive 会话与离线回放（本地成果包）</td><td>engineering-demonstration · 已签收</td></tr>
+          <tr><td>0.3.1 AI 正式轨</td><td>冻结协议 + 168 paired-seed blocks（见里程碑 spec）</td><td>ready-for-development</td></tr>
+          <tr><td>0.3.2 本终端</td><td>自由模拟终端 + owner N-of-1 采集（当前设计稿）</td><td>draft</td></tr>
+        </tbody>
+      </table>
+      <p style="color:var(--faint);font-size:12px;margin:8px 0 0">研究声明只由 AI 轨承担；owner 轨与自由模拟数据永不进入正式样本（FR-303 / ADR-006）。</p>
     </div>
   </div>
 </div>
@@ -732,6 +832,12 @@ function initTfTabs(){
 
 /* ---------- 下单 ---------- */
 let orderType="market";
+function effectiveQtyUnits(){
+  const px=orderType==="limit"?parseFloat($("px").value||"0"):(lastTicks||0)/100;
+  const v=parseFloat($("qty").value||"0");
+  if(!(px>0)||!(v>0))return 0;
+  return qtyUnit==="usdt"?Math.round(v/px*MULT):Math.round(v*MULT);
+}
 function renderButtonPx(){
   if(orderType==="market"){
     $("buy-px").textContent=askTicks!==null?("市价 ≈ "+fmtP(askTicks)):"—";
@@ -742,10 +848,19 @@ function renderButtonPx(){
     $("buy-px").textContent="限价 "+pv;
     $("sell-px").textContent="限价 "+pv;
   }
-  const qty=parseFloat($("qty").value||"0");
   const px=orderType==="limit"?parseFloat($("px").value||"0"):(lastTicks||0)/100;
-  const notional=qty*px;
-  $("est-margin").textContent=notional>0?(notional/account.leverage).toFixed(2)+" USDT":"—";
+  const q0=effectiveQtyUnits()/MULT;
+  if(px>0&&q0>0){
+    const notional=q0*px;
+    $("est-margin").textContent=(notional/account.leverage).toFixed(2)+" USDT";
+    $("qty-conv").textContent=qtyUnit==="usdt"
+      ?(`≈ ${q0.toFixed(3)} PERP · 市值 ${notional.toFixed(2)} USDT`)
+      :(`≈ ${notional.toFixed(2)} USDT · 市值按当前价估算`);
+  }else{
+    $("est-margin").textContent="—";
+    $("qty-conv").textContent=qtyUnit==="usdt"?"输入 USDT 金额，按价格自动换算为 PERP 数量":"";
+  }
+  $("lev-chip").textContent=account.leverage+"×";
 }
 function setOrderType(t){
   orderType=t;
@@ -767,7 +882,8 @@ function initTypeTabs(){
 function hintErr(msg){$("submit-hint").textContent=msg;$("submit-hint").className="err"}
 function hintOk(msg){$("submit-hint").textContent=msg;$("submit-hint").className="ok"}
 function submitOrder(side){
-  const qty=Math.round(parseFloat($("qty").value||"0")*MULT);
+  const qty=effectiveQtyUnits();
+  if(!(qty>0)){hintErr(qtyUnit==="usdt"?"金额必须大于 0（INVALID_QTY · 本地预检）":"数量必须大于 0（INVALID_QTY · 本地预检）");return}
   if(!(qty>0)){hintErr("数量必须大于 0（INVALID_QTY · 本地预检）");return}
   if(qty>account.qty_max){hintErr(`单笔数量超过上限 ${fmtQ(account.qty_max)}（INVALID_QTY）`);return}
   if(resting.length>=account.orders_max&&orderType==="limit"){hintErr(`挂单数量达到上限 ${account.orders_max}（ORDER_LIMIT）`);return}
@@ -821,6 +937,94 @@ function matchResting(){
   }
   if(changed)renderResting();
 }
+
+/* ---------- 全项目视图（交易/行情/合约/资产/研究） ---------- */
+let view="trade";
+function switchView(v){
+  view=v;
+  document.querySelectorAll("#topnav nav [data-view]").forEach(x=>x.classList.toggle("v-on",x.dataset.view===v));
+  $("terminal-wrap").style.display=v==="trade"?"block":"none";
+  $("view-markets").hidden=v!=="markets";
+  $("view-contract").hidden=v!=="contract";
+  $("view-assets").hidden=v!=="assets";
+  $("view-research").hidden=v!=="research";
+  if(v==="markets")renderMarkets();
+  if(v==="assets")renderAssets();
+}
+document.querySelectorAll("#topnav nav [data-view]").forEach(x=>x.onclick=()=>switchView(x.dataset.view));
+function renderMarkets(){
+  const body=$("mkt-body");
+  if(lastTicks===null){body.innerHTML='<tr><td colspan="8" style="color:var(--faint)">等待首笔公开成交</td></tr>';return}
+  const chg=(price-open24)/open24*100;
+  body.innerHTML=`<tr><td><b>PERPETUAL-SIM-1</b> <span style="color:var(--faint)">永续 · 全仓</span></td>
+    <td class="num">${fmtP(lastTicks)}</td>
+    <td class="num ${chg>=0?"up":"down"}">${(chg>=0?"+":"")+chg.toFixed(2)}%</td>
+    <td class="num">${fmtP(hi24)}</td><td class="num">${fmtP(lo24)}</td>
+    <td class="num">${Math.round(vol24/MULT).toLocaleString()}</td>
+    <td class="num">0.0100%</td>
+    <td><button onclick="switchView('trade')">交易</button></td></tr>`;
+}
+function renderAssets(){
+  const un=unrealizedTicks(),cls=un>=0?"up":"down";
+  const rows=[
+    ["账户权益",`<b class="${cls}">${fmtM(equityUnits())}</b>`],
+    ["可用余额",fmtM(availableUnits())],
+    ["未实现盈亏",`<span class="${cls}">${un>=0?"+":""}${fmtM(un)}</span>`],
+    ["当前仓位",account.position_units===0?"空仓":`${account.position_units>0?"多":"空"} ${fmtQ(Math.abs(account.position_units))} @ ${fmtP(account.entry_ticks)}`],
+    ["杠杆（全仓）",`<span class="num">${account.leverage}×</span>`],
+    ["预估强平价",`<span class="num">${fmtP(liqEstTicks())}</span>`],
+  ];
+  $("assets-kv").innerHTML=rows.map(r=>`<div class="kv"><span class="k">${r[0]}</span><span class="num">${r[1]}</span></div>`).join("");
+  renderLevButtons();
+}
+function renderLevButtons(){
+  $("lev-row").innerHTML=[1,2,3,5,10].map(l=>`<button class="lev-btn ${account.leverage===l?"on":""}" data-lv="${l}">${l}×</button>`).join("");
+  $("lev-row").querySelectorAll("[data-lv]").forEach(b=>b.onclick=()=>setLeverage(+b.dataset.lv));
+}
+function setLeverage(lv){
+  account.leverage=lv;
+  $("lev-chip").textContent=lv+"×";
+  renderAccount();renderAssets();renderButtonPx();
+}
+$("lev-chip").onclick=()=>openModal(`
+  <h2>调整杠杆（全仓）</h2>
+  <p>自由模拟可随时调整；采集模式下杠杆由实验协议冻结（入口只读）。杠杆越高，初始保证金越低、预估强平价越接近当前价——强平、穿仓与连锁沿内核 0.1.2 既有路径执行。</p>
+  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">${[1,2,3,5,10].map(l=>`<button class="lev-btn ${account.leverage===l?"on":""}" data-lv="${l}" onclick="setLeverage(${l})">${l}×</button>`).join("")}</div>
+  <div class="row"><button id="lev-close">关闭</button></div>`);
+$("dep-btn").onclick=()=>{
+  const v=parseFloat($("dep-input").value||"0");
+  if(!(v>0)){$("assets-msg").textContent="入金金额必须大于 0";return}
+  account.wallet_units+=Math.round(v*MULT);
+  pushReturn("info","模拟入金",v.toFixed(2)+" USDT",`自由模拟资产操作<br>模拟入金 ${v.toFixed(2)} USDT（合成记账，立即到账）`);
+  $("assets-msg").textContent="已入金 "+v.toFixed(2)+" USDT";
+  renderAccount();renderAssets();
+};
+$("reset-btn").onclick=()=>{
+  const v=parseFloat($("dep-input").value||"0");
+  if(!(v>0)){$("assets-msg").textContent="初始资金必须大于 0";return}
+  resting.length=0;
+  account.wallet_units=Math.round(v*MULT);
+  account.position_units=0;
+  account.entry_ticks=price;
+  pushReturn("info","重置初始资金",v.toFixed(2)+" USDT",`自由模拟资产操作<br>撤销全部挂单、清空仓位，账户按初始资金 ${v.toFixed(2)} USDT 重建`);
+  $("assets-msg").textContent="已按初始资金 "+v.toFixed(2)+" USDT 重置账户";
+  renderAccount();renderResting();renderAssets();
+};
+/* 下单单位切换（PERP 数量 / USDT 金额） */
+let qtyUnit="base";
+function setQtyUnit(u){
+  qtyUnit=u;
+  $("u-base").classList.toggle("on",u==="base");
+  $("u-usdt").classList.toggle("on",u==="usdt");
+  $("qty-label").textContent=u==="usdt"?"金额":"数量";
+  if(lastTicks!==null){
+    const px=lastTicks/100, cur=parseFloat($("qty").value||"0");
+    if(cur>0)$("qty").value=u==="usdt"?(cur*px).toFixed(2):(cur/px).toFixed(3);
+  }
+  renderButtonPx();
+}
+$("u-base").onclick=()=>setQtyUnit("base");
+$("u-usdt").onclick=()=>setQtyUnit("usdt");
 
 /* ---------- 状态机（评审切换） ---------- */
 let state="trading", stateFlags={};
@@ -927,6 +1131,7 @@ $("state-select").onchange=()=>setState($("state-select").value);
 function applyMode(mode,stage){
   const coll=mode===COLLECTION_MODE;
   if(coll&&tfKey==="1D"){tfKey="1m";renderTfTabs();}
+  if(coll&&(view==="markets"||view==="research"))switchView("trade");
   document.body.classList.toggle("coll-mode",coll);
   document.body.dataset.mode=mode;document.body.dataset.stage=stage;
   $("sim-badge").style.display=coll?"none":"inline-block";
@@ -944,8 +1149,14 @@ function setState(s){
 /* ---------- 输入绑定 ---------- */
 $("btn-buy").onclick=()=>submitOrder("BUY");
 $("btn-sell").onclick=()=>submitOrder("SELL");
-$("qty-minus").onclick=()=>{const v=Math.max(1,Math.round(parseFloat($("qty").value||"0")*MULT)-100);$("qty").value=fmtQ(v);renderButtonPx()};
-$("qty-plus").onclick=()=>{const v=Math.min(account.qty_max,Math.round(parseFloat($("qty").value||"0")*MULT)+100);$("qty").value=fmtQ(v);renderButtonPx()};
+$("qty-minus").onclick=()=>{
+  if(qtyUnit==="base"){const v=Math.max(1,Math.round(parseFloat($("qty").value||"0")*MULT)-100);$("qty").value=fmtQ(v)}
+  else{$("qty").value=Math.max(1,parseFloat($("qty").value||"0")-10).toFixed(2)}
+  renderButtonPx()};
+$("qty-plus").onclick=()=>{
+  if(qtyUnit==="base"){const v=Math.min(account.qty_max,Math.round(parseFloat($("qty").value||"0")*MULT)+100);$("qty").value=fmtQ(v)}
+  else{$("qty").value=(parseFloat($("qty").value||"0")+10).toFixed(2)}
+  renderButtonPx()};
 $("px-minus").onclick=()=>{const v=Math.max(1,Math.round(parseFloat($("px").value||"0")*100)-1);$("px").value=fmtP(v);renderButtonPx()};
 $("px-plus").onclick=()=>{const v=Math.round(parseFloat($("px").value||"0")*100)+1;$("px").value=fmtP(v);renderButtonPx()};
 $("px").oninput=renderButtonPx;
@@ -961,8 +1172,8 @@ $("pct-row").querySelectorAll("[data-pct]").forEach(b=>b.onclick=()=>{
   const px=orderType==="limit"?parseFloat($("px").value||"0"):(lastTicks||0)/100;
   if(!(px>0))return;
   const usdt=availableUnits()/MULT*0.95*pct;
-  let q=Math.min(usdt/px,account.qty_max/1000);
-  $("qty").value=q.toFixed(3);
+  if(qtyUnit==="usdt"){$("qty").value=usdt.toFixed(2)}
+  else{let q=Math.min(usdt/px,account.qty_max/1000);$("qty").value=q.toFixed(3)}
   renderButtonPx();
 });
 $("exit-btn").onclick=()=>setState("exit-confirm");
@@ -992,6 +1203,8 @@ setInterval(()=>{
   if(["warming","exp-gate","exp-break","exp-completed"].includes(state))return;
   tickMarket();
   renderTicker();renderBook();renderTape();renderAccount();drawKline();
+  if(view==="markets")renderMarkets();
+  if(view==="assets")renderAssets();
 },1000);
 
 /* ---------- 标注 ---------- */
@@ -1018,6 +1231,9 @@ audit:`
 <tr><td>门禁阻断 / 每日强制休息 / 结果盲完成页</td><td>E2 gate、Q-303、SC-404</td><td>全部归入采集模式（切换器［实验模式］组保留检视）</td></tr>
 <tr><td>中止会话 + OWNER_ABORT 原因枚举</td><td>实验中止审计</td><td>自由模式弱化为普通「退出」；带原因的中止只在采集模式</td></tr>
 <tr><td>单笔上限 1.000 / 挂单上限 8</td><td>合同限额</td><td><b>保留</b>：真实交易所也有下单量与频率限制</td></tr>
+<tr><td>（v4.1）杠杆选择缺失</td><td>内核 0.1.2 起就有全仓杠杆/强平路径；H1 合同把演示参数冻结为 1×/100% 保证金率，设计稿此前漏了入口</td><td><b>已补</b>：资产页与下单面板均可调杠杆 1–10×（全仓）；采集模式由协议冻结</td></tr>
+<tr><td>（v4.1）初始资金固定 10,000</td><td>H1 合同演示参数</td><td><b>已补</b>：资产页可设初始资金、模拟入金、一键重置；采集模式由协议冻结</td></tr>
+<tr><td>（v4.1）下单只有 PERP 数量</td><td>v3 起的数量输入默认币本位</td><td><b>已补</b>：下单面板支持 PERP 数量 / USDT 金额两种单位，自动换算并显示市值与占用保证金</td></tr>
 </table>
 <h4>v4 参考 TradingView / 币安 / OKX 补齐的能力</h4>
 <table>
@@ -1041,6 +1257,11 @@ audit:`
 observation/protocol 并让参照策略获得同一信息集（Q-401/E1）。</p>`,
 
 arch:`
+<h4>全项目视角（v4.1）</h4>
+<p>本设计稿覆盖项目的全部用户入口，不只是单笔交易页：顶部导航 <b>交易</b>（0.3.2 自由模拟/采集终端）、
+<b>行情</b>（品种列表，含未来品种与 AI 对手方家族接入位）、<b>合约</b>（合约规格与内核机制映射：撮合/账本/保证金/强平/时间模型/K 线派生）、
+<b>资产</b>（初始资金设置、模拟入金、杠杆 1–10× 全仓、总览）、<b>研究</b>（项目既有正式交付物入口：v0.1 旗舰报告/回放/证据索引、H1 沙盒、0.3.1 AI 轨）。
+采集模式的实验约束只作用于交易页；资产与杠杆调整在采集模式下由协议冻结（只读）。</p>
 <h4>布局（对齐币安合约交易页三段式）</h4>
 <p>顶部导航 + 行情 ticker 条；左栏盘口/成交（页签切换）；中栏图表（TradingView 风格）+
 底部「当前挂单 / 操作回报」；右栏下单面板 + 账户资产。一屏可见价格、K 线、账户与提交入口（UX-401）。</p>
@@ -1139,6 +1360,8 @@ seedHistory();
 initTfTabs();
 initTypeTabs();
 setState("trading");
+switchView("trade");
+renderAssets();
 </script>
 </body>
 </html>
