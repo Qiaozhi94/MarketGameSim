@@ -36,7 +36,7 @@ def test_ac302_timeout_writes_no_action_without_wall_clock_wait():
 def test_window_rejects_input_after_the_real_deadline_passes():
     """真正的迟到——不是"提交两次"的伪迟到，是等到窗口时限真的过去。
 
-    沙盒环境的单调钟粒度粗到几十毫秒（远比生产 Windows 目标环境粗），所以窗口时长
+    沙盒环境的单调钟粒度粗到几十毫秒（远比真实交互部署环境粗），所以窗口时长
     与等待时间都要留出安全余量，不能只靠 1ns/1ms 这种理论上"应该够了"的数字。
     """
     window = session.open_window(index=2, duration_ns=1_000_000)  # 1ms 窗口

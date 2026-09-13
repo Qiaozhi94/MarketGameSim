@@ -84,7 +84,7 @@ n=1 自我实验，[`SOP`](../../SOP.md) §2 把样本量 1、有学习效应的
 - **NFR-303**：故障与排除规则不得由结果反向决定；正文见 [`0.3.1 spec §4`](0.3.1-human-in-the-loop-experiment/spec.md#4-需求)。
 - **NFR-401**：loopback 页面无外部网络也可用；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 - **NFR-402**：刷新和断线不得重复提交动作；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
-- **NFR-403**：兼容既有 Windows/POSIX 运行方式；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **NFR-403**：部署与运行环境为 Linux（POSIX）；owner 终端是浏览器页面，客户端操作系统不在验收范围；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 
 ### UX 需求
 

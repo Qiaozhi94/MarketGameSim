@@ -223,7 +223,7 @@ prerequisites:
   直接身份信息，也不得把 owner 结果写成人群结论。
 - **NFR-401**：loopback 页面在无外部网络时可用；前端不引入交易凭据和第三方行情依赖。
 - **NFR-402**：页面状态以服务端 session 为准，刷新或短暂断线不得重复提交委托。
-- **NFR-403**：支持项目既有 Windows/POSIX 运行方式；不得要求新增不可审计的全局服务或数据库。
+- **NFR-403**：服务端部署与运行环境为 Linux（POSIX）；终端是浏览器页面，客户端操作系统不是部署面、不在验收范围；不得要求新增不可审计的全局服务或数据库。
 
 ## 5. 生命周期与不变量
 
@@ -314,7 +314,8 @@ TECHNICAL_ABORT -> RERUN_PENDING   仅技术原因且备用池仍有可用项
 - 集成测试：Web session API、既有市场路径、限价成交与撤单、断线/中止/补跑、artifact 哈希
   和阶段 guard。
 - UI / E2E：浏览器打开、K 线多周期刷新、委托反馈、拒单、无报价和结果盲。
-- 真实环境 / 手动验证：Windows 与 POSIX 本地 loopback 各完成一次 preview；正式 owner 场景
+- 真实环境 / 手动验证：Linux（POSIX）本地 loopback 用真实浏览器完成一次 preview（客户端 OS 不限、
+  不在验收范围）；正式 owner 场景
   只在 E2/E3 通过后启动。6/24 个真实场景的完成证据固定落在 `docs/experiments/owner-n-of-1/`
   （`environment.json` + `owner-session-manifest.json` + `owner-evidence-index.json`），机器校验
   入口为 `python tools/validate_owner_evidence.py --dir <path>`；证据须包含目标环境记录
