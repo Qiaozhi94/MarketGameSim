@@ -75,7 +75,9 @@
   1. **H2 冻结协议修订**：把 owner 移出 `window_contract.applies_to`、删除
      `owner_wall_clock_seconds`；owner 决策合同改由 `tracks.owner_n_of_1.decision_contract`
      显式承载（自由连续交易 + 市场时间跨度 + 逻辑时点采样，参数待 E1）。
-     `protocol_hash` 由 `ad60ad26…` 变为 `f187b559…`（frozen 归档同步重建），
+     `protocol_hash` 由 `ad60ad26…` 变为
+     `ff3978c45b6fdd31b01863e93e988c54ced41951e64cf08e3a899a89c8d70c9f`
+     （frozen 归档同步重建，以 `H2-formal-freeze/freeze-manifest.json` 为准），
      168 个 AI assignment 按新哈希重签，seed 集合与场景顺序不变；因首个正式样本
      尚未运行，修订落在合法窗口内。协议修订记录同时写入预注册 §2 与 §10。
   2. 0.3.2 spec/design/tasks/版本根/PRD 按本决策修订；新增裁决记录 Q-403。

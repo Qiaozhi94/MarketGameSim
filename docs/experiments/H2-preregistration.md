@@ -38,10 +38,12 @@ evidence index、样本量与推断不得合并。
   由该裁决取代，不再作为 owner 的决策机会合同。
 - `AI_FORMAL` 轨的窗口调度、两个冻结策略、配对字段与 168 block 合同完全不受影响——
   本修订只涉及 owner 轨。
-- H2 冻结协议已同步修订（`protocol_hash` `ad60ad26…` → `f187b559…`）：owner 移出
-  `window_contract.applies_to`、删除 `owner_wall_clock_seconds`，owner 决策合同改由
-  `tracks.owner_n_of_1.decision_contract` 显式承载；168 个 AI assignment 按新哈希重签，
-  seed 集合与场景顺序不变。修订发生在首个正式样本之前，符合 §10 的冻结性规则。
+- H2 冻结协议已同步修订：owner 移出 `window_contract.applies_to`、删除
+  `owner_wall_clock_seconds`，owner 决策合同改由 `tracks.owner_n_of_1.decision_contract`
+  显式承载；168 个 AI assignment 按新哈希重签，seed 集合与场景顺序不变。修订发生在首个
+  正式样本之前，符合 §10 的冻结性规则。新 `protocol_hash` 不在此内联——本文件会被哈希进
+  protocol payload，内联具体值即自指、文本永远追不上；以
+  `H2-formal-freeze/freeze-manifest.json` 与 `protocol.json` 为准。
 
 ## 3. 指标定义与判据
 

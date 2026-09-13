@@ -4,18 +4,18 @@
       "src/market_game_sim/experiment/h2/mechanisms.py": "65d1f6577fa9f46e0f0e6ee05d1b694f52ebe59eb1fce52fcb24fe180e164096",
       "src/market_game_sim/experiment/h2/outcomes.py": "4a053ddfcf3e660cc7505747f673069c12f1221aa5a068b1c94c1eabfa8857cc"
     },
-    "assignments.json": "413196e40e5b07e9f3f2f5ea24ce525bd26f7870addfe3bc509f51ba0da1a210",
+    "assignments.json": "328862832776bf171c4212f2a6a9e5b40a972fa1bb95a272f8b2ad7e14709919",
     "preregistration": {
       "id": "H2-preregistration-v1",
       "path": "docs/experiments/H2-preregistration.md",
-      "sha256": "1044a477cca2aec844c498c0e704924d4197bfd588f7a088815649dd21148349"
+      "sha256": "d415cf036d43120407f827eb2bd2fe98847a94f34ede54aaca0ba427a0590f03"
     },
-    "protocol.json": "b730c98e343e52acd6ae28e08548881895aed4f31edf32feab47f78346dc41cf"
+    "protocol.json": "407c92f15179db91079f07236aaf4c4537053611310be1248d4cc7c409c035be"
   },
-  "first_formal_sample_allowed_after": "2026-09-13T06:16:35+00:00",
+  "first_formal_sample_allowed_after": "2026-09-13T08:20:48+00:00",
   "formal_sample_count_at_freeze": 0,
   "freeze_id": "H2-formal-freeze-v1",
-  "frozen_at_utc": "2026-09-13T06:16:35+00:00",
-  "protocol_hash": "8143996be17dddc595f88ccb76f21cf6a8be8b6b9f18c91ee389faaa2306588c",
+  "frozen_at_utc": "2026-09-13T08:20:48+00:00",
+  "protocol_hash": "ff3978c45b6fdd31b01863e93e988c54ced41951e64cf08e3a899a89c8d70c9f",
   "schema_version": 1
 }

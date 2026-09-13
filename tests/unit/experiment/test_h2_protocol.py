@@ -10,6 +10,7 @@ T904 已实现，xfail 骨架相应摘除。这里的负向用例逐个字段地
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 
@@ -206,6 +207,26 @@ def test_preregistration_records_the_owner_window_revision_and_archive_binds_it(
     assert "2026-09-13 owner 窗口合同修订记录" in text
     assert "owner_wall_clock_seconds" in text
     formal_freeze.verify_archive()
+
+
+def test_documented_protocol_hash_matches_the_freeze_archive():
+    """ADR006-013：文档内联的 40+ 位 protocol_hash 必须等于归档实际值；预注册不得内联。
+
+    预注册会被哈希进 protocol payload，内联具体哈希即自指、文本永远追不上；
+    ADR 不在 payload 内，可以内联，但必须与归档一致。
+    """
+    actual = formal_freeze.verify_archive()["protocol_hash"]
+    assert len(actual) == 64
+
+    prereg = formal_freeze.PREREGISTRATION_PATH.read_text(encoding="utf-8")
+    assert not re.search(r"[0-9a-f]{40,}", prereg), "预注册不得内联 protocol_hash"
+
+    adr = (
+        formal_freeze.ROOT / "docs" / "decisions" / "006-realtime-free-trading-owner-terminal.md"
+    ).read_text(encoding="utf-8")
+    claimed = re.findall(r"[0-9a-f]{40,}", adr)
+    assert claimed, "ADR 应内联修订后的实际 protocol_hash 供审计"
+    assert all(value == actual for value in claimed), f"ADR 内联哈希 {claimed} 与归档 {actual} 不符"
 
 
 def test_incomplete_h2_preregistration_blocks_the_protocol_gate(tmp_path):
