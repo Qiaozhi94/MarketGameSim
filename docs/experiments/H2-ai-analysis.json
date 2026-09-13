@@ -1,0 +1,177 @@
+{
+  "analysis_plan": {
+    "bootstrap_resamples": 10000,
+    "bootstrap_seed": 0,
+    "ci_level": 0.95,
+    "contrast": "risk_budget_threshold_v1 - risk_budget_linear_v1",
+    "holm_alpha": 0.05,
+    "holm_scope": [
+      "price_crash.severity",
+      "liquidity_dry_up.severity",
+      "liquidation_cascade.severity"
+    ],
+    "occurrence_role": "descriptive",
+    "owner_inference": "descriptive_only",
+    "source_sha256": {
+      "src/market_game_sim/experiment/h2/mechanisms.py": "65d1f6577fa9f46e0f0e6ee05d1b694f52ebe59eb1fce52fcb24fe180e164096",
+      "src/market_game_sim/experiment/h2/outcomes.py": "4a053ddfcf3e660cc7505747f673069c12f1221aa5a068b1c94c1eabfa8857cc"
+    }
+  },
+  "conclusion_boundary": {
+    "composite_score": false,
+    "conclusion": "在冻结模型族与本参数范围内，threshold 相对 linear 对照的严重程度配对差及其 CI 见 primary；结论限定于本模型族、冻结参数范围与 50000..50167 的 seed 分布，发生指标为描述性，不构成综合分数，亦不外推至人类被试。",
+    "occurrence_role": "descriptive",
+    "owner_inference": "absent_ai_track_only"
+  },
+  "evidence_class": "formal-research",
+  "index_binding": {
+    "n_included": 168,
+    "path": "/home/georg/projects/MarketGameSim/docs/experiments/H2-ai-evidence-index.json",
+    "protocol_hash": "ff3978c45b6fdd31b01863e93e988c54ced41951e64cf08e3a899a89c8d70c9f",
+    "sha256": "864bb33f6790d1f783a82b7f3d3342c13abe42c09032ac901b0f6d0f3e1063c4"
+  },
+  "mechanisms": {
+    "aggressive_orders": {
+      "linear": {
+        "mean": 2544620.980101723,
+        "n": 168,
+        "total": 427496324.65708953
+      },
+      "threshold": {
+        "mean": 1147719.2129765658,
+        "n": 168,
+        "total": 192816827.78006306
+      }
+    },
+    "liquidity_withdrawal": {
+      "linear": {
+        "mean": 81231888.30812767,
+        "n": 168,
+        "total": 13646957235.765448
+      },
+      "threshold": {
+        "mean": 21308072.220323436,
+        "n": 168,
+        "total": 3579756133.014337
+      }
+    },
+    "risk_reduction": {
+      "linear": {
+        "mean": -1440096.9115595024,
+        "n": 168,
+        "total": -241936281.14199638
+      },
+      "threshold": {
+        "mean": -250339.4277291336,
+        "n": 168,
+        "total": -42057023.858494446
+      }
+    }
+  },
+  "primary": {
+    "liquidation_cascade": {
+      "ci_high": -0.7976190476190477,
+      "ci_low": -1.0952380952380953,
+      "effect": -0.9464285714285714,
+      "holm_significant": true,
+      "n_blocks": 168,
+      "n_missing": 0,
+      "occurrence_rate_diff": -0.47023809523809523,
+      "occurrence_role": "descriptive",
+      "p_value": 0.0
+    },
+    "liquidity_dry_up": {
+      "ci_high": 0.22659105685598308,
+      "ci_low": 0.11886095924622962,
+      "effect": 0.17346280245497747,
+      "holm_significant": true,
+      "n_blocks": 168,
+      "n_missing": 0,
+      "occurrence_rate_diff": 0.0,
+      "occurrence_role": "descriptive",
+      "p_value": 0.0
+    },
+    "price_crash": {
+      "ci_high": -0.003840751981464291,
+      "ci_low": -0.0049432409652493585,
+      "effect": -0.004397279785224338,
+      "holm_significant": true,
+      "n_blocks": 168,
+      "n_missing": 0,
+      "occurrence_rate_diff": 0.0,
+      "occurrence_role": "descriptive",
+      "p_value": 0.0
+    }
+  },
+  "schema_version": 1,
+  "sensitivity": {
+    "leverage_tier_strata": {
+      "liquidation_cascade": {
+        "tier_10": {
+          "mean_diff": -1.2758620689655173,
+          "n": 58
+        },
+        "tier_20": {
+          "mean_diff": -1.4727272727272727,
+          "n": 55
+        },
+        "tier_50": {
+          "mean_diff": -0.07272727272727272,
+          "n": 55
+        }
+      },
+      "liquidity_dry_up": {
+        "tier_10": {
+          "mean_diff": 0.12615183042460856,
+          "n": 58
+        },
+        "tier_20": {
+          "mean_diff": 0.07523260830244059,
+          "n": 55
+        },
+        "tier_50": {
+          "mean_diff": 0.321584567112267,
+          "n": 55
+        }
+      },
+      "price_crash": {
+        "tier_10": {
+          "mean_diff": -0.004861079872647509,
+          "n": 58
+        },
+        "tier_20": {
+          "mean_diff": -0.0049521451751425695,
+          "n": 55
+        },
+        "tier_50": {
+          "mean_diff": -0.0033533161212962177,
+          "n": 55
+        }
+      }
+    },
+    "role": "boundary_evidence_only",
+    "sign_flip_p": {
+      "liquidation_cascade": 9.999000099990002e-05,
+      "liquidity_dry_up": 9.999000099990002e-05,
+      "price_crash": 9.999000099990002e-05
+    }
+  },
+  "sesoi_verdict": {
+    "liquidation_cascade": {
+      "effect": -0.9464285714285714,
+      "effect_below_sesoi": false,
+      "sesoi": 0.2504897164340598
+    },
+    "liquidity_dry_up": {
+      "effect": 0.17346280245497747,
+      "effect_below_sesoi": false,
+      "sesoi": 0.004596880464594779
+    },
+    "price_crash": {
+      "effect": -0.004397279785224338,
+      "effect_below_sesoi": true,
+      "sesoi": 0.004596880464594779
+    }
+  },
+  "status": "ANALYSED"
+}

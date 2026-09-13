@@ -106,16 +106,16 @@ updated: 2026-09-12
 - [x] T916 (`FR-301`, `SC-301`, `AC-301`): 冻结最终预注册、分析代码、协议哈希与分配表，并在
       首个正式样本前归档时间证据；预注册文档门和 protocol schema 门须同时通过 — verify:
       `tests/unit/experiment/test_h2_protocol.py`、`python tools/validate_spec_lifecycle.py`
-- [ ] T917 (`US-301`, `NFR-303`, `AC-304`, `AC-308`): 按冻结协议完成 T902 冻结的 AI paired
+- [x] T917 (`US-301`, `NFR-303`, `AC-304`, `AC-308`): 按冻结协议完成 T902 冻结的 AI paired
       block 数（168；若资源窗口结束仍不足，按预注册停止规则写出 `incomplete-study` 样本流）。
       纯代理正式运行按冻结 seed/配置台账与结果盲裁决推进；owner 训练和 24 个正式场景不属于
       本任务，转由 0.3.2 — verify:
       `tests/integration/test_h2_paired_runs.py`
-- [ ] T918 (`FR-303`, `IR-302`, `SC-302`, `AC-303`, `AC-304`): 冻结只含完整合格 pair 的 H2
+- [x] T918 (`FR-303`, `IR-302`, `SC-302`, `AC-303`, `AC-304`): 冻结只含完整合格 pair 的 H2
       evidence index 和样本流图 — verify: `tests/integration/test_h2_evidence_guard.py`
-- [ ] T919 (`FR-304`, `FR-305`, `SC-303`, `AC-305`, `AC-306`): 运行预注册主要、机制与敏感性
+- [x] T919 (`FR-304`, `FR-305`, `SC-303`, `AC-305`, `AC-306`): 运行预注册主要、机制与敏感性
       分析，输出机器结果并执行结论边界检查 — verify: `tests/unit/experiment/test_h2_outcomes.py`
-- [ ] T920 (`FR-306`, `NFR-301`, `SC-304`, `AC-307`, `AC-308`): 生成 AI 正式报告、
+- [x] T920 (`FR-306`, `NFR-301`, `SC-304`, `AC-307`, `AC-308`): 生成 AI 正式报告、
       代表性回放、限制、manifest 与隐私审查记录 — verify: `tests/integration/test_h2_delivery.py`
 - [ ] T921 `[成果门:H2-C]` (`AC-304`, `AC-305`, `AC-306`, `AC-307`, `AC-308`): 从冻结 AI evidence
       index 单命令生成可打开的 H2 AI 正式交付包，入口
@@ -125,12 +125,12 @@ updated: 2026-09-12
 
 ## 3. 验证与验收任务
 
-- [ ] T922 (`AC-301`, `AC-303`, `AC-304`): 运行协议、证据门、配对和重放正反测试 — verify:
+- [x] T922 (`AC-301`, `AC-303`, `AC-304`): 运行协议、证据门、配对和重放正反测试 — verify:
       `tests/unit/experiment/test_h2_protocol.py`、`tests/integration/test_h2_evidence_guard.py`、
       `tests/integration/test_h2_paired_runs.py`
 - [ ] T923 (`AC-302`, `AC-308`): 在目标 Windows 环境运行 AI/preview 窗口、断线、中止与阶段提示
       验收；所有者 Web 终端由 0.3.2 单独验收 — verify: `tests/integration/test_experiment_session.py`
-- [ ] T924 (`AC-305`, `AC-306`): 用冻结模拟数据验证效应恢复、缺失、多重性、三机制和无综合分数
+- [x] T924 (`AC-305`, `AC-306`): 用冻结模拟数据验证效应恢复、缺失、多重性、三机制和无综合分数
       — verify: `tests/unit/experiment/test_h2_outcomes.py`、
       `tests/unit/experiment/test_h2_mechanisms.py`、`tests/integration/test_h2_mechanisms.py`
 - [ ] T925 (`AC-301`, `AC-302`, `AC-303`, `AC-304`, `AC-305`, `AC-306`, `AC-307`, `AC-308`):

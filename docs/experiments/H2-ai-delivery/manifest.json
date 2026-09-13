@@ -1,0 +1,24 @@
+{
+  "evidence_class": "formal-research",
+  "files": {
+    "machine-results.json": "2b5144a9d07ad5eac606cf35dfb084656d873395408b3b749c0e8eaa3abc821a",
+    "paired-checks.json": "391ffe879f4871b5a7eb6f72441281f5b0179d976170ecff75cffd5756fdda7f",
+    "report.md": "141bab927bf456372b2a8096d64fa7c6b491226b6e04e6fa3db120be16a492d4",
+    "representative-replay.json": "56af8eebdbd02c271f7736cf047196436124b53904fb67d5c2bdbffb86b9fc5c",
+    "sample-flow.json": "c76a369c7ca81b590fc6f58cf894bebb1ba391d6fa480ac783c6a86ae8ca13ff"
+  },
+  "index_binding": {
+    "n_included": 168,
+    "path": "/home/georg/projects/MarketGameSim/docs/experiments/H2-ai-evidence-index.json",
+    "protocol_hash": "ff3978c45b6fdd31b01863e93e988c54ced41951e64cf08e3a899a89c8d70c9f",
+    "sha256": "864bb33f6790d1f783a82b7f3d3342c13abe42c09032ac901b0f6d0f3e1063c4"
+  },
+  "machine_results_sha256": "2b5144a9d07ad5eac606cf35dfb084656d873395408b3b749c0e8eaa3abc821a",
+  "pii_scan": {
+    "categories": [],
+    "clean": true
+  },
+  "producer": "H2-C formal delivery (T921)",
+  "run_mode": "ai-mechanism-experiment",
+  "stop_rule": "reached_frozen_minimum"
+}

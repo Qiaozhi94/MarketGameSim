@@ -1,0 +1,16 @@
+{
+  "evidence_class": "formal-research",
+  "sample_flow": {
+    "excluded": 0,
+    "excluded_by_reason": {},
+    "included": 168,
+    "issued_blocks": 168,
+    "reruns_required": 0,
+    "reserve_pool": {
+      "consumed": [],
+      "size": 17,
+      "unused": 17
+    },
+    "total": 168
+  }
+}

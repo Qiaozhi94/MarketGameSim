@@ -9,6 +9,8 @@ T912 已实现，xfail 骨架相应摘除。分两层测试：``analyse_families
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from market_game_sim.experiment.h2 import outcomes
@@ -243,3 +245,96 @@ def test_single_account_liquidation_does_not_count_as_a_cascade_occurrence():
     cascade = observations["liquidation_cascade"]
     assert cascade.control_severity == 1.0
     assert cascade.control_occurrence == 0.0
+
+
+# --------------------------------------------------------------------------- #
+# T919：预注册正式分析、重放完整性、敏感性与结论边界
+# --------------------------------------------------------------------------- #
+
+
+@pytest.fixture(scope="module")
+def small_frozen_index(tmp_path_factory):
+    """2 个真实 block 的迷你冻结 index：驱动全部分析代码路径但不付 168 重放的成本。"""
+    from market_game_sim.experiment.h2 import evidence_index, formal_ai
+
+    root = tmp_path_factory.mktemp("t919-sampling")
+    formal_ai.sample_ai_blocks(count=2, out_dir=root)
+    return evidence_index.freeze_index(root / "idx.json", out_dir=root, required_blocks=2)
+
+
+def test_formal_analysis_binds_to_index_and_frozen_plan(small_frozen_index):
+    from market_game_sim.experiment.h2 import analysis
+
+    payload = analysis.run_formal_analysis(index_path=small_frozen_index)
+    import hashlib
+
+    assert (
+        payload["index_binding"]["sha256"]
+        == hashlib.sha256(small_frozen_index.read_bytes()).hexdigest()
+    )
+    assert payload["analysis_plan"] == analysis.frozen_analysis_plan()
+    for family in FAMILIES:
+        assert payload["primary"][family]["n_blocks"] == 2
+        assert payload["primary"][family]["occurrence_role"] == "descriptive"
+        assert 0.0 <= payload["sensitivity"]["sign_flip_p"][family] <= 1.0
+        assert payload["sensitivity"]["role"] == "boundary_evidence_only"
+    assert payload["conclusion_boundary"]["composite_score"] is False
+    assert payload["conclusion_boundary"]["owner_inference"] == "absent_ai_track_only"
+    blob = json.dumps(payload)
+    assert "holm_significant" in blob  # 主要终点有 Holm 判定
+    assert "composite" not in blob.replace("composite_score", "")  # 无综合分数
+
+
+def test_replay_digest_mismatch_fails_closed(small_frozen_index):
+    """index 的事件哈希被篡改后，重放校验必须拒绝分析（fail-closed）。"""
+    from market_game_sim.experiment.h2 import analysis
+
+    tampered = small_frozen_index.with_name("tampered-idx.json")
+    payload = json.loads(small_frozen_index.read_text(encoding="utf-8"))
+    payload["included"][0]["arms"]["linear"]["events_sha256"] = "0" * 64
+    tampered.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(analysis.AnalysisError, match="重放事件哈希"):
+        analysis.run_formal_analysis(index_path=tampered)
+
+
+def test_conclusion_text_enforces_frozen_syntax():
+    from market_game_sim.experiment.h2 import analysis
+
+    good = "本模型族在冻结参数范围与 seed 分布内的结论，不外推至人类被试。"
+    analysis.check_conclusion_text(good)
+    with pytest.raises(analysis.AnalysisError, match="禁用简写"):
+        analysis.check_conclusion_text("这表明存在人类效应。")
+    with pytest.raises(analysis.AnalysisError, match="限定词"):
+        analysis.check_conclusion_text("效应显著，可以推广。")
+
+
+def test_sign_flip_p_reaches_both_extremes():
+    from market_game_sim.experiment.h2 import analysis
+
+    one_sided = [1.0] * 12
+    assert analysis._sign_flip_p(one_sided, draws=999, seed=0) == pytest.approx(1 / 1000)
+    balanced = [1.0, -1.0] * 6
+    assert analysis._sign_flip_p(balanced, draws=999, seed=0) > 0.5
+
+
+def test_freeze_analysis_is_deterministic_and_refuses_rewrite(small_frozen_index, tmp_path):
+    from market_game_sim.experiment.h2 import analysis
+
+    target = tmp_path / "H2-ai-analysis.json"
+    path = analysis.freeze_analysis(index_path=small_frozen_index, out_path=target)
+    first = path.read_bytes()
+    assert analysis.freeze_analysis(index_path=small_frozen_index, out_path=target) == path
+    assert path.read_bytes() == first
+
+    path.write_text("{}\n", encoding="utf-8")
+    with pytest.raises(analysis.AnalysisError, match="不可原地改写"):
+        analysis.freeze_analysis(index_path=small_frozen_index, out_path=target)
+
+
+def test_projection_matches_observe_ai_block():
+    """冻结归档钉死了 outcomes.py 的哈希——analysis 的投影必须与之逐值等价。"""
+    from market_game_sim.experiment.h2 import analysis, runner
+
+    seed = 50_000
+    block = runner.run_ai_block(seed)
+    assert analysis._observe_block(seed, block) == outcomes.observe_ai_block(seed)

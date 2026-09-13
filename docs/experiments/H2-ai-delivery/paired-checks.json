@@ -1,0 +1,3701 @@
+{
+  "evidence_class": "formal-research",
+  "pairs": [
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "49731bf88247c611cc5494e4ede378fc6256b00cc6bd55541239c83775cfecbf",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "3fc3a54755b37d86f330b5508c75dfee54caac6851775e223e214adcab6e1f6f",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50000",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 0,
+      "seed": 50000
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "6bb152e53c57825f31a0961bdd20a6bc5d13ce63e94c180d31f1b6c60ccb7eeb",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "db8d82329faee20faa4bb3faafeabf12e617e9b67734a9de8ea58d81c3620a54",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50001",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 1,
+      "seed": 50001
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "06bfa447eccfca9bbf18b40f5e41d8fcfa20b3c667679e93c54cce86941b0e02",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "f813006365af5661ebecb4d1218993ecb8cf50b8bcd5ced4a385664ba8d5cd7e",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50002",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 2,
+      "seed": 50002
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "8b20b2b14171cf1d5b2ada690c27bfe9ceb0240546d66943899efc216f1c1f5d",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "97277dd7b6a5ac0c5bc59cac62b59b7b9d2e8686db91130f7c2a46190aa6aa7b",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50003",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 3,
+      "seed": 50003
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "51769287e603b9dc78524155cc2ef3b0369ae4f1fbdcf56180e73f06510a6bad",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "3bbd94d46b5d76e143ba21915cdb2cbf5d5ffebace007ce337f3453fa26547a6",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50004",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 4,
+      "seed": 50004
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "5b9b8dc408d24901e03577c1175e8d3c5beb4b92bec7d73f96a1eba6eb1a68b2",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "95bb0be231b757af75e30c1ffe173bf813adbccb126c39bcf77f72bc0d97ee18",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50005",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 5,
+      "seed": 50005
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "f83c48beaca9c33e531b0ae5ae32711e72f560bbfa9a99c7e6a82319713856db",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "74a58f5d8bd1b524a35fb51658d456755a1e1864c6cd83a223c540a364cfacf9",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50006",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 6,
+      "seed": 50006
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "68265278793e96da83a80ac23ea8fc3bb500eae0bd1e04f4e2a31c61b67b0081",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "079b973843607ac03bb4cd96b2ccea18184fcdbc7f1dbb183f0c2ce9aad59351",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50007",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 7,
+      "seed": 50007
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "5e2aad5d837f5a866fbb5eb89e3f793c5224840680e19749717433b83ae1e7f0",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "e0b38bf1bb873b1e9793c816fbf74c5ea87027b4568458071a036a766c47e883",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50008",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 8,
+      "seed": 50008
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "c783b324e083e05edabc11ad0145b3ee7b8d8ba8975313d9c6f808eebfb4fe4a",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "3090921f78504c041dd3c248036e6b01b2acfd28880e02c4f8167ea152e3663d",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50009",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 9,
+      "seed": 50009
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "7df5a2df6dae131fe9c8f99520c312a08bf6f194c64bbfd1dd9597d2361a5a80",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "449cb190b87b5fa7468a7e7eed22cfccfc5bc770baa14663c01ef60aadc6b6b4",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50010",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 10,
+      "seed": 50010
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "3538c5e361690918c0a34faa5a6c558786ce4f0659fcc23b7c182cf34d8b71d9",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "270bfb5b56ae69267acf2daf4f8ac9e6a0c93541cf0f7adea9baf337b0ef8b01",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50011",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 11,
+      "seed": 50011
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "9d77c5e9e2b2e8e107734cdee0bc525c32453dd6265811dc6529c60123080c58",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "3baf45987487afce16cd42a103d909ca6d0285cd16f28588d4faece55274ad8a",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50012",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 12,
+      "seed": 50012
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "31b8e589c53b5b5517d196b05bfb206aad00c00c65a98730b724615ed9c0c3dc",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "f0e237bcb8cf5cbc4887d9360269f0905a6c124da34bd864f77f005293c0224e",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50013",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 13,
+      "seed": 50013
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "051739c9d3a905cf5d10325af7ebcbcde0884af70dc965c528da878aaa995c77",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "bf24e15ef73288d7226ba6bb010f078fe1ddfd50818b5f1d3cb0ab0677e3e546",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50014",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 14,
+      "seed": 50014
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "4eb610b83d56d4ba815f4981c8bce40af0c8045549e9776b18974ef861465719",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "7654d2adb20fb483925696994122d64d96376616ec826933c640ab90430cadcb",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50015",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 15,
+      "seed": 50015
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "388bff75193f081e0f886ff71dbd88e6ed714ccf30cff614b9d6be26780c6090",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "4bc7c06d92aeea23a622781e7c4ad5f83d0b30ba93ab58a1763bee7f61630baf",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50016",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 16,
+      "seed": 50016
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "57ab8b06cf01a393e73619b4b4071a59f5f4a9a09d67999db72342b08069608b",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "10b4be98d1918af33c7f876449abffcd04a9273494e61688b455c2f5d4ec7cba",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50017",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 17,
+      "seed": 50017
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "286357bb9a1c2637817f8bd66c17c9c075110ada9ca618f2432a5e188ae9c1be",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "c6f753521fca72f5d3e0984b23bb9e9743090c15adae586322fe45d3628b0124",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50018",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 18,
+      "seed": 50018
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "450c100fdd82a88fb132ba2484d5863b828b1d5236a4b2b3c3abd09c4e6e6a09",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "ab1bc996f5ddbfab7b9d1cbf016271a536cae0079660a96f2163ea0985c8eb7b",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50019",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 19,
+      "seed": 50019
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "1b7011d20823d18361acbd60f8f819687b3766742590fefe00457ab203070864",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "6c6b5adbf2eac02b1cb36eb1fdf8dc0a8ad83ffd95bf347396c1752fb49ea039",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50020",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 20,
+      "seed": 50020
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "2e1c936bae8c6b9ba6236994453e823f0b3079db3c9c7f562604ed64f4c58583",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "08e79327b4d2112270b93b171bd5c7e640e05f4b47cafc4b0d81b3b4f0cbecf2",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50021",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 21,
+      "seed": 50021
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "f089eaab22176f7602043a5975f1cf20a5112485d46894dd07567dc7769f16f6",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "946fada355f52c0e0c19c0f426a9d2a9d9d733e8c5c8f6b27484c5bd8b0043a6",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50022",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 22,
+      "seed": 50022
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "92783415140224dbcbd44fb58d0cce67aca0563723ce885c19394d77ea47ee13",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "a68f8810dea95edbe5ff3949ac3757468d5a571e87f86e96011406a9f5fcfe78",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50023",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 23,
+      "seed": 50023
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "d0454083fbb936e62801a809cf576347459a5642df13fa12b2d86dbec8fae579",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "7086f864d941f0a3271da5088495cab831fd1943c1ed68a671ce3c8f12d33255",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50024",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 24,
+      "seed": 50024
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "aa5b48c3958a2ec40cc2101f7848bdd1cc488f9e5837defe37bcbb61f89853e1",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "f732fc1ee712aac49028abf14488f0b18c44ad058db2391e827be2ec4c00d4bf",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50025",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 25,
+      "seed": 50025
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "b50e7c955d98c26c5adf2cc6fbf71792e44dcb6c6f52e70e042b57a9824d613d",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "7c242f33263a947a6968e88721c6cbd596be3850d672a3218ca18319b5e35f65",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50026",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 26,
+      "seed": 50026
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "5dffc7fa139ee0e08b1a80fa8e21a67e51f61a0b4ed4dc352598af873a03a7cd",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "40a1ece2511c87ef357e25b71957000f42451deeed55bd2b459f89468efb4933",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50027",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 27,
+      "seed": 50027
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "ead21553eef802b234a7bb2c8f803b9b320d4c9aea2593c18d48eb4272831f7e",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "a490181ef467dcfe4caa0720c5641c78ed7666c4f11e4e6ca7963e8a41660a22",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50028",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 28,
+      "seed": 50028
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "870436144e113ef48b28772a6d21c76630260228a65a60b38bd72b4e4e3e9e37",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "f4f854956743a516217906f69cd46cdac2b72f0a6e28dfab1320856e01c9d5d6",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50029",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 29,
+      "seed": 50029
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "e45b1186c95b3e81c6341a1b37f397f6b3f506a223ff3064a4ea6e278cc37877",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "289f45dd6eea22b6a97087d856a82c2b3325261ee19250b9e6b1257c6749d86b",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50030",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 30,
+      "seed": 50030
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "f122dfa0671aca10d3efc05b3f20dd179c27dffd325358ced1385fa684f967a6",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "f2e64264ad26c88d464a3e23eefc1463f36189992a0d2322c92c5ec5ff268039",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50031",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 31,
+      "seed": 50031
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "6c3a3b0c47483f497b0bcfc7490a0399884900174910df30f2d43f17676a210b",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "4aec3f87bae451a55d03f61993c5f9ebc083dd08558b0f962d721d674b22b790",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50032",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 32,
+      "seed": 50032
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "864d0d830a1c2f799a95aec1b8924e42c96b89d5003e1b53cf6d37ea060eee55",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "2487a1e4dfc9618e6085421443851a9d0c380bbc0e73260aaab4d1172d238fb0",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50033",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 33,
+      "seed": 50033
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "d91151f15c7616a61906a2e63e10466becc7f8ac3e4e2528acf826e757efe5ba",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "276f8fb160ecf2bb4427bf2d81f63b3ad1a1896fc8b9ecbed1a11813af7ffff3",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50034",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 34,
+      "seed": 50034
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "32f7c44a1ad8a711da182d7ec1ebc7e253160fb490b242580f98044bf7126600",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "1298351df7efd3528d8faae6449a9c82adfb0382727ba823e4cba090b6e53c6d",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50035",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 35,
+      "seed": 50035
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "9b21ca0c22e45380d626a13d5ca625230e4a5e8e6b2f509ba341b257676b1998",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "78ff8def2a221d8c39f1f4f370b54a77e623a2d144e76efd2e2125b63b737b2c",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50036",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 36,
+      "seed": 50036
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "68ed466ee43d242f61ac3fb2a08b986d75c8db839bfa85c420fc330bb4066d3c",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "09d067e1f8efd63eaa57a6fa17b2543e63230a6bcd0bca409f53480a0747bba8",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50037",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 37,
+      "seed": 50037
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "e5d8f80e2523ec06565dcc1f256e61b3cfee096514509c92a2f7a3307eb64a56",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "1af847047d2a4f3cd0fd1e6348a50b0266cef667c3c18c413cb9339894e0de87",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50038",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 38,
+      "seed": 50038
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "12f93f06b8253eafed1a99fa529dc4d2abab66f9176225f0aa6d49043cad2a5c",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "26620d7098d9275045020bb128429d29e42488c1f5ee6357d28693d66cc88925",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50039",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 39,
+      "seed": 50039
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "1307943be3ce909ef0e837b6a43572ea09ce3169e4e5324417d4875a7cc61a17",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "0cd801755993a931f9e8860c303025524e992ae20459e827772fe1f025241503",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50040",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 40,
+      "seed": 50040
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "cf966d17dcbf753eb9040baafbe9c1281164e774b3e63040a56ce468fb4874b4",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "d3caeb40df6a5e5bea53325445717192094f60c32109e9bd55e25d3f81ebb361",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50041",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 41,
+      "seed": 50041
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "e24ae486703f2de94b0dea982b42723b068fdf94bdd14b955c2edd90fdc3ec43",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "b814610c8873a4cf5106e0ef0f1ed109cb20c8da5d942a19600d52113d9af378",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50042",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 42,
+      "seed": 50042
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "0b15c0971f4d962a27aaf30d741f27eebfb6bdd19152159bc8ea796f4dbe9ce9",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "0d0841fb2b4d853876d36d99b43cdad5ccd7e3c3f38201d8af074a09f5e9b031",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50043",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 43,
+      "seed": 50043
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "a74badaef2325fa51e56b274ae2333c4e389c421a6b40055bc04eb38423ebf94",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "aeb93fb90dfecbee538f59c0124ef04afc31f851cc6233476fcabf38aa41ffc3",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50044",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 44,
+      "seed": 50044
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "89ca8c24d27951db4541b9ee9403b8721240ada831e4845489ce670f7a615d54",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "93f66bfb7a21e7f9bb25e592e3379e3642d897fd0d2fa8859d0a0fb2401378fc",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50045",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 45,
+      "seed": 50045
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "4441015423f455e5983617ce89ed3c30a45180bbf49501a14a103963f5c7c7bf",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "ceaddbf7d2f8b0b9e04f82a125d7ac4c09d67013940ddc934576966b41e6f787",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50046",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 46,
+      "seed": 50046
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "aed855fb2bd9bb942d18a77b0d1183a4711cb47abe58e1b819049e99a0157490",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "2eab91ee8aa1b5e7438779f1c442f8aa0108e8e2f30ae4f7add30d1013f0eaa4",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50047",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 47,
+      "seed": 50047
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "9eb4e83bbdc823921b751f1b8852ed1f6a854fde231527c004fdef1a6db4d995",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "25c464369dd813873967315042cb31503b20d49f47bea4ca44f5015ac816d9d9",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50048",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 48,
+      "seed": 50048
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "261bfa614be30b230a3a9a93f559faf58996cb984fa10fa437e99c7a43bfd98d",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "cdbbc3c5cdf334a578bc1498543de76ebd879a2aedc1601b9fb92491fe27493f",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50049",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 49,
+      "seed": 50049
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "81dcf2789333d093947da7a1e5bd43d17d7929320208b9e619796efe54699bd1",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "685e25f190daf51fcef69d37ef2adf7e5c740fe7314ab2ccfbdf6d516b545d82",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50050",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 50,
+      "seed": 50050
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "730865e206520b880d6b376b0de098d3ad19c655995eccec4a3aa2aa303fc1b9",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "aa1c94ee1a91c892eb445c51afd5614049ee22b0851c399ea179856326c3b210",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50051",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 51,
+      "seed": 50051
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "1753c9ee65aca01f61d4c637610a8e77a38ef08210d824b0d08797fb2f29ca5c",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "a04ca2f542f00ad77bf96edbcf43b68a0922cff35739b5dae55164d6d7454458",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50052",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 52,
+      "seed": 50052
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "6b703c56ae8fcc09f3a19387a449b08df166e626657438cf6ee09248fbb0c5e1",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "03e35550d884745db2c8b1abd4f01cbe1a4d386fa195741d9c51a7fc47741259",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50053",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 53,
+      "seed": 50053
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "f4a8af7e7fffea789474e3949e597ec7bb26f9ec8abbd2eedc62957d859b4a05",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "02f8ef4784985b023b8341eff706b10e0c56a973a770f86129cad4a9f2ab1b61",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50054",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 54,
+      "seed": 50054
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "2f6bf29cb2d4f1295352194d3e3b442f53dad7602e214ce02f80d4744d1f77bc",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "c0f8f05d8ce186a4a7b925f7c8e0960605f464e24cd4eb64c2cd8be509fcabe5",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50055",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 55,
+      "seed": 50055
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "e07ff23732729537b40dc8399db175694dafcb4ec662eb3e590668c0e6e9a0a0",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "d627c7888582496c55bd5c146107ba371ad314059d54924581d5d0a11ba82d53",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50056",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 56,
+      "seed": 50056
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "63572b1a6aeb296488c4b663cec15af206def6a4e22019f1c02a611ca66263f4",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "9c31e4e69d1e8bba57c2057f64a81d2f6084ea20b48d26f90e116aad47be8661",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50057",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 57,
+      "seed": 50057
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "1a3ca46a1f5e91fb2827b1646be14e31c7ba4300899aa4d3b44e7978769f17e1",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "ad46fb1271dec50e009e6e9183559e886bea792e679211e6f691bd5786cf8eef",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50058",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 58,
+      "seed": 50058
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "822e7eea2ca0c1dfa94c5b5ff2d9c31b2495ea36634e5519c177f7c61a97e73f",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "47878d0585790efb36e766e6a176c597be1dbf1b5221dffad21058b572d63ac4",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50059",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 59,
+      "seed": 50059
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "4b8c74474dca598c9aa6521266743af13a8913f3730406d0275b5ff9c625564c",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "35251bf411f3aada1f6651481daf0515040c06876b6999ae732e6d3a9ebeda0d",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50060",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 60,
+      "seed": 50060
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "12359b255592ed6812972878150d30b1466836b5266fcf5a5e125545a4acb903",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "bc59ef21e15546400655d955684c41a4d1eeabde547fdfea8cce7ffd1256a0bc",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50061",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 61,
+      "seed": 50061
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "b869af78ee562b62170795d7726c1753a7037c75b58b30bfead973c2d064ecb3",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "24fe8c44e3764e94b2ec1093f1c5ac4f54673607249029f2f69e716fc15c7995",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50062",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 62,
+      "seed": 50062
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "4aa7e9d868b1ad3d3125bade71a3dbcc6481feb93145f9a4bc9e0479e9ac9cdf",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "2198c13e4fbc3eacd81d69586ffc923b7fc98f18e30eb45c40f28d137587d57a",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50063",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 63,
+      "seed": 50063
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "37abf6d5cd08f1cf3e3ae2405c74d6799b8022e73f8e06805fd3b14a954d14d4",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "c0ec90c97715f2ce215af671fc473cefcedba5464b6470a9af04889415066399",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50064",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 64,
+      "seed": 50064
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "95f78e13359eedf4549462337a96037a827c79ec260554d46e81dacae3006131",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "e66a6f9e847d333525c119acd4ab912a143bd979cf697662bfd365a5ed67d188",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50065",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 65,
+      "seed": 50065
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "d15aff874c887f200449647a7943aceaecdbee463fdb3ba1a30ab78bb4dd6fd7",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "a8acda8c549197a5b6b675bd2346b2d8e7ef2b6c3d65424ebbd0b08f65620f5c",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50066",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 66,
+      "seed": 50066
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "f1d0a190565bb6538646964f289e1f9d1dda84e25798c24418845b4e09c4b787",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "b9753addecde41873d19d9e312190f76b4af5461d00184ef6804781842febc0d",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50067",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 67,
+      "seed": 50067
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "7969a9f79edfb95a1fd076c444150e82af171d29b014dd7e3924c03b09529ed7",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "b3fad02a6fb0eb560bd36dff9e78da37b20cf970f2c9befbe91704021f831b38",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50068",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 68,
+      "seed": 50068
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "93d7bd411fe4f7ba272b5bf8b5ee5db1a117666346ff30450088617050b21f77",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "5b191c4b48f07f87c77aef120e40b1f78e39c245dcdf8c39f286400582ddbaf7",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50069",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 69,
+      "seed": 50069
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "889b844d8baafd2947ba56b9506b48bc0c69f5249c8a4c2b34ca260e8529af5b",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "64e2d86e5315731430cad368031ca924d0e56fabd468e59ea420590dd0337aa1",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50070",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 70,
+      "seed": 50070
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "f819ea8849bf486fe3f6fd33b9ec274961872eb3f694f35273a39d4d0f0bd9ec",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "8a8153cbbb67522958db0d93c01301721c9ffbfe06c35a8361268cef0fd1416d",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50071",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 71,
+      "seed": 50071
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "fcbdfb3bb69259180870405fff49acb71f1aa1f8374395a6400fd8798985910b",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "2720541608dac506aecf15f2c28ab2839af5894d093227d68bb59763120cc5c4",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50072",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 72,
+      "seed": 50072
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "14c034c45ca6f2279e7ef83f63f6e0e18b616c9a11f2578e954619c6c918393c",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "5048227733771c7c72511f957bd2d977f88f9ea774b5511fe17186866837dad0",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50073",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 73,
+      "seed": 50073
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "c4afeef52b24243e24c2566d85ddec3444c57a72983e80ac057963d372698994",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "b9b3445986175e5cefcbf3957de347b817b092f91d575e5065c93bcd4149143d",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50074",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 74,
+      "seed": 50074
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "c25d3f2d650f9984f55024a22b0d68775775cbccbb4f273842687f1e8d560677",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "0187280984844ef3bddf9a54f21d5268ff7d194467df03025bda53079a579461",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50075",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 75,
+      "seed": 50075
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "31a69e0ff14a31359ab8aae902d7ebf156f549e2c90ad9c4867aa5989e5b5fb6",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "d9843bbe3971123a70494b95f1150f6aab6105c5d2d5b678e19bc517b833473b",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50076",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 76,
+      "seed": 50076
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "f98f4d37d323046b7ec7e64928619c0f31c48981d145448763a558847e45c839",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "50f15cfb084b04aa9fad833f7e03f185509a555950f17ac514d488f27e7fb2dc",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50077",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 77,
+      "seed": 50077
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "529c29209855d246d2127b49d93adda0a1a95f467d7bb5cd6a1feaba00237cc4",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "73cc596fe4c6926031816e02613358caa9f79eac4faa4c0928e7f6967ccd0283",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50078",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 78,
+      "seed": 50078
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "91e7492804cf1d38384f3648dbc010e3c6498420a2cc5c2a55fc0593bfcb5a9e",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "3a1563260536081f10989edaf438f6f0e75e0bea4403c4c8bcb357065c6deaa1",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50079",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 79,
+      "seed": 50079
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "4fe54c55ca2cec21cfe2427c78b12de93ac86e48a6aa02410ba7fcd77fa56771",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "5e9ee3ba71fea369896a7d09a361db7f899dc5a55ebad751af29afed6e2200f2",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50080",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 80,
+      "seed": 50080
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "b555ad80ae7d582d0d0eb0f435e5a414f03c68696b3c0eda8d3ed8a88edd82f2",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "aab74eda1451a58ca6261d560da64bba44fa91693e423df8020d2b2b6724799b",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50081",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 81,
+      "seed": 50081
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "ce33ad26ec5b3219c79054f7cdaca71247a133d495e82da1ba4c945992641869",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "68fd60d8cbe05c55f05a6bee1ad1a3dac36cdc50da69a04747ced587cd8b7b3c",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50082",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 82,
+      "seed": 50082
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "3c723c72967a92d39f3b77ef92b374a0d443f4b6ff9b3fcdb21cd39f6575b6fb",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "5bb0d77f6f56d402d1c78d137791b1744acdb7137d367f41bd703dcca2dc4a97",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50083",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 83,
+      "seed": 50083
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "c2c9880c7221b178a927479bdaa6d6056d9b1ea6ef87d7f3383a2477147d1c72",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "984ea78978fd56ad3d37aec0ecabc7944c1e83a9fb2460699809c9c5e54ba301",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50084",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 84,
+      "seed": 50084
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "5490a5767c6896999d5ded9a3d60fd84a79af83dfa48e68e12fe81f262fead76",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "3b7b75b42ba652f7342043b0e8f69c84a7ec2ab36b87c88a0d2ae19955d3310a",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50085",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 85,
+      "seed": 50085
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "7fb41ff9682ab569c4f9519bd39a65d55a0d134412ffc9b4c98826a427c601c7",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "5388953c2125d1782a70bcc759855fe3a5e095e98ddefe947052c827cf56be9d",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50086",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 86,
+      "seed": 50086
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "39dc72795c06095894a67f26ac073c2e128096e56d062891d550c96898962660",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "a5f82603026c4b53a91da8faa7cb60c6e66d6d1b7051b18de7bd75520c829f73",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50087",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 87,
+      "seed": 50087
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "ec68df9bee4019717e19ba40f0f2d99f88a9183102c6f71038a4726bc8c167f4",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "f75918fadae1e357d582cd87364409fae7ac6defb7803f001d30182393b25f9b",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50088",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 88,
+      "seed": 50088
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "20db949658f9fe0ac7e8af249ff760e1b8769097a7807956ff2a00ab9eab4ff3",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "12fbca91381dac2c897b481f863318f481305dc73cbef4337de8d50a580c1289",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50089",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 89,
+      "seed": 50089
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "55e0f8145dbe66c26e3ff70c2db08f5783c644b92c7b24e9992722a9381862f5",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "2f2e23721c6ee244a1253f1bfe25a316e35a7d2ce2f3f2a165d7f337e9f55138",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50090",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 90,
+      "seed": 50090
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "9c8b9cd5e270ff0aea0d557d63edcc824fc2a59ee42dff4dfbfa2b6e6f9ffe2c",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "f97cae063c7fff1c45af14bb0c97587d2c800756d80af54a926c899dbfa11047",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50091",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 91,
+      "seed": 50091
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "1fd633672899f194fa70f5f98196a78f20398acd0ee55377a767232f6610968d",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "18e92ccf6264b75a8d09b0c6b1793afad2bf3888fdf73886bec82f51da2d8207",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50092",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 92,
+      "seed": 50092
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "dabdbd69a3ee8a8df07a6195c4ac9f2d20ccbdc132f81e7acb6e184f434a330f",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "eb750237331d5128637213744d1a9f8145df48a31a26a31313b2e7bbba96bdb9",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50093",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 93,
+      "seed": 50093
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "4aac1565fcf97f2dc2c79581d0cfd65e73bb05a72c63c7fb2d962f4ca4708b7f",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "239f5ff98739a180f4c7e4dbdd98f82d741655d53e01b4f556c8d81bfdf14e03",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50094",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 94,
+      "seed": 50094
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "8a51b2e0fe9784d544f81ae1e13497362fa45fc6a3a7a09e8a9b62328a8eaa15",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "efbe337bb26ec6633b6b835ac0131dc6974917c826508997b1b63a62107d61c9",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50095",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 95,
+      "seed": 50095
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "f920f7be2e12e7598ecb5c9d0256b595fb5edd49295dd98390b247741ee909cb",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "18a08c91bfe3139bbdde3ca439e4095487c0f96ada60310989cdb550e529d566",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50096",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 96,
+      "seed": 50096
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "50770f6239d81b12a198ac849b733e6952ee0c5ec01f21fa5565a85362932a64",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "281281c4be6fcdf9e22eee276b95377ae4f7d8d38ac18ddf7434f595172ae1e9",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50097",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 97,
+      "seed": 50097
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "b24037612d2e5a8b93ace8830f56d9d28e33dd58af43e761c500fe4ae569d1ee",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "260c1be9aad79e6eb63c5180b81f2c75d326f3f7e69db62e5f938a2e5941e002",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50098",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 98,
+      "seed": 50098
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "7bb6bb83c62d5546b26218df5e8fead9069fa7ebe77b58c9542e459a2caa6c0f",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "0b35cbd4de7181f04ebbab70ab8dc5c7dc7f37642c3b93528cc1ef6cd819c634",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50099",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 99,
+      "seed": 50099
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "d88e7b3c695b8d530079e30c7dcb6f71ebd4dbacd74082a3e556d89c3deb329e",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "defa972ac089f37625e0cbdc56d62ce2ffd94acbd0df4b766dc26d40edb83ce4",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50100",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 100,
+      "seed": 50100
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "f76ca39da3833b5d6c52366d87bd35816647ad510989ab4d4de8b6f883e4542c",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "7611d35bc7a412a4f80b1bd136f6e3d1e8cd3abadfeb695d222a9a3290b5352b",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50101",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 101,
+      "seed": 50101
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "23005141f77c09a2d6d2b80773f5eef1952e9b5b6738fec4b0648369168fbd0a",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "0275beb9daaf43b18917f4393d8dbc6ab0f73785017d1ba10e68818740d3c357",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50102",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 102,
+      "seed": 50102
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "3bb2266239cd36bb20cc87e14009134f34d79880ebc6f4a8fa98aa92d506c12a",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "8c9bbe0b7164d2ca4ad3d96102dca73979ec56bfb595903769f04d33f69491fc",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50103",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 103,
+      "seed": 50103
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "577602b6bbe0fa49f7de38ae5ed9a8fa13df7d38bfa4fea43c3e0f8745e62a97",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "9e6d8d5c66297bef5bf43bad0fab119a403ba8267b22e72386aac99ee74b487e",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50104",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 104,
+      "seed": 50104
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "207a66a5e78ec472dc99a65327e569e99cc7d9bd7719791680a94d2085c16a96",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "965b55bcd9ad0a694dd5dbac019c50e10a694008cf363e9235ce02aed68fe2d7",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50105",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 105,
+      "seed": 50105
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "c040a2dffc245140e2fc9922e2ff476947cc98d2356648819023e210496dd058",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "8349ec8434a5e2e1c038705badc5ed5ae72d10902ca106e67c745b9c6ae94d57",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50106",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 106,
+      "seed": 50106
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "ded4476ea21e8f463c7e5c5cafcac013d11439cbbe1f7e1b84d012eb01636a9b",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "bdeb3cf20fa7baf2b4da9b6a3e016a62e77fab5aeff11790aceda37aaeaae41c",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50107",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 107,
+      "seed": 50107
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "f23e29d84c27f52256ac2c43fc3f8363e181b295370a710d4d55f21b09bbb1ea",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "4a7e6cebe5de2c98d5566ea1d5979ac7021c6994bf165b14d46e0809f6daa955",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50108",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 108,
+      "seed": 50108
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "247f5135abb6e44706f0c6f4c9a26eaeb9edb5d1dfde7b653e5af5c8d265748f",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "982b1ef5246cdc7069e77cde5544c3347826174784592145874b65e362bf0ada",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50109",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 109,
+      "seed": 50109
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "35870361ba989ec84e6587a07496148035e3a11b1f724743759078a2c4afbe43",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "8a0fa59aaaf6d0965938448166b664b7a0406a5745bfacfef7ab0bf5339a74cf",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50110",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 110,
+      "seed": 50110
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "944ec556aa596246402aa80908350226944d4358abb30a44737e749a29bc03c0",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "33f71962ec819efe53a83477bb94e986d1ec9dd6d0c4a8a16340bce7952c03e1",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50111",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 111,
+      "seed": 50111
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "2b14d9116b574f8c9a9faaa2e26733b237ef0101c5484025d4b859c5750fab6d",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "b74dbedd96cfbe9c3da8967e2cd2422c090543ee49303ba1e844b9e2a7305969",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50112",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 112,
+      "seed": 50112
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "bf637d5048101c34a873f853b3b152d742d0e3023138da35e4da85e41e08a9e4",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "5301a73c99a57346828961d3d867f69044c90c8bbaf1e4625a0c96c40b65883c",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50113",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 113,
+      "seed": 50113
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "f40d153f3d2c20f05e72b810c11268ddb44c3fb51b417fc2cff4bf0402d0dcd7",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "343ebe6d81b2a119fc3ef3101a7e2f134fa84b9a32b2d37be11cbfcafe080dd7",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50114",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 114,
+      "seed": 50114
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "9fa536727047d37227ea6a28b084d19239f497f7ff7b6378deb31b821b6e0fe4",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "73579ff45980211dfd7f76fcc843a3eb68f09d034d393442a5ec865826d26de1",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50115",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 115,
+      "seed": 50115
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "724fd4b38ea665cea5b1d6e273c7dcb3f385bf2b3b0ca89773b3bfe405c961fb",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "aae20ffbbe53a4c3fae8a214219b6b55474446ddfc92d1d60b8f774fd6ba360b",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50116",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 116,
+      "seed": 50116
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "85485b43ebaf882b841ce7e07a3528d8186c38da998b4e270ae21d2c456d092e",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "5f92959abd7d0a96d90175f087d62b85526e9a4cd1b04f825825ee7b0b7688de",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50117",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 117,
+      "seed": 50117
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "5db01a9bd68c06ce83b95d72e1c8da7c38d37fbf7cec4960251ef4a22b80feba",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "14839c7b333ea7bdea8217dc12e1969c5d6a568893f10777a9e84d80c4f5802f",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50118",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 118,
+      "seed": 50118
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "f92416aad5daf3b45c828b7952073ef0faddf2396035ad1eb4ef70aed2eae4e2",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "99c8f83a490b52e0c09bc6d73bbdce6a860bfe4a57369b503398c0073a238838",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50119",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 119,
+      "seed": 50119
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "877253f16ad43caeddae2f01cfeb3d85590c3fbec621346599cbb5cb6b75e15a",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "f261ff40bd019a21a814400015c8c3ec1015f9509ec22db2cc4081fb04db1b78",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50120",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 120,
+      "seed": 50120
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "97827ea6c238ae1680d79b052d899fb9289930f1d6bc9d525d5b9b879ce4cbd3",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "85fb61dad0b7ce6c9606c6355a338b45d4c7afb56db07c84f99e8e5d22d9b57a",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50121",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 121,
+      "seed": 50121
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "f8465cab0c48f3706a3c8e946edbd952e31746b67e54f73d50a712b58acb5d5a",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "ad39cb31e99786d35af3ed8208aba34a5d6be7aef1ab42740d5ceed7d6aef53a",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50122",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 122,
+      "seed": 50122
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "1e42b8a4aebacbc2d63fc54fd139f7f612274ebfd64008995575c8d19e0c2798",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "44a8980316bbd9c9be15e61ff5623f107e51da7cc89e8d88520e5326fe5f0129",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50123",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 123,
+      "seed": 50123
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "bf22f46ebca819a9203cb28f476b0d57d7459043a3e8c98785ca500f801f5291",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "17e118de4e202c80f9e01099a8ee59446455c4e30cdde6d7d2c35a1398d7accd",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50124",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 124,
+      "seed": 50124
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "29c3138f3f1e3bb3f900348322fdd1674988adf8ea3514e738c564fff75781a3",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "c3df619a11ae404c9c7dfe697b24ee39babb8351c70ba1a11a38e3bf0f34676c",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50125",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 125,
+      "seed": 50125
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "7f0012757eeabe4565ae58e6f2882f6dde3ad2770e3655c116e56be42b93f132",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "09a7358f1591de3f23e44a0c95ffc6f962ab70186b54eb83e5f781abb0508ae4",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50126",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 126,
+      "seed": 50126
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "162f33500516ea2e0f6238a7a864d3bd4c381325064d914f94ba3f5958144f77",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "06abdf42317ca3cfbb18c534da33384d1baada6122f7d2796828b89966947039",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50127",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 127,
+      "seed": 50127
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "70a4eeb3e2e590798da5b454cd740ec48d8057e234ff7bb7311a498c1fd09a00",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "1b04a180061abdd885256e4af6ef3a8c64b667ad84ef10c72d600e76615c784c",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50128",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 128,
+      "seed": 50128
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "61bff1d310bd59f221d296b808af6f3d9b43a4956b7c34ff4c99dfd0788833f8",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "092f0fd85f86f85a9b2429fe37e887a3c60a4307b3f661df151d23a8d7754cd0",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50129",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 129,
+      "seed": 50129
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "0311030e626dd59760e146ae54b8de52762ef4855be3807e3c02a260f736127b",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "3a71aef8628db8d6813c8143e8e01a72583e5a1f51b8e27d6a7476526e1db9de",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50130",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 130,
+      "seed": 50130
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "863a8b348d852af28a1d5798a13254121c68444ad40389cd6df76b97df5b847d",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "cc82fe87498af67d660440afa349698365810a628b595dcd5e62344b1e431892",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50131",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 131,
+      "seed": 50131
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "81dca6154cb0ce8ca30a4e1c8561e976884dd2442b949a04c57a1edc82336075",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "2b19390f927b612446c608fa4862635c9a0a5b72a33791a2480d830bc5a0cb0b",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50132",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 132,
+      "seed": 50132
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "57545d78e210d77532239ca5b46bd3b80ffcfbf5795a8d1a52de17826c5130e6",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "23f2bb64f1f5a10835eb938c9a885278363e32940e629033b31165b05d7a198d",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50133",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 133,
+      "seed": 50133
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "1cc5fdd7e1dfa859d365d563486cc046fe65c45dbf827df38cab0afd5879b541",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "1fedcaac08a080f7d135183d61ca495d733391ec464f68b46d2addfb1d4dd16e",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50134",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 134,
+      "seed": 50134
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "59bd82344797f4b15932857e16a3da19b0fa952f4aa9a6aba20fdab4e86405fe",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "76b3577042d6221ec5e43a79cf5861398282943c7c2ea5ad2cbe1f78a8550f7a",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50135",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 135,
+      "seed": 50135
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "ed871ded7b0966509f30fafa4a6e97b09df486c79c1be0875c85dd483e2bcf3a",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "d234c26fbc1bcdace1f51cadab9a9333f7f8f83925436dad58f49a3f78c4bc7b",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50136",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 136,
+      "seed": 50136
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "38d9c5f76ad4e142169c4f43d78e24bb2719a51cfb83e9de3d60e2401c0db0da",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "9dbe0d7902b179785184014570830e95ec41accdddb63935058be164b8517edd",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50137",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 137,
+      "seed": 50137
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "cdf9d6d15b9ebf18db0163275838049065ea87a08ca96bb408065dc0009de21a",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "23fb50fbd87c4b07b16565a41ec9354f513356d61b14c80be42ca1ed1adf201d",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50138",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 138,
+      "seed": 50138
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "fbf363903dbb9a31ce594ac3dfd7c550b8b3eac224efe528916bdafc5e82fde8",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "58aee42db55ee5bce400ea37809adda55e762e45ddf8b8b5c602cd520c511cc9",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50139",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 139,
+      "seed": 50139
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "333844bdb13408923101d35c2e73f58b25422a610acd1b27e4bd33f2c34da584",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "daff024f74cee92a4e10e6b9ef44f98edca9696d64494815ac869dc93032f075",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50140",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 140,
+      "seed": 50140
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "cb2383bd44a41d98cdd94ef252840f9a3b51d6792c09bdfd52fec77a6bddc98d",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "0c7e9dc1cd17d3de4ba1af70abf199b2f06b5cc889d715952c46abc1b6b4c947",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50141",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 141,
+      "seed": 50141
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "21f66172225b996e01d0c216cbe60dc58cd68032deb0ea485d0a4790f8374ea2",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "a4b8ce8775dc6db0488dc8e30e075b4b95aa7a2e42519d09428f6d28c95bef29",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50142",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 142,
+      "seed": 50142
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "2f68a1bed42ebfb6b0cb2859d1e3d69fe70e0c362bb8ddc042c8cedc249a60dd",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "60aba4523aa2a78501d459a023c7bcfefbec65ab4e24f204ec7893ad4e102d0b",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50143",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 143,
+      "seed": 50143
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "e598914f8e9e043dd779e08f0352da7d677749c68731b18450190df12231c1dd",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "e4fd289e7d3086fac5107918bacb4163e7af43cd1afea966a00fedd969ee07e9",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50144",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 144,
+      "seed": 50144
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "a7c3bcc29815b2aabad3012f0f71a8451306b89e19475d61c6f8048278a6d8e8",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "545a2e45769b8f157b81c92e5564d731c6e64e7b76ea0839e81921400d696d82",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50145",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 145,
+      "seed": 50145
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "3dd04c70952323c1325324713df180f608c06745fa48ed52912b881fb9872cea",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "4aaf9816193e3f89a1a32d03582a87bce57358e4cfc63469a6f6d86a8364029f",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50146",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 146,
+      "seed": 50146
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "67f486de5b13436093cfa6759dccd36dbd9f082c23a4ca080fe4102827d34b88",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "09263d3260c1a0b34d1ee1af3fb281ef10a8a19bd5f4be95cb2869ee8f614135",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50147",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 147,
+      "seed": 50147
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "b754ed1e312351257e4cddaa4123d93b521c96b39f74ece64e2b9717cf564531",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "22fcf8a9709c44395f3957eff1867f259361352ba971fb29f7135d462092daaa",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50148",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 148,
+      "seed": 50148
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "8b653f328d9157e18d7f8c1f0b082e7b43e6b66dc858321e016b4cc90e2f9d60",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "ea9b663b879a9dc68d1273c8617ae252e1da2fbdd219e6ec096f43e20eb8eb32",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50149",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 149,
+      "seed": 50149
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "57f59742eca3e19c697d6db32ffd56e9b54ac75ab3d2b2d49c26413303912156",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "108bd83edb08366da22a262e41c44824996f10611b65c52e14b02fa2d2161296",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50150",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 150,
+      "seed": 50150
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "3c3f0721bc34b3d66fbb2e307c888cedcb794c5d0068e925444f7e5ff4912772",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "f862e4b24a1c239207484f85a1b74573c9d2729e11d0fa3680cf97e03cddcb99",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50151",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 151,
+      "seed": 50151
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "9140a11c16a5f8e7ad11af86a23cb21fe9981aff6d69c98fd5373e8b51a6bfae",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "1f706f44b1aebaf4d8df0dc422e876da4b80b1663c0b98ff4ce8155ccb13a4f0",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50152",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 152,
+      "seed": 50152
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "78ceba64b72456fecd86c29294e2b657886eb5592a927e7426399adfa49f17a4",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "0df7983a5615ca652d878b487324b6f4c8e075889decdd75e257c7b38e53fb26",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50153",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 153,
+      "seed": 50153
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "2692ab66fb63b285e67b79039ed74db64730bd9f5528cae7f8d1ea766d6d305b",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "8e34dbdb3ab270b4edb0c02358a674e32bc53f6afd9f49f12a8cfaa74a745f1a",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50154",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 154,
+      "seed": 50154
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "da04d9cb28aacdd7911468382d045649ded23ba491577a113ee6f45cb91d0523",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "4cd0af34792837f22103e0dfe3d9482ce10679c51550743f0659dd538891b0ba",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50155",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 155,
+      "seed": 50155
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "a6a65024f3100578fed4f186a9ede3b4312e31f0c63bcf9f30b279a2cef17c38",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "27125ffe1fb49c3e71ee42401f813947d2ee34023f4b863b9e9ab11f3e8de3ff",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50156",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 156,
+      "seed": 50156
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "16e5494ad8b80b1df6213f57faff694db3cdbcecbbef984624f9c284a56f3f7a",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "c4dd8b458accb7fff1548ef837d37b149181fdebdf47c20c7926cadbd1732c62",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50157",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 157,
+      "seed": 50157
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "7591fa724cbcddecf7f86ec21877b4fcf59aacf22a67474a01bccd2cc9a91a54",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "279a039ac24d8f58846260f7c2d0e08fc9d47bd21ed0c7591c25963ec5d98ce0",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50158",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 158,
+      "seed": 50158
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "f9fffa13b3228118de6462c7171c881bb5e18a01f6e79b2615b978adcb18f7ae",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "b08794ce3c1d9b50a73cb67e86bcbb47e23488a3df767e9a827e2ea6e9447fb9",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50159",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 159,
+      "seed": 50159
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "2d9aca9b7e2b2151e84b202d4b1221ba16741a358a462ce4fdda1d5aabd2ee9f",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "fcf78c0c5f3110a4496729d4b915bc7ed5e66be6b6799c7a220047c5b6c0300c",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50160",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 160,
+      "seed": 50160
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "fe6490e3cb3f428bf7eca33556997a03fb51983f9c23196348ece2fc3f3a63ce",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "e13e7029b384ce9f003c47fe23e22f9e58d8a8316321186eda6884bb7031031f",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50161",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 161,
+      "seed": 50161
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "52134b38928e6a14f551d4221cd7c064bff0f2cdfc8f3f2186a99510108d3465",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "7de4153c97199baaac55d3b4c27d8f9fea5eaa710f48ded13eb944f58cb6bf57",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50162",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 162,
+      "seed": 50162
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "0ff96e2b466d1ae4a769939179d4ff2052ecd908e06e4f73e012ccba19b4d3c8",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "23157000c07574a40d0c235092125963b3ac3d31e01cb77fcbba6038cf5e8ac0",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50163",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 163,
+      "seed": 50163
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "d410c7ba2f8871278681aecab2cda878432678fb1c704c660243e4fa23bc473a",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "bff4a45675c5c63150de2efd24affe67f87994c8f07f555c4c79243d033acc0e",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50164",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 164,
+      "seed": 50164
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "cdc3e2c73a57985d41b44233b516bbc0c944b1d8904478e56e97e4a2c9fa023f",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "cd3466ee80adb1330d0af4bb5160e5a7d6417ac9ba11658b6cb3fae901ab3074",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50165",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 165,
+      "seed": 50165
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "0e6739533240de4f5b0d339e6d083e6768507d7167d91cd4cbf247c3a49ce246",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "9c43b0c1bf21acc7de56fc714a94975f4354ec67447772614146f5073bcc3d69",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50166",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 166,
+      "seed": 50166
+    },
+    {
+      "arms": {
+        "linear": {
+          "events_sha256": "c55fe01b879aa8dd7720119e70b6695a1f197c07ff870a307f867696bd777aa0",
+          "policy_id": "risk_budget_linear_v1"
+        },
+        "threshold": {
+          "events_sha256": "461d196006890192df6ba2a6cee271f152172ed7aab64cb9215d6019d8478124",
+          "policy_id": "risk_budget_threshold_v1"
+        }
+      },
+      "assignment_id": "h2-ai-50167",
+      "identical_fields": [
+        "accounts",
+        "action_space",
+        "information_set",
+        "initial_price_ticks",
+        "window_schedule"
+      ],
+      "order_index": 167,
+      "seed": 50167
+    }
+  ]
+}

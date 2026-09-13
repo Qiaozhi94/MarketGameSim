@@ -3,7 +3,7 @@ kind: milestone
 id: 0.3.1
 parent: v0.3-human-in-the-loop-crash-experiment
 version: "0.3"
-status: ready-for-development
+status: review
 research_claim_status: not-established
 research_claim_required: true
 evidence_class: formal-research
@@ -377,23 +377,23 @@ INCLUDED blocks -> ANALYZED        block 数满足且对应轨道的 evidence in
 
 ### 验收清单
 
-- [ ] **AC-301** (`FR-301`, `DR-301`, `NFR-303`, `SC-301`): 不完整协议不能冻结；
+- [x] **AC-301** (`FR-301`, `DR-301`, `NFR-303`, `SC-301`): 不完整协议不能冻结；
       冻结后内容变化产生新哈希且旧 assignment 不可复用。
-- [ ] **AC-302** (`UX-301`, `UX-302`, `UX-303`): preview harness 在有限窗口内完成合法决策和
+- [x] **AC-302** (`UX-301`, `UX-302`, `UX-303`): preview harness 在有限窗口内完成合法决策和
       `NO_ACTION`，并明确不产生正式证据。
-- [ ] **AC-303** (`FR-303`, `IR-302`, `TR-301`): evidence guard 原子拒绝 interactive、
+- [x] **AC-303** (`FR-303`, `IR-302`, `TR-301`): evidence guard 原子拒绝 interactive、
       training、preview、未知模式、协议漂移和不完整 pair。
-- [ ] **AC-304** (`FR-301`, `TR-301`, `NFR-301`, `SC-302`): 每个纳入 AI pair 的
+- [x] **AC-304** (`FR-301`, `TR-301`, `NFR-301`, `SC-302`): 每个纳入 AI pair 的
       比较矩阵中标为“相同”的字段逐字段一致（含账户、初始资金、信息集、动作空间与窗口
       调度参数）；决策生产者、策略目标与参数按矩阵分别披露。主对照可复现、
       处理可重放，次要对照缺失不使主要 pair 失效。
-- [ ] **AC-305** (`FR-304`, `SC-303`): 三类结果分别输出发生率、严重程度、双侧配对效应、
+- [x] **AC-305** (`FR-304`, `SC-303`): 三类结果分别输出发生率、严重程度、双侧配对效应、
       不确定性、多重性和缺失处理，不生成综合分数。
-- [ ] **AC-306** (`FR-305`, `TR-301`, `SC-303`): 激进订单、流动性撤回和风险减仓指标均可
+- [x] **AC-306** (`FR-305`, `TR-301`, `SC-303`): 激进订单、流动性撤回和风险减仓指标均可
       追溯到事件链，并只作预注册的关联/时序解释。
-- [ ] **AC-307** (`FR-306`, `IR-302`, `NFR-301`, `SC-304`): 新进程从 evidence index 重建
+- [x] **AC-307** (`FR-306`, `IR-302`, `NFR-301`, `SC-304`): 新进程从 evidence index 重建
       机器结果和报告，且 artifact 哈希、样本流与结论语法通过校验。
-- [ ] **AC-308** (`DR-301`, `NFR-303`, `UX-303`): AI 成果包不含个人身份信息，preview 阶段
+- [x] **AC-308** (`DR-301`, `NFR-303`, `UX-303`): AI 成果包不含个人身份信息，preview 阶段
       可辨识且不进入正式 evidence index。
 
 ## 7. 测试、依赖与决策

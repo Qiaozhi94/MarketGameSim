@@ -41,6 +41,22 @@ def _preview(args: argparse.Namespace) -> int:
     return 0
 
 
+def _deliver(args: argparse.Namespace) -> int:
+    from market_game_sim.experiment.h2 import delivery
+
+    if not args.formal:
+        raise SystemExit(
+            "deliver 需要 --formal：本里程碑唯一可交付的是 AI 正式轨；所有者轨交付属于 0.3.2"
+        )
+    out = Path(args.out) if args.out else None
+    bundle = delivery.build_from_index()
+    target = delivery.write_bundle(bundle, out)
+    print(f"H2 AI formal delivery bundle written to {target}")
+    print(f"machine_results_sha256 = {bundle.machine_results_sha256}")
+    print(f"pii_scan clean = {not bundle.pii_categories}")
+    return 0
+
+
 def _protocol_validate(args: argparse.Namespace) -> int:
     from market_game_sim.experiment.h2 import formal_freeze
 
@@ -155,6 +171,19 @@ def build_parser() -> argparse.ArgumentParser:
         "--out", default=None, help="output directory (default: artifacts/h2/preview-b)"
     )
     preview_parser.set_defaults(func=_preview)
+    deliver_parser = subparsers.add_parser(
+        "deliver",
+        help="rebuild the H2 AI formal delivery bundle from the frozen evidence index (T921)",
+    )
+    deliver_parser.add_argument(
+        "--formal",
+        action="store_true",
+        help="required: only the AI formal track has a deliverable in this milestone",
+    )
+    deliver_parser.add_argument(
+        "--out", default=None, help="output directory (default: docs/experiments/H2-ai-delivery)"
+    )
+    deliver_parser.set_defaults(func=_deliver)
 
     sample_ai_parser = subparsers.add_parser(
         "sample-ai", help="sample formal AI paired blocks in frozen assignment order (T917)"

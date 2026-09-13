@@ -12,9 +12,18 @@ T908/T914 已实现，xfail 骨架摘除。
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
-from market_game_sim.experiment.h2 import adjudication, assignment, evidence_guard, protocol
+from market_game_sim.experiment.h2 import (
+    adjudication,
+    assignment,
+    evidence_guard,
+    evidence_index,
+    formal_ai,
+    protocol,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -272,3 +281,133 @@ def test_rerun_if_required_rejects_a_forged_rerun_flag(frozen_and_plan):
     )
     with pytest.raises(adjudication.AdjudicationError, match="不在允许补跑的原因闭集"):
         adjudication.rerun_if_required(forged, original, plan=plan)
+
+
+# --------------------------------------------------------------------------- #
+# T918：formal evidence index 冻结与样本流图
+# --------------------------------------------------------------------------- #
+
+
+@pytest.fixture(scope="module")
+def frozen_assignments():
+    from market_game_sim.experiment.h2 import artifacts
+
+    return artifacts.load_assignments()
+
+
+def _sample(tmp_path, assignments, count):
+    return formal_ai.sample_ai_blocks(count=count, out_dir=tmp_path, assignments=assignments)
+
+
+def test_freeze_below_frozen_stop_rule_raises_incomplete_study(tmp_path, frozen_assignments):
+    """预注册 §7：合格 pair 未达 168 不得产出可分析 index（拒绝路径零落盘）。"""
+    _sample(tmp_path, frozen_assignments, count=2)
+    target = tmp_path / "idx.json"
+    with pytest.raises(evidence_index.IncompleteStudy, match="incomplete-study"):
+        evidence_index.freeze_index(target, out_dir=tmp_path, assignments=frozen_assignments)
+    assert not target.exists()
+
+
+def test_frozen_index_lists_included_pairs_with_flow_graph(tmp_path, frozen_assignments):
+    _sample(tmp_path, frozen_assignments, count=2)
+    path = evidence_index.freeze_index(
+        tmp_path / "idx.json",
+        out_dir=tmp_path,
+        assignments=frozen_assignments,
+        required_blocks=2,
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    assert payload["status"] == "FROZEN"
+    assert payload["track"] == evidence_guard.AI_TRACK
+    assert payload["protocol_hash"] == frozen_assignments["protocol_hash"]
+    assert [item["order_index"] for item in payload["included"]] == [0, 1]
+    for item in payload["included"]:
+        assert set(item["arms"]) == {"linear", "threshold"}
+        assert len(item["artifact_sha256"]) == 64
+    flow = payload["sample_flow"]
+    # 未采样的 issued block 无 pair 在盘：按冻结裁决顺序命中 INCOMPLETE_PAIR。
+    assert flow["included"] == 2 and flow["excluded"] == 166
+    assert flow["excluded_by_reason"] == {"INCOMPLETE_PAIR": 166}
+    assert flow["issued_blocks"] == 168
+    assert flow["reserve_pool"] == {"size": 17, "consumed": [], "unused": 17}
+    blob = path.read_text(encoding="utf-8")
+    for field in ("severity", "effect", "p_value", "ci_low", "holm"):
+        assert f'"{field}"' not in blob
+
+
+def test_index_rebuild_is_idempotent_and_refuses_rewrite(tmp_path, frozen_assignments):
+    _sample(tmp_path, frozen_assignments, count=2)
+    kwargs = {"out_dir": tmp_path, "assignments": frozen_assignments, "required_blocks": 2}
+    path = evidence_index.freeze_index(tmp_path / "idx.json", **kwargs)
+    first = path.read_bytes()
+    assert evidence_index.freeze_index(path, **kwargs) == path
+    assert path.read_bytes() == first
+
+    _sample(tmp_path, frozen_assignments, count=1)
+    with pytest.raises(evidence_index.EvidenceIndexError, match="不可原地改写"):
+        evidence_index.freeze_index(path, **kwargs)
+
+
+def test_missing_and_drifted_artifacts_are_excluded_in_flow_graph(tmp_path, frozen_assignments):
+    _sample(tmp_path, frozen_assignments, count=3)
+    (tmp_path / "block-001-seed-50001.json").unlink()
+    drifted = tmp_path / "block-002-seed-50002.json"
+    payload = json.loads(drifted.read_text(encoding="utf-8"))
+    payload["protocol_hash"] = "0" * 64
+    drifted.write_text(json.dumps(payload), encoding="utf-8")
+
+    built = evidence_index.build_index(
+        out_dir=tmp_path, assignments=frozen_assignments, minimum_blocks=1
+    )
+    assert built["sample_flow"]["excluded_by_reason"] == {
+        "INCOMPLETE_PAIR": 166,
+        "PROTOCOL_DRIFT": 1,
+    }
+    assert [item["order_index"] for item in built["included"]] == [0]
+
+
+def test_non_ai_track_artifact_fails_closed(tmp_path, frozen_assignments):
+    """owner 轨或未知 run_mode 的工件出现在 AI 采样目录即原子拒绝（FR-303）。"""
+    _sample(tmp_path, frozen_assignments, count=1)
+    forged = tmp_path / "block-001-seed-50001.json"
+    forged.write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "run_mode": "owner-n-of-1",
+                "stage": "formal",
+                "order_index": 1,
+                "assignment_id": "h2-ai-50001",
+                "protocol_hash": frozen_assignments["protocol_hash"],
+                "runs": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(evidence_index.EvidenceIndexError, match="不是 AI 轨"):
+        evidence_index.build_index(
+            out_dir=tmp_path, assignments=frozen_assignments, minimum_blocks=1
+        )
+
+
+def test_load_frozen_index_fails_closed_on_drift(tmp_path, frozen_assignments):
+    _sample(tmp_path, frozen_assignments, count=1)
+    path = evidence_index.freeze_index(
+        tmp_path / "idx.json",
+        out_dir=tmp_path,
+        assignments=frozen_assignments,
+        required_blocks=1,
+    )
+    assert evidence_index.load_frozen_index(path)["included"][0]["seed"] == 50_000
+
+    good = json.loads(path.read_text(encoding="utf-8"))
+    for mutation, match in (
+        ({"status": "DRAFT"}, "不是 FROZEN"),
+        ({"schema_version": 99}, "schema_version"),
+        ({"protocol_hash": "0" * 64}, "协议哈希"),
+        ({"track": "owner-n-of-1"}, "不是 AI 轨"),
+    ):
+        mutated = {**good, **mutation}
+        path.write_text(json.dumps(mutated), encoding="utf-8")
+        with pytest.raises(evidence_index.EvidenceIndexError, match=match):
+            evidence_index.load_frozen_index(path)

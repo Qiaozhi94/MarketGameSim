@@ -172,7 +172,6 @@ def test_h2b_preview_exposes_window_stage_replay_outcome_and_mechanism_evidence(
         assert any(row["values"][name]["evidence_event_ids"] for row in mechanism_report["rows"])
 
 
-@pytest.mark.xfail(strict=True, reason="T920/T921 未实现：H2 交付入口尚不存在")
 def test_ac307_bundle_rebuilds_from_the_index_only():
     """新进程只读 evidence index 即可重建，机器结果内容哈希一致。"""
     from market_game_sim.experiment.h2 import delivery
@@ -182,7 +181,6 @@ def test_ac307_bundle_rebuilds_from_the_index_only():
     assert first.machine_results_sha256 == second.machine_results_sha256
 
 
-@pytest.mark.xfail(strict=True, reason="T921 未实现：结论语法检查尚不存在")
 def test_ac307_conclusion_syntax_forbids_the_human_effect_shorthand():
     """结论必须带三限定词，且禁用人类效应这一简称。"""
     from market_game_sim.experiment.h2 import delivery
@@ -203,3 +201,66 @@ def test_ac307_owner_track_results_are_marked_descriptive():
     bundle = delivery.build_owner_bundle()
     assert bundle.evidence_class == "experiment-preview"
     assert bundle.marked_descriptive is True
+
+
+# --------------------------------------------------------------------------- #
+# T920/T921：AI 正式交付包
+# --------------------------------------------------------------------------- #
+
+
+@pytest.fixture(scope="module")
+def formal_bundle():
+    """整个模块共享一次重建（168 block 重放是全套件里最贵的一步）。"""
+    from market_game_sim.experiment.h2 import delivery
+
+    return delivery.build_from_index(delivery.frozen_index_path())
+
+
+def test_h2c_bundle_files_are_complete_and_formal_research(formal_bundle):
+    """交付包六个产物齐备，机器结果/样本流/回放全部标记 formal-research。"""
+    from market_game_sim.experiment.h2 import delivery
+
+    assert set(formal_bundle.files) == set(delivery.BUNDLE_FILES)
+    for name in ("machine-results.json", "sample-flow.json", "representative-replay.json"):
+        payload = json.loads(formal_bundle.files[name])
+        assert payload.get("evidence_class") == "formal-research"
+    manifest = json.loads(formal_bundle.files["manifest.json"])
+    assert manifest["evidence_class"] == "formal-research"
+    assert manifest["stop_rule"] == "reached_frozen_minimum"
+    assert manifest["pii_scan"] == {"categories": [], "clean": True}
+
+
+def test_h2c_report_distinguishes_verdicts_and_states_limitations(formal_bundle):
+    """三分法结论 + 限制声明必须在报告正文中可读。"""
+    report = formal_bundle.report_text
+    assert "未建立方向性差异" in report or "低于预注册 SESOI" in report
+    assert "限制" in report and "综合分数" in report
+    assert "seed 分布" in report and "模型族" in report and "参数范围" in report
+
+
+def test_h2c_paired_checks_cover_every_included_pair(formal_bundle):
+    import json as _json
+
+    from market_game_sim.experiment.h2 import evidence_index
+
+    checks = _json.loads(formal_bundle.files["paired-checks.json"])["pairs"]
+    index = evidence_index.load_frozen_index()
+    assert [c["order_index"] for c in checks] == [item["order_index"] for item in index["included"]]
+    assert len(checks) == 168
+    assert all(set(c["arms"]) == {"linear", "threshold"} for c in checks)
+
+
+def test_h2c_cli_delivers_without_formal_flag_refuses(tmp_path):
+    import subprocess
+    import sys
+
+    completed = subprocess.run(
+        [sys.executable, "-m", "market_game_sim.experiment", "deliver"],
+        cwd=tmp_path,
+        capture_output=True,
+        text=True,
+        timeout=60,
+        check=False,
+    )
+    assert completed.returncode != 0
+    assert "--formal" in (completed.stdout + completed.stderr)
