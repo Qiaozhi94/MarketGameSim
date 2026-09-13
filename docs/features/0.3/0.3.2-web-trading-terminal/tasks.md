@@ -67,8 +67,9 @@ updated: 2026-09-13
 
 ### Phase 2：H2-D2 所有者训练、正式采集与个人交付
 
-- [ ] T937 (`FR-403`, `DR-401`, `NFR-302`, `AC-403`, `AC-407`): 实现 preview gate、training/formal
-      assignment、阶段解盲、假名化和 owner artifact PII guard — verify:
+- [ ] T937 (`FR-403`, `DR-401`, `NFR-302`, `AC-403`, `AC-407`): 实现 training/formal
+      assignment、阶段解盲、假名化和 owner artifact PII guard（preview gate fail closed 已在
+      T931 落地，此处只消费其结果） — verify:
       `tests/unit/experiment/test_owner_privacy.py`
 - [ ] T938 (`TR-302`, `AC-408`): 按冻结粒度写 owner 逻辑时点采样快照，连接委托、成交、账本、
       盘口和强平事件因果链；区分技术中止（按冻结顺序从备用池整局补跑）与所有者主动中止
@@ -105,12 +106,16 @@ updated: 2026-09-13
 
 ## 4. 依赖与并行关系
 
-- `T927 -> T929 -> T930 -> T931 -> T932`：先复用 session contract，冻结 owner 参数
-  （压缩比/周期集合/采样粒度/市场跨度），再实现行情投影和 Web preview。
-- `T930 [P]` 与 `T931 [P]` 可并行：K 线纯派生模块与 HTTP view 页面修改不同文件；`T932` 汇合。
+- `T927 -> T928 -> T929`：先复用 session contract，核验目标平台（T928，Python 3.11/3.13），
+  再冻结 owner 参数（压缩比/周期集合/采样粒度/市场跨度）。
+- `T929 -> T930 [P]` 与 `T929 -> T931 [P]`：K 线纯派生模块与 HTTP view/门控页面修改不同
+  文件，可并行；preview gate fail closed 与 abort 路由在 T931 落地。
+- `T930, T931 -> T932`：K 线投影与页面汇合为可打开的 preview，验收包含门控。
 - `T932 -> T933 -> T934 -> T935 -> T936`：页面先能看，再允许自由委托，最后验收错误/恢复状态。
-- `T936 -> T937 -> T939 -> T940`：preview gate 通过后才占用所有者训练时间。
-- `T940 -> T941 -> T942 -> T943 -> T944`：24 个正式场景完成后才冻结 owner index 和个人报告。
+- `T936 -> T937 -> T938 -> T939 -> T940`：preview gate 通过、且 T938 的逻辑时点采样因果链与
+  中止裁决完成后，才允许占用所有者训练时间；T938 是 T939 的显式前置。
+- `T940 -> T941 -> T942 -> T943 -> T944`：正式场景按冻结规则完成或结束后才冻结 owner index
+  和个人报告。
 - `T945 [P]` 与 `T946 [P]` 可并行：运行时正反测试与交付包审计不共享 session 状态。
 
 ## 5. 明确后移
