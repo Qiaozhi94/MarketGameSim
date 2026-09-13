@@ -1102,3 +1102,45 @@ Q-308 关闭后拦截数由 13 降为 12 且其余 Q/DQ 仍被拦（门禁没被
 - **协议修订的连带成本**：owner 决策窗从冻结协议移除，连带 168 条 assignment 重签、frozen 归档
   重建、0.1.5 evidence index 两次重算（`source_tree_sha256` 因包内源码变更失效）。这正是 ADR-005
   记录过的全树哈希代价在本次的兑现——代价真实发生，但因首个正式样本尚未运行而落在合法窗口内。
+
+## 循环 25: v0.3 H2 需求排序与规划检视（H2PLAN）
+
+- **report_type**: doc-review
+- **周期**: 2026-09-12 — 2026-09-13（9 轮：首轮 full-scan → 逐条修复 → 8 轮 diff-only 复核，H2PLAN-007 连续 3 轮修复失败后由检视方改写复核入口）
+- **基线**: `bed85e8` → `58ab25d`（re-baseline）→ `afa04dd`（安全提交重写历史前为 `0fc7df3`）
+- **收尾状态**: 已闭环；7 条全部 fixed；未决 Critical / High / Medium / Low = 0 / 0 / 0 / 0；远端 CI run 34748647506 全部通过（5 个 job，含本修复与流程门禁）
+- **本地门禁**: `python tools/verify.py`，2614 passed, 2 xfailed；密钥扫描 / 真源 / 生命周期 / ruff check / ruff format 全绿
+- **变异验证**: 5 次真实文件变异全部命中——候选态、已闭环无 CI 证据、失败 run 当证据、收尾状态缺失均变红；干净归档树（无 CURRENT/FIX-log）7 passed，证明门禁只依赖 tracked 文件
+
+### 完整 issue 表
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复建议 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| H2PLAN-001 | 0.3.2 里程碑前置条件阻断了 H2-C 与 H2-D 的计划并行 | High | 正确性 | 根因 | 规格漂移 | fixed | 改为 H2-B/T915 → T927 任务级依赖 | 0.3.2 前置改为 0.2.1，T927 接入 0.3.1/T915 | test_h2_web_terminal_uses_task_level_ai_dependency | 1 | 2 | milestone-vs-task-dependency |
+| H2PLAN-002 | H2-D1 与 H2-D2 成果门边界错位且 H2-D2 重复 | High | 正确性 | 根因 | 规格漂移 | fixed | 唯一化 D1/D2 gate | T935=H2-D1、T943=H2-D2、T931 为内部 preview | test_h2_web_delivery_gates_have_unique_scope | 1 | 2 | duplicate-delivery-gate |
+| H2PLAN-003 | 0.3.2 新增的 4xx 需求未进入版本级规格与追溯真源 | High | 正确性 | 根因 | 流程缺口 | fixed | 补根规格、traceability 和遗漏门禁 | 补齐 4xx ID/owner/exit；负向测试接入生产生命周期入口 | 两条生命周期负向测试 | 1 | 3 | cross-feature-contract-drift |
+| H2PLAN-004 | AI 范围重置未清除旧人类研究问题与 130 blocks 决策 | High | 正确性 | 根因 | 规格漂移 | fixed | 清除剩余人在环前置及两轨措辞，并增加负向扫描 | PRD/0.3.1 有效文档改为显式 AI_FORMAL/OWNER_N_OF_1，补旧口径负向扫描 | test_h2_ai_scope_detector_rejects_stale_owner_scope_mutation + test_h2_effective_docs_have_no_stale_owner_prerequisite_or_ai_two_track_estimand | 1 | 5 | partial-symmetric-fix |
+| H2PLAN-005 | 版本根 US-401—US-403 与 0.3.2 子规格的用户故事语义错位 | High | 正确性 | 根因 | 修复引入 | fixed | 对齐根/子故事与 exit，门禁比较两种声明形式 | 根/子规格 US 标题逐 ID 对齐，US-403=E2/E3，解析列表摘要并拒绝语义漂移；同步修正 US-303 | test_version_requirement_registry_accepts_root_story_summary_and_milestone_title + test_version_requirement_registry_rejects_user_story_semantic_drift | 4 | 5 | cross-feature-contract-drift |
+| H2PLAN-006 | PRD 仍以先 C 后 D 的措辞否定 H2-C/H2-D 并行计划 | High | 正确性 | 根因 | 规格漂移 | fixed | 改成 C/D 均在 H2-B 后独立启动，D 只受自身 Web/owner gate 约束 | adcecf4：交付表改为并行路径 | test_h2_parallel_plan_detector_rejects_serial_scope_mutation + test_h2_prd_declares_ai_and_owner_paths_parallel_after_h2b | 6 | 7 | partial-symmetric-fix |
+| H2PLAN-007 | 检视闭环总结在独立复核和远端 CI 前被写入并提交 | High | 正确性 | 根因 | 流程缺陷 | fixed | 让测试验证 H2 总结必须带成功 CI 证据，而不是永久禁止某个循环编号 | 改为解析 tracked RETROSPECTIVE 的 H2 循环条目：候选/待 CI 状态一律拒绝；已闭环声明必须携带成功远端 CI 证据；收尾状态缺失视为旁路拒绝 | test_review_process.py 7 条（test_tracked_h2_retrospective_records_only_ci_evidenced_closure 等） | 6 | 9 | premature-review-closure |
+
+### 模式教训
+
+- **`premature-review-closure` 的三轮教训**：H2PLAN-007 是"检视闭环总结在独立复核和远端 CI 前
+  被写入并提交"。它连续 3 轮修复失败，触发了 skill 的不收敛升级协议——前两轮都在打补丁
+  （先删总结、再禁止特定循环编号），第三轮才转向锁不变量：**解析收尾状态 + 要求成功远端 CI 证据**。
+  "禁止编号"锁的是症状（这次那条总结），"解析不变量"锁的是根因（任何未经 CI 的闭环声明）。
+  判据仍是那条——能不能配一条回归测试，使得以后有人把它悄悄改回去，测试会红。
+- **门禁的自证问题**：修复方 Round 9 声称"合法闭环总结写入后 gate 变绿"，但当时没有真实的
+  合法总结可写。本轮复核的决定性证据不是重跑测试，而是**循环 24 真实写入了一条带 CI run 的
+  闭环总结并通过**——Round 8 点名的失败场景（合法状态被误杀）在真实数据上消失了。
+  合成 fixture 证明不了"不误杀"，只有真实条目能。
+- **`origin` 分布**：规格漂移 4、流程缺陷 1、修复回归 2。前 6 条都是同一类问题的不同侧面
+  ——H2 规划从"人在环"重置为"AI 正式轨 + owner 描述性轨"时，PRD / 版本根规格 / 子规格
+  三层真源没有同步，`cross-feature-contract-drift` 与 `partial-symmetric-fix` 各出现 2 次。
+- **存活轮数**：H2PLAN-007 存活 4 轮（6→9），是本项目迄今最长；其余 6 条均为 1–2 轮。
+  最长的那条恰好是"检视流程本身"的缺陷（`origin: process-gap`），不是产品代码——
+  流程缺陷比代码缺陷更难收敛，因为修复方和检视方对"什么算闭环"本身有分歧。
+- **裁决分布**：accepted 7 / partial 0 / rejected 0；`suggested_fix` 与 `fix_summary` 实质一致
+  6 条（命中率 86%），唯一偏离是 H2PLAN-007——检视建议的方向（验证 CI 证据而非禁止编号）
+  被采纳，但具体解析实现由修复方设计，比建议更完整（兼容中英文冒号、多行续行、空转绕过）。
