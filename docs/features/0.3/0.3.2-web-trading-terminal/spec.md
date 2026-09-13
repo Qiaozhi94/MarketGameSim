@@ -232,7 +232,8 @@ PREVIEW_BLOCKED -> PREVIEW_READY   Web 页面、行情、K 线、按钮和故障
 PREVIEW_READY -> TRAINING          发放训练 assignment，结果仍隔离
 TRAINING -> FORMAL_ARMED           6 个训练完成且正式 assignment/协议版本匹配
 FORMAL_ARMED -> FORMAL_RUNNING     进入冻结的市场时间跨度并隐藏结果/参照策略
-FORMAL_RUNNING -> COMPLETED        24 个场景完成或按冻结规则结束
+FORMAL_RUNNING -> COMPLETED        24 个场景按冻结规则完成
+FORMAL_RUNNING -> INCOMPLETE_STUDY 冻结停止规则命中且未满 24 场：生成 incomplete-study，非 completed
 TRAINING -> OWNER_ABORT            所有者主动中止训练：写稳定 reason code 后进入终态
 FORMAL_RUNNING -> OWNER_ABORT      所有者主动中止正式场景：同上，且不补跑
 FORMAL_RUNNING -> TECHNICAL_ABORT  断线/完整性/服务故障命中冻结无效条件
@@ -241,7 +242,8 @@ TECHNICAL_ABORT -> RERUN_PENDING   仅技术原因且备用池仍有可用项
 
 `OWNER_ABORT` 是终态，区别于可补跑的 `TECHNICAL_ABORT`：owner 主动中止不消耗备用池、
 不生成补跑样本，也不进入 owner evidence index；只有技术中止才按冻结顺序从备用池整局
-补跑（Q-305/DQ-305）。
+补跑（Q-305/DQ-305）。`INCOMPLETE_STUDY` 也是独立终态：只描述未满 24 场的冻结停止结果，
+不得写成 `COMPLETED`，也不产生研究声明。
 
 不变量：
 

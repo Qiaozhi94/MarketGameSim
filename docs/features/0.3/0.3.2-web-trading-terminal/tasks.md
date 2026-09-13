@@ -36,8 +36,12 @@ updated: 2026-09-13
       其它本地解释器版本只作额外冒烟，不作为验收目标 — verify: `tests/integration/test_h2_owner_web.py`
 - [ ] T929 (`FR-401`, `DR-402`, `AC-401`, `AC-404`): 冻结 owner 轨四项参数——时间压缩比（采集
       1:1）、可选 K 线周期集合、逻辑时点采样粒度、场景市场时间跨度——并升级 owner 协议版本
-      与 E1 冻结清单；作为 K 线投影与 owner 会话实现的前置 — verify:
-      `tests/unit/experiment/test_h2_protocol.py`
+      与 E1 冻结清单；同时冻结 owner 证据包布局与 schema（`docs/experiments/owner-n-of-1/`
+      下 `environment.json`/manifest/index 字段、完成状态 `complete`/`incomplete-study`、
+      哈希与 sample flow 结构），并实现机器校验入口 `tools/validate_owner_evidence.py`（覆盖
+      完整样本、`incomplete-study`、零样本与哈希/唯一 ID 正反样例）；证据合同必须先于任何
+      真实采集冻结，作为 K 线投影、owner 会话与真实采集的前置 — verify:
+      `tests/unit/experiment/test_h2_protocol.py`、`tests/unit/experiment/test_owner_evidence_validator.py`
 
 ## 2. 实现任务
 
@@ -90,11 +94,10 @@ updated: 2026-09-13
       （唯一 `session_id`、哈希、排除/补跑流；非退化断言按完成状态条件化）与目标环境记录，
       不得仅以集成测试代替 — verify:
       `tests/integration/test_h2_owner_delivery.py`
-- [ ] T942 (`DR-401`, `DR-402`, `AC-408`): 冻结 owner evidence index、session manifest、输入/事件/
-      K 线 artifact 哈希和 sample flow；落地固定布局 `docs/experiments/owner-n-of-1/`
-      （`environment.json`、`owner-session-manifest.json`、`owner-evidence-index.json`、`kline/`），
-      并实现机器校验入口 `tools/validate_owner_evidence.py --dir <path>`（覆盖完整样本、
-      `incomplete-study`、零样本与哈希/唯一 ID 的正反样例） — verify:
+- [ ] T942 (`DR-401`, `DR-402`, `AC-408`): 正式采集完成后，用 T929 已冻结的 schema 与 validator
+      冻结 owner evidence index、session manifest、输入/事件/K 线 artifact 哈希和 sample flow，
+      产出 `docs/experiments/owner-n-of-1/` 固定布局；本任务只做采集后 index freeze，不再定义
+      或改动证据格式 — verify:
       `tests/integration/test_h2_owner_delivery.py`
 - [ ] T943 (`SC-404`, `AC-407`, `AC-408`): 从 owner evidence index 生成个人描述性报告、代表性
       回放和限制声明，明确不外推到人群 — verify: `tests/integration/test_h2_owner_delivery.py`
@@ -120,7 +123,8 @@ updated: 2026-09-13
 ## 4. 依赖与并行关系
 
 - `T927 -> T928 -> T929`：先复用 session contract，核验目标平台（T928，Python 3.11/3.13），
-  再冻结 owner 参数（压缩比/周期集合/采样粒度/市场跨度）。
+  再冻结 owner 参数（压缩比/周期集合/采样粒度/市场跨度）。T929 同时冻结证据布局/schema 并
+  实现 validator，保证任何真实采集发生前证据格式已固定且可机器校验。
 - `T929 -> T930 [P]` 与 `T929 -> T931 [P]`：K 线纯派生模块与 HTTP view/门控页面修改不同
   文件，可并行；preview gate fail closed 与 abort 路由在 T931 落地。
 - `T930, T931 -> T932`：K 线投影与页面汇合为可打开的 preview，验收包含门控。

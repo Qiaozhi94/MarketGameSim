@@ -1,8 +1,9 @@
-"""V032-DOC-005 回归门：incomplete-study 退出路径可达，真实证据有机器入口。
+"""V032-DOC-005 回归门：证据合同先于真实采集冻结，incomplete-study 有独立终态。
 
-T941 必须允许「24 场完成」或「按冻结停止规则结束并生成 incomplete-study」，否则 gate v1
-的 done（要求全部任务完成）与 T944 的 incomplete-study 交付自相矛盾。环境记录与真实
-manifest/index 必须有固定布局与校验入口。把任一修复回退时本测试必须变红。
+三组合同，任一被回退本组测试必须变红：
+1. incomplete-study 出口可达（T941 允许 24 场完成或按冻结停止规则结束）；
+2. schema/布局/validator 在 T929 先于任何真实采集冻结/实现，T942 只做采集后 index freeze；
+3. spec 生命周期为 incomplete-study 保留独立终态，且不把提前结束写成 COMPLETED。
 """
 
 from __future__ import annotations
@@ -40,3 +41,25 @@ def test_incomplete_study_path_reachable_and_evidence_located():
     task_944 = _task_block("T944")
     assert "按实际样本数断言非退化" in task_944
     assert "零样本" in task_944
+
+
+def test_evidence_contract_frozen_before_real_collection():
+    # schema/布局/validator 必须在 T929（真实采集之前）冻结并实现
+    task_929 = _task_block("T929")
+    assert "证据包布局与 schema" in task_929
+    assert "tools/validate_owner_evidence.py" in task_929
+    # 采集后的 T942 只做 index freeze，不得再定义格式或实现 validator
+    task_942 = _task_block("T942")
+    assert "采集后" in task_942
+    assert "实现机器校验入口" not in task_942
+    # 顺序：冻结/实现所在任务必须早于真实采集任务 T939/T941
+    assert TASKS.index("- [ ] T929") < TASKS.index("- [ ] T939")
+    assert TASKS.index("- [ ] T929") < TASKS.index("- [ ] T941")
+
+
+def test_incomplete_study_has_distinct_terminal_state():
+    assert "FORMAL_RUNNING -> INCOMPLETE_STUDY" in SPEC
+    assert "INCOMPLETE_STUDY" in SPEC
+    # 提前结束不得再被映射为 COMPLETED
+    assert "24 个场景完成或按冻结规则结束" not in SPEC
+    assert "不得写成 `COMPLETED`" in SPEC
