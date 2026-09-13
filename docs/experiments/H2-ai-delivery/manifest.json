@@ -1,7 +1,34 @@
 {
   "evidence_class": "formal-research",
+  "experimental_validity": {
+    "criterion": "每个预注册主要家族需要至少一个非零严重程度配对差（全零对比无法支撑估计量）；CI 与 Holm 判定作为辅助事实一并列出",
+    "families": {
+      "liquidation_cascade": {
+        "ci_excludes_zero": true,
+        "holm_significant": true,
+        "n_blocks": 168,
+        "nonzero_paired_diffs": 80,
+        "status": "informative"
+      },
+      "liquidity_dry_up": {
+        "ci_excludes_zero": true,
+        "holm_significant": true,
+        "n_blocks": 168,
+        "nonzero_paired_diffs": 168,
+        "status": "informative"
+      },
+      "price_crash": {
+        "ci_excludes_zero": true,
+        "holm_significant": true,
+        "n_blocks": 168,
+        "nonzero_paired_diffs": 159,
+        "status": "informative"
+      }
+    },
+    "status": "informative"
+  },
   "files": {
-    "machine-results.json": "2b5144a9d07ad5eac606cf35dfb084656d873395408b3b749c0e8eaa3abc821a",
+    "machine-results.json": "bab9016d4ba9521e1c6ff92c58cd391f2bf613f87cd1a4f905913e2a90dbb38f",
     "paired-checks.json": "391ffe879f4871b5a7eb6f72441281f5b0179d976170ecff75cffd5756fdda7f",
     "report.md": "141bab927bf456372b2a8096d64fa7c6b491226b6e04e6fa3db120be16a492d4",
     "representative-replay.json": "56af8eebdbd02c271f7736cf047196436124b53904fb67d5c2bdbffb86b9fc5c",
@@ -11,14 +38,15 @@
     "n_included": 168,
     "path": "/home/georg/projects/MarketGameSim/docs/experiments/H2-ai-evidence-index.json",
     "protocol_hash": "ff3978c45b6fdd31b01863e93e988c54ced41951e64cf08e3a899a89c8d70c9f",
-    "sha256": "864bb33f6790d1f783a82b7f3d3342c13abe42c09032ac901b0f6d0f3e1063c4"
+    "sha256": "a51bdc20788550fd834048ccb6e8d5d332ae5e381182c00b8868491fbd823129"
   },
-  "machine_results_sha256": "2b5144a9d07ad5eac606cf35dfb084656d873395408b3b749c0e8eaa3abc821a",
+  "machine_results_sha256": "bab9016d4ba9521e1c6ff92c58cd391f2bf613f87cd1a4f905913e2a90dbb38f",
   "pii_scan": {
     "categories": [],
     "clean": true
   },
   "producer": "H2-C formal delivery (T921)",
+  "research_claim_eligibility": "eligible",
   "run_mode": "ai-mechanism-experiment",
   "stop_rule": "reached_frozen_minimum"
 }

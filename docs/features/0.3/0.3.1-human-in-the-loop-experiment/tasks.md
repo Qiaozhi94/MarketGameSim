@@ -117,7 +117,7 @@ updated: 2026-09-14
       分析，输出机器结果并执行结论边界检查 — verify: `tests/unit/experiment/test_h2_outcomes.py`
 - [x] T920 (`FR-306`, `NFR-301`, `SC-304`, `AC-307`, `AC-308`): 生成 AI 正式报告、
       代表性回放、限制、manifest 与隐私审查记录 — verify: `tests/integration/test_h2_delivery.py`
-- [ ] T921 `[成果门:H2-C]` (`AC-304`, `AC-305`, `AC-306`, `AC-307`, `AC-308`): 从冻结 AI evidence
+- [x] T921 `[成果门:H2-C]` (`AC-304`, `AC-305`, `AC-306`, `AC-307`, `AC-308`): 从冻结 AI evidence
       index 单命令生成可打开的 H2 AI 正式交付包，入口
       `python -m market_game_sim.experiment deliver --formal`，验收配对重建、三结果分呈、机制边界、
       PII 扫描与限制声明，标记为 `formal-research` — verify:
@@ -133,9 +133,9 @@ updated: 2026-09-14
 - [x] T924 (`AC-305`, `AC-306`): 用冻结模拟数据验证效应恢复、缺失、多重性、三机制和无综合分数
       — verify: `tests/unit/experiment/test_h2_outcomes.py`、
       `tests/unit/experiment/test_h2_mechanisms.py`、`tests/integration/test_h2_mechanisms.py`
-- [ ] T925 (`AC-301`, `AC-302`, `AC-303`, `AC-304`, `AC-305`, `AC-306`, `AC-307`, `AC-308`):
+- [x] T925 (`AC-301`, `AC-302`, `AC-303`, `AC-304`, `AC-305`, `AC-306`, `AC-307`, `AC-308`):
       运行项目统一质量门 — verify: `python tools/verify.py`
-- [ ] T926 `[状态门]`: 回写 AI spec 验收/研究证据、版本索引和状态；研究声明仅在 H2-C AI 正式
+- [x] T926 `[状态门]`: 回写 AI spec 验收/研究证据、版本索引和状态；研究声明仅在 H2-C AI 正式
       证据复核通过后设为 established — verify: `tools/validate_spec_lifecycle.py`
 
 ## 4. 依赖与并行关系

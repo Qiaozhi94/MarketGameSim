@@ -2,6 +2,24 @@
   "assignments_sha256": "24183f3a5d73b83f6f381e62af5162d5185f89e9db37766b2e9a83872f70aa66",
   "contract_id": "H2-dual-track-contract-v1",
   "contract_protocol_hash": "939e8b57a6220ed82af92e0479d28a9dc6b86fb0e0551effe84582741cb43711",
+  "experimental_validity": {
+    "criterion": "每个预注册主要家族需要完整冻结样本（合格 pair 全数纳入、备用池未消耗）；严重程度对比的非退化性由 H2-ai-analysis.json 机器校验",
+    "families": {
+      "liquidation_cascade": {
+        "qualified_pairs": 168,
+        "status": "informative"
+      },
+      "liquidity_dry_up": {
+        "qualified_pairs": 168,
+        "status": "informative"
+      },
+      "price_crash": {
+        "qualified_pairs": 168,
+        "status": "informative"
+      }
+    },
+    "status": "informative"
+  },
   "included": [
     {
       "arms": {
@@ -3874,6 +3892,7 @@
     "sha256": "d415cf036d43120407f827eb2bd2fe98847a94f34ede54aaca0ba427a0590f03"
   },
   "protocol_hash": "ff3978c45b6fdd31b01863e93e988c54ced41951e64cf08e3a899a89c8d70c9f",
+  "research_claim_eligibility": "eligible",
   "sample_flow": {
     "excluded": 0,
     "excluded_by_reason": {},

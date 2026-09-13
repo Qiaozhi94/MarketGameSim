@@ -24,11 +24,38 @@
     "owner_inference": "absent_ai_track_only"
   },
   "evidence_class": "formal-research",
+  "experimental_validity": {
+    "criterion": "每个预注册主要家族需要至少一个非零严重程度配对差（全零对比无法支撑估计量）；CI 与 Holm 判定作为辅助事实一并列出",
+    "families": {
+      "liquidation_cascade": {
+        "ci_excludes_zero": true,
+        "holm_significant": true,
+        "n_blocks": 168,
+        "nonzero_paired_diffs": 80,
+        "status": "informative"
+      },
+      "liquidity_dry_up": {
+        "ci_excludes_zero": true,
+        "holm_significant": true,
+        "n_blocks": 168,
+        "nonzero_paired_diffs": 168,
+        "status": "informative"
+      },
+      "price_crash": {
+        "ci_excludes_zero": true,
+        "holm_significant": true,
+        "n_blocks": 168,
+        "nonzero_paired_diffs": 159,
+        "status": "informative"
+      }
+    },
+    "status": "informative"
+  },
   "index_binding": {
     "n_included": 168,
     "path": "/home/georg/projects/MarketGameSim/docs/experiments/H2-ai-evidence-index.json",
     "protocol_hash": "ff3978c45b6fdd31b01863e93e988c54ced41951e64cf08e3a899a89c8d70c9f",
-    "sha256": "864bb33f6790d1f783a82b7f3d3342c13abe42c09032ac901b0f6d0f3e1063c4"
+    "sha256": "a51bdc20788550fd834048ccb6e8d5d332ae5e381182c00b8868491fbd823129"
   },
   "mechanisms": {
     "aggressive_orders": {
@@ -103,6 +130,7 @@
       "p_value": 0.0
     }
   },
+  "research_claim_eligibility": "eligible",
   "schema_version": 1,
   "sensitivity": {
     "leverage_tier_strata": {

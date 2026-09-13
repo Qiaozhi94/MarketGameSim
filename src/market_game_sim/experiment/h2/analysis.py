@@ -255,10 +255,36 @@ def run_formal_analysis(
     )
     check_conclusion_text(conclusion)
 
+    families_validity = {}
+    for family in outcomes.FAMILIES:
+        diffs = diffs_by_family[family]
+        nonzero = sum(1 for d in diffs if d != 0)
+        r = primary[family]
+        families_validity[family] = {
+            "status": "informative" if nonzero > 0 else "degenerate",
+            "n_blocks": len(diffs),
+            "nonzero_paired_diffs": nonzero,
+            "ci_excludes_zero": bool(
+                r["ci_low"] is not None and (r["ci_low"] > 0 or r["ci_high"] < 0)
+            ),
+            "holm_significant": r["holm_significant"],
+        }
+
     return {
         "schema_version": ANALYSIS_SCHEMA_VERSION,
         "status": "ANALYSED",
         "evidence_class": "formal-research",
+        "research_claim_eligibility": "eligible",
+        "experimental_validity": {
+            "status": "informative"
+            if all(v["status"] == "informative" for v in families_validity.values())
+            else "degenerate",
+            "criterion": (
+                "每个预注册主要家族需要至少一个非零严重程度配对差（全零对比无法"
+                "支撑估计量）；CI 与 Holm 判定作为辅助事实一并列出"
+            ),
+            "families": families_validity,
+        },
         "index_binding": {
             "path": str(resolved_index),
             "sha256": hashlib.sha256(resolved_index.read_bytes()).hexdigest(),

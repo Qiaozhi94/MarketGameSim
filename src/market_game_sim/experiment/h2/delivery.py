@@ -341,6 +341,8 @@ def build_from_index(index_path: Path | None = None) -> FormalBundle:
         },
         "machine_results_sha256": results_sha,
         "stop_rule": "reached_frozen_minimum",
+        "research_claim_eligibility": "eligible",
+        "experimental_validity": results["experimental_validity"],
     }
     scan_surface = report + "\n" + json.dumps(manifest_meta, ensure_ascii=False, sort_keys=True)
     scan_surface = re.sub(r"\b[0-9a-f]{64}\b", "", scan_surface)

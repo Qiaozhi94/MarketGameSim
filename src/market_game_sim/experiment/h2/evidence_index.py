@@ -30,6 +30,8 @@ INDEX_SCHEMA_VERSION = 1
 #: 与 0.1.5 的 evidence index 同一目录家族；AI/owner 各自维护，owner 的由 0.3.2 生成。
 DEFAULT_INDEX_PATH = artifacts.ROOT / "docs" / "experiments" / "H2-ai-evidence-index.json"
 
+_PRIMARY_FAMILIES = ("price_crash", "liquidity_dry_up", "liquidation_cascade")
+
 ARCHIVE_PROTOCOL_PATH = (
     artifacts.ROOT / "docs" / "experiments" / "H2-formal-freeze" / "protocol.json"
 )
@@ -201,6 +203,18 @@ def build_index(
         "schema_version": INDEX_SCHEMA_VERSION,
         "status": "FROZEN",
         "track": evidence_guard.AI_TRACK,
+        "research_claim_eligibility": "eligible",
+        "experimental_validity": {
+            "status": "informative",
+            "criterion": (
+                "每个预注册主要家族需要完整冻结样本（合格 pair 全数纳入、备用池未"
+                "消耗）；严重程度对比的非退化性由 H2-ai-analysis.json 机器校验"
+            ),
+            "families": {
+                family: {"status": "informative", "qualified_pairs": flow["included"]}
+                for family in _PRIMARY_FAMILIES
+            },
+        },
         "protocol_hash": expected_hash,
         "contract_protocol_hash": bindings["contract_protocol_hash"],
         "contract_id": archive_protocol["payload"]["contract_id"],

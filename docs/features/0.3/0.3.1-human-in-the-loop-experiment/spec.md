@@ -3,10 +3,14 @@ kind: milestone
 id: 0.3.1
 parent: v0.3-human-in-the-loop-crash-experiment
 version: "0.3"
-status: review
-research_claim_status: not-established
+status: done
+research_claim_status: established
 research_claim_required: true
 evidence_class: formal-research
+research_evidence:
+  - docs/experiments/H2-ai-evidence-index.json
+  - docs/experiments/H2-ai-analysis.json
+  - docs/experiments/H2-ai-delivery/manifest.json
 gate_version: 1
 created: 2026-09-04
 updated: 2026-09-14
