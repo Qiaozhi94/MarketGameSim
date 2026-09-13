@@ -26,6 +26,8 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
+      - name: 密钥形态扫描（防止对话归档带入凭证）
+        run: python tools/check_secrets.py
       - name: 校验 event_fields.json 与 traceability.json
         run: python tools/validate_contract_sources.py
       - name: 校验规格生命周期（frontmatter/状态/前置/链接/gate）

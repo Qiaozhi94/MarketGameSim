@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """本地统一验证入口（公开验证唯一入口）。
 
-按固定顺序运行：真源校验 → 生命周期/链接/所有权校验 → pytest → ruff check →
-ruff format check。任一步失败即返回非零。
+按固定顺序运行：密钥形态扫描 → 真源校验 → 生命周期/链接/所有权校验 → pytest →
+ruff check → ruff format check。任一步失败即返回非零。
 
 各底层命令仍可单独用于定位，但 README、SOP 与 CLAUDE 不再各自维护完整命令清单，
 统一指向本入口。
@@ -32,6 +32,7 @@ def _run(cmd: list[str], label: str) -> bool:
 
 def main() -> int:
     steps = [
+        ([sys.executable, "tools/check_secrets.py"], "密钥形态扫描"),
         ([sys.executable, "tools/validate_contract_sources.py"], "真源自校验"),
         ([sys.executable, "tools/validate_spec_lifecycle.py"], "规格生命周期校验"),
         ([sys.executable, "-m", "pytest", "-q"], "pytest"),
@@ -45,7 +46,7 @@ def main() -> int:
     if failed:
         print(f"\nverify.py 失败步骤：{failed}")
         return 1
-    print("\nverify.py 全部通过：真源 / 生命周期 / pytest / ruff")
+    print("\nverify.py 全部通过：密钥扫描 / 真源 / 生命周期 / pytest / ruff")
     return 0
 
 
