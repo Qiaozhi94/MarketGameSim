@@ -70,3 +70,11 @@ def test_incomplete_study_has_distinct_terminal_state():
     # 提前结束不得再被映射为 COMPLETED
     assert "24 个场景完成或按冻结规则结束" not in SPEC
     assert "不得写成 `COMPLETED`" in SPEC
+
+
+def test_e1_exit_includes_evidence_contract_freeze():
+    e1_rows = [line for line in SPEC.splitlines() if line.startswith("| E1 |")]
+    assert e1_rows, "spec 缺 E1 退出条件行"
+    assert "证据包布局/schema" in e1_rows[0]
+    assert "机器校验入口" in e1_rows[0]
+    assert "validator" in e1_rows[0]

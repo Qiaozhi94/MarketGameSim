@@ -281,7 +281,7 @@ TECHNICAL_ABORT -> RERUN_PENDING   仅技术原因且备用池仍有可用项
 
 | 退出 | 条件 | 证据 |
 |---|---|---|
-| E1 | owner observation/K 线周期与时间压缩比、协议版本、动作空间（市价/限价）、时点采样粒度与隐私边界冻结 | contract review + protocol diff |
+| E1 | owner observation/K 线周期与时间压缩比、协议版本、动作空间（市价/限价）、时点采样粒度、隐私边界，以及 owner 证据包布局/schema 与机器校验入口冻结 | contract review + protocol diff + validator 通过记录 |
 | E2 | Web preview 可打开，价格/K 线/账户/下单/错误状态和门控通过 | browser preview bundle |
 | E3 | 6 个训练场景完成且未污染 formal；委托链和中止/补跑路径通过 | training manifest + guard matrix |
 | E4 | 24 个正式 owner 场景按冻结规则完成或形成 incomplete-study，个人报告明确不外推 | owner evidence index + descriptive report |
