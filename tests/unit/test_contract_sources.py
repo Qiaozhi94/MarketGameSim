@@ -631,6 +631,15 @@ def test_adr006_defines_the_owner_scenario_span_conversion():
     assert "运行必须按新跨度重新生成" in adr
 
 
+def test_h2_web_design_has_no_stale_dq_h_pending_text():
+    """ADR006-008：DQ-H 只存在于原型 HTML，不在 spec 问题体系；design 不得再挂它。"""
+    design = (ROOT / "docs/features/0.3/0.3.2-web-trading-terminal/design.md").read_text(
+        encoding="utf-8"
+    )
+    assert "DQ-H" not in design
+    assert "已由 Q-403/ADR-006 裁决" in design
+
+
 def test_h2_web_tasks_freeze_the_owner_contract_params_before_kline():
     """ADR006-007：四项 E1 owner 冻结参数必须有含 AC 的任务承接，且在 K 线投影之前。"""
     tasks = (ROOT / "docs/features/0.3/0.3.2-web-trading-terminal/tasks.md").read_text(
