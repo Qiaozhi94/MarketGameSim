@@ -10,7 +10,7 @@ import json
 
 import pytest
 
-from market_game_sim.experiment.h2 import evidence_guard, formal_ai
+from market_game_sim.experiment.h2 import artifacts, evidence_guard, formal_ai
 
 
 @pytest.fixture(autouse=True)
@@ -76,3 +76,38 @@ def test_protocol_hash_drift_is_fail_closed(tmp_path, assignments):
         formal_ai.sample_ai_blocks(count=2, out_dir=tmp_path, assignments=drifted)
     assert evidence_guard.partial_writes() == []
     assert formal_ai.completed_block_count(tmp_path) == 0
+
+
+def test_stale_protocol_artifacts_do_not_count_toward_stop_rule(tmp_path):
+    """停止规则只认当前冻结协议的合格 pair：被取代协议的残留不是样本。"""
+    stale_path = formal_ai.block_artifact_path(tmp_path, 0, 50_000)
+    stale_path.write_text(json.dumps({"protocol_hash": "f" * 64}), encoding="utf-8")
+    assert formal_ai.completed_block_count(tmp_path) == 0
+
+    valid_path = formal_ai.block_artifact_path(tmp_path, 1, 50_001)
+    valid_path.write_text(
+        json.dumps({"protocol_hash": artifacts.load_assignments()["protocol_hash"]}),
+        encoding="utf-8",
+    )
+    assert formal_ai.completed_block_count(tmp_path) == 1
+
+    garbage_path = formal_ai.block_artifact_path(tmp_path, 2, 50_002)
+    garbage_path.write_text("不是 JSON", encoding="utf-8")
+    assert formal_ai.completed_block_count(tmp_path) == 1
+
+
+def test_stale_protocol_artifact_fails_closed_until_quarantined(tmp_path, assignments):
+    """旧协议残留不得被当作已完成 block 静默跳过：采样 fail-closed，隔离后可补采。"""
+    stale_path = formal_ai.block_artifact_path(tmp_path, 0, 50_000)
+    stale_path.write_text(json.dumps({"protocol_hash": "0" * 64}), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="盘上工件协议哈希漂移"):
+        formal_ai.sample_ai_blocks(count=2, out_dir=tmp_path, assignments=assignments)
+    assert evidence_guard.partial_writes() == []
+    assert evidence_guard.admitted_count() == 0
+    assert formal_ai.completed_block_count(tmp_path) == 0
+
+    stale_path.unlink()
+    written = formal_ai.sample_ai_blocks(count=1, out_dir=tmp_path, assignments=assignments)
+    assert [item["order_index"] for item in written] == [0]
+    assert formal_ai.completed_block_count(tmp_path) == 1

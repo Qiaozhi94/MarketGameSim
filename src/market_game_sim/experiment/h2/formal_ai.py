@@ -8,13 +8,16 @@
 * **准入**：每 block 过 ``evidence_guard.admit`` 五把锁（协议哈希漂移即 fail
   closed），拒绝路径零落盘。
 * **断点续跑**：按工件存在性跳过已完成 block——正式采样可能跨天分批，重启
-  不重打。工件只存配对校验与事件流摘要，分析（T919）从冻结 seed 确定性重放。
+  不重打。盘上工件的 ``protocol_hash`` 必须与冻结分配表一致，被取代协议的残留
+  工件既不计数也不跳过（fail-closed），先隔离再采样。工件只存配对校验与事件流
+  摘要，分析（T919）从冻结 seed 确定性重放。
 * **内存**：一次只持一个 block——0.1.5 重跑的教训（ADR-005 观察项）：全量
   批跑在事件流序列化上会 MemoryError，这里从结构上不允许积累。
 """
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +29,18 @@ AI_TRACK = evidence_guard.AI_TRACK
 
 def block_artifact_path(out_dir: Path, order_index: int, seed: int) -> Path:
     return out_dir / f"block-{order_index:03d}-seed-{seed}.json"
+
+
+def artifact_protocol_hash(path: Path) -> str | None:
+    """盘上工件声明的 ``protocol_hash``；文件不可读或缺字段返回 ``None``。"""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+    if not isinstance(payload, dict):
+        return None
+    value = payload.get("protocol_hash")
+    return value if isinstance(value, str) else None
 
 
 def sample_ai_blocks(
@@ -52,6 +67,14 @@ def sample_ai_blocks(
         seed = int(entry["seed"])
         path = block_artifact_path(target_dir, order_index, seed)
         if path.exists():
+            on_disk = artifact_protocol_hash(path)
+            if on_disk != table["protocol_hash"]:
+                raise ValueError(
+                    f"盘上工件协议哈希漂移：{path.name} 声明 "
+                    f"{on_disk or '<不可读/缺字段>'}，当前冻结协议为 "
+                    f"{table['protocol_hash']}；这是被取代协议的残留，"
+                    "先隔离（superseded）再采样，不得当作已完成 block 跳过"
+                )
             continue
 
         block = runner.run_ai_block(seed)
@@ -99,8 +122,18 @@ def sample_ai_blocks(
 
 
 def completed_block_count(out_dir: Path | None = None) -> int:
-    """已完成（工件在盘）的 block 数——停止规则的检查依据。"""
+    """已完成（工件在盘且协议哈希匹配冻结分配表）的 block 数——停止规则的检查依据。
+
+    停止规则是"168 个**合格** pair"：被取代协议的残留工件不是合格样本，
+    不计入，也不伪装成已完成。采样路径遇到这种文件会直接抛错（见
+    ``sample_ai_blocks``），先把它们隔离出默认目录。
+    """
     target_dir = out_dir or artifacts.DEFAULT_FORMAL_ROOT / "ai"
     if not target_dir.exists():
         return 0
-    return sum(1 for path in sorted(target_dir.glob("block-*.json")))
+    expected = artifacts.load_assignments()["protocol_hash"]
+    return sum(
+        1
+        for path in sorted(target_dir.glob("block-*.json"))
+        if artifact_protocol_hash(path) == expected
+    )
