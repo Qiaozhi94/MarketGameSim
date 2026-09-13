@@ -28,7 +28,7 @@ prerequisites:
   [`interactive-session`](../../../contracts/interactive-session.md)。
 - **架构决策**：[`ADR-006`](../../../decisions/006-realtime-free-trading-owner-terminal.md)
   （真实世界时间与自由连续交易，实验约束收敛到采集模式）。
-- **交互设计原型**：[`interaction-design.html`](interaction-design.html)（真实终端形态，v3）。
+- **交互设计原型**：[`interaction-design.html`](interaction-design.html)（真实终端形态，v4）。
 - **功能类型**：user-facing / runtime / workflow / validation / docs。
 - **规格模式**：full。
 - **变更类型**：ADDED。
@@ -313,6 +313,6 @@ TECHNICAL_ABORT -> RERUN_PENDING   仅技术原因且备用池仍有可用项
 
 ## 8. 待确认问题
 
-- [x] Q-401: K 线为同一冻结 public tape 的多周期派生视图（2026-09-13），周期集合与时间压缩比随 E1 冻结，参照策略对比为场景级描述性。
+- [x] Q-401: K 线信息集 — 决策（2026-09-13）：多周期 K 线是同一冻结 public tape 的派生视图，不新增信息源；参照策略对比为场景级描述性。周期集合与时间压缩比的冻结值属待冻结部分，由 T929 在 E1 前拍板（见退出条件 E1），不再计入已闭合范围。
 - [x] Q-402: 是否连接真实行情或真实账户？— 决策：否，仅 loopback 合成市场和本地 artifact。
 - [x] Q-403: owner 轨放弃 8s 决策窗口合同（2026-09-13，ADR-006）——自由连续交易 + 服务端逻辑时点静默采样，场景为冻结的市场时间跨度，修订 Q-303 的 owner 部分；AI 正式轨不变。

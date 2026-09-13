@@ -631,6 +631,21 @@ def test_adr006_defines_the_owner_scenario_span_conversion():
     assert "运行必须按新跨度重新生成" in adr
 
 
+def test_h2_web_docs_drop_stale_prototype_and_window_id_references():
+    """ADR006-009/010/011：原型版本、Q-401 待冻结边界、receipt 字段与 ADR-006 一致。"""
+    spec = (ROOT / "docs/features/0.3/0.3.2-web-trading-terminal/spec.md").read_text(
+        encoding="utf-8"
+    )
+    design = (ROOT / "docs/features/0.3/0.3.2-web-trading-terminal/design.md").read_text(
+        encoding="utf-8"
+    )
+    assert "（真实终端形态，v4）" in spec
+    assert "v4 按所有者 2026-09-13 反馈" in design
+    assert "由 T929 在 E1 前拍板" in spec
+    assert "`window_id`" not in design
+    assert "`sample_point_id`" in design
+
+
 def test_h2_web_design_has_no_stale_dq_h_pending_text():
     """ADR006-008：DQ-H 只存在于原型 HTML，不在 spec 问题体系；design 不得再挂它。"""
     design = (ROOT / "docs/features/0.3/0.3.2-web-trading-terminal/design.md").read_text(

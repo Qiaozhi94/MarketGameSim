@@ -64,7 +64,7 @@ public tape -------------------------> Kline projector
 ## 3. 数据模型与 Migration
 
 - `OwnerWebSessionView`：模式、阶段、可见报价、多周期 K 线、本人账户、委托能力和状态。
-- `OwnerDecisionReceipt`：`session_id`、`window_id`、`input_seq`、`intent_id`、动作、数量、
+- `OwnerDecisionReceipt`：`session_id`、`sample_point_id`、`input_seq`、`intent_id`、动作、数量、
   服务端裁决、错误码和事件引用。
 - `KlineSeries`：`t_open/t_close/open/high/low/close/volume`（若 volume 属于 public tape），
   `bar_period`（1m/5m/15m/1h/4h）、时间压缩比、源 tape 版本、时间范围和内容哈希。
@@ -107,7 +107,7 @@ AI_FORMAL 的窗口调度与 168 block 合同不受影响。
 ## 6. UI 与可观测性
 
 - **交互设计原型（可离线打开的 HTML）**：[`interaction-design.html`](interaction-design.html) ——
-  v3 按所有者 2026-09-13 反馈改为**真实终端形态**：自由连续交易（市价/限价、点盘口填价、挂单与撤单）、
+  v4 按所有者 2026-09-13 反馈改为**真实终端形态**：自由连续交易（市价/限价、点盘口填价、挂单与撤单）、
   1m—4h 多周期 K 线与时间轴、最新 K 线为普通实时蜡烛、带列名的最近成交表、委托回报状态流转、
   SIM 环境角标与「ⓘ 市场说明」。原实验协议元素（8 秒决策时点、阶段徽标、解盲清单、门禁/休息/结果盲页）
   拆入「采集模式」并在原型［实验模式］状态组与设计说明「真实终端对齐审查」表中保留检视；
