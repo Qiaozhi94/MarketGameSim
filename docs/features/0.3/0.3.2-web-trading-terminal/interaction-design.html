@@ -192,8 +192,6 @@ body.show-pins .pin{display:block}
 #info-pop p{font-size:12px;color:var(--dim);margin:6px 0 0}
 
 /* 设计说明抽屉 */
-#notes-toggle{position:fixed;right:18px;bottom:18px;z-index:60;border-radius:20px;padding:10px 18px;
-  background:var(--blue);border:none;color:#fff;font-weight:600}
 #notes{position:fixed;top:0;right:-580px;width:560px;max-width:95vw;height:100vh;z-index:70;
   background:#10151d;border-left:1px solid var(--line);transition:right .25s ease;display:flex;flex-direction:column}
 #notes.open{right:0}
@@ -221,7 +219,6 @@ body.coll-mode .free-only{display:none !important}
   <span class="tag">交互设计原型 v4</span>
   <b>0.3.2 H2 所有者 Web 交易终端</b>
   <select id="state-select" aria-label="切换会话状态"></select>
-  <button id="pin-toggle">显示标注</button>
   <span class="hint">评审工具条不属于产品界面 · 参考 TradingView / 币安 / OKX 交易页布局 · 确定性合成样例（seed 7）</span>
 </div>
 
@@ -231,7 +228,7 @@ body.coll-mode .free-only{display:none !important}
     <span id="sim-badge" class="sim-badge">SIM</span>
     <span id="stage-badge" class="stage-badge" style="display:none"></span>
     <span class="logo">模拟交易所</span>
-    <nav><span data-view="trade" class="v-on">交易</span><span data-view="markets" id="nav-markets" class="free-only">行情</span><span data-view="contract">合约</span><span data-view="assets">资产</span><span data-view="research" id="nav-research" class="free-only">研究</span></nav>
+    <nav><span data-view="trade" class="v-on">交易</span><span data-view="markets" id="nav-markets" class="free-only">行情</span><span data-view="contract">合约</span><span data-view="assets">资产</span><span id="nav-research" class="free-only" hidden></span></nav>
     <span class="spacer"></span>
     <span id="conn">● 已连接</span>
     <button id="info-btn">ⓘ 市场说明</button>
@@ -255,9 +252,9 @@ body.coll-mode .free-only{display:none !important}
     <h4>市场信息</h4>
     <div class="kv"><span class="k">品种</span><span class="num">PERPETUAL-SIM-1（合成本位永续）</span></div>
     <div class="kv"><span class="k">最小变动</span><span class="num">0.01 · 单笔上限 1.000 · 挂单上限 8</span></div>
-    <div class="kv"><span class="k">手续费</span><span class="num">Taker 0.05% / Maker 0.02%（演示）</span></div>
+    <div class="kv"><span class="k">手续费</span><span class="num"></span></div>
     <div class="kv"><span class="k">K 线数据源</span><span class="num">冻结 public tape b7f3…c21a</span></div>
-    <div class="kv"><span class="k">市场时钟</span><span class="num">合成交易所时间（演示 1 tick≈1m）</span></div>
+    <div class="kv"><span class="k">市场时钟</span><span class="num">合成交易所时间</span></div>
     <h4>关于 SIM 环境</h4>
     <p>确定性合成的模拟市场：不接入真实行情与资金，所有对手方均为可复现的 AI 代理（做市商、
     因子策略、噪声/情绪交易者）。全部操作进入可审计记录。</p>
@@ -297,7 +294,6 @@ body.coll-mode .free-only{display:none !important}
       <!-- 中栏：图表 + 底部挂单/回报 -->
       <div class="col">
         <section class="card" id="card-kline">
-          <span class="pin" data-note="k" style="right:8px;top:8px">2</span>
           <div id="chart-head">
             <b style="font-size:13px">PERPETUAL-SIM-1</b>
             <span id="chart-type">· 模拟永续 ·</span>
@@ -352,15 +348,13 @@ body.coll-mode .free-only{display:none !important}
         </section>
 
         <section class="card" id="card-account">
-          <span class="pin" data-note="acc" style="right:8px;top:8px">5</span>
-          <h3>资产<span class="aux">USDT 本位（模拟）</span></h3>
+          <h3>资产<span class="aux">全仓 · USDT 本位（模拟）</span></h3>
           <div id="account-kv"></div>
         </section>
       </div>
 
       <div class="col" style="grid-column:1 / -1">
         <section class="card" id="bottom-card">
-          <span class="pin" data-note="r" style="right:8px;top:8px">3</span>
           <div class="tabs" id="bottom-tabs">
             <button data-t="orders" class="on">当前挂单 (<span id="orders-count">0</span>)</button>
             <button data-t="returns">操作回报</button>
@@ -409,6 +403,22 @@ body.coll-mode .free-only{display:none !important}
 
   <!-- 合约页 -->
   <div id="view-contract" class="page" hidden>
+    <div class="card">
+      <h3>资产<span class="aux">全仓 · USDT 本位（模拟）</span></h3>
+      <div id="contract-assets-kv"></div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <h3>当前仓位与委托</h3>
+        <div id="contract-pos-kv"></div>
+        <button onclick="switchView('trade')" style="margin-top:8px">进入交易</button>
+      </div>
+      <div class="card">
+        <h3>杠杆（全仓 · 1–10×）</h3>
+        <div id="lev-row-contract" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div>
+        <p style="color:var(--faint);font-size:12px;margin-bottom:0">杠杆决定初始保证金水平；强平与穿仓由交易所风控路径统一处理。采集模式下杠杆由协议冻结。</p>
+      </div>
+    </div>
     <div class="two-col">
       <div class="card">
         <h3>合约规格</h3>
@@ -417,17 +427,17 @@ body.coll-mode .free-only{display:none !important}
         <div class="kv"><span class="k">杠杆范围</span><span class="num">1–10×（自由模拟可调；采集模式由协议冻结）</span></div>
         <div class="kv"><span class="k">最小变动</span><span class="num">0.01（tick）</span></div>
         <div class="kv"><span class="k">单笔上限</span><span class="num">1.000 PERP · 挂单上限 8</span></div>
-        <div class="kv"><span class="k">手续费</span><span class="num">Taker 0.05% / Maker 0.02%（演示）</span></div>
-        <div class="kv free-only" id="contract-funding"><span class="k">资金费用</span><span class="num">每 8h 市场时间结算（演示 0.0100%）</span></div>
+        <div class="kv"><span class="k">手续费</span><span class="num">Taker 0.05% / Maker 0.02%</span></div>
+        <div class="kv free-only" id="contract-funding"><span class="k">资金费用</span><span class="num">每 8h 市场时间结算 0.0100%</span></div>
       </div>
       <div class="card">
-        <h3>市场机制（内核映射）</h3>
-        <div class="kv"><span class="k">撮合 / 账本</span><span>内核既有 orderbook 与 ledger 路径</span></div>
-        <div class="kv"><span class="k">保证金 / 强平</span><span>0.1.2 全仓杠杆路径（含穿仓与连锁）</span></div>
-        <div class="kv"><span class="k">行情来源</span><span>冻结 public tape（哈希绑定，DR-402）</span></div>
-        <div class="kv"><span class="k">时间模型</span><span>内核逻辑步进 + 合成交易所墙钟（ADR-006）</span></div>
-        <div class="kv"><span class="k">K 线</span><span>同一 tape 的多周期派生视图（Q-401）</span></div>
-        <div class="kv"><span class="k">证据边界</span><span>自由模拟永不进入实验证据索引</span></div>
+        <h3>市场机制</h3>
+        <div class="kv"><span class="k">撮合 / 账本</span><span>交易所统一撮合与账本路径</span></div>
+        <div class="kv"><span class="k">保证金 / 强平</span><span>全仓杠杆路径（含穿仓与连锁处理）</span></div>
+        <div class="kv"><span class="k">行情来源</span><span>公开成交 tape（哈希绑定，防篡改）</span></div>
+        <div class="kv"><span class="k">时间模型</span><span>合成交易所时间</span></div>
+        <div class="kv"><span class="k">K 线</span><span>公开 tape 的多周期派生视图</span></div>
+        <div class="kv"><span class="k">数据边界</span><span>模拟市场操作与行情均可审计</span></div>
       </div>
     </div>
   </div>
@@ -462,25 +472,11 @@ body.coll-mode .free-only{display:none !important}
   </div>
 
   <!-- 研究页 -->
-  <div id="view-research" class="page free-only" hidden>
-    <div class="card">
-      <h3>研究交付物（项目既有成果入口）</h3>
-      <table class="mkt-table">
-        <thead><tr><th>里程碑</th><th>交付物</th><th>状态 / 证据级别</th></tr></thead>
-        <tbody>
-          <tr><td>v0.1 旗舰研究</td><td><a href="../../../experiments/0.1.5-flagship-report.md">正式总结报告</a> · <a href="../../../experiments/0.1.5-representative-replay.html">代表性回放</a> · <a href="../../../experiments/0.1.5-evidence-index.json">证据索引</a></td><td>formal-research · 已签收</td></tr>
-          <tr><td>H1 手动沙盒</td><td>interactive 会话与离线回放（本地成果包）</td><td>engineering-demonstration · 已签收</td></tr>
-          <tr><td>0.3.1 AI 正式轨</td><td>冻结协议 + 168 paired-seed blocks（见里程碑 spec）</td><td>ready-for-development</td></tr>
-          <tr><td>0.3.2 本终端</td><td>自由模拟终端 + owner N-of-1 采集（当前设计稿）</td><td>draft</td></tr>
-        </tbody>
-      </table>
-      <p style="color:var(--faint);font-size:12px;margin:8px 0 0">研究声明只由 AI 轨承担；owner 轨与自由模拟数据永不进入正式样本（FR-303 / ADR-006）。</p>
-    </div>
+  <div id="view-research" class="page free-only" hidden></div>
   </div>
 </div>
 
 <div id="modal-root"><div class="modal" id="modal"></div></div>
-<button id="notes-toggle">设计说明</button>
 
 <aside id="notes">
   <header>
@@ -709,7 +705,16 @@ function renderAccount(){
     ["预估强平价",`<span class="num">${fmtP(liqEstTicks())}</span>`,true],
     ["账户状态",`<span class="num">${account.state}</span>`],
   ];
-  $("account-kv").innerHTML=rows.map(r=>`<div class="kv${r[2]?" free-only":""}"><span class="k">${r[0]}</span><span class="num">${r[1]}</span></div>`).join("");
+  const rowHtml=r=>`<div class="kv${r[2]?" free-only":""}"><span class="k">${r[0]}</span><span class="num">${r[1]}</span></div>`;
+  const simple=[0,1,2,3,6];
+  $("account-kv").innerHTML=simple.map(i=>rowHtml(rows[i])).join("");
+  $("assets-kv").innerHTML=rows.map(rowHtml).join("");
+  $("contract-assets-kv").innerHTML=rows.map(rowHtml).join("");
+  $("contract-pos-kv").innerHTML=
+    rowHtml(["方向 / 数量",account.position_units===0?"空仓":`${account.position_units>0?"多":"空"} ${fmtQ(Math.abs(account.position_units))}`])+
+    rowHtml(["开仓均价",account.position_units===0?"—":fmtP(account.entry_ticks)])+
+    rowHtml(["预估强平价",`<span class="num">${fmtP(liqEstTicks())}</span>`])+
+    rowHtml(["当前挂单",`${resting.length} 笔`]);
   $("avail-usdt").textContent=fmtM(availableUnits());
 }
 
@@ -841,60 +846,67 @@ function initTfTabs(){
 }
 
 /* ---------- 下单 ---------- */
-let orderType="market";
+let orderType="limit", side="BUY";
 function effectiveQtyUnits(){
-  const px=orderType==="limit"?parseFloat($("px").value||"0"):(lastTicks||0)/100;
   const v=parseFloat($("qty").value||"0");
-  if(!(px>0)||!(v>0))return 0;
-  return qtyUnit==="usdt"?Math.round(v/px*MULT):Math.round(v*MULT);
+  if(!(v>0))return 0;
+  if(qtyUnit!=="usdt")return Math.round(v*MULT);
+  const px=orderType==="limit"?parseFloat($("px").value||"0"):(lastTicks||0)/100;
+  if(!(px>0))return 0;
+  return Math.round(v/px*MULT);
 }
 function renderButtonPx(){
-  if(orderType==="market"){
-    $("buy-px").textContent=askTicks!==null?("市价 ≈ "+fmtP(askTicks)):"—";
-    $("sell-px").textContent=bidTicks!==null?("市价 ≈ "+fmtP(bidTicks)):"—";
-  }else{
-    const v=parseFloat($("px").value||"0");
-    const pv=v>0?fmtP(Math.round(v*100)):"—";
-    $("buy-px").textContent="限价 "+pv;
-    $("sell-px").textContent="限价 "+pv;
-  }
   const px=orderType==="limit"?parseFloat($("px").value||"0"):(lastTicks||0)/100;
+  const ref=orderType==="market"?(side==="BUY"?askTicks:bidTicks):Math.round(px*100);
+  const refTxt=ref>0?(" ≈ "+fmtP(ref)):"";
+  const btn=$("btn-action");
+  if(btn)btn.textContent=(side==="BUY"?"买入 ":"卖出 ")+"PERP"+(qtyUnit==="usdt"?"（按金额）":"")+refTxt;
   const q0=effectiveQtyUnits()/MULT;
   if(px>0&&q0>0){
     const notional=q0*px;
+    $("est-total").textContent=notional.toFixed(2)+" USDT";
     $("est-margin").textContent=(notional/account.leverage).toFixed(2)+" USDT";
     $("qty-conv").textContent=qtyUnit==="usdt"
-      ?(`≈ ${q0.toFixed(3)} PERP · 市值 ${notional.toFixed(2)} USDT`)
-      :(`≈ ${notional.toFixed(2)} USDT · 市值按当前价估算`);
+      ?(`≈ ${q0.toFixed(3)} PERP`)
+      :(`≈ ${notional.toFixed(2)} USDT`);
   }else{
+    $("est-total").textContent="—";
     $("est-margin").textContent="—";
     $("qty-conv").textContent=qtyUnit==="usdt"?"输入 USDT 金额，按价格自动换算为 PERP 数量":"";
   }
   $("lev-chip").textContent=account.leverage+"×";
+}
+function setSide(sd){
+  side=sd;
+  $("side-buy").className=sd==="BUY"?"buy-on":"";
+  $("side-sell").className=sd==="SELL"?"sell-on":"";
+  const btn=$("btn-action");
+  btn.className="btn-action "+(sd==="BUY"?"buy":"sell");
+  renderButtonPx();
 }
 function setOrderType(t){
   orderType=t;
   document.querySelectorAll("#type-tabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
   $("price-row").style.display=t==="limit"?"flex":"none";
   $("px-quick").style.display=t==="limit"?"flex":"none";
+  if(t==="limit"&&!parseFloat($("px").value||"0")&&lastTicks!==null)$("px").value=fmtP(lastTicks);
   renderButtonPx();
 }
 function initTypeTabs(){
   const host=$("type-tabs");
-  for(const t of [["market","市价"],["limit","限价"]]){
+  for(const t of [["limit","限价"],["market","市价"]]){
     const b=document.createElement("button");
     b.textContent=t[1];b.dataset.t=t[0];
     b.onclick=()=>setOrderType(t[0]);
     host.appendChild(b);
   }
-  setOrderType("market");
+  setOrderType("limit");
 }
 function hintErr(msg){$("submit-hint").textContent=msg;$("submit-hint").className="err"}
 function hintOk(msg){$("submit-hint").textContent=msg;$("submit-hint").className="ok"}
-function submitOrder(side){
+function submitOrder(){
   const qty=effectiveQtyUnits();
   if(!(qty>0)){hintErr(qtyUnit==="usdt"?"金额必须大于 0（INVALID_QTY · 本地预检）":"数量必须大于 0（INVALID_QTY · 本地预检）");return}
-  if(!(qty>0)){hintErr("数量必须大于 0（INVALID_QTY · 本地预检）");return}
   if(qty>account.qty_max){hintErr(`单笔数量超过上限 ${fmtQ(account.qty_max)}（INVALID_QTY）`);return}
   if(resting.length>=account.orders_max&&orderType==="limit"){hintErr(`挂单数量达到上限 ${account.orders_max}（ORDER_LIMIT）`);return}
   if(bidTicks===null){hintErr("暂无行情报价，暂不能下单（MARKET_WARMING）");return}
@@ -960,8 +972,13 @@ function switchView(v){
   $("view-research").hidden=v!=="research";
   if(v==="markets")renderMarkets();
   if(v==="assets")renderAssets();
+  if(v==="contract")renderContract();
 }
 document.querySelectorAll("#topnav nav [data-view]").forEach(x=>x.onclick=()=>switchView(x.dataset.view));
+function renderContract(){
+  renderAccount();
+  renderLevButtons();
+}
 function renderMarkets(){
   const body=$("mkt-body");
   if(lastTicks===null){body.innerHTML='<tr><td colspan="8" style="color:var(--faint)">等待首笔公开成交</td></tr>';return}
@@ -988,8 +1005,12 @@ function renderAssets(){
   renderLevButtons();
 }
 function renderLevButtons(){
-  $("lev-row").innerHTML=[1,2,3,5,10].map(l=>`<button class="lev-btn ${account.leverage===l?"on":""}" data-lv="${l}">${l}×</button>`).join("");
-  $("lev-row").querySelectorAll("[data-lv]").forEach(b=>b.onclick=()=>setLeverage(+b.dataset.lv));
+  for(const hostId of ["lev-row","lev-row-contract"]){
+    const host=$(hostId);
+    if(!host)continue;
+    host.innerHTML=[1,2,3,5,10].map(l=>`<button class="lev-btn ${account.leverage===l?"on":""}" data-lv="${l}">${l}×</button>`).join("");
+    host.querySelectorAll("[data-lv]").forEach(b=>b.onclick=()=>setLeverage(+b.dataset.lv));
+  }
 }
 function setLeverage(lv){
   account.leverage=lv;
@@ -1048,7 +1069,7 @@ function render(){
   $("fullcard-host").innerHTML="";
   $("conn-overlay").classList.remove("show");
   $("submit-hint").textContent="";
-  if(state!=="warming"){$("btn-buy").disabled=false;$("btn-sell").disabled=false;}
+  if(state!=="warming"){$("btn-action").disabled=false;}
   if(state==="warming")return renderWarming();
   if(state==="risk-rejected")return renderRiskRejected();
   if(state==="disconnected")return renderDisconnected();
@@ -1061,7 +1082,7 @@ function render(){
 function renderWarming(){
   bidTicks=null;askTicks=null;lastTicks=null;bids=[];asks=[];tape=[];
   renderTicker();renderBook();renderTape();drawKline();
-  $("btn-buy").disabled=$("btn-sell").disabled=true;
+  $("btn-action").disabled=true;
   hintErr("暂无行情报价：下单暂不可用（真实市场开盘前同样如此）");
 }
 function renderRiskRejected(){
@@ -1089,7 +1110,7 @@ function renderExitConfirm(){
     <p style="font-size:12px;color:var(--faint)">若进入「采集模式」（正式 N-of-1 记录），退出语义由实验协议约束：需选择原因并进入裁决流程。</p>
     <div class="row"><button id="exit-cancel">返回交易</button><button class="danger" id="exit-ok">退出</button></div>`);
   $("exit-cancel").onclick=()=>{closeModal();setState("trading")};
-  $("exit-ok").onclick=()=>{closeModal();setState("trading");hintOk("（演示）已退出会话。");};
+  $("exit-ok").onclick=()=>{closeModal();setState("trading");;};
 }
 function renderExpGate(){
   $("fullcard-host").innerHTML=`<section class="card full-card">
@@ -1157,8 +1178,9 @@ function setState(s){
 }
 
 /* ---------- 输入绑定 ---------- */
-$("btn-buy").onclick=()=>submitOrder("BUY");
-$("btn-sell").onclick=()=>submitOrder("SELL");
+$("side-buy").onclick=()=>setSide("BUY");
+$("side-sell").onclick=()=>setSide("SELL");
+$("btn-action").onclick=()=>submitOrder();
 $("qty-minus").onclick=()=>{
   if(qtyUnit==="base"){const v=Math.max(1,Math.round(parseFloat($("qty").value||"0")*MULT)-100);$("qty").value=fmtQ(v)}
   else{$("qty").value=Math.max(1,parseFloat($("qty").value||"0")-10).toFixed(2)}
@@ -1177,15 +1199,7 @@ $("px-quick").querySelectorAll("[data-px]").forEach(b=>b.onclick=()=>{
   if(b.dataset.px==="bid"&&bidTicks!==null)$("px").value=fmtP(bidTicks);
   renderButtonPx();
 });
-$("pct-row").querySelectorAll("[data-pct]").forEach(b=>b.onclick=()=>{
-  const pct=+b.dataset.pct/100;
-  const px=orderType==="limit"?parseFloat($("px").value||"0"):(lastTicks||0)/100;
-  if(!(px>0))return;
-  const usdt=availableUnits()/MULT*0.95*pct;
-  if(qtyUnit==="usdt"){$("qty").value=usdt.toFixed(2)}
-  else{let q=Math.min(usdt/px,account.qty_max/1000);$("qty").value=q.toFixed(3)}
-  renderButtonPx();
-});
+
 $("exit-btn").onclick=()=>setState("exit-confirm");
 $("info-btn").onclick=()=>$("info-pop").classList.toggle("show");
 function openModal(html){$("modal").innerHTML=html;$("modal-root").classList.add("show")}
@@ -1199,14 +1213,22 @@ function bindTabs(hostId,onSwitch){
     onSwitch(b.dataset.t);
   });
 }
-bindTabs("book-tabs",t=>{
-  $("pane-book").style.display=t==="book"?"block":"none";
-  $("pane-trades").style.display=t==="trades"?"block":"none";
-});
 bindTabs("bottom-tabs",t=>{
   $("pane-orders").style.display=t==="orders"?"block":"none";
   $("pane-returns").style.display=t==="returns"?"block":"none";
 });
+
+$("pct").oninput=()=>{
+  const pct=+$("pct").value;
+  $("pct-val").textContent=pct+"%";
+  let px=orderType==="limit"?parseFloat($("px").value||"0"):0;
+  if(!(px>0)&&lastTicks!==null)px=lastTicks/100;
+  if(!(px>0))return;
+  const usdt=availableUnits()/MULT*0.95*pct/100;
+  if(qtyUnit==="usdt"){$("qty").value=usdt.toFixed(2)}
+  else{let q=Math.min(usdt/px,account.qty_max/1000);$("qty").value=q.toFixed(3)}
+  renderButtonPx();
+};
 
 /* ---------- 行情节拍 ---------- */
 setInterval(()=>{
@@ -1214,12 +1236,8 @@ setInterval(()=>{
   tickMarket();
   renderTicker();renderBook();renderTape();renderAccount();drawKline();
   if(view==="markets")renderMarkets();
-  if(view==="assets")renderAssets();
+  if(view==="assets"||view==="contract")renderAssets();
 },1000);
-
-/* ---------- 标注 ---------- */
-$("pin-toggle").onclick=()=>{document.body.classList.toggle("show-pins")};
-document.querySelectorAll(".pin").forEach(p=>p.onclick=()=>openNotes("arch"));
 
 /* ---------- 评审模式（URL 带 #review 启用；最终用户不可见） ---------- */
 if(location.hash==="#review"){
@@ -1230,9 +1248,12 @@ if(location.hash==="#review"){
 seedHistory();
 initTfTabs();
 initTypeTabs();
+setSide("BUY");
 setState("trading");
 switchView("trade");
 renderAssets();
+$("px").value=fmtP(lastTicks);
+renderButtonPx();
 </script>
 </body>
 </html>
