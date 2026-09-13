@@ -66,9 +66,9 @@ def test_h2_web_delivery_gates_have_unique_scope(sv):
     gates = re.findall(r"\[成果门:([A-Za-z0-9-]+)\]", tasks)
 
     assert gates == ["H2-D1", "H2-D2"]
-    assert "[成果门:H2-D1]" in blocks["T935"]
-    assert "[成果门:H2-D2]" in blocks["T943"]
-    assert "[成果门:" not in blocks["T931"]
+    assert "[成果门:H2-D1]" in blocks["T936"]
+    assert "[成果门:H2-D2]" in blocks["T944"]
+    assert "[成果门:" not in blocks["T932"]
 
 
 def test_declared_ids_accept_bullet_user_stories(sv):

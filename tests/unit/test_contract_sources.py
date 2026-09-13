@@ -631,6 +631,17 @@ def test_adr006_defines_the_owner_scenario_span_conversion():
     assert "运行必须按新跨度重新生成" in adr
 
 
+def test_h2_web_tasks_freeze_the_owner_contract_params_before_kline():
+    """ADR006-007：四项 E1 owner 冻结参数必须有含 AC 的任务承接，且在 K 线投影之前。"""
+    tasks = (ROOT / "docs/features/0.3/0.3.2-web-trading-terminal/tasks.md").read_text(
+        encoding="utf-8"
+    )
+    freeze_block = tasks.split("- [ ] T929", 1)[1].split("- [ ] T930", 1)[0]
+    for param in ("时间压缩比", "K 线周期集合", "采样粒度", "场景市场时间跨度"):
+        assert param in freeze_block, f"冻结任务缺少 {param}"
+    assert "AC-401" in freeze_block
+
+
 def test_h2_web_tasks_defer_only_conditional_orders_not_limit_orders():
     """ADR006-005：限价单已进入 MVP 动作空间，tasks §5 不得再把它列为后移项。"""
     tasks = (ROOT / "docs/features/0.3/0.3.2-web-trading-terminal/tasks.md").read_text(
