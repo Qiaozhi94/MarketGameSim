@@ -1,7 +1,10 @@
-"""V032-DOC-001 回归门：采集模式只显示冻结观察白名单字段。
+"""V032-DOC-001/006/007 回归门：采集模式只显示冻结观察白名单字段。
 
-原型把 mode（free/collection）与 stage 分离，并提供可交易的 training/formal 采集态；
-白名单外字段必须带 `free-only` 且在采集态隐藏。把任一处回退成旧形态时本测试必须变红。
+- 白名单外字段（含新增的行情/研究视图、合约资金费用、资产配置卡）必须带 `free-only`；
+- 结构性负向门：采集可见区域不得出现禁用字段文案，使**新增违规默认被拒**而非默认放行
+  （V032-DOC-007 的教训：只锁定已知 id 清单对新增字段结构性失效）。
+
+把任一处回退成旧形态、或新增一个未隐藏的白名单外字段时，本测试必须变红。
 """
 
 from __future__ import annotations
@@ -14,7 +17,7 @@ MILESTONE = (
 )
 PROTOTYPE = (MILESTONE / "interaction-design.html").read_text(encoding="utf-8")
 
-# 采集模式白名单外、必须在采集态隐藏的字段 id（spec §5 / design §6 第三类）。
+# 采集模式白名单外、必须在采集态隐藏的字段/区块 id（spec §5 / design §6 第三类）。
 NON_WHITELIST_IDS = (
     "tick-chg",
     "tick-hi",
@@ -24,7 +27,17 @@ NON_WHITELIST_IDS = (
     "tick-fund",
     "depth-ratio",
     "depth-legend",
+    "view-markets",
+    "view-research",
+    "nav-markets",
+    "nav-research",
+    "contract-funding",
+    "assets-capital",
+    "assets-leverage",
 )
+
+# 采集可见区域禁止出现的白名单外字段文案（结构性负向门，默认拒绝新增字段）。
+FORBIDDEN_TOKENS = ("24h", "资金费率", "资金费用", "标记价格", "预估强平价")
 
 _VOID_TAGS = {
     "area",
@@ -78,6 +91,48 @@ class _ElementAttrs(HTMLParser):
             self._stack.pop()
 
 
+class _AppTextScanner(HTMLParser):
+    """把 `#app` 产品区的文本按「采集可见 / free-only 隐藏」分类（跳过 script/style）。"""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._stack: list[tuple[str, list[str], bool]] = []
+        self._app_depth = 0
+        self._skip = 0
+        self.visible_texts: list[str] = []
+        self.free_only_texts: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag in ("script", "style"):
+            self._skip += 1
+            return
+        if tag in _VOID_TAGS:
+            return
+        data = dict(attrs)
+        classes = (data.get("class") or "").split()
+        is_app = data.get("id") == "app"
+        self._stack.append((tag, classes, is_app))
+        if is_app:
+            self._app_depth += 1
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag in ("script", "style"):
+            if self._skip > 0:
+                self._skip -= 1
+            return
+        if self._stack and self._stack[-1][0] == tag:
+            _, _, is_app = self._stack.pop()
+            if is_app:
+                self._app_depth -= 1
+
+    def handle_data(self, data: str) -> None:
+        if self._app_depth <= 0 or self._skip > 0:
+            return
+        in_free_only = any("free-only" in classes for _, classes, _ in self._stack)
+        target = self.free_only_texts if in_free_only else self.visible_texts
+        target.append(data)
+
+
 def test_non_whitelist_fields_are_hidden_in_collection_mode():
     assert "body.coll-mode .free-only{display:none !important}" in PROTOTYPE
     parser = _ElementAttrs()
@@ -100,6 +155,19 @@ def test_prototype_separates_mode_from_stage_with_tradable_collection_states():
     assert "function applyMode(mode,stage){" in PROTOTYPE
     assert "const coll=mode===COLLECTION_MODE;" in PROTOTYPE
     assert "document.body.dataset.mode=mode;document.body.dataset.stage=stage;" in PROTOTYPE
-    # 1D 在进入采集态时必须自动退出；mode 不得再由 key 前缀推断
+    # 1D 与白名单外视图在进入采集态时必须自动退出
     assert 'if(coll&&tfKey==="1D"){tfKey="1m";renderTfTabs();}' in PROTOTYPE
+    assert 'if(coll&&(view==="markets"||view==="research"))switchView("trade");' in PROTOTYPE
     assert 'startsWith("exp-")' not in PROTOTYPE
+
+
+def test_collection_visible_text_has_no_forbidden_market_fields():
+    scanner = _AppTextScanner()
+    scanner.feed(PROTOTYPE)
+    for token in FORBIDDEN_TOKENS:
+        # 非空转：该字段必须真的出现在某个 free-only 区域，否则门禁看不到它
+        assert any(token in text for text in scanner.free_only_texts), (
+            f"门禁空转：{token} 未出现在任何 free-only 区域"
+        )
+        offenders = [text.strip() for text in scanner.visible_texts if token in text]
+        assert not offenders, f"采集可见区域出现白名单外字段 {token}：{offenders[:2]}"
