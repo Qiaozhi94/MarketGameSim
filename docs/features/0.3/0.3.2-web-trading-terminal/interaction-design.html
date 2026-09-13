@@ -19,8 +19,9 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 
 /* ---------- 评审工具条 ---------- */
-#proto-bar{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:8px;align-items:center;
-  padding:6px 12px;background:#0e1218;border-bottom:1px solid var(--line)}
+#proto-bar{display:none;position:sticky;top:0;z-index:50;flex-wrap:wrap;gap:8px;align-items:center;
+  padding:6px 12px;background:#0e1218;border-bottom:1px dashed var(--amber)}
+body.review #proto-bar{display:flex}
 #proto-bar .tag{font-size:12px;color:var(--amber);border:1px solid var(--amber);border-radius:4px;padding:1px 6px}
 #proto-bar select{max-width:340px}
 #proto-bar .hint{font-size:12px;color:var(--faint)}
@@ -109,9 +110,20 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 .est{font-size:12px;color:var(--dim);margin:4px 0}
 .est b{color:var(--fg);font-family:var(--mono)}
 .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.btn-buy{background:#123a28;border-color:var(--green);color:var(--green);font-weight:700;padding:10px 0;font-size:14px}
-.btn-sell{background:#3a1713;border-color:var(--red);color:var(--red);font-weight:700;padding:10px 0;font-size:14px}
-.btn-buy .px,.btn-sell .px{display:block;font-size:11px;font-weight:400;font-family:var(--mono)}
+.side-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
+.side-tabs button{font-size:14px;font-weight:700;padding:8px 0;background:transparent;color:var(--faint)}
+.side-tabs button.buy-on{background:#123a28;border-color:var(--green);color:var(--green)}
+.side-tabs button.sell-on{background:#3a1713;border-color:var(--red);color:var(--red)}
+.pct-line{display:flex;align-items:center;gap:8px;margin:6px 0}
+.pct-line input[type=range]{flex:1;accent-color:var(--green);height:4px}
+.pct-line .v{font-family:var(--mono);font-size:12px;min-width:34px;text-align:right}
+.est{font-size:12px;color:var(--dim);margin:6px 0;border-top:1px dashed var(--line);padding-top:6px}
+.est div{display:flex;justify-content:space-between;padding:1px 0}
+.est b{color:var(--fg);font-family:var(--mono)}
+.btn-action{width:100%;font-size:15px;font-weight:700;padding:12px 0;border:none;border-radius:6px}
+.btn-action.buy{background:var(--green);color:#04121c}
+.btn-action.sell{background:var(--red);color:#1c0705}
+#bottom-card{grid-column:1 / -1}
 #submit-hint{font-size:12px;color:var(--faint);margin-top:8px;min-height:18px}
 #submit-hint.err{color:var(--red)} #submit-hint.ok{color:var(--green)}
 
@@ -210,7 +222,6 @@ body.coll-mode .free-only{display:none !important}
   <b>0.3.2 H2 所有者 Web 交易终端</b>
   <select id="state-select" aria-label="切换会话状态"></select>
   <button id="pin-toggle">显示标注</button>
-  <button id="notes-btn-open">设计说明</button>
   <span class="hint">评审工具条不属于产品界面 · 参考 TradingView / 币安 / OKX 交易页布局 · 确定性合成样例（seed 7）</span>
 </div>
 
@@ -259,31 +270,26 @@ body.coll-mode .free-only{display:none !important}
 
       <!-- 左栏：盘口 / 最近成交 -->
       <div class="col">
-        <section class="card" style="flex:1">
-          <span class="pin" data-note="q" style="right:8px;top:8px">1</span>
-          <div class="tabs" id="book-tabs">
-            <button data-t="book" class="on">盘口</button>
-            <button data-t="trades">最近成交</button>
-          </div>
-          <div id="pane-book">
-            <div class="book">
-              <div class="row" style="cursor:default;color:var(--faint);border-bottom:1px solid var(--line)">
-                <span class="p">价格</span><span>数量</span><span>累计</span>
-              </div>
-              <div id="asks-host"></div>
-              <div id="book-mid"><span class="lp" id="mid-last">—</span><span class="mk" id="mid-spread">价差 —</span></div>
-              <div id="bids-host"></div>
+        <section class="card">
+          <h3>盘口<span class="aux">合成本位永续</span></h3>
+          <div class="book">
+            <div class="row" style="cursor:default;color:var(--faint);border-bottom:1px solid var(--line)">
+              <span class="p">价格</span><span>数量</span><span>累计</span>
             </div>
-            <div id="depth-ratio" class="free-only"><div class="b" style="width:50%"></div><div class="a"></div></div>
-            <div id="depth-legend" class="free-only"><span id="ratio-b">买 50%</span><span id="ratio-a">卖 50%</span></div>
+            <div id="asks-host"></div>
+            <div id="book-mid"><span class="lp" id="mid-last">—</span><span class="mk" id="mid-spread">价差 —</span></div>
+            <div id="bids-host"></div>
           </div>
-          <div id="pane-trades" style="display:none">
-            <div id="trades-scroll">
-              <table id="trades-table">
-                <thead><tr><th>时间</th><th>价格</th><th>数量</th><th>方向</th></tr></thead>
-                <tbody id="tape-body"></tbody>
-              </table>
-            </div>
+          <div id="depth-ratio" class="free-only"><div class="b" style="width:50%"></div><div class="a"></div></div>
+          <div id="depth-legend" class="free-only"><span id="ratio-b">买 50%</span><span id="ratio-a">卖 50%</span></div>
+        </section>
+        <section class="card">
+          <h3>最近成交</h3>
+          <div id="trades-scroll">
+            <table id="trades-table">
+              <thead><tr><th>时间</th><th>价格</th><th>数量</th><th>方向</th></tr></thead>
+              <tbody id="tape-body"></tbody>
+            </table>
           </div>
         </section>
       </div>
@@ -304,7 +310,55 @@ body.coll-mode .free-only{display:none !important}
             <div id="kline-empty" style="display:none;border:1px dashed var(--line);border-radius:6px;padding:40px;text-align:center;color:var(--dim)">数据不足：公开成交 tape 尚无数据，不显示占位行情。</div>
           </div>
         </section>
+      </div>
 
+      <!-- 右栏：下单 + 资产 -->
+      <div class="col">
+        <section class="card" id="card-trade">
+          <div class="side-tabs">
+            <button id="side-buy" class="buy-on">买入</button>
+            <button id="side-sell">卖出</button>
+          </div>
+          <div class="tabs" id="type-tabs"></div>
+          <div id="avail-line">可用 <b class="num" id="avail-usdt">—</b> USDT · 全仓 <span class="unit-btn" id="lev-chip" style="cursor:pointer">5×</span></div>
+          <div class="price-row" id="price-row">
+            <span style="color:var(--dim)">价格</span>
+            <button class="step" id="px-minus">−</button>
+            <input id="px" class="num" value="" inputmode="decimal">
+            <button class="step" id="px-plus">+</button>
+          </div>
+          <div class="px-quick" id="px-quick">
+            <button data-px="last">最后价</button><button data-px="ask">卖一价</button><button data-px="bid">买一价</button>
+          </div>
+          <div class="qty-row">
+            <span style="color:var(--dim)" id="qty-label">数量</span>
+            <input id="qty" class="num" value="0.100" inputmode="decimal">
+            <button class="step" id="qty-minus">−</button>
+            <button class="step" id="qty-plus">+</button>
+            <span class="unit-btn on" data-u="base" id="u-base">PERP</span>
+            <span class="unit-btn" data-u="usdt" id="u-usdt">USDT</span>
+          </div>
+          <div id="qty-conv" style="font-size:11px;color:var(--faint);margin:-2px 0 4px"></div>
+          <div class="pct-line">
+            <input type="range" id="pct" min="0" max="100" step="1" value="0">
+            <span class="v" id="pct-val">0%</span>
+          </div>
+          <div class="est">
+            <div><span>成交额</span><b id="est-total">—</b></div>
+            <div><span>预估占用保证金</span><b id="est-margin">—</b></div>
+          </div>
+          <button class="btn-action buy" id="btn-action">买入 PERP</button>
+          <div id="submit-hint"></div>
+        </section>
+
+        <section class="card" id="card-account">
+          <span class="pin" data-note="acc" style="right:8px;top:8px">5</span>
+          <h3>资产<span class="aux">USDT 本位（模拟）</span></h3>
+          <div id="account-kv"></div>
+        </section>
+      </div>
+
+      <div class="col" style="grid-column:1 / -1">
         <section class="card" id="bottom-card">
           <span class="pin" data-note="r" style="right:8px;top:8px">3</span>
           <div class="tabs" id="bottom-tabs">
@@ -330,50 +384,6 @@ body.coll-mode .free-only{display:none !important}
           </div>
         </section>
       </div>
-
-      <!-- 右栏：下单 + 资产 -->
-      <div class="col">
-        <section class="card" id="card-trade">
-          <span class="pin" data-note="w" style="right:8px;top:8px">4</span>
-          <div class="tabs" id="type-tabs"></div>
-          <div id="avail-line">可用 <b class="num" id="avail-usdt">—</b> USDT · 全仓 <span class="unit-btn" id="lev-chip" style="cursor:pointer">5×</span></div>
-          <div class="price-row" id="price-row">
-            <span style="color:var(--dim)">价格</span>
-            <button class="step" id="px-minus">−</button>
-            <input id="px" class="num" value="" inputmode="decimal">
-            <button class="step" id="px-plus">+</button>
-          </div>
-          <div class="px-quick" id="px-quick">
-            <button data-px="last">最后价</button><button data-px="ask">卖一价</button><button data-px="bid">买一价</button>
-          </div>
-          <div class="qty-row">
-            <span style="color:var(--dim)" id="qty-label">数量</span>
-            <input id="qty" class="num" value="0.100" inputmode="decimal">
-            <button class="step" id="qty-minus">−</button>
-            <button class="step" id="qty-plus">+</button>
-            <span class="unit-btn on" data-u="base" id="u-base">PERP</span>
-            <span class="unit-btn" data-u="usdt" id="u-usdt">USDT</span>
-          </div>
-          <div id="qty-conv" style="font-size:11px;color:var(--faint);margin:-2px 0 4px"></div>
-          <div class="pct-row" id="pct-row">
-            <button data-pct="25">25%</button><button data-pct="50">50%</button>
-            <button data-pct="75">75%</button><button data-pct="100">100%</button>
-          </div>
-          <div class="est">预估占用保证金 <b id="est-margin">—</b> · Taker 费率 0.05%</div>
-          <div class="action-grid">
-            <button class="btn-buy" id="btn-buy">买入 / 做多<span class="px" id="buy-px">—</span></button>
-            <button class="btn-sell" id="btn-sell">卖出 / 做空<span class="px" id="sell-px">—</span></button>
-          </div>
-          <div id="submit-hint"></div>
-        </section>
-
-        <section class="card" id="card-account">
-          <span class="pin" data-note="acc" style="right:8px;top:8px">5</span>
-          <h3>资产<span class="aux">USDT 本位（模拟）</span></h3>
-          <div id="account-kv"></div>
-        </section>
-      </div>
-
       <div id="fullcard-host" style="display:contents"></div>
     </main>
 
@@ -1211,149 +1221,10 @@ setInterval(()=>{
 $("pin-toggle").onclick=()=>{document.body.classList.toggle("show-pins")};
 document.querySelectorAll(".pin").forEach(p=>p.onclick=()=>openNotes("arch"));
 
-/* =====================================================================
- * 设计说明
- * ===================================================================*/
-const NOTES={
-audit:`
-<h4>核心结论：把实验约束从交易 UI 中拆出去（已落档 ADR-006）</h4>
-<p>真实交易系统里不存在的东西，根源是把 H2 采集协议直接搬进了终端 UI。v3 起拆成两个形态：
-<b>自由模拟终端</b>（默认）与<b>采集模式</b>（实验约束唯一载体），共用同一市场内核。
-裁决于 2026-09-13 记录为 <code>docs/decisions/006-realtime-free-trading-owner-terminal.md</code>（Q-403）。</p>
-<h4>逐项审查：非真实终端元素 → 处置（已完成）</h4>
-<table>
-<tr><th>元素（v2 及以前）</th><th>为什么曾存在</th><th>处置</th></tr>
-<tr><td>8 秒提交倒计时 / 决策窗口</td><td>采集协议“决策机会匹配”合同（Q-303）</td><td><b>彻底删除（含采集模式）</b>：自由连续交易 + 服务端逻辑时点静默采样，采样不约束用户节奏</td></tr>
-<tr><td>“本时点不操作”按钮</td><td>协议显式 NO_ACTION</td><td><b>删除</b>：不操作就是不点按钮；采样在服务端完成</td></tr>
-<tr><td>每时点一次的锁定态 / 迟到 / 重复错误</td><td>一次性动作槽</td><td><b>删除</b>；委托幂等由服务端 client_request_id 保证</td></tr>
-<tr><td>阶段徽标 preview/training/formal</td><td>UX-403</td><td>改为 <b>SIM 环境角标</b>（对齐交易所测试网标记习惯）；阶段信息只在采集模式出现</td></tr>
-<tr><td>信息边界 / 解盲清单卡片</td><td>FR-403</td><td>移入采集模式；自由模式只有「ⓘ 市场说明」</td></tr>
-<tr><td>门禁阻断 / 每日强制休息 / 结果盲完成页</td><td>E2 gate、Q-303、SC-404</td><td>全部归入采集模式（切换器［实验模式］组保留检视）</td></tr>
-<tr><td>中止会话 + OWNER_ABORT 原因枚举</td><td>实验中止审计</td><td>自由模式弱化为普通「退出」；带原因的中止只在采集模式</td></tr>
-<tr><td>单笔上限 1.000 / 挂单上限 8</td><td>合同限额</td><td><b>保留</b>：真实交易所也有下单量与频率限制</td></tr>
-<tr><td>（v4.1）杠杆选择缺失</td><td>内核 0.1.2 起就有全仓杠杆/强平路径；H1 合同把演示参数冻结为 1×/100% 保证金率，设计稿此前漏了入口</td><td><b>已补</b>：资产页与下单面板均可调杠杆 1–10×（全仓）；采集模式由协议冻结</td></tr>
-<tr><td>（v4.1）初始资金固定 10,000</td><td>H1 合同演示参数</td><td><b>已补</b>：资产页可设初始资金、模拟入金、一键重置；采集模式由协议冻结</td></tr>
-<tr><td>（v4.1）下单只有 PERP 数量</td><td>v3 起的数量输入默认币本位</td><td><b>已补</b>：下单面板支持 PERP 数量 / USDT 金额两种单位，自动换算并显示市值与占用保证金</td></tr>
-</table>
-<h4>v4 参考 TradingView / 币安 / OKX 补齐的能力</h4>
-<table>
-<tr><th>参考对象</th><th>本版实现</th></tr>
-<tr><td>币安行情 ticker 条</td><td>最新价大字（涨跌色 + 跳动闪烁）、24h 涨跌/最高/最低/成交量、标记价格、资金费率与倒计时</td></tr>
-<tr><td>币安盘口</td><td>卖盘降序在上 / 最新价与价差行 / 买盘在下；三列（价格/数量/累计）+ 深度横条 + 买卖比条；点任意档位填入限价</td></tr>
-<tr><td>TradingView 图表</td><td>OHLC + MA(7/25/99) 图例、十字光标（价格/时间轴标签）、最新价标签、成交量柱、水印、周期工具条（1m—1D）</td></tr>
-<tr><td>币安下单面板</td><td>市价/限价页签、价格快捷（最后价/卖一/买一）、数量 25/50/75/100% 快捷、可用余额、预估占用保证金与费率、买卖按钮带价格</td></tr>
-<tr><td>币安底部面板</td><td>当前挂单（含逐笔撤单）与操作回报两个页签，状态流转 委托中→已成交/已撤单/已拒绝</td></tr>
-</table>
-<h4>观察字段白名单（对齐 FR-401 / spec §5 / design §6）</h4>
-<table>
-<tr><th>字段</th><th>采集模式</th><th>自由模拟</th></tr>
-<tr><td>best_bid / best_ask / last / 市场时钟 / 盘口档位（≤10）/ 最近成交 / 多周期 OHLC（周期集合随 E1）</td><td>显示</td><td>显示</td></tr>
-<tr><td>权益 / 可用 / 未实现 / 仓位 / 占用保证金 / 保证金比率 / 账户状态 / 当前挂单</td><td>显示</td><td>显示</td></tr>
-<tr><td>24h 涨跌/最高/最低/成交量、标记价格、资金费率与倒计时、买卖深度比条、MA(7/25/99)、1D 周期、预估强平价</td><td><b>隐藏</b></td><td>显示（工程演示）</td></tr>
-</table>
-<p>原型将 <code>mode</code>（free/collection）与 <code>stage</code>（training/formal 等）分离：
-切换到「训练中 · 采集模式（可交易）」或「正式采集 · 采集模式（可交易）」时，<code>body.coll-mode</code>
-隐藏上表第三类字段并自动退出 1D 周期；白名单外字段若要进入采集观察，必须先升级 owner
-observation/protocol 并让参照策略获得同一信息集（Q-401/E1）。</p>`,
-
-arch:`
-<h4>全项目视角（v4.1）</h4>
-<p>本设计稿覆盖项目的全部用户入口，不只是单笔交易页：顶部导航 <b>交易</b>（0.3.2 自由模拟/采集终端）、
-<b>行情</b>（品种列表，含未来品种与 AI 对手方家族接入位）、<b>合约</b>（合约规格与内核机制映射：撮合/账本/保证金/强平/时间模型/K 线派生）、
-<b>资产</b>（初始资金设置、模拟入金、杠杆 1–10× 全仓、总览）、<b>研究</b>（项目既有正式交付物入口：v0.1 旗舰报告/回放/证据索引、H1 沙盒、0.3.1 AI 轨）。
-采集模式的实验约束只作用于交易页；资产与杠杆调整在采集模式下由协议冻结（只读）。</p>
-<h4>布局（对齐币安合约交易页三段式）</h4>
-<p>顶部导航 + 行情 ticker 条；左栏盘口/成交（页签切换）；中栏图表（TradingView 风格）+
-底部「当前挂单 / 操作回报」；右栏下单面板 + 账户资产。一屏可见价格、K 线、账户与提交入口（UX-401）。</p>
-<h4>标注对照</h4>
-<table>
-<tr><th>#</th><th>区域</th><th>关键交互</th></tr>
-<tr><td>1</td><td>盘口 / 成交</td><td>累计深度 + 买卖比；k≤10 档（默认渲染 8 档）；点档位填价；无报价空态不造假（FR-401）</td></tr>
-<tr><td>2</td><td>图表</td><td>多周期、MA 与成交量、十字光标、最新价标签；最新 K 线实时更新（收口后才入 artifact）</td></tr>
-<tr><td>3</td><td>挂单 / 回报</td><td>限价委托等待与撤单；回报全流转（委托中/已成交/已撤单/已拒绝）；点行展开服务端回执</td></tr>
-<tr><td>4</td><td>下单面板</td><td>市价/限价、价格与数量快捷（%、盘口价）、预估占用保证金；本地预检数量/价格</td></tr>
-<tr><td>5</td><td>资产</td><td>权益/可用/未实现/仓位/保证金比率/预估强平价，对应 <code>HumanAccountObservation</code> + 风控字段</td></tr>
-</table>
-<h4>顶栏</h4>
-<p><code>SIM</code> 角标 + 「模拟交易所」导航（交易/行情/合约为装饰位）；右侧连接状态、市场说明、退出。
-合成市场与无真实资金声明常驻。</p>
-<h4>两种形态</h4>
-<table>
-<tr><th></th><th>自由模拟终端（默认）</th><th>采集模式（正式 N-of-1）</th></tr>
-<tr><td>交易节奏</td><td>自由连续交易，限价可挂</td><td>同样自由交易；服务端按冻结粒度做时点采样（ADR-006）</td></tr>
-<tr><td>可见性</td><td>全部自己的账户与市场信息</td><td>参照策略/种子/未来事件/未解盲结果隐藏（FR-403）</td></tr>
-<tr><td>流程约束</td><td>无</td><td>阶段门控、每日 6 场节奏（每场为冻结的市场时间跨度）、强制休息、中止裁决</td></tr>
-<tr><td>证据级别</td><td>engineering-demonstration</td><td>experiment-preview（个人描述性）</td></tr>
-</table>`,
-
-flows:`
-<h4>流 A · 市价单</h4>
-<div class="flow">看盘 → 数量输入或 % 快捷 → [买入]（按钮印市价参考价）→ 即时成交 → 回报“已成交”行 → 仓位/权益更新</div>
-<h4>流 B · 限价单</h4>
-<div class="flow">切「限价」→ 点盘口档位/最后价快捷填价 → 数量 → [买入] → 穿越盘口？即时成交 : 进入「当前挂单」
- → 价格触及自动成交（回报新增“已成交”行，注明订单号）；或底部面板撤单 → “已撤单”行</div>
-<h4>流 C · 拒单</h4>
-<p>保证金不足等风控拒绝：回报表红色行 + 可读原因 + 零副作用；本地可判定的数量/价格错误在点击瞬间预检拦截，不发请求。</p>
-<h4>流 D · 断线与刷新（NFR-402）</h4>
-<p>断线遮罩说明「行情不暂停、挂单仍生效」；恢复后从服务端快照重建挂单/仓位/回报，幂等键保证不重复提交。</p>
-<h4>流 E · 退出</h4>
-<p>退出确认 → 挂单自动撤销并入回报、仓位权益入会话存档。采集模式下退出语义由实验协议约束。</p>
-<h4>流 F · 等待行情</h4>
-<p>场景开头无成交时：ticker/盘口/K 线显示空态，下单禁用；首笔成交后自动点亮——与真实市场开盘前一致。</p>`,
-
-spec:`
-<h4>需求变更已落档（ADR-006 + Q-403，2026-09-13）</h4>
-<p>0.3.2 spec/design/tasks、v0.3 版本根登记表与 PRD 已按本形态修订；裁决全文见
-<code>docs/decisions/006-realtime-free-trading-owner-terminal.md</code>。0.3.1 AI_FORMAL 轨不受影响。</p>
-<h4>已修订的规格条目</h4>
-<table>
-<tr><th>位置</th><th>修订后</th></tr>
-<tr><td>FR-302</td><td>自由连续交易的所有者会话；采集会话按冻结市场时间跨度推进；服务端逻辑时点采样</td></tr>
-<tr><td>FR-402 / IR-402</td><td>市价/限价委托与撤单映射 canonical input；幂等键约束；稳定错误码</td></tr>
-<tr><td>FR-401 / DR-402</td><td>多周期 K 线（同一冻结 tape 派生视图）+ 时间压缩比；artifact 绑定周期/压缩比/哈希</td></tr>
-<tr><td>UX-403</td><td>自由模式 SIM 角标；采集模式持续显示阶段并隐藏参照策略/种子/未来/结果</td></tr>
-<tr><td>Q-401 / Q-403</td><td>已关闭：周期集合与压缩比随 E1 冻结；owner 窗口合同修订</td></tr>
-</table>
-<h4>需求映射（保留项）</h4>
-<table>
-<tr><th>需求</th><th>落点</th></tr>
-<tr><td>FR-401 / AC-401</td><td>报价/盘口/K 线/成交来自同一冻结 tape；无报价空态不造假</td></tr>
-<tr><td>FR-402 / IR-402 / AC-402</td><td>委托进入既有撮合/账本/风控路径；稳定错误码；回报状态流转</td></tr>
-<tr><td>NFR-402 / AC-405</td><td>幂等键 + resume-status 重建；刷新/断线不重复委托</td></tr>
-<tr><td>NFR-401 / NFR-403</td><td>零依赖单文件原型，原生 loopback、无外部行情/凭据</td></tr>
-<tr><td>FR-403 / SC-403/404</td><td>采集模式专属：门控、解盲、结果盲</td></tr>
-</table>`,
-
-open:`
-<h4>DQ-H · owner 轨窗口合同 —— 已裁决（2026-09-13，ADR-006/Q-403）</h4>
-<div class="decision">采纳「自由连续交易 + 服务端按冻结粒度对逻辑时点静默采样」；市场层使用合成交易所墙钟，
-由冻结的时间压缩比连接内核逻辑步进（采集 1:1 实时，自由模拟可选加速）；场景定义为冻结的市场时间跨度，
-取代“60 窗”计数。AI_FORMAL 轨不受影响；0.3.1 正文不回改，仅追加修订记录。</div>
-<h4>DQ-F · K 线多周期与市场时钟映射 —— 已裁决（并入 Q-401/E1）</h4>
-<p>多周期均为同一冻结 public tape 的聚合视图，不新增信息源；可选周期集合（1m/5m/15m/1h/4h/1D）
-与时间压缩比已入 E1 冻结清单；参照策略对比为场景级描述性并声明机会集差异。
-演示口径（1 tick≈1m）仅为原型快进，正式映射随 E1 冻结。</p>
-<h4>DQ-I · 限价单进入 MVP 动作空间 —— 已采纳（ADR-006 决策 3）</h4>
-<p>内核与 H1 合同已支持限价，0.3.2 FR-402/IR-402 已按市价/限价 + 撤单修订；
-部分成交语义（原型未演示）留待 T933 实现时定义并补测试。</p>
-<h4>E1 冻结项 · 盘口渲染档位数（随 T929/E1 拍板，非开放设计问题）</h4>
-<p>观察集允许 k≤10 档；v4 默认渲染 8 档。若深度/K 线被认定为新增观察信息，
-必须升级 owner observation/协议版本并让参照策略获得同一信息集。</p>
-<h4>DQ-J · AI 对手方家族（alphamill 因子导入）（待新 feature）</h4>
-<p>自由模拟的“陪玩”由可复现 AI 代理承担：做市商 + 因子策略（alphamill FactorDef 导入，过滤模拟市场
-不具备的数据列）+ 噪声/情绪交易者。需新开 feature 冻结参与者家族、RNG 语义键与证据隔离
-（engineering-demonstration，不进 H2 正式样本）。</p>`
-};
-
-function openNotes(tab){$("notes").classList.add("open");showNotes(tab||"audit")}
-function showNotes(tab){
-  document.querySelectorAll("#notes-tabs button").forEach(b=>b.classList.toggle("on",b.dataset.tab===tab));
-  $("notes-body").innerHTML=NOTES[tab];$("notes-body").scrollTop=0;
+/* ---------- 评审模式（URL 带 #review 启用；最终用户不可见） ---------- */
+if(location.hash==="#review"){
+  document.body.classList.add("review");
 }
-document.querySelectorAll("#notes-tabs button").forEach(b=>b.onclick=()=>showNotes(b.dataset.tab));
-$("notes-toggle").onclick=()=>openNotes();
-$("notes-btn-open").onclick=()=>openNotes();
-$("notes-close").onclick=()=>$("notes").classList.remove("open");
 
 /* ---------- 启动 ---------- */
 seedHistory();
