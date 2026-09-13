@@ -1044,3 +1044,61 @@ Q-308 关闭后拦截数由 13 降为 12 且其余 Q/DQ 仍被拦（门禁没被
 **4. 开发就绪与文档缺陷分开统计。** 0.3.1 仍有 Q-301—Q-307、DQ-301—DQ-305 共 12 个计划内
 决策，Owner/H2 预注册/9 个严格 xfail 测试骨架也未落地；它们由 T901/T902 与 ready gate 追踪，
 不重新记为产品缺陷，但在关闭前里程碑必须保持 `draft`。
+
+## 循环 24: ADR-006 owner 自由交易终端决策与 0.3.2 文档收敛
+
+- **report_type**: doc-review
+- **周期**: 2026-09-13（3 轮：full-scan → 12 条修复 → diff-only 复核发现 2 条 fix-regression → 修复 → 第 3 轮独立复核）
+- **基线**: `22264ec`（安全提交重写历史后为 `0ff834c`）→ `0ae0145`（最终总结提交另计）
+- **收尾状态**: 已闭环；14 条全部 fixed；未决 Critical / High / Medium / Low = 0 / 0 / 0 / 0；远端 CI run 34748374243 全部通过
+- **本地门禁**: `python tools/verify.py`，2614 passed, 2 xfailed；密钥扫描 / 真源 / 生命周期 / ruff check / ruff format 全绿
+- **变异验证**: 8 次（Round 2 四次 + Round 3 四次）全部变红，含「把哈希内联回预注册」的自指锁
+
+### 完整 issue 表
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复建议 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| ADR006-001 | 冻结协议 window_contract 仍按 owner 8 秒窗实现 | Critical | 正确性 | 根因 | 规格漂移 | fixed | 升级协议并评估 hash 影响 | owner 移出 applies_to、删 owner_wall_clock_seconds、改由 decision_contract 承载 + 旁路门禁 | test_window_contract_applies_only_to_the_ai_arms 等 3 条 | 1 | 2 | cross-feature-contract-drift |
+| ADR006-002 | 预注册仍写「所有者墙钟窗为 8 秒」 | High | 正确性 | 根因 | 规格漂移 | fixed | 追加修订记录 | §2 修订记录 + §10 冻结性补记 | test_preregistration_records_the_owner_window_revision_and_archive_binds_it | 1 | 2 | cross-feature-contract-drift |
+| ADR006-003 | 动作空间匹配破裂未声明 | High | 正确性 | 根因 | 规格漂移 | fixed | 后果补一条并写进结论语法 | ADR 负面拆两条 + spec §1「描述性对比边界」 | test_adr006_declares_the_owner_action_space_break | 1 | 2 | partial-symmetric-fix |
+| ADR006-004 | Q-308 矩阵未标注修订，新决策零测试 | High | 测试覆盖 | 根因 | 流程缺口 | fixed | 矩阵标注 + 锁定测试 | 矩阵两格改「不再相同」+ 三条硬约束加 owner 例外 | test_h2_q308_matrix_marks_the_q403_owner_revision | 1 | 2 | stale-contract-locked-by-test |
+| ADR006-005 | tasks §5 仍把限价单列为后移 | High | 正确性 | 根因 | 规格漂移 | fixed | 只保留条件单后移 | 改为条件单/高级指标后移，写明 MVP 动作空间 | test_h2_web_tasks_defer_only_conditional_orders_not_limit_orders | 1 | 2 | partial-symmetric-fix |
+| ADR006-006 | 场景时长语义未闭合 | High | 正确性 | 根因 | 规格漂移 | fixed | 写出换算与参照重生成影响 | ADR 决策 2 补换算式、60 秒取值与参照重生成条款 | test_adr006_defines_the_owner_scenario_span_conversion | 1 | 2 | cross-feature-contract-drift |
+| ADR006-007 | E1 四项冻结参数无任务承接 | Medium | 正确性 | 根因 | 流程缺口 | fixed | 建含 AC 的前置任务 | 新增 T929，T929–T947 顺延，依赖链同步 | test_h2_web_tasks_freeze_the_owner_contract_params_before_kline | 1 | 2 | marked-done-not-implemented |
+| ADR006-008 | 陈旧「待裁决 DQ-H」文本 | Medium | 正确性 | 根因 | 规格漂移 | fixed | 改写为已裁决 | 改为已由 Q-403/ADR-006 裁决，DQ-H 清除 | test_h2_web_design_has_no_stale_dq_h_pending_text | 1 | 2 | stale-pending-decision-text |
+| ADR006-009 | 原型版本 v3/v4 不一致 | Low | 质量 | 症状 | 规格漂移 | fixed | 同步版本标记 | spec/design 同步为 v4 | test_h2_web_docs_drop_stale_prototype_and_window_id_references | 1 | 2 | — |
+| ADR006-010 | Q-401 标 [x] 实为延后 | Low | 质量 | 症状 | 流程缺口 | fixed | 拆已闭合/待冻结 | Q-401 拆两部分，待冻结部分交 T929 | 同上 | 1 | 2 | — |
+| ADR006-011 | receipt 含 window_id | Low | 正确性 | 症状 | 规格漂移 | fixed | 改名或登记 | 改名 sample_point_id | 同上 | 1 | 2 | — |
+| ADR006-012 | verify.py 缺工具时崩溃 | Low | 质量 | 根因 | 首次实现 | fixed | 捕获并记账 | _run 捕获 FileNotFoundError 并提示缺失工具 | test_run_reports_missing_tool_as_failed_step 等 2 条 | 1 | 2 | — |
+| ADR006-013 | ADR/预注册的新 protocol_hash 与归档实际值不符 | High | 正确性 | 根因 | 修复引入 | fixed | 预注册不内联 hash、ADR 写实际值、补一致性测试 | 预注册改为指向 freeze-manifest（打破自指链），归档重生成为 ff3978c4…，ADR 内联实际值 | test_documented_protocol_hash_matches_the_freeze_archive | 2 | 3 | self-referential-hash-claim |
+| ADR006-014 | preview 窗 8 秒成为无承接魔数，注释仍引用已删合同 | Low | 质量 | 症状 | 修复引入 | fixed | 改注释并在 0.3.1 design 登记来源 | 注释指向 PREVIEW_WINDOW_NS；0.3.1 design §6 登记时限来源与 E1/T929 冻结 | test_h2_preview_window_timeout_source_is_registered_after_q403 | 2 | 3 | stale-comment-after-contract-removal |
+
+### 模式教训
+
+- **`origin` 分布**：规格漂移 8、流程缺口 3、修复引入 2、首次实现 1。规格漂移压倒性多数，
+  全部来自同一件事——ADR-006 的决策做对了，但只改了 Markdown：机器可读真源
+  （`protocol.json` 的 `window_contract`）、实现代码（`session.py`/`owner_client.py`）与锁定
+  旧合同的测试全部留在原地，而本地门禁 2589 passed 全绿。**「文档已改 + 测试全绿」在本项目里
+  不构成修复证据**，因为没有任何测试断言新决策；这正是 CLAUDE.md 写过的那条教训在文档层的复现。
+- **`pattern_tag` 聚合**：`cross-feature-contract-drift` 3 次（协议、预注册、场景跨度换算）、
+  `partial-symmetric-fix` 2 次（动作空间只声明一半、tasks §5 漏改一行）、
+  `stale-contract-locked-by-test` 1 次（测试锁死被取代的 Q-308 矩阵）。共同形状是：一个决策要落在
+  N 个真源上，改了 N−1 个，**而剩下那个恰好是机器可读的那个**。
+- **存活轮数**：12 条存活 1 轮（首轮提出、次轮关闭），2 条存活 1 轮（次轮提出、三轮关闭）。
+  没有跨 3 轮的条目，未触发不收敛升级协议。
+- **修复自伤率**：Round 2 修复 12 条，引入 2 条 fix-regression（ADR006-013 High、014 Low），
+  约 17%，与 skill 记录的 20–30% 区间一致——**第 2 轮 diff-only 复核是唯一能抓到它们的环节**，
+  一轮闭环必然漏掉。
+- **`self-referential-hash-claim`（新模式，值得单列）**：预注册正文的 SHA-256 进入 protocol
+  payload，因此在预注册里内联 `protocol_hash` 必然追不上自己——写完那一刻文本就变了。
+  修复方两次算出的哈希（`f187b559…`、`8143996b…`）都在下一次改动后失效。最终解法不是「再算一次」
+  而是**移除内联、指向 freeze-manifest**，并把门禁写成「预注册不得出现任何 40+ 位十六进制」——
+  锁的是自指这一类，不是某个具体值。凡「文档 A 的哈希进入产物 B，而文档 A 又要描述 B 的哈希」
+  的结构，都应默认用引用而非内联。
+- **裁决分布**：accepted 14 / partial 0 / rejected 0；`suggested_fix` 与 `fix_summary` 实质一致
+  13 条（命中率 93%），唯一偏离是 ADR006-007——检视建议「新增一条前置任务」，修复方额外把
+  T929–T947 整体顺延以满足任务 ID 递增门禁，比建议更完整。全接纳率 100% 需要警惕检视凑数，
+  但本轮 14 条中 6 条由机器证据（哈希重算、grep、变异测试）确证，不是风格判断。
+- **协议修订的连带成本**：owner 决策窗从冻结协议移除，连带 168 条 assignment 重签、frozen 归档
+  重建、0.1.5 evidence index 两次重算（`source_tree_sha256` 因包内源码变更失效）。这正是 ADR-005
+  记录过的全树哈希代价在本次的兑现——代价真实发生，但因首个正式样本尚未运行而落在合法窗口内。
