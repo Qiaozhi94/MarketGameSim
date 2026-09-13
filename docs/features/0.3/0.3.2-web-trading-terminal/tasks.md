@@ -49,7 +49,8 @@ updated: 2026-09-13
       参照策略/未来信息 — verify: `tests/integration/test_h2_owner_web.py`
 - [ ] T932 (`SC-401`, `AC-401`, `AC-403`, `AC-404`): 生成可打开的本地 Web preview
       页面，作为内部 preview contract 验收；入口和验收命令写入 `RUN.md`；固定假参与者可看到价格/
-      K 线/账户，证据标签为 `experiment-preview` — verify: `tests/e2e/test_h2_owner_terminal.py`
+      K 线/账户，且采集模式只显示冻结观察白名单字段（自由模拟演示字段在采集态隐藏）；
+      证据标签为 `experiment-preview` — verify: `tests/e2e/test_h2_owner_terminal.py`
 
 - [ ] T933 (`FR-402`, `IR-402`, `TR-401`, `AC-402`): 将市价/限价买卖委托与撤单映射到 canonical
       input，并实现数量、价格、幂等和稳定错误码校验 — verify:

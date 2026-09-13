@@ -32,6 +32,7 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 #topnav nav b{color:var(--fg)}
 #topnav .spacer{flex:1}
 .sim-badge{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--amber);border:1px solid var(--amber);border-radius:4px;padding:1px 7px}
+.stage-badge{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--blue);border:1px solid var(--blue);border-radius:4px;padding:1px 7px}
 #conn{font-size:12px;color:var(--dim)}
 #exit-btn,#info-btn{padding:2px 9px;font-size:12px}
 
@@ -184,6 +185,8 @@ body.show-pins .pin{display:block}
 #notes th{color:var(--fg);background:var(--panel2)}
 #notes .decision{border-left:3px solid var(--amber);padding:6px 10px;margin:8px 0;color:var(--dim)}
 #notes .decision b{color:var(--amber)}
+/* 采集模式隐藏非冻结观察白名单字段（自由模拟专用工程演示，见 spec §5 / design §6） */
+body.coll-mode .free-only{display:none !important}
 </style>
 </head>
 <body>
@@ -200,7 +203,8 @@ body.show-pins .pin{display:block}
 <div id="app">
   <!-- 顶部导航 -->
   <div id="topnav">
-    <span class="sim-badge">SIM</span>
+    <span id="sim-badge" class="sim-badge">SIM</span>
+    <span id="stage-badge" class="stage-badge" style="display:none"></span>
     <span class="logo">模拟交易所</span>
     <nav><b>交易</b><span>行情</span><span>合约</span><span>资产</span></nav>
     <span class="spacer"></span>
@@ -213,12 +217,12 @@ body.show-pins .pin{display:block}
   <div id="ticker">
     <div id="tick-sym"><b>PERPETUAL-SIM-1</b><span>永续 · 全仓</span></div>
     <div id="tick-last" class="num up">—</div>
-    <div class="tk"><span class="l">24h 涨跌</span><span class="v num" id="tick-chg">—</span></div>
-    <div class="tk"><span class="l">24h 最高</span><span class="v num" id="tick-hi">—</span></div>
-    <div class="tk"><span class="l">24h 最低</span><span class="v num" id="tick-lo">—</span></div>
-    <div class="tk"><span class="l">24h 成交量</span><span class="v num" id="tick-vol">—</span></div>
-    <div class="tk"><span class="l">标记价格</span><span class="v num sel" id="tick-mark">—</span></div>
-    <div class="tk"><span class="l">资金费率 / 倒计时</span><span class="v num" id="tick-fund">0.0100% · —</span></div>
+    <div class="tk free-only"><span class="l">24h 涨跌</span><span class="v num" id="tick-chg">—</span></div>
+    <div class="tk free-only"><span class="l">24h 最高</span><span class="v num" id="tick-hi">—</span></div>
+    <div class="tk free-only"><span class="l">24h 最低</span><span class="v num" id="tick-lo">—</span></div>
+    <div class="tk free-only"><span class="l">24h 成交量</span><span class="v num" id="tick-vol">—</span></div>
+    <div class="tk free-only"><span class="l">标记价格</span><span class="v num sel" id="tick-mark">—</span></div>
+    <div class="tk free-only"><span class="l">资金费率 / 倒计时</span><span class="v num" id="tick-fund">0.0100% · —</span></div>
   </div>
 
   <!-- 市场说明弹层 -->
@@ -256,8 +260,8 @@ body.show-pins .pin{display:block}
               <div id="book-mid"><span class="lp" id="mid-last">—</span><span class="mk" id="mid-spread">价差 —</span></div>
               <div id="bids-host"></div>
             </div>
-            <div id="depth-ratio"><div class="b" style="width:50%"></div><div class="a"></div></div>
-            <div id="depth-legend"><span id="ratio-b">买 50%</span><span id="ratio-a">卖 50%</span></div>
+            <div id="depth-ratio" class="free-only"><div class="b" style="width:50%"></div><div class="a"></div></div>
+            <div id="depth-legend" class="free-only"><span id="ratio-b">买 50%</span><span id="ratio-a">卖 50%</span></div>
           </div>
           <div id="pane-trades" style="display:none">
             <div id="trades-scroll">
@@ -278,7 +282,7 @@ body.show-pins .pin{display:block}
             <b style="font-size:13px">PERPETUAL-SIM-1</b>
             <span id="chart-type">· 模拟永续 ·</span>
             <span id="tf-tabs"></span>
-            <span style="margin-left:auto;font-size:11px;color:var(--faint)">MA(7) <i style="color:#f0b90b">—</i> MA(25) <i style="color:#e543d0">—</i> MA(99) <i style="color:#7c8ce0">—</i></span>
+            <span class="free-only" style="margin-left:auto;font-size:11px;color:var(--faint)">MA(7) <i style="color:#f0b90b">—</i> MA(25) <i style="color:#e543d0">—</i> MA(99) <i style="color:#7c8ce0">—</i></span>
           </div>
           <div id="ohlc-legend"></div>
           <div id="kline-wrap">
@@ -592,10 +596,10 @@ function renderAccount(){
     ["当前仓位",account.position_units===0?"空仓":`${account.position_units>0?"多":"空"} ${fmtQ(Math.abs(account.position_units))} @ ${fmtP(account.entry_ticks)}`],
     ["占用保证金",fmtM(account.reserved_units)],
     ["保证金比率",`<span class="num">${(account.margin_ratio_bp/100).toFixed(2)}%</span>`],
-    ["预估强平价",`<span class="num">${fmtP(liqEstTicks())}</span>`],
+    ["预估强平价",`<span class="num">${fmtP(liqEstTicks())}</span>`,true],
     ["账户状态",`<span class="num">${account.state}</span>`],
   ];
-  $("account-kv").innerHTML=rows.map(r=>`<div class="kv"><span class="k">${r[0]}</span><span class="num">${r[1]}</span></div>`).join("");
+  $("account-kv").innerHTML=rows.map(r=>`<div class="kv${r[2]?" free-only":""}"><span class="k">${r[0]}</span><span class="num">${r[1]}</span></div>`).join("");
   $("avail-usdt").textContent=fmtM(availableUnits());
 }
 
@@ -719,6 +723,7 @@ function initTfTabs(){
   for(const [label] of TFS){
     const b=document.createElement("button");
     b.textContent=label;b.dataset.tf=label;
+    if(label==="1D")b.classList.add("free-only");
     b.onclick=()=>{tfKey=label;hover=null;drawKline();renderTfTabs();};
     host.appendChild(b);
   }
@@ -902,22 +907,37 @@ function renderExpCompleted(){
   </section>`;
 }
 
-/* ---------- 状态切换器 ---------- */
+/* ---------- 状态切换器（mode 与 stage 分离：free=自由模拟，collection=采集模式） ---------- */
+const COLLECTION_MODE="collection";
 const STATES=[
-  ["trading","交易中 · 自由连续交易"],
-  ["warming","等待行情 · 无报价空态"],
-  ["risk-rejected","风控拒单 · RISK_REJECTED"],
-  ["disconnected","断线 · 服务端为准"],
-  ["refresh-resume","刷新恢复"],
-  ["exit-confirm","退出确认"],
-  ["exp-gate","［实验模式］门禁阻断"],
-  ["exp-break","［实验模式］每日节奏"],
-  ["exp-completed","［实验模式］完成 · 结果盲"],
+  ["trading","交易中 · 自由连续交易","free","sim"],
+  ["warming","等待行情 · 无报价空态","free","sim"],
+  ["risk-rejected","风控拒单 · RISK_REJECTED","free","sim"],
+  ["disconnected","断线 · 服务端为准","free","sim"],
+  ["refresh-resume","刷新恢复","free","sim"],
+  ["exit-confirm","退出确认","free","sim"],
+  ["training","训练中 · 采集模式（可交易）",COLLECTION_MODE,"training"],
+  ["formal","正式采集 · 采集模式（可交易）",COLLECTION_MODE,"formal"],
+  ["exp-gate","［实验模式］门禁阻断",COLLECTION_MODE,"preview"],
+  ["exp-break","［实验模式］每日节奏",COLLECTION_MODE,"training"],
+  ["exp-completed","［实验模式］完成 · 结果盲",COLLECTION_MODE,"formal"],
 ];
 STATES.forEach(([k,label])=>{const o=document.createElement("option");o.value=k;o.textContent=label;$("state-select").appendChild(o)});
 $("state-select").onchange=()=>setState($("state-select").value);
+function applyMode(mode,stage){
+  const coll=mode===COLLECTION_MODE;
+  if(coll&&tfKey==="1D"){tfKey="1m";renderTfTabs();}
+  document.body.classList.toggle("coll-mode",coll);
+  document.body.dataset.mode=mode;document.body.dataset.stage=stage;
+  $("sim-badge").style.display=coll?"none":"inline-block";
+  $("stage-badge").style.display=coll?"inline-block":"none";
+  $("stage-badge").textContent=coll?String(stage).toUpperCase():"";
+  $("info-experiment").style.display=coll?"block":"none";
+}
 function setState(s){
   if(stateFlags.reconn)clearInterval(stateFlags.reconn);
+  const entry=STATES.find(x=>x[0]===s)||["trading","交易中","free","sim"];
+  applyMode(entry[2],entry[3]);
   stateFlags={};state=s;render();connRefresh();
 }
 
@@ -1007,7 +1027,18 @@ audit:`
 <tr><td>TradingView 图表</td><td>OHLC + MA(7/25/99) 图例、十字光标（价格/时间轴标签）、最新价标签、成交量柱、水印、周期工具条（1m—1D）</td></tr>
 <tr><td>币安下单面板</td><td>市价/限价页签、价格快捷（最后价/卖一/买一）、数量 25/50/75/100% 快捷、可用余额、预估占用保证金与费率、买卖按钮带价格</td></tr>
 <tr><td>币安底部面板</td><td>当前挂单（含逐笔撤单）与操作回报两个页签，状态流转 委托中→已成交/已撤单/已拒绝</td></tr>
-</table>`,
+</table>
+<h4>观察字段白名单（对齐 FR-401 / spec §5 / design §6）</h4>
+<table>
+<tr><th>字段</th><th>采集模式</th><th>自由模拟</th></tr>
+<tr><td>best_bid / best_ask / last / 市场时钟 / 盘口档位（≤10）/ 最近成交 / 多周期 OHLC（周期集合随 E1）</td><td>显示</td><td>显示</td></tr>
+<tr><td>权益 / 可用 / 未实现 / 仓位 / 占用保证金 / 保证金比率 / 账户状态 / 当前挂单</td><td>显示</td><td>显示</td></tr>
+<tr><td>24h 涨跌/最高/最低/成交量、标记价格、资金费率与倒计时、买卖深度比条、MA(7/25/99)、1D 周期、预估强平价</td><td><b>隐藏</b></td><td>显示（工程演示）</td></tr>
+</table>
+<p>原型将 <code>mode</code>（free/collection）与 <code>stage</code>（training/formal 等）分离：
+切换到「训练中 · 采集模式（可交易）」或「正式采集 · 采集模式（可交易）」时，<code>body.coll-mode</code>
+隐藏上表第三类字段并自动退出 1D 周期；白名单外字段若要进入采集观察，必须先升级 owner
+observation/protocol 并让参照策略获得同一信息集（Q-401/E1）。</p>`,
 
 arch:`
 <h4>布局（对齐币安合约交易页三段式）</h4>
@@ -1084,7 +1115,7 @@ open:`
 <h4>DQ-I · 限价单进入 MVP 动作空间 —— 已采纳（ADR-006 决策 3）</h4>
 <p>内核与 H1 合同已支持限价，0.3.2 FR-402/IR-402 已按市价/限价 + 撤单修订；
 部分成交语义（原型未演示）留待 T933 实现时定义并补测试。</p>
-<h4>DQ-C · 盘口渲染档位数（待 E1 冻结）</h4>
+<h4>E1 冻结项 · 盘口渲染档位数（随 T929/E1 拍板，非开放设计问题）</h4>
 <p>观察集允许 k≤10 档；v4 默认渲染 8 档。若深度/K 线被认定为新增观察信息，
 必须升级 owner observation/协议版本并让参照策略获得同一信息集。</p>
 <h4>DQ-J · AI 对手方家族（alphamill 因子导入）（待新 feature）</h4>
@@ -1107,7 +1138,7 @@ $("notes-close").onclick=()=>$("notes").classList.remove("open");
 seedHistory();
 initTfTabs();
 initTypeTabs();
-render();
+setState("trading");
 </script>
 </body>
 </html>
