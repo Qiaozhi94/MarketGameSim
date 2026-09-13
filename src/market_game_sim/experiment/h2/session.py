@@ -344,8 +344,9 @@ def run_fixed_session(
     """用固定假输入跑一次会话：每一窗按 ``decisions`` 里对应记录提交或放弃。
 
     窗口时长给得足够宽松（5 秒），但**全程不调用任何 sleep**——不是"等墙钟"，只是
-    给出一个不会被本地执行开销意外触发迟到判定的时限。真实所有者会话里这个时限是
-    合同里的 8 秒真实响应窗口；这里只是复用同一条 ``submit()`` 路径。
+    给出一个不会被本地执行开销意外触发迟到判定的时限。默认时限由 preview harness
+    常量 ``PREVIEW_WINDOW_NS`` 提供（owner 已无冻结决策窗，见 ADR-006/Q-403）；
+    这里只是复用同一条 ``submit()`` 路径。
     """
     by_index = {d.window_index: d for d in decisions}
     session = FormalSession(total_windows=total_windows)

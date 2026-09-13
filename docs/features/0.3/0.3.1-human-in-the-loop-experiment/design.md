@@ -170,6 +170,9 @@ evidence-index 六类对象各自使用版本化 schema；正式写入绑定 `pr
 - 下游 Web 页面：只显示冻结观察子集、本人状态、逻辑进度、窗口倒计时和输入回执；隐藏 pause、
   step、配置、种子和其他代理私有信息，由 0.3.2 具体实现。
 - 状态映射：waiting、active-window、submitted、no-action、completed、technical-abort、aborted。
+- preview 决策窗的默认时限是 harness 本地常量 `PREVIEW_WINDOW_NS`（8 秒，`session.py`），
+  不再来自 owner 冻结合同——该合同已由 Q-403/ADR-006 移除；正式 owner 采集的时点采样粒度
+  由 0.3.2 E1 冻结（T929）。
 - 研究控制台只显示 AI session 健康、协议/assignment 哈希和故障；owner 解盲规则由 0.3.2 执行。
 - 诊断记录窗口延迟、断线和客户端版本，但不得收集键盘内容、屏幕录制或无关行为遥测。
 

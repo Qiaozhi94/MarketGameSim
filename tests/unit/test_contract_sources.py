@@ -646,6 +646,17 @@ def test_h2_web_docs_drop_stale_prototype_and_window_id_references():
     assert "`sample_point_id`" in design
 
 
+def test_h2_preview_window_timeout_source_is_registered_after_q403():
+    """ADR006-014：preview 窗时限改为 harness 本地常量，不得再引用已删 owner 合同。"""
+    session_src = (ROOT / "src/market_game_sim/experiment/h2/session.py").read_text(
+        encoding="utf-8"
+    )
+    assert "合同里的 8 秒真实响应窗口" not in session_src
+    assert "PREVIEW_WINDOW_NS" in session_src
+    design = (ROOT / H2_CONTROL_CONTRACT_DOCS[1]).read_text(encoding="utf-8")
+    assert "PREVIEW_WINDOW_NS" in design
+
+
 def test_h2_web_design_has_no_stale_dq_h_pending_text():
     """ADR006-008：DQ-H 只存在于原型 HTML，不在 spec 问题体系；design 不得再挂它。"""
     design = (ROOT / "docs/features/0.3/0.3.2-web-trading-terminal/design.md").read_text(
