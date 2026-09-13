@@ -68,7 +68,9 @@ public tape -------------------------> Kline projector
   服务端裁决、错误码和事件引用。
 - `KlineSeries`：`t_open/t_close/open/high/low/close/volume`（若 volume 属于 public tape），
   `bar_period`（1m/5m/15m/1h/4h）、时间压缩比、源 tape 版本、时间范围和内容哈希。
-- `owner-session.json`：协议/assignment/client/artifact 哈希、技术状态、reason code 和训练/formal 标志。
+- `owner-session.json`：协议/assignment/client/artifact 哈希、技术状态、中止类型
+  （`abort_kind=owner|technical`，其中 `technical` 只能由服务端故障路径写入）、reason code
+  和训练/formal 标志。
 
 历史 H1 session 不迁移为 H2 owner evidence；H1 仍只能 replay。若 K 线成为新的正式观察字段，
 通过新 H2 protocol version 和新 assignment 处理。owner 轨的决策窗字段已按
@@ -86,8 +88,10 @@ AI_FORMAL 的窗口调度与 168 block 合同不受影响。
 - `POST .../orders` 的线性化点是 session lock 内的委托幂等登记；非法请求返回
   `INVALID_ACTION`/`INVALID_QTY`/`INVALID_PRICE`/`RISK_REJECTED`；重复请求按
   `client_request_id` 幂等重放原结果。
-- `DELETE .../orders/{order_id}` 撤单；`POST .../abort` 只写 owner/technical abort reason，
-  不读取结果字段；status 路由用于刷新恢复。
+- `DELETE .../orders/{order_id}` 撤单；`POST .../abort` 幂等，**只表达 owner 主动中止**：
+  写稳定 `OWNER_ABORT` reason code 后进入终态，不消耗备用池、不补跑、不进入 evidence index。
+  `TECHNICAL_ABORT` 只能由服务端完整性/故障检测路径在内部生成，Web 请求不得提交该分类，
+  客户端也不能选择是否消耗备用池；abort 不读取结果字段；status 路由用于刷新恢复。
 
 ### Event / Trace Contract
 

@@ -183,8 +183,8 @@ prerequisites:
 ### 数据 / 实体需求
 
 - **DR-401**：`OwnerWebSession` 应保存 `session_id`、`assignment_id`、模式、时点采样
-  快照、客户端版本、委托与事件哈希、技术状态和 reason code，不保存真实身份、联系方式
-  或屏幕录制。
+  快照、客户端版本、委托与事件哈希、技术状态、中止类型（owner/technical）和 reason code，
+  不保存真实身份、联系方式或屏幕录制。
 - **DR-402**：K 线 artifact 应绑定 public tape 版本、聚合周期、时间压缩比、时间范围和
   内容哈希，不能脱离 session/协议元数据单独成为正式证据。
 
@@ -199,7 +199,9 @@ prerequisites:
 ### API / 接口需求
 
 - **IR-301**：所有者 Web 会话入口应提供版本化的 start、view、orders、abort 和
-  resume-status 接口；正式态不暴露 pause、step、改参、种子或未来信息。
+  resume-status 接口；`abort` 幂等且只表达 owner 主动中止（写稳定 `OWNER_ABORT` reason
+  code 后为终态、不补跑）；`TECHNICAL_ABORT` 由服务端故障路径内部生成，客户端不得提交该
+  分类；正式态不暴露 pause、step、改参、种子或未来信息。
 - **IR-401**：`GET /api/v1/h2/owner/session` 应返回当前模式、市场、K 线、本人账户、
   可用动作、状态和错误，不返回参照策略或结果字段。
 - **IR-402**：`POST /api/v1/h2/owner/session/{session_id}/orders` 应要求
@@ -231,14 +233,23 @@ PREVIEW_READY -> TRAINING          发放训练 assignment，结果仍隔离
 TRAINING -> FORMAL_ARMED           6 个训练完成且正式 assignment/协议版本匹配
 FORMAL_ARMED -> FORMAL_RUNNING     进入冻结的市场时间跨度并隐藏结果/参照策略
 FORMAL_RUNNING -> COMPLETED        24 个场景完成或按冻结规则结束
+TRAINING -> OWNER_ABORT            所有者主动中止训练：写稳定 reason code 后进入终态
+FORMAL_RUNNING -> OWNER_ABORT      所有者主动中止正式场景：同上，且不补跑
 FORMAL_RUNNING -> TECHNICAL_ABORT  断线/完整性/服务故障命中冻结无效条件
 TECHNICAL_ABORT -> RERUN_PENDING   仅技术原因且备用池仍有可用项
 ```
+
+`OWNER_ABORT` 是终态，区别于可补跑的 `TECHNICAL_ABORT`：owner 主动中止不消耗备用池、
+不生成补跑样本，也不进入 owner evidence index；只有技术中止才按冻结顺序从备用池整局
+补跑（Q-305/DQ-305）。
 
 不变量：
 
 - 所有委托必须经服务端幂等校验与既有撮合、账本、风控路径；前端状态不能单独证明提交成功。
 - 逻辑时点采样由服务端完成，采样不产生用户可见的节奏约束；委托因果链完整可追溯。
+- 主动中止与技术中止必须区分并写稳定 reason code：客户端只能触发 owner 主动中止，进入
+  `OWNER_ABORT` 终态，不消耗备用池、不补跑、不进入 evidence index；`TECHNICAL_ABORT` 分类
+  只由服务端完整性/故障检测产生，技术中止才允许按冻结顺序从备用池整局补跑。
 - K 线只来自冻结 public tape 的派生视图；时间压缩比为冻结参数；若 K 线/盘口构成新增
   观察信息，必须新协议版本并匹配参照策略信息集。
 - owner 采集模式的可见字段冻结为白名单：`best_bid`/`best_ask`/`last`、市场时钟、盘口
