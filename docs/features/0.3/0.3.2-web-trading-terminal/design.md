@@ -142,8 +142,8 @@ AI_FORMAL 的窗口调度与 168 block 合同不受影响。
   委托使用稳定错误码，前端展示可读消息。
 - 重启与恢复：浏览器刷新只重新读取 view；服务端故障写 `TECHNICAL_ABORT`，不得拼接半局日志。
 - 权限 / escalation / 凭据边界：绑定 loopback；无登录凭据、无真实资金、无外部 API token。
-- Windows / POSIX / 版本兼容：复用仓库 CI 现有 Python 3.11/3.13 支持矩阵，路径和定时器
-  不依赖 shell 特性；其它本地解释器版本只作额外冒烟，不作为验收目标。
+- 部署环境 / 版本兼容：服务端部署目标为 Linux（POSIX），复用仓库 CI 现有 Python 3.11/3.13
+  支持矩阵，路径和定时器不依赖 shell 特性；其它本地解释器版本只作额外冒烟，不作为验收目标。
 
 ## 8. 测试策略与验收映射
 
@@ -170,7 +170,7 @@ manifest/evidence index（`docs/experiments/owner-n-of-1/`、唯一 `session_id`
 
 | 决策 / 风险 | 结论或缓解 | 理由 | 替代方案 / 后续 |
 |---|---|---|---|
-| 技术栈 | 复用依赖清单外的原生 loopback HTTP/HTML/Canvas 或 SVG | 降低 Python 版本、Windows 和离线启动风险 | 后续若需要公开产品再另立前端 Feature |
+| 技术栈 | 复用依赖清单外的原生 loopback HTTP/HTML/Canvas 或 SVG | 降低 Python 版本和离线启动风险 | 后续若需要公开产品再另立前端 Feature |
 | K 线周期 | 多周期（1m/5m/15m/1h/4h）为同一冻结 tape 的派生视图；时间压缩比采集 1:1、自由模拟可选加速 | 贴近真实交易体验且保持确定性 | 周期集合与压缩比随 E1 冻结 |
 | 订单动作 | MVP 动作空间为市价/限价买卖委托与撤单（内核与 H1 合同已支持 order_type/price_ticks） | 真实终端形态的基础能力；采样替代用户侧节奏约束 | 止损/止盈等条件单另立需求 |
 | 个人数据 | 只用 owner research pseudonym，本仓库不保存身份映射 | 所有者是设计者与被试，结果只能个人描述 | 发布前 PII 扫描和人工复核 |
