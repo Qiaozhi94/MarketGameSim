@@ -71,7 +71,9 @@ public tape -------------------------> Kline projector
 - `owner-session.json`：协议/assignment/client/artifact 哈希、技术状态、reason code 和训练/formal 标志。
 
 历史 H1 session 不迁移为 H2 owner evidence；H1 仍只能 replay。若 K 线成为新的正式观察字段，
-通过新 H2 protocol version 和新 assignment 处理，不修改已冻结 `0.3.1` 协议。
+通过新 H2 protocol version 和新 assignment 处理。owner 轨的决策窗字段已按
+ADR-006/Q-403 从 H2 冻结协议移除并重新冻结（`protocol_hash` 变更，frozen 归档同步重建）；
+AI_FORMAL 的窗口调度与 168 block 合同不受影响。
 
 ## 4. 接口、Contract 与 Event
 

@@ -112,10 +112,11 @@ def draft_from_contract(
         "window_contract": {
             "logical_ns_per_window": 1_000_000_000,
             "windows_per_scenario": 60,
-            "owner_wall_clock_seconds": 8,
             "max_actions_per_window": 1,
             "timeout_decision": "NO_ACTION",
-            "applies_to": list(CONTROL_ARMS),
+            # owner 轨已由 ADR-006/Q-403 移除决策窗，不再适用本调度合同；
+            # 保留 owner 在 applies_to 会把已作废的 8 秒墙钟窗重新声明为有效合同。
+            "applies_to": ["linear", "threshold"],
         },
         "tracks": {
             "ai_formal": {
@@ -130,6 +131,8 @@ def draft_from_contract(
                 "research_claim_eligible": owner["research_claim_eligible"],
                 "formal_paired_blocks": owner["formal_paired_blocks"],
                 "training_blocks": owner["training_blocks"],
+                # owner 决策合同由 ADR-006/Q-403 取代旧决策窗；新参数在 0.3.2 E1 冻结。
+                "decision_contract": dict(owner["decision_contract"]),
             },
         },
         "conclusion_syntax": {
@@ -187,6 +190,16 @@ def _check_complete(draft: dict[str, Any]) -> None:
     if tuple(draft["control_arms"]) != CONTROL_ARMS:
         raise ProtocolIncomplete(f"control_arms 必须是冻结闭集 {CONTROL_ARMS}")
 
+    window_contract = draft["window_contract"]
+    if "owner" in window_contract["applies_to"]:
+        raise ProtocolIncomplete(
+            "owner 轨已由 ADR-006/Q-403 移除决策窗，不得出现在 window_contract.applies_to"
+        )
+    if "owner_wall_clock_seconds" in window_contract:
+        raise ProtocolIncomplete(
+            "owner_wall_clock_seconds 是被 ADR-006/Q-403 取代的 owner 窗字段，不得留在窗口合同里"
+        )
+
     floor = draft.get("contract_minimum_blocks")
     if isinstance(floor, int) and draft["minimum_blocks"] < floor:
         raise ProtocolIncomplete(f"block 数不得低于合同下限：{draft['minimum_blocks']} < {floor}")
@@ -211,9 +224,20 @@ def accepts_assignment(protocol: FrozenProtocol, *, issued_under: str) -> bool:
 def frozen_window_contract() -> dict[str, Any]:
     """窗口合同的只读快照，从当前冻结协议派生。
 
-    ``session.py``（所有者窗口调度）与 ``runner.py``（AI 轨双臂调度）各自消费这份
-    输出，两者的窗口参数因此天然一致——不存在"两处各写一份、某次改动漏了一处"的
-    可能，因为它们从不各自持有数字，只持有对这个函数的调用。
+    ``runner.py``（AI 轨双臂调度）消费这份输出，窗口参数因此天然一致——不存在
+    "两处各写一份、某次改动漏了一处"的可能，因为它从不自己持有数字，只持有对这个
+    函数的调用。owner 轨已由 ADR-006/Q-403 移除决策窗，不再消费本函数。
     """
     frozen = freeze(draft_from_contract())
     return dict(frozen.payload["window_contract"])
+
+
+def owner_decision_contract() -> dict[str, Any]:
+    """owner 轨决策合同的只读快照：自由连续交易 + 逻辑时点静默采样。
+
+    取代 Q-303 的 8 秒墙钟决策窗；新参数（压缩比/周期集合/采样粒度/市场跨度）由
+    ADR-006 规定在 0.3.2 E1 冻结，此处只暴露合同形态与冻结时点，避免下游把已作废
+    的决策窗字段当作有效约定。
+    """
+    frozen = freeze(draft_from_contract())
+    return dict(frozen.payload["tracks"]["owner_n_of_1"]["decision_contract"])

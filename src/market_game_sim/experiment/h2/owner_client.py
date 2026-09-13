@@ -32,7 +32,7 @@ from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
-from market_game_sim.experiment.h2 import artifacts, evidence_guard, runner, session
+from market_game_sim.experiment.h2 import artifacts, evidence_guard, protocol, runner, session
 from market_game_sim.experiment.runner import run_one
 
 #: 训练场景 seed 基址。H2 独占正式/备用区是 50000..50184（预注册 §9），训练
@@ -303,7 +303,7 @@ def run_owner_scenario(
         raise OwnerClientError(f"stage 必须是 training 或 formal，收到 {stage!r}")
     table = assignments or artifacts.load_assignments()
     bindings = artifacts.verify_formal_bindings(table) if stage == "formal" else None
-    contract = runner.OWNER_WINDOW_CONTRACT
+    contract = runner.WINDOW_CONTRACT
     horizon_ns = int(contract["windows_per_scenario"]) * int(contract["logical_ns_per_window"])
 
     if stage == "formal":
@@ -410,13 +410,11 @@ def _session_payload(
         "contract_protocol_hash": contract_protocol_hash,
         "admitted": admitted,
         "window_contract": {
-            "windows_per_scenario": int(runner.OWNER_WINDOW_CONTRACT["windows_per_scenario"]),
-            "logical_ns_per_window": int(runner.OWNER_WINDOW_CONTRACT["logical_ns_per_window"]),
-            "owner_wall_clock_seconds": int(
-                runner.OWNER_WINDOW_CONTRACT["owner_wall_clock_seconds"]
-            ),
+            "windows_per_scenario": int(runner.WINDOW_CONTRACT["windows_per_scenario"]),
+            "logical_ns_per_window": int(runner.WINDOW_CONTRACT["logical_ns_per_window"]),
             "run_horizon_ns": horizon_ns,
         },
+        "owner_decision_contract": protocol.owner_decision_contract(),
         "session": {
             "final_state": str(driver.formal.state),
             "completed_windows": driver.formal.completed_windows,

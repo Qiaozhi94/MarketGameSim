@@ -46,6 +46,20 @@
     "research_claim_exclusion_reason": "n=1 self-experiment; SOP principle 3 keeps sample-size-1 runs with learning effects out of statistics",
     "known_uncontrollable_bias": "the owner is both experimenter and subject and knows the hypotheses",
     "unblinding_rule": "no completed-scenario results may be viewed until all 24 formal blocks finish",
+    "decision_contract": {
+      "model": "free_continuous_trading",
+      "scenario_basis": "frozen_market_time_span",
+      "sampling": "server_side_logical_timepoint",
+      "decision_ref": "ADR-006/Q-403",
+      "supersedes": "Q-303 owner decision window (owner_wall_clock_seconds=8, max_actions_per_window=1, timeout_decision=NO_ACTION)",
+      "params_frozen_at": "0.3.2/E1",
+      "pending_params": [
+        "time_compression_ratio",
+        "kline_period_set",
+        "sampling_granularity_ns",
+        "scenario_market_span_ns"
+      ]
+    },
     "human_participants": 1,
     "participant_role": "project owner only",
     "training_blocks": 6,

@@ -67,14 +67,14 @@ def _run_parameters() -> dict[str, Any]:
     return json.loads(PLAN_PATH.read_text(encoding="utf-8"))["run_parameters"]
 
 
-def owner_window_contract() -> dict[str, Any]:
-    """窗口合同取自冻结协议；实际读取逻辑由 protocol.frozen_window_contract() 唯一拥有，
-    ``session.py`` 消费同一份输出。这里保留这层薄封装只是维持既有公开名字不动。"""
+def window_contract() -> dict[str, Any]:
+    """冻结窗口合同（AI 轨双臂调度）。实际读取逻辑由 ``protocol.frozen_window_contract()``
+    唯一拥有；owner 轨已由 ADR-006/Q-403 移除决策窗，不再消费本合同。"""
     return protocol.frozen_window_contract()
 
 
 #: 模块级常量形式的窗口合同，供断言与配置构造共用。
-OWNER_WINDOW_CONTRACT: dict[str, Any] = owner_window_contract()
+WINDOW_CONTRACT: dict[str, Any] = window_contract()
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,7 +123,7 @@ def build_config(seed: int, arm: str) -> ExperimentConfig:
     if arm not in ARM_TO_POLICY:
         raise PairError(f"未知 arm {arm!r}，合法值为 {sorted(ARM_TO_POLICY)}")
     rp = _run_parameters()
-    window_ns = int(OWNER_WINDOW_CONTRACT["logical_ns_per_window"])
+    window_ns = int(WINDOW_CONTRACT["logical_ns_per_window"])
     tier, _ = discrete_choice(
         HIGH_LEVERAGE_WEIGHTS_BP, seed, "belief-0", "bench_leverage_tier", 0, 0
     )
@@ -172,7 +172,7 @@ def _policy_run(seed: int, arm: str) -> PolicyRun:
         arm=arm,
         policy_id=ARM_TO_POLICY[arm],
         seed=seed,
-        window_schedule=dict(OWNER_WINDOW_CONTRACT),
+        window_schedule=dict(WINDOW_CONTRACT),
         accounts=tuple(sorted(spec.agent_id for spec in config.agent_specs)),
         initial_price_ticks=int(config.initial_price_ticks),
         information_set="public_book_and_own_account",

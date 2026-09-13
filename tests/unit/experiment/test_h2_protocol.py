@@ -93,6 +93,39 @@ def test_control_arms_cannot_drift_from_the_frozen_enum(draft):
         protocol.freeze(draft)
 
 
+def test_window_contract_applies_only_to_the_ai_arms(draft):
+    """Q-403/ADR-006：owner 轨已无决策窗，窗口合同不得再把 owner 声明为适用方。"""
+    contract = protocol.freeze(draft).payload["window_contract"]
+    assert contract["applies_to"] == ["linear", "threshold"]
+    assert "owner_wall_clock_seconds" not in contract
+
+
+def test_readding_the_owner_decision_window_blocks_the_freeze(draft):
+    """变异：把 owner 或 8 秒墙钟窗字段改回冻结协议时必须被门禁挡住（回归锁）。"""
+    draft["window_contract"]["applies_to"] = list(protocol.CONTROL_ARMS)
+    with pytest.raises(protocol.ProtocolIncomplete, match="applies_to"):
+        protocol.freeze(draft)
+    draft["window_contract"]["applies_to"] = ["linear", "threshold"]
+    draft["window_contract"]["owner_wall_clock_seconds"] = 8
+    with pytest.raises(protocol.ProtocolIncomplete, match="owner_wall_clock_seconds"):
+        protocol.freeze(draft)
+
+
+def test_owner_track_carries_the_adr006_free_trading_contract(draft):
+    """owner 决策合同随协议冻结：自由连续交易 + 市场时间跨度，参数留待 0.3.2 E1。"""
+    decision = draft["tracks"]["owner_n_of_1"]["decision_contract"]
+    assert decision["decision_ref"] == "ADR-006/Q-403"
+    assert decision["scenario_basis"] == "frozen_market_time_span"
+    assert decision["sampling"] == "server_side_logical_timepoint"
+    assert decision["params_frozen_at"] == "0.3.2/E1"
+    assert set(decision["pending_params"]) == {
+        "time_compression_ratio",
+        "kline_period_set",
+        "sampling_granularity_ns",
+        "scenario_market_span_ns",
+    }
+
+
 def test_block_count_cannot_go_below_the_contract_floor(draft):
     """合同声明 may_lower_minimum_blocks=false；下调必须在冻结处被挡住。"""
     lowered = protocol.draft_from_contract(minimum_blocks=130)

@@ -45,21 +45,24 @@ def test_unknown_arm_is_rejected():
         runner.build_config(SEED_PLAIN, "owner-typo")
 
 
-def test_both_arms_run_under_the_owner_window_scheduler(block):
+def test_both_arms_run_under_the_frozen_window_scheduler(block):
     """两条参照都必须按窗口合同的逻辑长度观察，不得用内核默认间隔。"""
-    window_ns = runner.OWNER_WINDOW_CONTRACT["logical_ns_per_window"]
+    window_ns = runner.WINDOW_CONTRACT["logical_ns_per_window"]
     for arm in runner.ARM_TO_POLICY:
         config = runner.build_config(SEED_PLAIN, arm)
         belief = next(spec for spec in config.agent_specs if spec.agent_id == "belief-0")
         assert belief.observe_interval_ns == window_ns
     for run in block.runs:
-        assert run.window_schedule == runner.OWNER_WINDOW_CONTRACT
+        assert run.window_schedule == runner.WINDOW_CONTRACT
 
 
-def test_window_contract_covers_all_three_arms():
-    assert runner.OWNER_WINDOW_CONTRACT["applies_to"] == ["linear", "threshold", "owner"]
-    assert runner.OWNER_WINDOW_CONTRACT["max_actions_per_window"] == 1
-    assert runner.OWNER_WINDOW_CONTRACT["timeout_decision"] == "NO_ACTION"
+def test_window_contract_covers_only_the_ai_arms():
+    """Q-403/ADR-006：owner 已无决策窗，窗口合同只适用于两条 AI 策略臂。"""
+    assert runner.WINDOW_CONTRACT["applies_to"] == ["linear", "threshold"]
+    assert "owner" not in runner.WINDOW_CONTRACT["applies_to"]
+    assert "owner_wall_clock_seconds" not in runner.WINDOW_CONTRACT
+    assert runner.WINDOW_CONTRACT["max_actions_per_window"] == 1
+    assert runner.WINDOW_CONTRACT["timeout_decision"] == "NO_ACTION"
 
 
 # --------------------------------------------------------------------------- #

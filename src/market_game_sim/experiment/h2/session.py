@@ -158,8 +158,10 @@ def sample_order() -> OrderIntent:
     return OrderIntent(intent_id=f"intent-{next(_input_seq_counter)}")
 
 
-def _window_contract() -> dict[str, Any]:
-    return protocol.frozen_window_contract()
+#: 预览 harness 的默认窗长。owner 轨已由 ADR-006/Q-403 移除用户可见决策窗，这个 8 秒
+#: 只是 0.3.1 preview 状态机（UX-302）的本地时限，不再从冻结 owner 合同读取；正式
+#: owner 采集的时点采样粒度由 0.3.2 E1 另行冻结。
+PREVIEW_WINDOW_NS = 8_000_000_000
 
 
 @dataclass(slots=True)
@@ -183,13 +185,12 @@ class Window:
 
 
 def open_window(index: int, *, duration_ns: int | None = None) -> Window:
-    """开窗。默认时长取自冻结窗口合同的 ``owner_wall_clock_seconds``——这是给真人
-    的真实响应时限，不是 ``logical_ns_per_window``（那是市场每窗推进的模拟时间，
-    两者单位都是纳秒但语义完全不同，不能混用）。
+    """开窗。默认时长是 preview harness 的本地时限（``PREVIEW_WINDOW_NS``），不是市场
+    每窗推进的 ``logical_ns_per_window``（单位同为纳秒但语义完全不同，不能混用），也
+    不再是 owner 的冻结决策窗（ADR-006/Q-403 已移除该合同）。
     """
     if duration_ns is None:
-        seconds = _window_contract()["owner_wall_clock_seconds"]
-        duration_ns = int(seconds) * 1_000_000_000
+        duration_ns = PREVIEW_WINDOW_NS
     now = time.monotonic_ns()
     return Window(
         index=index,

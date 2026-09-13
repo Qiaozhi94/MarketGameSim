@@ -130,6 +130,20 @@
         "run_mode": "ai-mechanism-experiment"
       },
       "owner_n_of_1": {
+        "decision_contract": {
+          "decision_ref": "ADR-006/Q-403",
+          "model": "free_continuous_trading",
+          "params_frozen_at": "0.3.2/E1",
+          "pending_params": [
+            "time_compression_ratio",
+            "kline_period_set",
+            "sampling_granularity_ns",
+            "scenario_market_span_ns"
+          ],
+          "sampling": "server_side_logical_timepoint",
+          "scenario_basis": "frozen_market_time_span",
+          "supersedes": "Q-303 owner decision window (owner_wall_clock_seconds=8, max_actions_per_window=1, timeout_decision=NO_ACTION)"
+        },
         "evidence_class": "experiment-preview",
         "formal_paired_blocks": 24,
         "research_claim_eligible": false,
@@ -141,17 +155,15 @@
     "window_contract": {
       "applies_to": [
         "linear",
-        "threshold",
-        "owner"
+        "threshold"
       ],
       "logical_ns_per_window": 1000000000,
       "max_actions_per_window": 1,
-      "owner_wall_clock_seconds": 8,
       "timeout_decision": "NO_ACTION",
       "windows_per_scenario": 60
     }
   },
-  "protocol_hash": "ad60ad26ab7ba02573ea20eb58da52d7bcd3b0a0474b80c8bcd0e6c13bfafb82",
+  "protocol_hash": "f187b559c698ffb0037aa80993bd2e3a06253fb869d6f5914a70577754961c2f",
   "schema_version": 1,
   "status": "FROZEN"
 }
