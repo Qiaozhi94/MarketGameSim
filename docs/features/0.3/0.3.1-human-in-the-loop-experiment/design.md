@@ -10,7 +10,7 @@ topics:
   - formal-research
 doc_kind: design
 created: 2026-09-04
-updated: 2026-09-13
+updated: 2026-09-14
 ---
 
 # 0.3.1：H2 AI 机制正式基线 - 设计
@@ -184,7 +184,8 @@ evidence-index 六类对象各自使用版本化 schema；正式写入绑定 `pr
   整局补跑，并在 adjudication 中用 `rerun_of_session_id`、`supersedes_pair_id` 保留审计链。
 - 权限 / escalation / 凭据边界：loopback 优先，无交易凭据；研究 ID 不承担身份认证用途。
 - 隐私：本仓库不保存真实身份映射；日志白名单化，发布前运行 PII 扫描和人工复核。
-- Windows / POSIX / 版本兼容：复用 H1 支持矩阵；窗口计时使用单调钟，市场仍只读逻辑时间。
+- 部署环境 / 版本兼容：部署目标为 Linux（POSIX），不要求 Windows 验证；窗口计时使用单调钟，
+  市场仍只读逻辑时间。
 
 ## 8. 测试策略与验收映射
 

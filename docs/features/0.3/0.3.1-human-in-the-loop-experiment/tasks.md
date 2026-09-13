@@ -10,7 +10,7 @@ topics:
   - formal-research
 doc_kind: tasks
 created: 2026-09-04
-updated: 2026-09-12
+updated: 2026-09-14
 ---
 
 # 0.3.1：H2 AI 机制正式基线 - 任务
@@ -128,8 +128,8 @@ updated: 2026-09-12
 - [x] T922 (`AC-301`, `AC-303`, `AC-304`): 运行协议、证据门、配对和重放正反测试 — verify:
       `tests/unit/experiment/test_h2_protocol.py`、`tests/integration/test_h2_evidence_guard.py`、
       `tests/integration/test_h2_paired_runs.py`
-- [ ] T923 (`AC-302`, `AC-308`): 在目标 Windows 环境运行 AI/preview 窗口、断线、中止与阶段提示
-      验收；所有者 Web 终端由 0.3.2 单独验收 — verify: `tests/integration/test_experiment_session.py`
+- [x] T923 (`AC-302`, `AC-308`): 在部署环境（Linux/POSIX）运行 AI/preview 窗口、断线、中止与
+      阶段提示验收；所有者 Web 终端由 0.3.2 单独验收 — verify: `tests/integration/test_experiment_session.py`
 - [x] T924 (`AC-305`, `AC-306`): 用冻结模拟数据验证效应恢复、缺失、多重性、三机制和无综合分数
       — verify: `tests/unit/experiment/test_h2_outcomes.py`、
       `tests/unit/experiment/test_h2_mechanisms.py`、`tests/integration/test_h2_mechanisms.py`

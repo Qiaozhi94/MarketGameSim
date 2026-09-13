@@ -9,7 +9,7 @@ research_claim_required: true
 evidence_class: formal-research
 gate_version: 1
 created: 2026-09-04
-updated: 2026-09-13
+updated: 2026-09-14
 prerequisites:
   - 0.2.1
 ---
@@ -405,7 +405,7 @@ INCLUDED blocks -> ANALYZED        block 数满足且对应轨道的 evidence in
 - UI / E2E：preview 的有限窗口、阶段提示、信息闭集和无特权控制；生产 Web 终端由 0.3.2 验收。
 - 研究验证：冻结模拟数据恢复已知效应；preview 验证流程但永不进入正式证据；正式运行前
   完成分析代码盲测/锁定。
-- 真实环境 / 手动验证：目标 Windows 环境运行 AI/preview 演练；所有者 Web 终端、K 线和正式
+- 真实环境 / 手动验证：部署环境（Linux/POSIX）运行 AI/preview 演练；所有者 Web 终端、K 线和正式
   场景在 0.3.2 完成后验证。
 
 ### 依赖
