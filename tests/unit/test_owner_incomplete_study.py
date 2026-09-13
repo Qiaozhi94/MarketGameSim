@@ -29,6 +29,13 @@ def _task_block(task_id: str) -> str:
     return match.group(0)
 
 
+def _task_pos(task_id: str) -> int:
+    """任务声明在文档中的位置；`[ ]`/`[x]` 都接受，勾选完成后门禁不得误红。"""
+    match = re.search(rf"^- \[[ x]\] {task_id}\b", TASKS, re.MULTILINE)
+    assert match, f"tasks.md 找不到任务 {task_id}"
+    return match.start()
+
+
 def test_incomplete_study_path_reachable_and_evidence_located():
     task_941 = _task_block("T941")
     assert "冻结停止规则" in task_941
@@ -52,9 +59,9 @@ def test_evidence_contract_frozen_before_real_collection():
     task_942 = _task_block("T942")
     assert "采集后" in task_942
     assert "实现机器校验入口" not in task_942
-    # 顺序：冻结/实现所在任务必须早于真实采集任务 T939/T941
-    assert TASKS.index("- [ ] T929") < TASKS.index("- [ ] T939")
-    assert TASKS.index("- [ ] T929") < TASKS.index("- [ ] T941")
+    # 顺序：冻结/实现所在任务必须早于真实采集任务 T939/T941（勾选状态无关）
+    assert _task_pos("T929") < _task_pos("T939")
+    assert _task_pos("T929") < _task_pos("T941")
 
 
 def test_incomplete_study_has_distinct_terminal_state():
