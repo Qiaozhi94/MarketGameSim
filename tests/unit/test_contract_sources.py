@@ -669,6 +669,22 @@ def test_h2_design_matrix_covers_all_conditions():
     assert "不同且必须分别披露" in rows[4]
 
 
+def test_h2_q308_matrix_marks_the_q403_owner_revision():
+    """ADR006-004：Q-308 矩阵的 owner 两格必须标注 Q-403 修订，不得再当有效旧合同。"""
+    design = (ROOT / H2_CONTROL_CONTRACT_DOCS[1]).read_text(encoding="utf-8")
+    matrix = design.split("协议必须冻结以下可审计比较矩阵", 1)[1]
+    matrix = matrix.split("所有者轨的定位", 1)[0]
+    rows = [line for line in matrix.splitlines() if line.startswith("| ")]
+    action_space, opportunity = rows[2], rows[3]
+    assert "2026-09-13 修订" in action_space
+    assert "动作空间不再相同" in action_space
+    assert "2026-09-13 修订" in opportunity
+    assert "不再相同" in opportunity
+    # 反向：owner 的动作空间与决策机会不得再被标成无条件的「相同」。
+    assert "| 相同 |" not in action_space
+    assert "| 相同 |" not in opportunity
+
+
 def test_h2_secondary_control_uses_the_shared_window_scheduler():
     """次要对照也必须冻结决策机会，避免描述性差异混入调度变化。"""
     spec = (ROOT / H2_CONTROL_CONTRACT_DOCS[0]).read_text(encoding="utf-8")
