@@ -608,6 +608,20 @@ def test_h2_effective_docs_have_no_stale_owner_prerequisite_or_ai_two_track_esti
     assert residue == {doc: [] for doc in H2_AI_SCOPE_DOCS}
 
 
+def test_adr006_declares_the_owner_action_space_break():
+    """ADR006-003：owner 扩到限价/撤单后，Q-308「动作空间相同」对 owner 不再成立。"""
+    adr = (ROOT / "docs/decisions/006-realtime-free-trading-owner-terminal.md").read_text(
+        encoding="utf-8"
+    )
+    assert "动作空间匹配同时破裂" in adr
+    assert "只发市价单" in adr
+    spec = (ROOT / "docs/features/0.3/0.3.2-web-trading-terminal/spec.md").read_text(
+        encoding="utf-8"
+    )
+    assert "「信息集与动作空间 | 相同」对 owner" in spec
+    assert "只发市价单" in spec
+
+
 def test_h2_parallel_plan_detector_rejects_serial_scope_mutation():
     """负向变异：把 H2-C/H2-D 改回串行措辞时必须被扫描挡住。"""
     mutated = "H2-C 先完成 AI 正式研究包；H2-D 再让项目所有者按冻结协议参加实验"
