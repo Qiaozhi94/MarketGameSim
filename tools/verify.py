@@ -23,7 +23,13 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 
 def _run(cmd: list[str], label: str) -> bool:
     print(f"\n== {label} ==")
-    proc = subprocess.run(cmd, cwd=ROOT)
+    try:
+        proc = subprocess.run(cmd, cwd=ROOT)
+    except FileNotFoundError:
+        # 工具不在 PATH（如 conda 环境下缺 ruff）时按普通失败步骤记账并指出缺哪个工具，
+        # 而不是让未捕获异常把整个 verify 入口炸掉、掩盖其余步骤的结论。
+        print(f"FAILED: {label}（找不到可执行文件：{cmd[0]}，请确认已安装并在 PATH 中）")
+        return False
     if proc.returncode != 0:
         print(f"FAILED: {label}")
         return False
