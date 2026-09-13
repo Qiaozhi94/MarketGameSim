@@ -622,6 +622,16 @@ def test_adr006_declares_the_owner_action_space_break():
     assert "只发市价单" in spec
 
 
+def test_h2_web_tasks_defer_only_conditional_orders_not_limit_orders():
+    """ADR006-005：限价单已进入 MVP 动作空间，tasks §5 不得再把它列为后移项。"""
+    tasks = (ROOT / "docs/features/0.3/0.3.2-web-trading-terminal/tasks.md").read_text(
+        encoding="utf-8"
+    )
+    deferred = tasks.split("## 5. 明确后移", 1)[1]
+    assert "限价单" not in deferred
+    assert "条件单" in deferred
+
+
 def test_h2_parallel_plan_detector_rejects_serial_scope_mutation():
     """负向变异：把 H2-C/H2-D 改回串行措辞时必须被扫描挡住。"""
     mutated = "H2-C 先完成 AI 正式研究包；H2-D 再让项目所有者按冻结协议参加实验"
