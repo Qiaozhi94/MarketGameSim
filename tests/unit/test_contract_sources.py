@@ -622,6 +622,15 @@ def test_adr006_declares_the_owner_action_space_break():
     assert "只发市价单" in spec
 
 
+def test_adr006_defines_the_owner_scenario_span_conversion():
+    """ADR006-006：owner 场景跨度必须写成 windows_per_scenario × 逻辑窗长，并说明参照重生成。"""
+    adr = (ROOT / "docs/decisions/006-realtime-free-trading-owner-terminal.md").read_text(
+        encoding="utf-8"
+    )
+    assert "windows_per_scenario × logical_ns_per_window" in adr
+    assert "运行必须按新跨度重新生成" in adr
+
+
 def test_h2_web_tasks_defer_only_conditional_orders_not_limit_orders():
     """ADR006-005：限价单已进入 MVP 动作空间，tasks §5 不得再把它列为后移项。"""
     tasks = (ROOT / "docs/features/0.3/0.3.2-web-trading-terminal/tasks.md").read_text(
