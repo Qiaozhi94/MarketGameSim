@@ -107,7 +107,7 @@
     "preregistration": {
       "id": "H2-preregistration-v1",
       "path": "docs/experiments/H2-preregistration.md",
-      "sha256": "99c557597ce4d66635fc365bb77e07f79ce4a538d7f1a541ac4a960853161918"
+      "sha256": "1044a477cca2aec844c498c0e704924d4197bfd588f7a088815649dd21148349"
     },
     "primary_estimand": "severity_paired_difference",
     "research_question": "How do frozen AI decision policies affect endogenous crash feedback, and how does the project owner behave relative to matched AI counterfactuals?",
@@ -163,7 +163,7 @@
       "windows_per_scenario": 60
     }
   },
-  "protocol_hash": "f187b559c698ffb0037aa80993bd2e3a06253fb869d6f5914a70577754961c2f",
+  "protocol_hash": "8143996be17dddc595f88ccb76f21cf6a8be8b6b9f18c91ee389faaa2306588c",
   "schema_version": 1,
   "status": "FROZEN"
 }

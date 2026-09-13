@@ -200,6 +200,14 @@ def test_final_protocol_passes_both_gates_and_covers_formal_fields():
     }
 
 
+def test_preregistration_records_the_owner_window_revision_and_archive_binds_it():
+    """ADR006-002：owner 窗口修订必须留痕在预注册里，且归档哈希随预注册同步重建。"""
+    text = formal_freeze.PREREGISTRATION_PATH.read_text(encoding="utf-8")
+    assert "2026-09-13 owner 窗口合同修订记录" in text
+    assert "owner_wall_clock_seconds" in text
+    formal_freeze.verify_archive()
+
+
 def test_incomplete_h2_preregistration_blocks_the_protocol_gate(tmp_path):
     incomplete = tmp_path / "H2-preregistration.md"
     incomplete.write_text("---\nid: H2-preregistration-v1\nstatus: FROZEN\n---\n", encoding="utf-8")
