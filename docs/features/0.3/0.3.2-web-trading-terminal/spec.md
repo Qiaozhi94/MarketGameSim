@@ -313,7 +313,13 @@ TECHNICAL_ABORT -> RERUN_PENDING   仅技术原因且备用池仍有可用项
   和阶段 guard。
 - UI / E2E：浏览器打开、K 线多周期刷新、委托反馈、拒单、无报价和结果盲。
 - 真实环境 / 手动验证：Windows 与 POSIX 本地 loopback 各完成一次 preview；正式 owner 场景
-  只在 E2/E3 通过后启动。
+  只在 E2/E3 通过后启动。6/24 个真实场景的完成证据固定落在 `docs/experiments/owner-n-of-1/`
+  （`environment.json` + `owner-session-manifest.json` + `owner-evidence-index.json`），机器校验
+  入口为 `python tools/validate_owner_evidence.py --dir <path>`；证据须包含目标环境记录
+  （OS/Python/启动命令）、唯一 `session_id`、哈希、排除/补跑流。非退化断言按完成状态条件化：
+  完整样本（24 场）断言非退化；`incomplete-study` 按实际样本数断言非退化；零样本以文档化的
+  冻结停止原因通过，不被非退化门拒绝。集成测试只验机制，不能单独证明真人场景已经发生。
+  平台目标以仓库 CI 矩阵 Python 3.11/3.13 为准，本地其它解释器版本只作额外冒烟。
 
 ### 依赖
 

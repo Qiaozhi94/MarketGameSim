@@ -71,6 +71,13 @@ public tape -------------------------> Kline projector
 - `owner-session.json`：协议/assignment/client/artifact 哈希、技术状态、中止类型
   （`abort_kind=owner|technical`，其中 `technical` 只能由服务端故障路径写入）、reason code
   和训练/formal 标志。
+- **owner 成果包固定布局**：`docs/experiments/owner-n-of-1/` 下 `environment.json`
+  （`schema_version`/`os`/`platform`/`python`/`start_command`/`recorded_at`）、
+  `owner-session-manifest.json`、`owner-evidence-index.json`、`kline/`。manifest 与 index
+  带 `schema_version`、完成状态（`complete`/`incomplete-study`）、条数、唯一 `session_id`、
+  每条哈希与 `exclusion`/`rerun_of` 流；机器校验入口为
+  `python tools/validate_owner_evidence.py --dir <path>`（实现于 T942，覆盖完整样本、
+  `incomplete-study` 与零样本正反样例）。
 
 历史 H1 session 不迁移为 H2 owner evidence；H1 仍只能 replay。若 K 线成为新的正式观察字段，
 通过新 H2 protocol version 和新 assignment 处理。owner 轨的决策窗字段已按
@@ -135,7 +142,8 @@ AI_FORMAL 的窗口调度与 168 block 合同不受影响。
   委托使用稳定错误码，前端展示可读消息。
 - 重启与恢复：浏览器刷新只重新读取 view；服务端故障写 `TECHNICAL_ABORT`，不得拼接半局日志。
 - 权限 / escalation / 凭据边界：绑定 loopback；无登录凭据、无真实资金、无外部 API token。
-- Windows / POSIX / 版本兼容：复用现有 Python 3.11/3.14 支持矩阵，路径和定时器不依赖 shell 特性。
+- Windows / POSIX / 版本兼容：复用仓库 CI 现有 Python 3.11/3.13 支持矩阵，路径和定时器
+  不依赖 shell 特性；其它本地解释器版本只作额外冒烟，不作为验收目标。
 
 ## 8. 测试策略与验收映射
 
@@ -152,12 +160,17 @@ AI_FORMAL 的窗口调度与 168 block 合同不受影响。
 
 批量测试覆盖至少 2 个协议版本、无报价首窗、K 线不足周期、重复点击、迟到输入、断线和技术中止。
 浏览器 E2E 只在功能 contract 稳定后加入；真实 owner 场景不作为自动化 fixture。
+6/24 个真实 owner 场景的完成证据必须来自目标环境记录（OS/Python/启动命令）与真实 owner
+manifest/evidence index（`docs/experiments/owner-n-of-1/`、唯一 `session_id`、哈希、排除/
+补跑流），由 `tools/validate_owner_evidence.py` 校验；非退化断言按完成状态条件化（完整样本
+断言非退化，`incomplete-study` 按实际样本数断言，零样本以文档化停止原因通过）。集成与 E2E
+测试只验机制，不能替代真实场景已经发生的完成声明。
 
 ## 9. 已确认决策与残余风险
 
 | 决策 / 风险 | 结论或缓解 | 理由 | 替代方案 / 后续 |
 |---|---|---|---|
-| 技术栈 | 复用依赖清单外的原生 loopback HTTP/HTML/Canvas 或 SVG | 降低 Python 3.14、Windows 和离线启动风险 | 后续若需要公开产品再另立前端 Feature |
+| 技术栈 | 复用依赖清单外的原生 loopback HTTP/HTML/Canvas 或 SVG | 降低 Python 版本、Windows 和离线启动风险 | 后续若需要公开产品再另立前端 Feature |
 | K 线周期 | 多周期（1m/5m/15m/1h/4h）为同一冻结 tape 的派生视图；时间压缩比采集 1:1、自由模拟可选加速 | 贴近真实交易体验且保持确定性 | 周期集合与压缩比随 E1 冻结 |
 | 订单动作 | MVP 动作空间为市价/限价买卖委托与撤单（内核与 H1 合同已支持 order_type/price_ticks） | 真实终端形态的基础能力；采样替代用户侧节奏约束 | 止损/止盈等条件单另立需求 |
 | 个人数据 | 只用 owner research pseudonym，本仓库不保存身份映射 | 所有者是设计者与被试，结果只能个人描述 | 发布前 PII 扫描和人工复核 |

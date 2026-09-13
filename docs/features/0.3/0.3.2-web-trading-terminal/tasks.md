@@ -31,8 +31,9 @@ updated: 2026-09-13
 - [ ] T927 (`FR-302`, `IR-301`, `AC-405`): 在任务级接入已完成的 `0.3.1/T915` preview contract，
       验证 session controller、assignment、委托幂等、
       时点采样和 canonical input contract 可供 Web adapter 复用 — verify: `docs/features/0.3/0.3.1-human-in-the-loop-experiment/design.md`
-- [ ] T928 (`FR-401`, `NFR-403`, `AC-401`): 在 Python 3.11/3.14 的目标环境确认 loopback 服务、
-      时间单调钟和静态资源加载约束 — verify: `tests/integration/test_h2_owner_web.py`
+- [ ] T928 (`FR-401`, `NFR-403`, `AC-401`): 在仓库 CI 矩阵 Python 3.11/3.13 的目标环境确认
+      loopback 服务、时间单调钟和静态资源加载约束，并把 OS/Python/启动命令记入环境记录；
+      其它本地解释器版本只作额外冒烟，不作为验收目标 — verify: `tests/integration/test_h2_owner_web.py`
 - [ ] T929 (`FR-401`, `DR-402`, `AC-401`, `AC-404`): 冻结 owner 轨四项参数——时间压缩比（采集
       1:1）、可选 K 线周期集合、逻辑时点采样粒度、场景市场时间跨度——并升级 owner 协议版本
       与 E1 冻结清单；作为 K 线投影与 owner 会话实现的前置 — verify:
@@ -76,20 +77,32 @@ updated: 2026-09-13
       （写 `OWNER_ABORT` reason code 后进入终态、不补跑、不进入 evidence index），并把
       `abort_kind`/reason code 写入 owner-session.json — verify: `tests/integration/test_h2_owner_web.py`
 - [ ] T939 (`SC-403`, `AC-408`): 在 E2 gate 通过后按冻结台账完成 6 个训练场景；训练结果不写入
-      formal evidence index — verify: `tests/integration/test_h2_owner_delivery.py`
+      formal evidence index。完成证据必须包含目标环境记录与真实 training manifest（6 条唯一
+      `session_id`、哈希、排除/补跑流、非退化事件内容）；集成测试只验机制，不能替代真实场景
+      已经发生的完成声明 — verify: `tests/integration/test_h2_owner_delivery.py`
 - [ ] T940 (`SC-403`, `AC-403`, `AC-408`): 交付训练后可启动 formal 的 owner session bundle，
       包含阶段/assignment/解盲 guard 矩阵；证据标签为 `experiment-preview`
       — verify: `tests/integration/test_h2_owner_delivery.py`
 
 - [ ] T941 (`FR-302`, `TR-302`, `NFR-302`, `AC-405`, `AC-407`): 按冻结 assignment 完成 24 个正式
-      owner 场景；结果字段对中止、补跑和解盲裁决保持不可见 — verify:
+      owner 场景，或在冻结停止规则命中时按规则结束并生成 `incomplete-study`（不得伪造完成）；
+      结果字段对中止、补跑和解盲裁决保持不可见。完成证据必须包含真实 owner evidence index
+      （唯一 `session_id`、哈希、排除/补跑流；非退化断言按完成状态条件化）与目标环境记录，
+      不得仅以集成测试代替 — verify:
       `tests/integration/test_h2_owner_delivery.py`
 - [ ] T942 (`DR-401`, `DR-402`, `AC-408`): 冻结 owner evidence index、session manifest、输入/事件/
-      K 线 artifact 哈希和 sample flow — verify: `tests/integration/test_h2_owner_delivery.py`
+      K 线 artifact 哈希和 sample flow；落地固定布局 `docs/experiments/owner-n-of-1/`
+      （`environment.json`、`owner-session-manifest.json`、`owner-evidence-index.json`、`kline/`），
+      并实现机器校验入口 `tools/validate_owner_evidence.py --dir <path>`（覆盖完整样本、
+      `incomplete-study`、零样本与哈希/唯一 ID 的正反样例） — verify:
+      `tests/integration/test_h2_owner_delivery.py`
 - [ ] T943 (`SC-404`, `AC-407`, `AC-408`): 从 owner evidence index 生成个人描述性报告、代表性
       回放和限制声明，明确不外推到人群 — verify: `tests/integration/test_h2_owner_delivery.py`
 - [ ] T944 `[成果门:H2-D2]` (`SC-403`, `SC-404`, `AC-407`, `AC-408`): 生成可打开的 owner
-      `experiment-preview` 交付包；若场景不足则生成 `incomplete-study` 而不伪造完成 — verify:
+      `experiment-preview` 交付包；若场景不足则生成 `incomplete-study` 而不伪造完成。完成
+      证据须断言 evidence index 计数、唯一 ID、哈希，并由目标环境记录佐证；非退化断言按完成
+      状态条件化——完整样本（24 场）断言非退化，`incomplete-study` 按实际样本数断言非退化，
+      零样本以文档化停止原因通过 — verify:
       `tests/integration/test_h2_owner_delivery.py`
 
 ## 3. 验证与验收任务
