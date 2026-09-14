@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>模拟交易所</title>
+<title>MarketGame-SIM</title>
 <style>
 :root{
   --bg:#0b0e11; --panel:#131722; --panel2:#1c2330; --line:#2b3444;
@@ -26,8 +26,7 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 #topnav nav .v-on{color:var(--fg);font-weight:700}
 #topnav .spacer{flex:1}
 .sim-badge{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--amber);border:1px solid var(--amber);border-radius:4px;padding:1px 7px}
-#conn{font-size:12px;color:var(--dim)}
-#exit-btn,#info-btn{padding:2px 9px;font-size:12px}
+#info-btn{padding:2px 9px;font-size:12px}
 
 /* 市场说明弹层 */
 #info-pop{display:none;position:absolute;top:40px;right:14px;z-index:60;width:400px;
@@ -143,10 +142,6 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
   font-size:12px;line-height:1.7;color:var(--dim);word-break:break-all;min-height:40px}
 
 /* 断线遮罩 */
-#conn-overlay{display:none;position:absolute;inset:0;background:#0b0e11e0;z-index:20;
-  flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center}
-#conn-overlay.show{display:flex}
-#conn-overlay .title{font-size:18px;font-weight:700;color:var(--amber)}
 #terminal-wrap{position:relative}
 
 /* 模态 */
@@ -188,12 +183,10 @@ body.review #proto-bar{display:flex}
   <!-- 顶部导航 -->
   <div id="topnav">
     <span class="sim-badge" id="sim-badge">SIM</span>
-    <span class="logo">模拟交易所</span>
+    <span class="logo">MarketGame-SIM</span>
     <nav><span data-view="markets" id="nav-markets" class="free-only">行情</span><span data-view="trade" class="v-on">交易</span><span data-view="assets">资产</span><span id="nav-research" class="free-only" hidden></span></nav>
     <span class="spacer"></span>
-    <span id="conn">● 已连接</span>
     <button id="info-btn">ⓘ 市场说明</button>
-    <button id="exit-btn">退出</button>
   </div>
 
   <!-- 市场说明弹层 -->
@@ -335,13 +328,6 @@ body.review #proto-bar{display:flex}
         </section>
       </div>
     </main>
-
-    <div id="conn-overlay">
-      <div class="title">连接中断</div>
-      <div style="color:var(--dim);max-width:420px">行情与市场不会因断线暂停：您的挂单仍在市场中生效。<br>正在重连……恢复后以服务端会话为准，不会重复提交委托。</div>
-      <div class="num" style="color:var(--faint)" id="reconnect-sec">已断开 3s</div>
-      <button id="reconnect-btn">模拟恢复连接</button>
-    </div>
   </div>
 
   <!-- 行情页 -->
@@ -1027,21 +1013,13 @@ function switchView(v){
 
 /* ---------- 状态机（评审切换） ---------- */
 let state="trading", stateFlags={};
-function connRefresh(){
-  $("conn").innerHTML=state==="disconnected"?"● 连接中断":"● 已连接";
-  $("conn").style.color=state==="disconnected"?"var(--red)":"var(--dim)";
-}
 function render(){
   renderQuote();renderTape();renderAccount();drawKline();renderResting();renderReturns();renderPositions();
   $("state-select").value=state;
-  $("conn-overlay").classList.remove("show");
   $("submit-hint").textContent="";
   if(state!=="warming"){$("btn-action").disabled=false;}
   if(state==="warming")return renderWarming();
   if(state==="risk-rejected")return renderRiskRejected();
-  if(state==="disconnected")return renderDisconnected();
-  if(state==="refresh-resume")return renderRefreshResume();
-  if(state==="exit-confirm")return renderExitConfirm();
 }
 function renderWarming(){
   const m=M();m.bid=null;m.ask=null;m.last=null;m.bids=[];m.asks=[];m.tape=[];
@@ -1054,31 +1032,10 @@ function renderRiskRejected(){
     `action PLACE_ORDER·BUY<br>reason_code <b>RISK_REJECTED</b> · 可用保证金不足<br>拒绝事件 [REJ-11032] · 零订单副作用`);
   hintErr("委托被风控拒绝：可用保证金不足。可降低数量或减仓后重试。");
 }
-function renderDisconnected(){
-  connRefresh();
-  $("conn-overlay").classList.add("show");
-  let s=3;$("reconnect-sec").textContent="已断开 3s";
-  stateFlags.reconn=setInterval(()=>{s++;$("reconnect-sec").textContent=`已断开 ${s}s`;},1000);
-  $("reconnect-btn").onclick=()=>{clearInterval(stateFlags.reconn);setState("refresh-resume");};
-}
-function renderRefreshResume(){
-  connRefresh();
-  pushReturn("accepted","会话恢复","无重复委托",
-    `刷新恢复：GET session → status<br>挂单与成交以服务端快照重建<br>客户端未重发任何委托（幂等键 client_request_id）`);
-  hintOk("会话已恢复：挂单、仓位与回报已从服务端重建。");
-}
-function renderExitConfirm(){
-  openModal(`
-    <h2>退出当前会话？</h2>
-    <p>退出后行情停止，当前挂单将被撤销并记录在回报中；仓位与权益保留在会话存档里。</p>
-    <div class="row"><button id="exit-cancel">返回交易</button><button class="danger" id="exit-ok">退出</button></div>`);
-  $("exit-cancel").onclick=()=>{closeModal();setState("trading")};
-  $("exit-ok").onclick=()=>{closeModal();setState("trading");hintOk("已退出会话。");};
-}
 
 function setState(s){
   if(stateFlags.reconn)clearInterval(stateFlags.reconn);
-  stateFlags={};state=s;render();connRefresh();
+  stateFlags={};state=s;render();
 }
 
 /* ---------- 输入绑定 ---------- */
@@ -1112,7 +1069,6 @@ $("pct").oninput=()=>{
   $("qty").value=qtyUnit==="usdt"?avail.toFixed(2):coins.toFixed(m.ins.qdec===0?2:3);
   renderButtonPx();
 };
-$("exit-btn").onclick=()=>setState("exit-confirm");
 $("info-btn").onclick=()=>$("info-pop").classList.toggle("show");
 $("lev-chip").onclick=()=>openModal(`
   <h2>调整杠杆（全仓）</h2>
@@ -1143,7 +1099,7 @@ bindTabs("bottom-tabs",t=>{
 
 /* ---------- 行情节拍：推进全部品种 ---------- */
 setInterval(()=>{
-  if(["warming","risk-rejected","disconnected","exit-confirm"].includes(state))return;
+  if(["warming","risk-rejected"].includes(state))return;
   for(const sym in MARKETS)tickMarket(MARKETS[sym]);
   renderQuote();renderTape();renderAccount();drawKline();renderResting();renderPositions();
   if(view==="markets")renderMarkets();
@@ -1151,16 +1107,12 @@ setInterval(()=>{
 
 /* ---------- 顶部信息 ---------- */
 $("info-btn").onclick=()=>$("info-pop").classList.toggle("show");
-$("exit-btn").onclick=()=>setState("exit-confirm");
 
 /* ---------- 状态切换器（评审模式） ---------- */
 const STATES=[
   ["trading","交易中 · 自由连续交易"],
   ["warming","等待行情 · 无报价空态"],
   ["risk-rejected","风控拒单 · RISK_REJECTED"],
-  ["disconnected","断线 · 服务端为准"],
-  ["refresh-resume","刷新恢复"],
-  ["exit-confirm","退出确认"],
 ];
 STATES.forEach(([k,label])=>{const o=document.createElement("option");o.value=k;o.textContent=label;$("state-select").appendChild(o)});
 $("state-select").onchange=()=>setState($("state-select").value);
