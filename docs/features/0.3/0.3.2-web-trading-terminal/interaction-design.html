@@ -352,7 +352,6 @@ body.review #proto-bar{display:flex}
         <thead><tr><th>品种</th><th>最新价</th><th>24h 涨跌</th><th>24h 最高</th><th>24h 最低</th><th>24h 成交量</th><th>走势</th><th></th></tr></thead>
         <tbody id="mkt-body"></tbody>
       </table>
-      <p style="color:var(--faint);font-size:12px;margin:8px 0 0">更多交易品种即将上线。</p>
     </div>
   </div>
 
@@ -972,7 +971,7 @@ function renderMarkets(){
   });
   body.innerHTML=rows.map(({ins,m,chg,cls})=>
     `<tr class="clickable" data-sym="${ins.sym}">
-      <td class="pair"><b>${ins.sym}</b><span>${ins.coin}</span></td>
+      <td class="pair"><b>${ins.sym}</b></td>
       <td class="num">${m.price.toFixed(m.dec)}</td>
       <td class="num ${cls}">${(chg>=0?"+":"")+chg.toFixed(2)}%</td>
       <td class="num">${m.hi24.toFixed(m.dec)}</td>
