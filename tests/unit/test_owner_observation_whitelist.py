@@ -23,8 +23,14 @@ PROTOTYPE = (MILESTONE / "interaction-design.html").read_text(encoding="utf-8")
 NAV_VIEWS = ("markets", "trade", "assets")
 # 行情页品种（真实加密货币名，对 USDT）
 MARKET_PAIRS = (
-    "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT",
-    "XRP/USDT", "DOGE/USDT", "ADA/USDT", "LTC/USDT",
+    "BTC/USDT",
+    "ETH/USDT",
+    "SOL/USDT",
+    "BNB/USDT",
+    "XRP/USDT",
+    "DOGE/USDT",
+    "ADA/USDT",
+    "LTC/USDT",
 )
 # 用户面禁用的开发态标记（原型任意可见位置不得出现）
 DEV_TOKENS = ("DQ-", "ADR-00", "V032", "（演示", "seed 7", "PERPETUAL-SIM-1")
@@ -89,7 +95,6 @@ def test_trade_page_leverage_defaults_to_1x_and_is_discoverable():
 
 def test_assets_page_layout_and_content():
     assert 'id="assets-grid"' in PROTOTYPE, "初始资金与资产总览须并列布局"
-    left = PROTOTYPE.index('class="col-left"')
     overview = PROTOTYPE.index("资产总览")
     capital = PROTOTYPE.index("初始资金")
     assert capital < overview, "初始资金卡应位于资产总览左侧"
@@ -101,8 +106,12 @@ def test_collection_gating_mechanism_preserved():
     """采集白名单机制保留：coll-mode 隐藏 free-only 字段；合约资金费用行带标记。"""
     assert "body.coll-mode .free-only{display:none !important}" in PROTOTYPE
     assert 'id="contract-funding"' in PROTOTYPE
-    assert "free-only" in PROTOTYPE[PROTOTYPE.index('id="contract-funding"') - 60:
-                                     PROTOTYPE.index('id="contract-funding"')]
+    assert (
+        "free-only"
+        in PROTOTYPE[
+            PROTOTYPE.index('id="contract-funding"') - 60 : PROTOTYPE.index('id="contract-funding"')
+        ]
+    )
 
 
 def test_user_views_contain_no_dev_facing_text():
