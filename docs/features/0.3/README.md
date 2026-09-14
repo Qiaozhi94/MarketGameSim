@@ -7,7 +7,7 @@
 
 | 里程碑 | 状态（见 spec frontmatter） | 目标 |
 |---|---|---|
-| [`0.3.1-human-in-the-loop-experiment/`](0.3.1-human-in-the-loop-experiment/spec.md) | draft | H2 AI 正式机制基线与研究交付 |
+| [`0.3.1-human-in-the-loop-experiment/`](0.3.1-human-in-the-loop-experiment/spec.md) | done | H2 AI 正式机制基线与研究交付 |
 | [`0.3.2-web-trading-terminal/`](0.3.2-web-trading-terminal/spec.md) | draft | 本地 Web 交易终端、价格/K 线与所有者 N-of-1 数据采集 |
 
 ## 边界
