@@ -110,6 +110,11 @@ body.review #proto-bar{display:flex}
 .est{font-size:12px;color:var(--dim);margin:4px 0}
 .est b{color:var(--fg);font-family:var(--mono)}
 .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.lev-bar{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.lev-bar .mode-tag{font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
+.lev-btns{display:flex;gap:4px;flex:1}
+.lev-btns button{padding:2px 9px;font-size:11px;border-radius:4px}
+.lev-btns button.on{border-color:var(--amber);color:var(--amber)}
 .side-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
 .side-tabs button{font-size:14px;font-weight:700;padding:8px 0;background:transparent;color:var(--faint)}
 .side-tabs button.buy-on{background:#123a28;border-color:var(--green);color:var(--green)}
@@ -311,6 +316,10 @@ body.coll-mode .free-only{display:none !important}
       <!-- 右栏：下单 + 资产 -->
       <div class="col">
         <section class="card" id="card-trade">
+          <div class="lev-bar" id="lev-bar" style="display:none">
+            <span class="mode-tag">全仓</span>
+            <div class="lev-btns" id="lev-btns"></div>
+          </div>
           <div class="side-tabs">
             <button id="side-buy" class="buy-on">买入</button>
             <button id="side-sell">卖出</button>
@@ -356,10 +365,19 @@ body.coll-mode .free-only{display:none !important}
       <div class="col" style="grid-column:1 / -1">
         <section class="card" id="bottom-card">
           <div class="tabs" id="bottom-tabs">
-            <button data-t="orders" class="on">当前挂单 (<span id="orders-count">0</span>)</button>
+            <button data-t="positions" class="on">当前持仓 (<span id="positions-count">0</span>)</button>
+            <button data-t="orders">当前挂单 (<span id="orders-count">0</span>)</button>
             <button data-t="returns">操作回报</button>
           </div>
-          <div id="pane-orders">
+          <div id="pane-positions">
+            <div id="bottom-scroll">
+              <table>
+                <thead><tr><th>方向</th><th>数量</th><th>开仓价</th><th>强平价</th><th>未实现盈亏</th><th>操作</th></tr></thead>
+                <tbody id="positions-body"></tbody>
+              </table>
+            </div>
+          </div>
+          <div id="pane-orders" style="display:none">
             <div id="bottom-scroll">
               <table>
                 <thead><tr><th>时间</th><th>委托号</th><th>方向</th><th>价格</th><th>数量</th><th>状态</th><th>操作</th></tr></thead>
@@ -619,6 +637,34 @@ function renderReturns(sel){
     $("return-detail").innerHTML=r.detailHtml||"（无更多信息）";
     renderReturns(+tr.dataset.idx);
   });
+}
+function renderPositions(){
+  $("positions-count").textContent=account.position_units===0?"0":"1";
+  const host=$("positions-body");
+  if(account.position_units===0){
+    host.innerHTML='<tr><td colspan="6" style="color:var(--faint)">当前无持仓</td></tr>';
+    return;
+  }
+  const dir=account.position_units>0, un=unrealizedUsdt(), cls=un>=0?"up":"down";
+  host.innerHTML=`<tr>
+    <td class="${dir?"up":"down"}">${dir?"多":"空"}</td>
+    <td>${fmtQ(Math.abs(account.position_units))}</td>
+    <td>${fmtP(account.entry_ticks)}</td>
+    <td>${fmtP(liqEstTicks())}</td>
+    <td class="${cls}">${(un>=0?"+":"")+un.toFixed(2)}</td>
+    <td><button onclick="closeAll()" style="padding:1px 8px;font-size:11px">市价平仓</button></td>
+  </tr>`;
+}
+function closeAll(){
+  if(account.position_units===0)return;
+  if(bidTicks===null){hintErr("暂无行情报价，暂不能平仓");return}
+  const sd=account.position_units>0?"SELL":"BUY";
+  const qty=Math.abs(account.position_units);
+  const fill=sd==="SELL"?bidTicks:askTicks;
+  applyFill(sd,qty,fill);
+  pushReturn("accepted",sd==="BUY"?"市价买入(平空)":"市价卖出(平多)",`${fmtQ(qty)} @ ${fmtP(fill)}`,
+    `action PLACE_ORDER·${sd} qty ${fmtQ(qty)}（市价，全额平仓）<br>成交 ${fmtP(fill)} · 平仓后仓位归零`);
+  renderAccount();renderResting();renderPositions();
 }
 function renderResting(){
   $("orders-count").textContent=resting.length;
@@ -925,7 +971,7 @@ function submitOrder(){
       hintOk("限价委托已提交，可在底部「当前挂单」查看或撤单。");
     }
   }
-  renderAccount();renderResting();
+  renderAccount();renderResting();renderPositions();
 }
 function applyFill(side,qty,fillTicks){
   let remaining=qty;
@@ -1001,29 +1047,11 @@ function switchView(v){
   $("view-assets").hidden=v!=="assets";
   $("view-research").hidden=v!=="research";
   $("lev-chip").style.display=v==="contract"?"inline-block":"none";
+  $("lev-bar").style.display=v==="contract"?"flex":"none";
   if(v==="markets")renderMarkets();
   if(v==="assets"){renderAssets();renderPositionTables();}
-  if(v==="contract")renderContractExtras();
 }
 document.querySelectorAll("#topnav nav [data-view]").forEach(x=>x.onclick=()=>switchView(x.dataset.view));
-function renderContractExtras(){
-  const un=unrealizedUsdt(),cls=un>=0?"up":"down";
-  const pos=account.position_units===0?"空仓":`${account.position_units>0?"多":"空"} ${fmtQ(Math.abs(account.position_units))} @ ${fmtP(account.entry_ticks)}`;
-  $("fullcard-host").innerHTML=`
-    <section class="card full-card">
-      <h3>资产与仓位<span class="aux">全仓 · USDT 本位（模拟）</span></h3>
-      <div class="kv"><span class="k">账户权益</span><span class="num"><b class="${cls}">${fmtM(equityUnits())}</b></span></div>
-      <div class="kv"><span class="k">可用余额</span><span class="num">${fmtM(availableUnits())}</span></div>
-      <div class="kv"><span class="k">未实现盈亏</span><span class="num ${cls}">${un>=0?"+":""}${un.toFixed(2)}</span></div>
-      <div class="kv"><span class="k">当前仓位</span><span class="num">${pos}</span></div>
-      <div class="kv"><span class="k">当前挂单</span><span class="num">${resting.length} 笔</span></div>
-    </section>
-    <section class="card full-card">
-      <h3>杠杆（全仓 · 1–10×）</h3>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">${[1,2,3,5,10].map(l=>`<button class="lev-btn ${account.leverage===l?"on":""}" data-lv="${l}" onclick="setLeverage(${l})">${l}×</button>`).join("")}</div>
-      <p style="color:var(--faint);font-size:12px;margin-bottom:0">杠杆决定初始保证金水平；强平与穿仓由交易所风控路径统一处理。采集模式下杠杆由协议冻结。</p>
-    </section>`;
-}
 function renderMarkets(){
   const body=$("mkt-body");
   if(lastTicks===null){body.innerHTML='<tr><td colspan="8" style="color:var(--faint)">等待首笔公开成交</td></tr>';return}
@@ -1048,7 +1076,7 @@ function renderAssets(){
   $("assets-kv").innerHTML=rows.map(r=>`<div class="kv"><span class="k">${r[0]}</span><span class="num">${r[1]}</span></div>`).join("");
 }
 function renderLevButtons(){
-  for(const hostId of ["lev-row","lev-row-contract"]){
+  for(const hostId of ["lev-btns"]){
     const host=$(hostId);
     if(!host)continue;
     host.innerHTML=[1,2,3,5,10].map(l=>`<button class="lev-btn ${account.leverage===l?"on":""}" data-lv="${l}">${l}×</button>`).join("");
@@ -1058,6 +1086,7 @@ function renderLevButtons(){
 function setLeverage(lv){
   account.leverage=lv;
   $("lev-chip").textContent=lv+"×";
+  renderLevButtons();
   renderAccount();renderAssets();renderButtonPx();
 }
 $("lev-chip").onclick=()=>openModal(`
@@ -1107,12 +1136,11 @@ function connRefresh(){
   $("conn").style.color=state==="disconnected"?"var(--red)":"var(--dim)";
 }
 function render(){
-  renderTicker();renderBook();renderTape();renderAccount();drawKline();renderResting();renderReturns();
+  renderTicker();renderBook();renderTape();renderAccount();drawKline();renderResting();renderReturns();renderPositions();
   $("state-select").value=state;
   $("fullcard-host").innerHTML="";
   $("conn-overlay").classList.remove("show");
   $("submit-hint").textContent="";
-  if(view==="contract")renderContractExtras();
   if(state!=="warming"){$("btn-action").disabled=false;}
   if(state==="warming")return renderWarming();
   if(state==="risk-rejected")return renderRiskRejected();
@@ -1278,10 +1306,9 @@ $("pct").oninput=()=>{
 setInterval(()=>{
   if(["warming","exp-gate","exp-break","exp-completed"].includes(state))return;
   tickMarket();
-  renderTicker();renderBook();renderTape();renderAccount();drawKline();
+  renderTicker();renderBook();renderTape();renderAccount();drawKline();renderPositions();
   if(view==="markets")renderMarkets();
   if(view==="assets"){renderAssets();renderPositionTables();}
-  if(view==="contract")renderContractExtras();
 },1000);
 
 /* ---------- 评审模式（URL 带 #review 启用；最终用户不可见） ---------- */
@@ -1293,6 +1320,7 @@ if(location.hash==="#review"){
 seedHistory();
 initTfTabs();
 initTypeTabs();
+renderLevButtons();
 setSide("BUY");
 setState("trading");
 switchView("trade");
