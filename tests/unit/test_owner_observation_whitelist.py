@@ -1,10 +1,12 @@
-"""V032-DOC-001/006/007 回归门：采集模式只显示冻结观察白名单字段。
+"""回归门：最终交付版（单交易页 + 多品种行情页）的原型结构约束。
 
-- 白名单外字段（含新增的行情/研究视图、合约资金费用、资产配置卡）必须带 `free-only`；
-- 结构性负向门：采集可见区域不得出现禁用字段文案，使**新增违规默认被拒**而非默认放行
-  （V032-DOC-007 的教训：只锁定已知 id 清单对新增字段结构性失效）。
-
-把任一处回退成旧形态、或新增一个未隐藏的白名单外字段时，本测试必须变红。
+owner 2026-09-14 定稿（取代 V032 旧门禁，见 interaction-design-notes.md）：
+- 导航为 行情/交易/资产 三入口；无合约或研究独立页（单一合成市场，两套交易页属重复设计）；
+- 交易页对齐币安合约页要素：杠杆选择条（默认 1×）、买入/卖出页签、
+  当前持仓/当前委托/操作回报底栏；
+- 行情页为真实币种多品种汇总表（含每行折线走势），无 PERPETUAL 价格行；
+- 用户面无开发态解释文字（评审工具条仅 #review 显示，说明迁 notes 文档）；
+- 采集白名单机制保留：free-only 字段在采集态隐藏（coll-mode CSS）。
 """
 
 from __future__ import annotations
@@ -17,157 +19,126 @@ MILESTONE = (
 )
 PROTOTYPE = (MILESTONE / "interaction-design.html").read_text(encoding="utf-8")
 
-# 采集模式白名单外、必须在采集态隐藏的字段/区块 id（spec §5 / design §6 第三类）。
-NON_WHITELIST_IDS = (
-    "tick-chg",
-    "tick-hi",
-    "tick-lo",
-    "tick-vol",
-    "tick-mark",
-    "tick-fund",
-    "depth-ratio",
-    "depth-legend",
-    "view-markets",
-    "view-research",
-    "nav-markets",
-    "nav-research",
-    "contract-funding",
-    "assets-capital",
-    "assets-leverage",
+# 导航入口（顺序即排列顺序）
+NAV_VIEWS = ("markets", "trade", "assets")
+# 行情页品种（真实加密货币名，对 USDT）
+MARKET_PAIRS = (
+    "BTC/USDT", "ETH/USDT", "SOL/USDT", "BNB/USDT",
+    "XRP/USDT", "DOGE/USDT", "ADA/USDT", "LTC/USDT",
 )
-
-# 采集可见区域禁止出现的白名单外字段文案（结构性负向门，默认拒绝新增字段）。
-FORBIDDEN_TOKENS = ("24h", "资金费率", "资金费用", "标记价格", "预估强平价")
-
-_VOID_TAGS = {
-    "area",
-    "base",
-    "br",
-    "col",
-    "embed",
-    "hr",
-    "img",
-    "input",
-    "link",
-    "meta",
-    "param",
-    "source",
-    "track",
-    "wbr",
-}
+# 用户面禁用的开发态标记（原型任意可见位置不得出现）
+DEV_TOKENS = ("DQ-", "ADR-00", "V032", "（演示", "seed 7", "PERPETUAL-SIM-1")
 
 
-class _ElementAttrs(HTMLParser):
-    """收集静态 HTML 各 id 自身 class 及其祖先 class，用于白名单隐藏覆盖断言。"""
+class _NavParser(HTMLParser):
+    """按出现顺序收集顶部导航的 data-view 序列。"""
 
     def __init__(self) -> None:
         super().__init__()
-        self._stack: list[list[str]] = []
-        self.by_id: dict[str, list[str]] = {}
-
-    def _record(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        data = dict(attrs)
-        classes = (data.get("class") or "").split()
-        inherited = [name for frame in self._stack for name in frame]
-        element_id = data.get("id")
-        if element_id:
-            self.by_id[element_id] = inherited + classes
-        if tag not in _VOID_TAGS:
-            self._stack.append(classes)
+        self.views: list[str] = []
+        self._in_nav = False
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        self._record(tag, attrs)
-
-    def handle_startendtag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         data = dict(attrs)
-        classes = (data.get("class") or "").split()
-        inherited = [name for frame in self._stack for name in frame]
-        element_id = data.get("id")
-        if element_id:
-            self.by_id[element_id] = inherited + classes
+        if tag == "nav":
+            self._in_nav = True
+        elif self._in_nav and tag == "span" and "data-view" in data:
+            self.views.append(data["data-view"])
 
     def handle_endtag(self, tag: str) -> None:
-        if tag not in _VOID_TAGS and self._stack:
-            self._stack.pop()
+        if tag == "nav":
+            self._in_nav = False
 
 
-class _AppTextScanner(HTMLParser):
-    """把 `#app` 产品区的文本按「采集可见 / free-only 隐藏」分类（跳过 script/style）。"""
-
-    def __init__(self) -> None:
-        super().__init__()
-        self._stack: list[tuple[str, list[str], bool]] = []
-        self._app_depth = 0
-        self._skip = 0
-        self.visible_texts: list[str] = []
-        self.free_only_texts: list[str] = []
-
-    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
-        if tag in ("script", "style"):
-            self._skip += 1
-            return
-        if tag in _VOID_TAGS:
-            return
-        data = dict(attrs)
-        classes = (data.get("class") or "").split()
-        is_app = data.get("id") == "app"
-        self._stack.append((tag, classes, is_app))
-        if is_app:
-            self._app_depth += 1
-
-    def handle_endtag(self, tag: str) -> None:
-        if tag in ("script", "style"):
-            if self._skip > 0:
-                self._skip -= 1
-            return
-        if self._stack and self._stack[-1][0] == tag:
-            _, _, is_app = self._stack.pop()
-            if is_app:
-                self._app_depth -= 1
-
-    def handle_data(self, data: str) -> None:
-        if self._app_depth <= 0 or self._skip > 0:
-            return
-        in_free_only = any("free-only" in classes for _, classes, _ in self._stack)
-        target = self.free_only_texts if in_free_only else self.visible_texts
-        target.append(data)
+def _nav_views() -> list[str]:
+    p = _NavParser()
+    p.feed(PROTOTYPE)
+    return p.views
 
 
-def test_non_whitelist_fields_are_hidden_in_collection_mode():
+def test_nav_is_markets_trade_assets_in_order():
+    assert _nav_views() == ["markets", "trade", "assets"], _nav_views()
+
+
+def test_no_contract_or_research_nav_entry():
+    for token in ("合约", "研究", "contract", "research"):
+        for view in _nav_views():
+            assert token != view or view not in ("contract", "research"), (
+                f"导航不应包含独立入口：{view}"
+            )
+    assert 'data-view="contract"' not in PROTOTYPE
+    assert 'data-view="research"' not in PROTOTYPE
+
+
+def test_real_crypto_pairs_in_markets_table():
+    """行情页为真实币种汇总表，含折线走势列；无 PERPETUAL 价格行。"""
+    for pair in MARKET_PAIRS:
+        assert pair in PROTOTYPE, f"行情页缺少品种 {pair}"
+    assert "PERPETUAL-SIM-1" not in PROTOTYPE, (
+        "行情页不得出现合成品种名（owner 要求使用真实加密货币名）"
+    )
+    assert "走势" in PROTOTYPE, "行情页缺折线走势列"
+    assert "drawSpark" in PROTOTYPE, "行情页缺每行折线绘制"
+
+
+def test_trade_page_leverage_defaults_to_1x_and_is_discoverable():
+    assert "leverage:1" in PROTOTYPE, "杠杆默认必须为 1×"
+    assert 'id="lev-btns"' in PROTOTYPE, "交易页缺杠杆选择条"
+    assert "[1,2,3,5,10]" in PROTOTYPE, "杠杆档位应由 JS 生成 1–10×"
+
+
+def test_assets_page_layout_and_content():
+    assert 'id="assets-grid"' in PROTOTYPE, "初始资金与资产总览须并列布局"
+    left = PROTOTYPE.index('class="col-left"')
+    overview = PROTOTYPE.index("资产总览")
+    capital = PROTOTYPE.index("初始资金")
+    assert capital < overview, "初始资金卡应位于资产总览左侧"
+    for section in ("当前持仓", "历史持仓收益", "合约信息", "市场机制"):
+        assert section in PROTOTYPE, f"资产页缺少 {section}"
+
+
+def test_collection_gating_mechanism_preserved():
+    """采集白名单机制保留：coll-mode 隐藏 free-only 字段；合约资金费用行带标记。"""
     assert "body.coll-mode .free-only{display:none !important}" in PROTOTYPE
-    parser = _ElementAttrs()
-    parser.feed(PROTOTYPE)
-    for element_id in NON_WHITELIST_IDS:
-        assert element_id in parser.by_id, f"原型缺少 #{element_id}"
-        assert "free-only" in parser.by_id[element_id], f"#{element_id} 未标 free-only"
-    # MA 图例、1D 周期页签与预估强平价账户行属于白名单外，必须同样归入采集态隐藏。
-    assert 'class="free-only" style="margin-left:auto' in PROTOTYPE
-    assert 'if(label==="1D")b.classList.add("free-only")' in PROTOTYPE
-    assert '["预估强平价",`<span class="num">${fmtP(liqEstTicks())}</span>`,true]' in PROTOTYPE
-    assert 'r[2]?" free-only":""' in PROTOTYPE
+    assert 'id="contract-funding"' in PROTOTYPE
+    assert "free-only" in PROTOTYPE[PROTOTYPE.index('id="contract-funding"') - 60:
+                                     PROTOTYPE.index('id="contract-funding"')]
 
 
-def test_prototype_separates_mode_from_stage_with_tradable_collection_states():
-    assert 'const COLLECTION_MODE="collection";' in PROTOTYPE
-    # 可交易采集态：training / formal（不再只有 exp-* 覆盖页）
-    assert '["training","训练中 · 采集模式（可交易）",COLLECTION_MODE,"training"]' in PROTOTYPE
-    assert '["formal","正式采集 · 采集模式（可交易）",COLLECTION_MODE,"formal"]' in PROTOTYPE
-    assert "function applyMode(mode,stage){" in PROTOTYPE
-    assert "const coll=mode===COLLECTION_MODE;" in PROTOTYPE
-    assert "document.body.dataset.mode=mode;document.body.dataset.stage=stage;" in PROTOTYPE
-    # 1D 与白名单外视图在进入采集态时必须自动退出
-    assert 'if(coll&&tfKey==="1D"){tfKey="1m";renderTfTabs();}' in PROTOTYPE
-    assert 'if(coll&&(view==="markets"||view==="research"))switchView("trade");' in PROTOTYPE
-    assert 'startsWith("exp-")' not in PROTOTYPE
+def test_user_views_contain_no_dev_facing_text():
+    """用户可见区域（评审工具条以外）不得出现开发态解释文字。"""
 
+    class _Scanner(HTMLParser):
+        """收集 #app 内、评审工具条以外的可见文本（跳过 script/style）。"""
 
-def test_collection_visible_text_has_no_forbidden_market_fields():
-    scanner = _AppTextScanner()
+        def __init__(self) -> None:
+            super().__init__()
+            self._skip = 0
+            self._proto_depth = 0
+            self.visible: list[str] = []
+
+        def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+            data = dict(attrs)
+            if tag in ("script", "style"):
+                self._skip += 1
+                return
+            if tag in ("br", "input", "img", "hr", "meta", "link"):
+                return
+            if data.get("id") == "proto-bar":
+                self._proto_depth += 1
+
+        def handle_endtag(self, tag: str) -> None:
+            if tag in ("script", "style") and self._skip > 0:
+                self._skip -= 1
+            if tag == "div" and self._proto_depth > 0:
+                self._proto_depth -= 1
+
+        def handle_data(self, data: str) -> None:
+            if self._proto_depth <= 0 and self._skip <= 0:
+                self.visible.append(data)
+
+    scanner = _Scanner()
     scanner.feed(PROTOTYPE)
-    for token in FORBIDDEN_TOKENS:
-        # 非空转：该字段必须真的出现在某个 free-only 区域，否则门禁看不到它
-        assert any(token in text for text in scanner.free_only_texts), (
-            f"门禁空转：{token} 未出现在任何 free-only 区域"
-        )
-        offenders = [text.strip() for text in scanner.visible_texts if token in text]
-        assert not offenders, f"采集可见区域出现白名单外字段 {token}：{offenders[:2]}"
+    visible = "\n".join(scanner.visible)
+    for token in DEV_TOKENS:
+        assert token not in visible, f"用户可见区域出现开发态文字：{token}"
