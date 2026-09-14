@@ -228,7 +228,7 @@ body.coll-mode .free-only{display:none !important}
     <span id="sim-badge" class="sim-badge">SIM</span>
     <span id="stage-badge" class="stage-badge" style="display:none"></span>
     <span class="logo">模拟交易所</span>
-    <nav><span data-view="trade" class="v-on">交易</span><span data-view="markets" id="nav-markets" class="free-only">行情</span><span data-view="contract">合约</span><span data-view="assets">资产</span><span id="nav-research" class="free-only" hidden></span></nav>
+    <nav><span data-view="markets" id="nav-markets" class="free-only">行情</span><span data-view="trade" class="v-on">现货</span><span data-view="contract">合约</span><span data-view="assets">资产</span><span id="nav-research" class="free-only" hidden></span></nav>
     <span class="spacer"></span>
     <span id="conn">● 已连接</span>
     <button id="info-btn">ⓘ 市场说明</button>
@@ -447,11 +447,25 @@ body.coll-mode .free-only{display:none !important}
         <div id="assets-msg" style="font-size:12px;color:var(--amber);min-height:16px;margin-top:6px"></div>
         <p style="color:var(--faint);font-size:12px;margin-bottom:0">重置会撤销全部挂单、清空仓位，并按输入金额重建账户；采集模式下初始资金由协议冻结，入口不可用。</p>
       </div>
-      <div class="card free-only" id="assets-leverage">
+      <div class="card free-only" id="assets-leverage" hidden>
         <h3>杠杆（全仓 · 1–10×）</h3>
-        <div id="lev-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div>
-        <p style="color:var(--faint);font-size:12px;margin-bottom:0">杠杆决定初始保证金与预估强平价；强平、穿仓与连锁沿内核 0.1.2 既有路径执行。下单面板的杠杆角标也可直达此设置。</p>
+        <p style="color:var(--faint);font-size:12px;margin-bottom:0">杠杆设置已移至「合约」页（下单面板角标可直达）。</p>
       </div>
+    </div>
+    <div class="card free-only">
+      <h3>当前持仓</h3>
+      <table class="mkt-table">
+        <thead><tr><th>方向</th><th>数量</th><th>开仓价</th><th>标记价</th><th>未实现盈亏</th><th>预估强平价</th></tr></thead>
+        <tbody id="pos-body"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <h3>历史持仓收益</h3>
+      <table class="mkt-table">
+        <thead><tr><th>平仓时间</th><th>方向</th><th>数量</th><th>开仓价</th><th>平仓价</th><th>已实现盈亏</th></tr></thead>
+        <tbody id="closed-body"></tbody>
+      </table>
+      <div id="closed-sum" style="font-size:12px;color:var(--dim);margin-top:6px"></div>
     </div>
   </div>
 
@@ -578,7 +592,8 @@ const resting=[];
 let orderSeq=1100;
 function availableUnits(){return account.wallet_units-account.reserved_units}
 function unrealizedTicks(){return account.position_units*(price-account.entry_ticks)}
-function equityUnits(){return account.wallet_units+unrealizedTicks()}
+function unrealizedUsdt(){return unrealizedTicks()/100000}
+const closedTrades=[];
 function liqEstTicks(){
   const dir=account.position_units>=0?-1:1;
   return Math.round(account.entry_ticks*(1+dir*0.9/account.leverage));
@@ -678,11 +693,11 @@ function renderTape(){
     ||'<tr><td colspan="4" style="color:var(--faint);text-align:left">尚无公开成交</td></tr>';
 }
 function renderAccount(){
-  const un=unrealizedTicks(),cls=un>=0?"up":"down";
+  const un=unrealizedUsdt(),cls=un>=0?"up":"down";
   const rows=[
-    ["账户权益",`<b class="${cls}">${fmtM(equityUnits())}</b>`],
+    ["账户权益",`<b class="${cls}">${(account.wallet_units/1000+un).toFixed(2)}</b>`],
     ["可用余额",fmtM(availableUnits())],
-    ["未实现盈亏",`<span class="${cls}">${un>=0?"+":""}${fmtM(un)}</span>`],
+    ["未实现盈亏",`<span class="${cls}">${un>=0?"+":""}${un.toFixed(2)}</span>`],
     ["当前仓位",account.position_units===0?"空仓":`${account.position_units>0?"多":"空"} ${fmtQ(Math.abs(account.position_units))} @ ${fmtP(account.entry_ticks)}`],
     ["占用保证金",fmtM(account.reserved_units)],
     ["保证金比率",`<span class="num">${(account.margin_ratio_bp/100).toFixed(2)}%</span>`],
@@ -913,8 +928,44 @@ function submitOrder(){
   renderAccount();renderResting();
 }
 function applyFill(side,qty,fillTicks){
-  account.position_units+=side==="BUY"?qty:-qty;
-  account.entry_ticks=fillTicks;
+  let remaining=qty;
+  const pos0=account.position_units;
+  if(pos0!==0&&((pos0>0&&side==="SELL")||(pos0<0&&side==="BUY"))){
+    const dir=pos0>0?1:-1;
+    const closeUnits=Math.min(Math.abs(pos0),qty);
+    const pnl=(fillTicks-account.entry_ticks)*dir*closeUnits*TICK/1000;
+    closedTrades.unshift({time:fmtClock(SESSION_T0+clockMin*M1_MS),
+      dir:pos0>0?"卖出平多":"买入平空",qty:closeUnits,open:account.entry_ticks,close:fillTicks,pnl});
+    if(closedTrades.length>30)closedTrades.pop();
+    account.wallet_units+=Math.round(pnl*1000);
+    remaining-=closeUnits;
+    account.position_units=pos0+(pos0>0?-closeUnits:closeUnits);
+  }
+  if(remaining>0){
+    if(account.position_units===0||((account.position_units>0)===(side==="BUY"))){
+      const totalAbs=Math.abs(account.position_units)+remaining;
+      account.entry_ticks=account.position_units===0?fillTicks:Math.round((Math.abs(account.position_units)*account.entry_ticks+remaining*fillTicks)/totalAbs);
+    }else{
+      account.entry_ticks=fillTicks;
+    }
+    account.position_units+=(side==="BUY"?remaining:-remaining);
+  }
+}
+function renderPositionTables(){
+  const posBody=$("pos-body"),closedBody=$("closed-body");
+  if(!posBody||!closedBody)return;
+  const un=unrealizedUsdt(),cls=un>=0?"up":"down";
+  if(account.position_units===0){
+    posBody.innerHTML='<tr><td colspan="6" style="color:var(--faint)">当前无持仓</td></tr>';
+  }else{
+    const dirTxt=account.position_units>0?"多":"空";
+    posBody.innerHTML=`<tr><td class="${account.position_units>0?"up":"down"}">${dirTxt}</td><td>${fmtQ(Math.abs(account.position_units))}</td><td>${fmtP(account.entry_ticks)}</td><td>${lastTicks!==null?fmtP(lastTicks):"—"}</td><td class="${cls}">${(un>=0?"+":"")+un.toFixed(2)}</td><td>${fmtP(liqEstTicks())}</td></tr>`;
+  }
+  closedBody.innerHTML=closedTrades.map(t=>
+    `<tr><td>${t.time}</td><td class="${t.pnl>=0?"up":"down"}">${t.dir}</td><td>${fmtQ(t.qty)}</td><td>${fmtP(t.open)}</td><td>${fmtP(t.close)}</td><td class="${t.pnl>=0?"up":"down"}">${(t.pnl>=0?"+":"")+t.pnl.toFixed(2)} USDT</td></tr>`).join("")
+    ||'<tr><td colspan="6" style="color:var(--faint)">暂无平仓记录</td></tr>';
+  const sum=closedTrades.reduce((a,t)=>a+t.pnl,0);
+  $("closed-sum").textContent=closedTrades.length?`累计已实现盈亏 ${sum>=0?"+":""}${sum.toFixed(2)} USDT`:"";
 }
 function cancelOrder(id){
   const o=resting.find(x=>x.id===id);
@@ -949,20 +1000,21 @@ function switchView(v){
   $("view-contract").hidden=v!=="contract";
   $("view-assets").hidden=v!=="assets";
   $("view-research").hidden=v!=="research";
+  $("lev-chip").style.display=v==="contract"?"inline-block":"none";
   if(v==="markets")renderMarkets();
-  if(v==="assets")renderAssets();
+  if(v==="assets"){renderAssets();renderPositionTables();}
   if(v==="contract")renderContractExtras();
 }
 document.querySelectorAll("#topnav nav [data-view]").forEach(x=>x.onclick=()=>switchView(x.dataset.view));
 function renderContractExtras(){
-  const un=unrealizedTicks(),cls=un>=0?"up":"down";
+  const un=unrealizedUsdt(),cls=un>=0?"up":"down";
   const pos=account.position_units===0?"空仓":`${account.position_units>0?"多":"空"} ${fmtQ(Math.abs(account.position_units))} @ ${fmtP(account.entry_ticks)}`;
   $("fullcard-host").innerHTML=`
     <section class="card full-card">
       <h3>资产与仓位<span class="aux">全仓 · USDT 本位（模拟）</span></h3>
       <div class="kv"><span class="k">账户权益</span><span class="num"><b class="${cls}">${fmtM(equityUnits())}</b></span></div>
       <div class="kv"><span class="k">可用余额</span><span class="num">${fmtM(availableUnits())}</span></div>
-      <div class="kv"><span class="k">未实现盈亏</span><span class="num ${cls}">${un>=0?"+":""}${fmtM(un)}</span></div>
+      <div class="kv"><span class="k">未实现盈亏</span><span class="num ${cls}">${un>=0?"+":""}${un.toFixed(2)}</span></div>
       <div class="kv"><span class="k">当前仓位</span><span class="num">${pos}</span></div>
       <div class="kv"><span class="k">当前挂单</span><span class="num">${resting.length} 笔</span></div>
     </section>
@@ -985,17 +1037,15 @@ function renderMarkets(){
     <td><button onclick="switchView('trade')">交易</button></td></tr>`;
 }
 function renderAssets(){
-  const un=unrealizedTicks(),cls=un>=0?"up":"down";
+  const un=unrealizedUsdt(),cls=un>=0?"up":"down";
   const rows=[
-    ["账户权益",`<b class="${cls}">${fmtM(equityUnits())}</b>`],
+    ["账户权益",`<b class="${cls}">${(account.wallet_units/1000+un).toFixed(2)}</b>`],
     ["可用余额",fmtM(availableUnits())],
-    ["未实现盈亏",`<span class="${cls}">${un>=0?"+":""}${fmtM(un)}</span>`],
+    ["未实现盈亏",`<span class="${cls}">${un>=0?"+":""}${un.toFixed(2)}</span>`],
     ["当前仓位",account.position_units===0?"空仓":`${account.position_units>0?"多":"空"} ${fmtQ(Math.abs(account.position_units))} @ ${fmtP(account.entry_ticks)}`],
-    ["杠杆（全仓）",`<span class="num">${account.leverage}×</span>`],
     ["预估强平价",`<span class="num">${fmtP(liqEstTicks())}</span>`],
   ];
   $("assets-kv").innerHTML=rows.map(r=>`<div class="kv"><span class="k">${r[0]}</span><span class="num">${r[1]}</span></div>`).join("");
-  renderLevButtons();
 }
 function renderLevButtons(){
   for(const hostId of ["lev-row","lev-row-contract"]){
@@ -1230,7 +1280,7 @@ setInterval(()=>{
   tickMarket();
   renderTicker();renderBook();renderTape();renderAccount();drawKline();
   if(view==="markets")renderMarkets();
-  if(view==="assets")renderAssets();
+  if(view==="assets"){renderAssets();renderPositionTables();}
   if(view==="contract")renderContractExtras();
 },1000);
 
