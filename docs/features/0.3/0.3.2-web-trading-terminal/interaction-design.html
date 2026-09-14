@@ -403,22 +403,6 @@ body.coll-mode .free-only{display:none !important}
 
   <!-- 合约页 -->
   <div id="view-contract" class="page" hidden>
-    <div class="card">
-      <h3>资产<span class="aux">全仓 · USDT 本位（模拟）</span></h3>
-      <div id="contract-assets-kv"></div>
-    </div>
-    <div class="two-col">
-      <div class="card">
-        <h3>当前仓位与委托</h3>
-        <div id="contract-pos-kv"></div>
-        <button onclick="switchView('trade')" style="margin-top:8px">进入交易</button>
-      </div>
-      <div class="card">
-        <h3>杠杆（全仓 · 1–10×）</h3>
-        <div id="lev-row-contract" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:4px"></div>
-        <p style="color:var(--faint);font-size:12px;margin-bottom:0">杠杆决定初始保证金水平；强平与穿仓由交易所风控路径统一处理。采集模式下杠杆由协议冻结。</p>
-      </div>
-    </div>
     <div class="two-col">
       <div class="card">
         <h3>合约规格</h3>
@@ -709,12 +693,6 @@ function renderAccount(){
   const simple=[0,1,2,3,6];
   $("account-kv").innerHTML=simple.map(i=>rowHtml(rows[i])).join("");
   $("assets-kv").innerHTML=rows.map(rowHtml).join("");
-  $("contract-assets-kv").innerHTML=rows.map(rowHtml).join("");
-  $("contract-pos-kv").innerHTML=
-    rowHtml(["方向 / 数量",account.position_units===0?"空仓":`${account.position_units>0?"多":"空"} ${fmtQ(Math.abs(account.position_units))}`])+
-    rowHtml(["开仓均价",account.position_units===0?"—":fmtP(account.entry_ticks)])+
-    rowHtml(["预估强平价",`<span class="num">${fmtP(liqEstTicks())}</span>`])+
-    rowHtml(["当前挂单",`${resting.length} 笔`]);
   $("avail-usdt").textContent=fmtM(availableUnits());
 }
 
@@ -965,19 +943,34 @@ let view="trade";
 function switchView(v){
   view=v;
   document.querySelectorAll("#topnav nav [data-view]").forEach(x=>x.classList.toggle("v-on",x.dataset.view===v));
-  $("terminal-wrap").style.display=v==="trade"?"block":"none";
+  const tradeLike=v==="trade"||v==="contract";
+  $("terminal-wrap").style.display=tradeLike?"block":"none";
   $("view-markets").hidden=v!=="markets";
   $("view-contract").hidden=v!=="contract";
   $("view-assets").hidden=v!=="assets";
   $("view-research").hidden=v!=="research";
   if(v==="markets")renderMarkets();
   if(v==="assets")renderAssets();
-  if(v==="contract")renderContract();
+  if(v==="contract")renderContractExtras();
 }
 document.querySelectorAll("#topnav nav [data-view]").forEach(x=>x.onclick=()=>switchView(x.dataset.view));
-function renderContract(){
-  renderAccount();
-  renderLevButtons();
+function renderContractExtras(){
+  const un=unrealizedTicks(),cls=un>=0?"up":"down";
+  const pos=account.position_units===0?"空仓":`${account.position_units>0?"多":"空"} ${fmtQ(Math.abs(account.position_units))} @ ${fmtP(account.entry_ticks)}`;
+  $("fullcard-host").innerHTML=`
+    <section class="card full-card">
+      <h3>资产与仓位<span class="aux">全仓 · USDT 本位（模拟）</span></h3>
+      <div class="kv"><span class="k">账户权益</span><span class="num"><b class="${cls}">${fmtM(equityUnits())}</b></span></div>
+      <div class="kv"><span class="k">可用余额</span><span class="num">${fmtM(availableUnits())}</span></div>
+      <div class="kv"><span class="k">未实现盈亏</span><span class="num ${cls}">${un>=0?"+":""}${fmtM(un)}</span></div>
+      <div class="kv"><span class="k">当前仓位</span><span class="num">${pos}</span></div>
+      <div class="kv"><span class="k">当前挂单</span><span class="num">${resting.length} 笔</span></div>
+    </section>
+    <section class="card full-card">
+      <h3>杠杆（全仓 · 1–10×）</h3>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">${[1,2,3,5,10].map(l=>`<button class="lev-btn ${account.leverage===l?"on":""}" data-lv="${l}" onclick="setLeverage(${l})">${l}×</button>`).join("")}</div>
+      <p style="color:var(--faint);font-size:12px;margin-bottom:0">杠杆决定初始保证金水平；强平与穿仓由交易所风控路径统一处理。采集模式下杠杆由协议冻结。</p>
+    </section>`;
 }
 function renderMarkets(){
   const body=$("mkt-body");
@@ -1069,6 +1062,7 @@ function render(){
   $("fullcard-host").innerHTML="";
   $("conn-overlay").classList.remove("show");
   $("submit-hint").textContent="";
+  if(view==="contract")renderContractExtras();
   if(state!=="warming"){$("btn-action").disabled=false;}
   if(state==="warming")return renderWarming();
   if(state==="risk-rejected")return renderRiskRejected();
@@ -1236,7 +1230,8 @@ setInterval(()=>{
   tickMarket();
   renderTicker();renderBook();renderTape();renderAccount();drawKline();
   if(view==="markets")renderMarkets();
-  if(view==="assets"||view==="contract")renderAssets();
+  if(view==="assets")renderAssets();
+  if(view==="contract")renderContractExtras();
 },1000);
 
 /* ---------- 评审模式（URL 带 #review 启用；最终用户不可见） ---------- */
