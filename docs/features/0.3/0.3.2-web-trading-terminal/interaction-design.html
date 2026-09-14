@@ -110,11 +110,6 @@ body.review #proto-bar{display:flex}
 .est{font-size:12px;color:var(--dim);margin:4px 0}
 .est b{color:var(--fg);font-family:var(--mono)}
 .action-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
-.lev-bar{display:flex;align-items:center;gap:6px;margin-bottom:6px}
-.lev-bar .mode-tag{font-size:11px;color:var(--dim);border:1px solid var(--line);border-radius:4px;padding:1px 6px}
-.lev-btns{display:flex;gap:4px;flex:1}
-.lev-btns button{padding:2px 9px;font-size:11px;border-radius:4px}
-.lev-btns button.on{border-color:var(--amber);color:var(--amber)}
 .side-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px}
 .side-tabs button{font-size:14px;font-weight:700;padding:8px 0;background:transparent;color:var(--faint)}
 .side-tabs button.buy-on{background:#123a28;border-color:var(--green);color:var(--green)}
@@ -233,7 +228,7 @@ body.coll-mode .free-only{display:none !important}
     <span id="sim-badge" class="sim-badge">SIM</span>
     <span id="stage-badge" class="stage-badge" style="display:none"></span>
     <span class="logo">模拟交易所</span>
-    <nav><span data-view="markets" id="nav-markets" class="free-only">行情</span><span data-view="trade" class="v-on">现货</span><span data-view="contract">合约</span><span data-view="assets">资产</span><span id="nav-research" class="free-only" hidden></span></nav>
+    <nav><span data-view="markets" id="nav-markets" class="free-only">行情</span><span data-view="trade" class="v-on">交易</span><span data-view="assets">资产</span><span id="nav-research" class="free-only" hidden></span></nav>
     <span class="spacer"></span>
     <span id="conn">● 已连接</span>
     <button id="info-btn">ⓘ 市场说明</button>
@@ -316,10 +311,6 @@ body.coll-mode .free-only{display:none !important}
       <!-- 右栏：下单 + 资产 -->
       <div class="col">
         <section class="card" id="card-trade">
-          <div class="lev-bar" id="lev-bar" style="display:none">
-            <span class="mode-tag">全仓</span>
-            <div class="lev-btns" id="lev-btns"></div>
-          </div>
           <div class="side-tabs">
             <button id="side-buy" class="buy-on">买入</button>
             <button id="side-sell">卖出</button>
@@ -419,31 +410,6 @@ body.coll-mode .free-only{display:none !important}
     </div>
   </div>
 
-  <!-- 合约页 -->
-  <div id="view-contract" class="page" hidden>
-    <div class="two-col">
-      <div class="card">
-        <h3>合约规格</h3>
-        <div class="kv"><span class="k">品种</span><span class="num">PERPETUAL-SIM-1（合成本位永续）</span></div>
-        <div class="kv"><span class="k">保证金模式</span><span>全仓 · USDT 结算</span></div>
-        <div class="kv"><span class="k">杠杆范围</span><span class="num">1–10×（自由模拟可调；采集模式由协议冻结）</span></div>
-        <div class="kv"><span class="k">最小变动</span><span class="num">0.01（tick）</span></div>
-        <div class="kv"><span class="k">单笔上限</span><span class="num">1.000 PERP · 挂单上限 8</span></div>
-        <div class="kv"><span class="k">手续费</span><span class="num">Taker 0.05% / Maker 0.02%</span></div>
-        <div class="kv free-only" id="contract-funding"><span class="k">资金费用</span><span class="num">每 8h 市场时间结算 0.0100%</span></div>
-      </div>
-      <div class="card">
-        <h3>市场机制</h3>
-        <div class="kv"><span class="k">撮合 / 账本</span><span>交易所统一撮合与账本路径</span></div>
-        <div class="kv"><span class="k">保证金 / 强平</span><span>全仓杠杆路径（含穿仓与连锁处理）</span></div>
-        <div class="kv"><span class="k">行情来源</span><span>公开成交 tape（哈希绑定，防篡改）</span></div>
-        <div class="kv"><span class="k">时间模型</span><span>合成交易所时间</span></div>
-        <div class="kv"><span class="k">K 线</span><span>公开 tape 的多周期派生视图</span></div>
-        <div class="kv"><span class="k">数据边界</span><span>模拟市场操作与行情均可审计</span></div>
-      </div>
-    </div>
-  </div>
-
   <!-- 资产页 -->
   <div id="view-assets" class="page" hidden>
     <div class="card">
@@ -484,6 +450,27 @@ body.coll-mode .free-only{display:none !important}
         <tbody id="closed-body"></tbody>
       </table>
       <div id="closed-sum" style="font-size:12px;color:var(--dim);margin-top:6px"></div>
+    </div>
+    <div class="two-col">
+      <div class="card">
+        <h3>合约规格</h3>
+        <div class="kv"><span class="k">品种</span><span class="num">PERPETUAL-SIM-1（合成本位永续）</span></div>
+        <div class="kv"><span class="k">保证金模式</span><span>全仓 · USDT 结算</span></div>
+        <div class="kv"><span class="k">杠杆范围</span><span class="num">1–10×（自由模拟可调；采集模式由协议冻结）</span></div>
+        <div class="kv"><span class="k">最小变动</span><span class="num">0.01（tick）</span></div>
+        <div class="kv"><span class="k">单笔上限</span><span class="num">1.000 PERP · 挂单上限 8</span></div>
+        <div class="kv"><span class="k">手续费</span><span class="num">Taker 0.05% / Maker 0.02%</span></div>
+        <div class="kv free-only" id="contract-funding"><span class="k">资金费用</span><span class="num">每 8h 市场时间结算 0.0100%</span></div>
+      </div>
+      <div class="card">
+        <h3>市场机制</h3>
+        <div class="kv"><span class="k">撮合 / 账本</span><span>交易所统一撮合与账本路径</span></div>
+        <div class="kv"><span class="k">保证金 / 强平</span><span>全仓杠杆路径（含穿仓与连锁处理）</span></div>
+        <div class="kv"><span class="k">行情来源</span><span>公开成交 tape（哈希绑定，防篡改）</span></div>
+        <div class="kv"><span class="k">时间模型</span><span>合成交易所时间</span></div>
+        <div class="kv"><span class="k">K 线</span><span>公开 tape 的多周期派生视图</span></div>
+        <div class="kv"><span class="k">数据边界</span><span>模拟市场操作与行情均可审计</span></div>
+      </div>
     </div>
   </div>
 
@@ -1043,11 +1030,8 @@ function switchView(v){
   const tradeLike=v==="trade"||v==="contract";
   $("terminal-wrap").style.display=tradeLike?"block":"none";
   $("view-markets").hidden=v!=="markets";
-  $("view-contract").hidden=v!=="contract";
   $("view-assets").hidden=v!=="assets";
   $("view-research").hidden=v!=="research";
-  $("lev-chip").style.display=v==="contract"?"inline-block":"none";
-  $("lev-bar").style.display=v==="contract"?"flex":"none";
   if(v==="markets")renderMarkets();
   if(v==="assets"){renderAssets();renderPositionTables();}
 }
@@ -1075,18 +1059,9 @@ function renderAssets(){
   ];
   $("assets-kv").innerHTML=rows.map(r=>`<div class="kv"><span class="k">${r[0]}</span><span class="num">${r[1]}</span></div>`).join("");
 }
-function renderLevButtons(){
-  for(const hostId of ["lev-btns"]){
-    const host=$(hostId);
-    if(!host)continue;
-    host.innerHTML=[1,2,3,5,10].map(l=>`<button class="lev-btn ${account.leverage===l?"on":""}" data-lv="${l}">${l}×</button>`).join("");
-    host.querySelectorAll("[data-lv]").forEach(b=>b.onclick=()=>setLeverage(+b.dataset.lv));
-  }
-}
 function setLeverage(lv){
   account.leverage=lv;
   $("lev-chip").textContent=lv+"×";
-  renderLevButtons();
   renderAccount();renderAssets();renderButtonPx();
 }
 $("lev-chip").onclick=()=>openModal(`
@@ -1320,7 +1295,6 @@ if(location.hash==="#review"){
 seedHistory();
 initTfTabs();
 initTypeTabs();
-renderLevButtons();
 setSide("BUY");
 setState("trading");
 switchView("trade");
