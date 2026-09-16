@@ -1144,3 +1144,55 @@ Q-308 关闭后拦截数由 13 降为 12 且其余 Q/DQ 仍被拦（门禁没被
 - **裁决分布**：accepted 7 / partial 0 / rejected 0；`suggested_fix` 与 `fix_summary` 实质一致
   6 条（命中率 86%），唯一偏离是 H2PLAN-007——检视建议的方向（验证 CI 证据而非禁止编号）
   被采纳，但具体解析实现由修复方设计，比建议更完整（兼容中英文冒号、多行续行、空转绕过）。
+
+---
+
+## 循环 26: 0.3.2 交互设计原型检视与采集白名单收敛（V032-DOC）
+
+- **report_type**: doc-review
+- **周期**: 2026-09-12 → 2026-09-17（7 轮：第 1—5 轮逐轮整改，第 6 轮 full-scan，第 7 轮 fix-verification）
+- **构成**: 第 6 轮对重建后原型全量实测（静态通读 + chrome-headless-shell 交互取证）发现 14 条新问题，
+  其中 9 条 high；同日 owner 裁决（方案 A）后统一修复，第 7 轮独立复核翻状态
+- **回归测试**: pytest 由 2611 → 2661 passed；新增 `tests/unit/test_terminal_prototype_behavior.py`
+  （7 条无头浏览器行为门，含采集态负向扫描 + 阳性对照 + 协议冻结实测）与 4 条静态白名单门
+- **收尾状态**: 全部 23 条 issue `fixed`；`tools/verify.py` 本地全绿；CI 5 job 全绿
+  （含 ubuntu runner 真实执行无头门）；门禁变异验证通过（去标记/短路守卫均变红）
+- **owner 裁决**: V032-DOC-023 触发升级协议（规格裁决）——原型采集白名单验证载体二选一，
+  owner 2026-09-17 选**方案 A**（原型恢复采集态演示），修复解冻后当轮落地
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| V032-DOC-005 | 证据合同晚于真实采集才冻结，且提前结束被写成 COMPLETED | high | correctness | root-cause | spec-drift | fixed | schema/布局/validator 前移到 T929，T942 降级为采集后 index freeze；spec 加 INCOMPLETE_STUDY | `test_owner_incomplete_study.py::test_evidence_contract_frozen_before_real_collection` | 1 | 3 | cross-feature-contract-drift |
+| V032-DOC-006 | 原型在采集模式暴露白名单外字段 | high | correctness | root-cause | spec-drift | fixed | 方案 A：coll-mode 进入路径恢复 + 白名单外字段补 free-only（含 JS 渲染） | `test_terminal_prototype_behavior.py::test_collection_mode_hides_forbidden_fields` | 4 | 6 | partial-symmetric-fix |
+| V032-DOC-007 | 白名单门只查已知 id，新增字段默认放行 | medium | test-coverage | root-cause | process-gap | fixed | 负向门重建为静态标记断言 + 无头 DOM 可见文本扫描（含自由态阳性对照） | `test_terminal_prototype_behavior.py::test_collection_mode_hides_forbidden_fields` | 4 | 6 | allowlist-gate-blind-to-new-cases |
+| V032-DOC-008 | 顺序断言硬编码未勾选复选框 | medium | test-coverage | root-cause | fix-regression | fixed | `_task_pos()` 正则定位 | `test_owner_incomplete_study.py::test_evidence_contract_frozen_before_real_collection` | 4 | 5 | gate-breaks-when-guarded-task-completes |
+| V032-DOC-009 | E1 退出条件未纳入证据合同冻结 | low | correctness | root-cause | spec-drift | fixed | spec E1 补布局/schema/validator 冻结 | `test_owner_incomplete_study.py::test_e1_exit_includes_evidence_contract_freeze` | 4 | 5 | — |
+| V032-DOC-010 | 资产页/持仓表白名单外「强平价」无标记 | high | correctness | root-cause | fix-regression | fixed | 两处持仓表强平价列（表头+行模板）标 free-only；「标记价」列更名「最新价」对齐 last 白名单语义 | `test_owner_observation_whitelist.py::test_static_forbidden_fields_marked_free_only` | 5 | 6 | partial-symmetric-fix |
+| V032-DOC-011 | 负向门对 JS 渲染字段结构性失效 | medium | test-coverage | root-cause | process-gap | fixed | 无头门对渲染后 innerText 扫描，JS 路径天然覆盖；静态门另锁模板标记 | `test_terminal_prototype_behavior.py::test_collection_mode_hides_forbidden_fields` | 5 | 6 | allowlist-gate-blind-to-new-cases |
+| V032-DOC-012 | 采集态杠杆可点击改写，与协议冻结矛盾 | high | correctness | root-cause | fix-regression | fixed | lev-chip onclick 采集态短路 + setLeverage 短路 + 入口只读，切回自由态恢复 | `test_terminal_prototype_behavior.py::test_collection_mode_freezes_behavior` | 5 | 6 | cross-feature-contract-drift |
+| V032-DOC-013 | K 线图例 JS 渲染 MA 读数未标 free-only | high | correctness | root-cause | original-coding | fixed | updateLegend 三段 MA span 补 free-only | `test_owner_observation_whitelist.py::test_js_rendered_forbidden_fields_marked_free_only` | 5 | 6 | partial-symmetric-fix |
+| V032-DOC-014 | 价格 ± 按钮 ReferenceError（m 未定义） | high | correctness | root-cause | fix-regression | fixed | 处理器内补 `const m=M()` + 负值钳制 | `test_terminal_prototype_behavior.py::test_trade_panel_controls_work` | 6 | 6 | rebuild-dropped-binding |
+| V032-DOC-015 | 切换品种调用未定义 coinOf() 崩溃 | high | correctness | root-cause | fix-regression | fixed | 删除手工文案拼接，统一 renderButtonPx/activeCoin | `test_terminal_prototype_behavior.py::test_instrument_switch_and_positions_table_alignment` | 6 | 6 | rebuild-dropped-binding |
+| V032-DOC-016 | 等待行情态 null 崩溃、FR-401 空态不可达 | high | correctness | root-cause | original-coding | fixed | renderQuote/drawKline/px-quick 空报价守卫，空态四要素可达 | `test_terminal_prototype_behavior.py::test_warming_empty_state_and_recovery` | 6 | 6 | empty-state-broken-by-null |
+| V032-DOC-017 | 杠杆弹窗无关闭路径（modal trap） | high | correctness | root-cause | fix-regression | fixed | openLeverageModal 内绑定 lev-close + 遮罩点击关闭 | `test_terminal_prototype_behavior.py::test_trade_panel_controls_work` | 6 | 6 | rebuild-dropped-binding |
+| V032-DOC-018 | 持仓表 7 列头 6 数据、整行左移 | high | correctness | root-cause | original-coding | fixed | 行模板补强平价 td，colspan 对齐 | `test_terminal_prototype_behavior.py::test_instrument_switch_and_positions_table_alignment` | 6 | 6 | header-row-column-mismatch |
+| V032-DOC-019 | 评审模式入口失效（body.review 无来源） | high | correctness | root-cause | fix-regression | fixed | 启动时 `#review` hash 加 body.review；notes §8 同步 | `test_terminal_prototype_behavior.py::test_review_toolbar_reachable_and_ma99_renders` | 6 | 6 | rebuild-dropped-binding |
+| V032-DOC-020 | 资产页入金/重置死控件（零绑定） | high | correctness | root-cause | fix-regression | fixed | 补绑定与重置语义（撤单/清仓/清历史/重建账户） | `test_terminal_prototype_behavior.py::test_assets_deposit_and_reset` | 6 | 6 | rebuild-dropped-binding |
+| V032-DOC-021 | 币/USDT 数量单位切换死控件 | high | correctness | root-cause | fix-regression | fixed | data-u 绑定切 qtyUnit，数量 ± 按单位步进 | `test_terminal_prototype_behavior.py::test_trade_panel_controls_work` | 6 | 6 | rebuild-dropped-binding |
+| V032-DOC-022 | 杠杆内联选择条 lev-btns 恒空 | medium | correctness | root-cause | fix-regression | fixed | initLevBtns 填充 1–10×，syncLevUI 同步高亮 | `test_terminal_prototype_behavior.py::test_trade_panel_controls_work` | 6 | 6 | gate-checks-presence-not-behavior |
+| V032-DOC-023 | 采集白名单机制整体失效且负向门被删（触发规格裁决） | high | correctness | root-cause | spec-drift | fixed | owner 裁决方案 A：采集态恢复（模式开关/#coll/free-only/冻结/角标/视图回退）+ 无头负向门 | `test_terminal_prototype_behavior.py::test_collection_mode_hides_forbidden_fields` | 6 | 6 | cross-feature-contract-drift |
+| V032-DOC-024 | 深度比条/强平价列缺 free-only | medium | correctness | root-cause | original-coding | fixed | depth-ratio/depth-legend 与持仓表强平价列补标记 | `test_owner_observation_whitelist.py::test_static_forbidden_fields_marked_free_only` | 6 | 6 | partial-symmetric-fix |
+| V032-DOC-025 | MA99 恒为「—」（60 根窗口 < 99 周期） | medium | correctness | root-cause | original-coding | fixed | 均线改在全量聚合序列计算，显示窗口 90 根 | `test_terminal_prototype_behavior.py::test_review_toolbar_reachable_and_ma99_renders` | 6 | 6 | declared-feature-unreachable |
+| V032-DOC-026 | 总览缺占用保证金/保证金比率；两渲染函数重复 | low | correctness | root-cause | original-coding | fixed | renderAccount/renderAssets 合并补两行 | `test_terminal_prototype_behavior.py::test_assets_deposit_and_reset` | 6 | 6 | — |
+| V032-DOC-027 | 重建遗留质量项 | low | quality | symptom-patch | original-coding | fixed | 重复绑定删除/m1 上限/限价穿越按对手价/btn-danger 样式 | `test_terminal_prototype_behavior.py`（全套无 ERR 断言） | 6 | 6 | — |
+
+- **`rebuild-dropped-binding` 是本周期最重要教训**：整体重建 UI 文件（`b7cc8d9`）一口气回退了
+  第 4/5 轮的修复、负向门与载体测试，且静态门禁依旧全绿——「重建必须携带旧负向门跑一遍，
+  红即说明修复被回退」。9 条 fix-regression 里 6 条属于此模式。
+- **`gate-checks-presence-not-behavior` 第 3 次复现后固化对策**：无头浏览器行为门
+  （`test_terminal_prototype_behavior.py`）进入常驻门禁；对"门禁全绿但运行时大面积破损"
+  （11 passed vs 实测 10 处不可用）的唯一可靠解是对渲染结果断言，且必须带阳性对照防空转。
+- **origin 分布**：fix-regression 9 / original-coding 7 / spec-drift 5 / process-gap 2——
+  修复引入比例首次超过首次编码，直接驱动"重建须带门"规则。
+- **裁决分布**：owner 裁决 1 次（023 方案 A）；检视建议命中率：23 条 issue 的 suggested_fix
+  与实际 fix_summary 实质一致（含 010 载体变更、023 按裁决扩展范围两处合理偏离）。
