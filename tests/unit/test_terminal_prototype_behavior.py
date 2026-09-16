@@ -209,6 +209,34 @@ def test_warming_empty_state_and_recovery():
     assert results["recovered-quote"] not in ("", "—"), results["recovered-quote"]
 
 
+def test_assets_deposit_and_reset():
+    results = _run_prototype(
+        """
+    step("open-position", () => { document.querySelector('#type-tabs button[data-t="market"]')
+      .click(); document.getElementById("btn-action").click();
+      return "ok"; });
+    step("deposit-100", () => { switchView("assets");
+      document.getElementById("dep-input").value = "100";
+      document.getElementById("dep-btn").click();
+      return account.wallet; });
+    step("deposit-invalid", () => { document.getElementById("dep-input").value = "abc";
+      document.getElementById("dep-btn").click();
+      return document.getElementById("assets-msg").textContent; });
+    step("reset-5000", () => { document.getElementById("dep-input").value = "5000";
+      document.getElementById("reset-btn").click();
+      return account.wallet
+        + "/持仓=" + (document.getElementById("pos-body").textContent.includes("当前无持仓")); });
+    step("orders-cleared", () => { switchView("trade");
+      return document.getElementById("orders-count").textContent; });
+    """
+    )
+    _assert_clean(results)
+    assert results["deposit-100"] == "10100", results["deposit-100"]
+    assert "大于 0" in results["deposit-invalid"], results["deposit-invalid"]
+    assert results["reset-5000"] == "5000/持仓=true", results["reset-5000"]
+    assert results["orders-cleared"] == "0"
+
+
 def test_review_toolbar_reachable_and_ma99_renders():
     results = _run_prototype(
         """

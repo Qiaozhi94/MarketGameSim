@@ -530,13 +530,16 @@ function positionOf(sym){
   if(!account.positions[sym])account.positions[sym]={units:0,entry:0};
   return account.positions[sym];
 }
-function availableUsdt(){
+function usedMargin(){
   let used=0;
   for(const sym in account.positions){
     const p=account.positions[sym];
     used+=Math.abs(p.units)*p.entry/account.leverage;
   }
-  return Math.max(0, account.wallet-used);
+  return used;
+}
+function availableUsdt(){
+  return Math.max(0, account.wallet-usedMargin());
 }
 function unrealizedUsdt(sym){
   const p=account.positions[sym];
@@ -640,30 +643,23 @@ function renderTape(){
 
 /* ---------- 渲染：账户 / 持仓表 ---------- */
 function fmtUsdt(v){return v.toLocaleString("zh-CN",{minimumFractionDigits:2,maximumFractionDigits:2})}
-function renderAccount(){
+function renderAssets(){
   const un=totalUnrealizedUsdt(),cls=un>=0?"up":"down";
+  const equity=account.wallet+un;
+  const used=usedMargin();
+  const ratio=used>0?Math.round(equity/used*100)+"%":"—";
   const sum=closedTrades.reduce((a,t)=>a+t.pnl,0);
   const rows=[
-    ["账户权益",`<b class="${cls}">${fmtUsdt(account.wallet+un)}</b>`],
+    ["账户权益",`<b class="${cls}">${fmtUsdt(equity)}</b>`],
     ["可用余额",fmtUsdt(availableUsdt())],
+    ["占用保证金",fmtUsdt(used)],
+    ["保证金比率",ratio],
     ["未实现盈亏",`<span class="${cls}">${un>=0?"+":""}${un.toFixed(2)}</span>`],
     ["已实现盈亏（累计）",`<span class="${sum>=0?"up":"down"}">${(sum>=0?"+":"")+sum.toFixed(2)}</span>`],
     ["杠杆（全仓）",`<span class="num">${account.leverage}×</span>`],
   ];
   $("assets-kv").innerHTML=rows.map(r=>`<div class="kv"><span class="k">${r[0]}</span><span class="num">${r[1]}</span></div>`).join("");
   $("avail-usdt").textContent=fmtUsdt(availableUsdt());
-}
-function renderAssets(){
-  const un=totalUnrealizedUsdt(),cls=un>=0?"up":"down";
-  const sum=closedTrades.reduce((a,t)=>a+t.pnl,0);
-  const rows=[
-    ["账户权益",`<b class="${cls}">${fmtUsdt(account.wallet+un)}</b>`],
-    ["可用余额",fmtUsdt(availableUsdt())],
-    ["未实现盈亏",`<span class="${cls}">${un>=0?"+":""}${un.toFixed(2)}</span>`],
-    ["已实现盈亏（累计）",`<span class="${sum>=0?"up":"down"}">${(sum>=0?"+":"")+sum.toFixed(2)}</span>`],
-    ["杠杆（全仓）",`<span class="num">${account.leverage}×</span>`],
-  ];
-  $("assets-kv").innerHTML=rows.map(r=>`<div class="kv"><span class="k">${r[0]}</span><span class="num">${r[1]}</span></div>`).join("");
 }
 function renderPositionTables(){
   const symList=Object.keys(account.positions).filter(s=>account.positions[s].units!==0);
@@ -769,7 +765,7 @@ function submitOrder(){
       hintOk("限价委托已提交，可在底部「当前委托」查看或撤单。");
     }
   }
-  renderAccount();renderResting();renderPositions();
+  renderAssets();renderResting();renderPositions();
 }
 function cancelOrder(id){
   const i=resting.findIndex(o=>o.id===id);
@@ -827,7 +823,7 @@ function closePosition(sym){
   const side=p.units>0?"SELL":"BUY";
   const fill=side==="SELL"?m.bid:m.ask;
   settleFill(sym,side,Math.abs(p.units),fill);
-  renderAccount();renderResting();renderPositions();
+  renderAssets();renderResting();renderPositions();
 }
 
 /* ---------- 图表 ---------- */
@@ -1007,7 +1003,7 @@ function setInstrument(sym){
   $("q-sym").textContent=sym;
   $("chart-sym").textContent=sym;
   hover=null;
-  renderQuote();renderTape();renderAccount();drawKline();renderResting();renderPositions();
+  renderQuote();renderTape();renderAssets();drawKline();renderResting();renderPositions();
   renderButtonPx();
 }
 
@@ -1026,7 +1022,7 @@ function switchView(v){
 /* ---------- 状态机（评审切换） ---------- */
 let state="trading", stateFlags={};
 function render(){
-  renderQuote();renderTape();renderAccount();drawKline();renderResting();renderReturns();renderPositions();
+  renderQuote();renderTape();renderAssets();drawKline();renderResting();renderReturns();renderPositions();
   $("state-select").value=state;
   $("submit-hint").textContent="";
   if(state!=="warming"){$("btn-action").disabled=false;}
@@ -1092,6 +1088,27 @@ $("pct").oninput=()=>{
   renderButtonPx();
 };
 $("info-btn").onclick=()=>$("info-pop").classList.toggle("show");
+$("dep-btn").onclick=()=>{
+  const v=parseFloat($("dep-input").value||"0");
+  if(!(v>0)){$("assets-msg").textContent="请输入大于 0 的入金金额";return}
+  account.wallet+=v;
+  $("assets-msg").textContent=`已入金 ${fmtUsdt(v)} USDT`;
+  pushReturn("info","模拟入金",`+${fmtUsdt(v)} USDT`,"action DEPOSIT（自由模拟工程演示，零真实资金）");
+  renderAssets();renderButtonPx();
+};
+$("reset-btn").onclick=()=>{
+  const v=parseFloat($("dep-input").value||"0");
+  if(!(v>0)){$("assets-msg").textContent="请输入大于 0 的初始资金";return}
+  resting.length=0;
+  closedTrades.length=0;
+  returns.length=0;
+  for(const s in account.positions)delete account.positions[s];
+  account.wallet=v;
+  setLeverage(1);
+  $("assets-msg").textContent=`已按初始资金 ${fmtUsdt(v)} USDT 重建账户`;
+  pushReturn("info","账户重置",`初始资金 ${fmtUsdt(v)} USDT`,"action RESET_ACCOUNT：撤单、清仓与历史一并清空");
+  renderAssets();renderPositionTables();renderResting();renderPositions();renderReturns();renderButtonPx();
+};
 document.querySelectorAll(".unit-btn[data-u]").forEach(u=>u.onclick=()=>{
   qtyUnit=u.dataset.u;
   document.querySelectorAll(".unit-btn[data-u]").forEach(x=>x.classList.toggle("on",x===u));
@@ -1117,7 +1134,7 @@ function syncLevUI(){
 function setLeverage(lv){
   account.leverage=lv;
   syncLevUI();
-  renderAccount();renderButtonPx();
+  renderAssets();renderButtonPx();
 }
 function initLevBtns(){
   const host=$("lev-btns");
@@ -1147,7 +1164,7 @@ bindTabs("bottom-tabs",t=>{
 setInterval(()=>{
   if(["warming","risk-rejected"].includes(state))return;
   for(const sym in MARKETS)tickMarket(MARKETS[sym]);
-  renderQuote();renderTape();renderAccount();drawKline();renderResting();renderPositions();
+  renderQuote();renderTape();renderAssets();drawKline();renderResting();renderPositions();
   if(view==="markets")renderMarkets();
 },1000);
 
