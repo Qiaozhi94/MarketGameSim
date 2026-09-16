@@ -151,3 +151,40 @@ def test_user_views_contain_no_dev_facing_text():
     visible = "\n".join(scanner.visible)
     for token in DEV_TOKENS:
         assert token not in visible, f"用户可见区域出现开发态文字：{token}"
+
+
+def test_collection_mode_switch_exists():
+    """采集模式演示（owner 2026-09-17 裁决方案 A）：模式开关与 coll-mode 机制存在。"""
+    assert 'id="mode-select"' in PROTOTYPE, "评审工具条缺运行模式切换"
+    assert 'value="coll"' in PROTOTYPE, "模式切换缺采集态选项"
+    assert "function applyMode(" in PROTOTYPE, "缺模式应用函数"
+    assert 'location.hash.indexOf("coll")' in PROTOTYPE, "缺 #coll 直达入口"
+    assert "body.coll-mode .free-only{display:none !important}" in PROTOTYPE
+
+
+def test_static_forbidden_fields_marked_free_only():
+    """design §6 自由模拟专用字段的静态标记（JS 渲染路径另由无头门实测）。"""
+    # 盘口买卖深度比条
+    assert 'id="depth-ratio" class="free-only"' in PROTOTYPE, "深度比条未标 free-only"
+    assert 'id="depth-legend" class="free-only"' in PROTOTYPE, "深度比图例未标 free-only"
+    # 两处持仓表的强平价列表头
+    assert PROTOTYPE.count('<th class="free-only">强平价</th>') == 2, "持仓表强平价表头未标 free-only"
+    # 既有约束防回归：标记价格/资金费率条
+    assert 'class="mark-strip free-only"' in PROTOTYPE
+
+
+def test_js_rendered_forbidden_fields_marked_free_only():
+    """JS 渲染的白名单外字段必须在模板里带 free-only（V032-DOC-010/013）。"""
+    # K 线图例三段 MA 读数（updateLegend 模板）
+    assert 'class="free-only" style="color:#f0b90b">MA7 ' in PROTOTYPE
+    assert 'class="free-only" style="color:#e543d0">MA25 ' in PROTOTYPE
+    assert 'class="free-only" style="color:#7c8ce0">MA99 ' in PROTOTYPE
+    # 两处持仓行模板的强平价单元格
+    assert PROTOTYPE.count('<td class="free-only">') == 2, "持仓行强平价单元格未标 free-only"
+
+
+def test_collection_freeze_guards_present():
+    """采集态行为冻结的守卫必须存在（行为验证由无头门实测）。"""
+    assert 'if(mode==="coll"){hintErr("采集模式下杠杆由实验协议冻结");return}' in PROTOTYPE
+    assert "if(mode===\"coll\")return;" in PROTOTYPE, "setLeverage 缺采集态短路"
+    assert '["dep-btn","reset-btn","dep-input"].forEach(id=>$(id).disabled=frozen)' in PROTOTYPE

@@ -175,6 +175,11 @@ body.review #proto-bar{display:flex}
 <!-- 评审模式工具条：仅 URL 带 #review 时显示（交付版隐藏） -->
 <div id="proto-bar">
   <span class="tag">评审模式</span>
+  <b>运行模式</b>
+  <select id="mode-select" aria-label="切换运行模式">
+    <option value="free">自由模拟</option>
+    <option value="coll">采集模式（白名单演示）</option>
+  </select>
   <b>会话状态演示</b>
   <select id="state-select" aria-label="切换会话状态"></select>
   <span class="hint">仅供内部评审使用，最终用户不可见 · 设计说明见 interaction-design-notes.md</span>
@@ -216,8 +221,8 @@ body.review #proto-bar{display:flex}
             <div id="book-mid"><span class="lp" id="mid-last">—</span><span class="mk" id="mid-spread">价差 —</span></div>
             <div id="bids-host"></div>
           </div>
-          <div id="depth-ratio"><div class="b" style="width:50%"></div><div class="a"></div></div>
-          <div id="depth-legend"><span id="ratio-b">买 50%</span><span id="ratio-a">卖 50%</span></div>
+          <div id="depth-ratio" class="free-only"><div class="b" style="width:50%"></div><div class="a"></div></div>
+          <div id="depth-legend" class="free-only"><span id="ratio-b">买 50%</span><span id="ratio-a">卖 50%</span></div>
           <div class="mark-strip free-only">
             <span>标记价格 <span id="strip-mark">—</span></span>
             <span>资金费率 <span id="strip-fund">0.0100%</span></span>
@@ -259,7 +264,7 @@ body.review #proto-bar{display:flex}
           <div id="pane-positions">
             <div id="bottom-scroll">
               <table>
-                <thead><tr><th>品种</th><th>方向</th><th>数量</th><th>开仓价</th><th>强平价</th><th>未实现盈亏</th><th>操作</th></tr></thead>
+                <thead><tr><th>品种</th><th>方向</th><th>数量</th><th>开仓价</th><th class="free-only">强平价</th><th>未实现盈亏</th><th>操作</th></tr></thead>
                 <tbody id="positions-body"></tbody>
               </table>
             </div>
@@ -371,7 +376,7 @@ body.review #proto-bar{display:flex}
     <div class="card">
       <h3>当前持仓</h3>
       <table class="mkt-table">
-        <thead><tr><th>品种</th><th>方向</th><th>数量</th><th>开仓价</th><th>标记价</th><th>未实现盈亏</th><th>强平价</th></tr></thead>
+        <thead><tr><th>品种</th><th>方向</th><th>数量</th><th>开仓价</th><th>最新价</th><th>未实现盈亏</th><th class="free-only">强平价</th></tr></thead>
         <tbody id="pos-body"></tbody>
       </table>
     </div>
@@ -586,7 +591,7 @@ function renderPositions(){
     const un=(MARKETS[sym].price-p.entry)*p.units;
     const dir=p.units>0;
     const lp=liqPriceOf(sym);
-    return `<tr><td>${sym}</td><td class="${dir?"up":"down"}">${dir?"多":"空"}</td><td>${p.units.toFixed(3)}</td><td>${p.entry.toFixed(MARKETS[sym].dec)}</td><td>${lp===null?"—":lp.toFixed(MARKETS[sym].dec)}</td><td class="${un>=0?"up":"down"}">${(un>=0?"+":"")+un.toFixed(2)}</td><td><button onclick="closePosition('${sym}')" style="padding:1px 8px;font-size:11px">市价平仓</button></td></tr>`;
+    return `<tr><td>${sym}</td><td class="${dir?"up":"down"}">${dir?"多":"空"}</td><td>${p.units.toFixed(3)}</td><td>${p.entry.toFixed(MARKETS[sym].dec)}</td><td class="free-only">${lp===null?"—":lp.toFixed(MARKETS[sym].dec)}</td><td class="${un>=0?"up":"down"}">${(un>=0?"+":"")+un.toFixed(2)}</td><td><button onclick="closePosition('${sym}')" style="padding:1px 8px;font-size:11px">市价平仓</button></td></tr>`;
   }).join("")||'<tr><td colspan="7" style="color:var(--faint)">当前无持仓</td></tr>';
 }
 function renderResting(){
@@ -669,7 +674,7 @@ function renderPositionTables(){
     const un=(MARKETS[sym].price-p.entry)*p.units;
     const dir=p.units>0;
     const lp=liqPriceOf(sym);
-    return `<tr><td>${sym}</td><td class="${dir?"up":"down"}">${dir?"多":"空"}</td><td>${p.units.toFixed(3)}</td><td>${p.entry.toFixed(MARKETS[sym].dec)}</td><td>${MARKETS[sym].price.toFixed(MARKETS[sym].dec)}</td><td class="${un>=0?"up":"down"}">${(un>=0?"+":"")+un.toFixed(2)}</td><td>${lp===null?"—":lp.toFixed(MARKETS[sym].dec)}</td></tr>`;
+    return `<tr><td>${sym}</td><td class="${dir?"up":"down"}">${dir?"多":"空"}</td><td>${p.units.toFixed(3)}</td><td>${p.entry.toFixed(MARKETS[sym].dec)}</td><td>${MARKETS[sym].price.toFixed(MARKETS[sym].dec)}</td><td class="${un>=0?"up":"down"}">${(un>=0?"+":"")+un.toFixed(2)}</td><td class="free-only">${lp===null?"—":lp.toFixed(MARKETS[sym].dec)}</td></tr>`;
   }).join("")||'<tr><td colspan="7" style="color:var(--faint)">当前无持仓</td></tr>';
   const closedBody=$("closed-body");
   closedBody.innerHTML=closedTrades.map(t=>
@@ -841,9 +846,9 @@ function updateLegend(b,mas){
     `<span>低 <span style="color:${col}">${b.l.toFixed(m.dec)}</span></span>`+
     `<span>收 <span style="color:${col}">${b.c.toFixed(m.dec)}</span></span>`+
     `<span>量 ${Math.round(b.v)}</span>`+
-    `<span style="color:#f0b90b">MA7 ${ma(7)}</span>`+
-    `<span style="color:#e543d0">MA25 ${ma(25)}</span>`+
-    `<span style="color:#7c8ce0">MA99 ${ma(99)}</span>`;
+    `<span class="free-only" style="color:#f0b90b">MA7 ${ma(7)}</span>`+
+    `<span class="free-only" style="color:#e543d0">MA25 ${ma(25)}</span>`+
+    `<span class="free-only" style="color:#7c8ce0">MA99 ${ma(99)}</span>`;
 }
 function drawKline(){
   const W=cvs.width,H=cvs.height;
@@ -1046,6 +1051,22 @@ function setState(s){
   stateFlags={};state=s;render();
 }
 
+/* ---------- 运行模式（自由模拟 / 采集白名单演示） ---------- */
+let mode="free";
+function applyMode(mv){
+  mode=mv;
+  document.body.classList.toggle("coll-mode",mv==="coll");
+  const sel=$("mode-select");
+  if(sel.value!==mv)sel.value=mv;
+  $("sim-badge").textContent=mv==="coll"?"SIM · 采集":"SIM";
+  const frozen=mv==="coll";
+  ["dep-btn","reset-btn","dep-input"].forEach(id=>$(id).disabled=frozen);
+  document.querySelectorAll("#lev-btns button").forEach(b=>b.disabled=frozen);
+  $("assets-msg").textContent=frozen?"采集模式下初始资金、入金与杠杆由实验协议冻结（入口只读）":"";
+  if(frozen&&view==="markets")switchView("trade");
+  renderButtonPx();
+}
+
 /* ---------- 输入绑定 ---------- */
 $("side-buy").onclick=()=>setSide("BUY");
 $("side-sell").onclick=()=>setSide("SELL");
@@ -1115,7 +1136,10 @@ document.querySelectorAll(".unit-btn[data-u]").forEach(u=>u.onclick=()=>{
   $("qty-label").textContent=qtyUnit==="usdt"?"金额":"数量";
   renderButtonPx();
 });
-$("lev-chip").onclick=()=>openLeverageModal();
+$("lev-chip").onclick=()=>{
+  if(mode==="coll"){hintErr("采集模式下杠杆由实验协议冻结");return}
+  openLeverageModal();
+};
 function openLeverageModal(){
   openModal(`
   <h2>调整杠杆（全仓）</h2>
@@ -1132,6 +1156,7 @@ function syncLevUI(){
   $("lev-chip").textContent=account.leverage+"×";
 }
 function setLeverage(lv){
+  if(mode==="coll")return;
   account.leverage=lv;
   syncLevUI();
   renderAssets();renderButtonPx();
@@ -1176,6 +1201,7 @@ const STATES=[
 ];
 STATES.forEach(([k,label])=>{const o=document.createElement("option");o.value=k;o.textContent=label;$("state-select").appendChild(o)});
 $("state-select").onchange=()=>setState($("state-select").value);
+$("mode-select").onchange=()=>applyMode($("mode-select").value);
 
 /* ---------- 启动 ---------- */
 if(location.hash.indexOf("review")>=0)document.body.classList.add("review");
@@ -1192,6 +1218,7 @@ function initAll(){
   renderButtonPx();
 }
 initAll();
+if(location.hash.indexOf("coll")>=0)applyMode("coll");
 </script>
 </body>
 </html>
