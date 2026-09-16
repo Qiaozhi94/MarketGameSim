@@ -168,7 +168,8 @@ def test_static_forbidden_fields_marked_free_only():
     assert 'id="depth-ratio" class="free-only"' in PROTOTYPE, "深度比条未标 free-only"
     assert 'id="depth-legend" class="free-only"' in PROTOTYPE, "深度比图例未标 free-only"
     # 两处持仓表的强平价列表头
-    assert PROTOTYPE.count('<th class="free-only">强平价</th>') == 2, "持仓表强平价表头未标 free-only"
+    liq_headers = PROTOTYPE.count('<th class="free-only">强平价</th>')
+    assert liq_headers == 2, "持仓表强平价表头未标 free-only"
     # 既有约束防回归：标记价格/资金费率条
     assert 'class="mark-strip free-only"' in PROTOTYPE
 
@@ -186,5 +187,5 @@ def test_js_rendered_forbidden_fields_marked_free_only():
 def test_collection_freeze_guards_present():
     """采集态行为冻结的守卫必须存在（行为验证由无头门实测）。"""
     assert 'if(mode==="coll"){hintErr("采集模式下杠杆由实验协议冻结");return}' in PROTOTYPE
-    assert "if(mode===\"coll\")return;" in PROTOTYPE, "setLeverage 缺采集态短路"
+    assert 'if(mode==="coll")return;' in PROTOTYPE, "setLeverage 缺采集态短路"
     assert '["dep-btn","reset-btn","dep-input"].forEach(id=>$(id).disabled=frozen)' in PROTOTYPE

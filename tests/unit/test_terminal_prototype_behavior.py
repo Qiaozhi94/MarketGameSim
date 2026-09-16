@@ -254,7 +254,17 @@ def test_review_toolbar_reachable_and_ma99_renders():
 
 
 # design §6 自由模拟专用（采集态必须隐藏）字段关键词
-FORBIDDEN_TOKENS = ("MA7", "MA25", "MA99", "标记价格", "资金费率", "资金费用", "24h", "强平价", "1D")
+FORBIDDEN_TOKENS = (
+    "MA7",
+    "MA25",
+    "MA99",
+    "标记价格",
+    "资金费率",
+    "资金费用",
+    "24h",
+    "强平价",
+    "1D",
+)
 
 
 def test_collection_mode_hides_forbidden_fields():
@@ -271,7 +281,9 @@ def test_collection_mode_hides_forbidden_fields():
     step("coll-badge", () => document.getElementById("sim-badge").textContent);
     step("coll-scan-trade", () => { switchView("trade"); return visibleText(); });
     step("coll-scan-assets", () => { switchView("assets"); return visibleText(); });
-    step("coll-markets-nav", () => getComputedStyle(document.getElementById("nav-markets")).display);
+    step("coll-markets-nav", () => {
+      return getComputedStyle(document.getElementById("nav-markets")).display;
+    });
     step("coll-mode-select", () => document.getElementById("mode-select").value);
     """
     )
