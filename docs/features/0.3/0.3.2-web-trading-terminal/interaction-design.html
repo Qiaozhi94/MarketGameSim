@@ -15,6 +15,7 @@
 body{margin:0;background:var(--bg);color:var(--fg);font:13px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif}
 button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel2);color:var(--fg);border-radius:5px;padding:4px 10px}
 button:disabled{cursor:not-allowed;opacity:.45}
+.btn-danger{border-color:var(--red);color:var(--red)}
 input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px solid var(--line);border-radius:5px;padding:4px 8px}
 .num{font-family:var(--mono);font-variant-numeric:tabular-nums}
 
@@ -488,6 +489,7 @@ function tickMarket(m){
   }
   if(m.tape.length>40)m.tape.length=40;
   if(m.cur){m.cur.v+=nTrades;m.vol24+=nTrades;m.m1.push(m.cur);}
+  if(m.m1.length>2880)m.m1.splice(0,m.m1.length-2880);
   m.clockMin+=1;
   m.cur={t:SESSION_T0+m.clockMin*M1_MS,o:m.price,h:m.price,l:m.price,c:m.price,v:0};
 }
@@ -506,7 +508,7 @@ function seriesFor(tf){
       out.push({t:bucket,o:b.o,h:b.h,l:b.l,c:b.c,v:b.v});
     }
   }
-  return out.slice(-60);
+  return out;
 }
 function maSeries(all,period){
   const out=[];
@@ -581,8 +583,8 @@ function renderPositions(){
     const un=(MARKETS[sym].price-p.entry)*p.units;
     const dir=p.units>0;
     const lp=liqPriceOf(sym);
-    return `<tr><td>${sym}</td><td class="${dir?"up":"down"}">${dir?"多":"空"}</td><td>${p.units.toFixed(3)}</td><td>${p.entry.toFixed(MARKETS[sym].dec)}</td><td class="${un>=0?"up":"down"}">${(un>=0?"+":"")+un.toFixed(2)}</td><td><button onclick="closePosition('${sym}')" style="padding:1px 8px;font-size:11px">市价平仓</button></td></tr>`;
-  }).join("")||'<tr><td colspan="6" style="color:var(--faint)">当前无持仓</td></tr>';
+    return `<tr><td>${sym}</td><td class="${dir?"up":"down"}">${dir?"多":"空"}</td><td>${p.units.toFixed(3)}</td><td>${p.entry.toFixed(MARKETS[sym].dec)}</td><td>${lp===null?"—":lp.toFixed(MARKETS[sym].dec)}</td><td class="${un>=0?"up":"down"}">${(un>=0?"+":"")+un.toFixed(2)}</td><td><button onclick="closePosition('${sym}')" style="padding:1px 8px;font-size:11px">市价平仓</button></td></tr>`;
+  }).join("")||'<tr><td colspan="7" style="color:var(--faint)">当前无持仓</td></tr>';
 }
 function renderResting(){
   $("orders-count").textContent=resting.length;
@@ -596,6 +598,13 @@ function renderResting(){
 function renderQuote(){
   const m=M();
   const dec=m.dec;
+  if(m.last==null||m.bid==null){
+    $("mid-last").textContent="—";$("mid-last").className="";
+    $("mid-spread").textContent="价差 —";
+    $("asks-host").innerHTML="";$("bids-host").innerHTML="";
+    $("ratio-b").textContent="买 —%";$("ratio-a").textContent="卖 —%";
+    return;
+  }
   $("mid-spread").textContent="价差 "+(m.ask-m.bid).toFixed(dec);
   const mid=$("mid-last");
   mid.textContent=m.last.toFixed(dec);
@@ -746,10 +755,11 @@ function submitOrder(){
     const px=parseFloat($("px").value||"0");
     if(!(px>0)){hintErr("请输入限价价格");return}
     if((side==="BUY"&&px>=m.ask)||(side==="SELL"&&px<=m.bid)){
-      settleFill(sym,side,qty,px);
-      pushReturn("accepted",side==="BUY"?"限价买入":"限价卖出",`${qty} @ ${px.toFixed(m.dec)}`,
-        `action PLACE_ORDER·${side} LIMIT ${px.toFixed(m.dec)}<br>委托即穿越盘口 → 即时成交`);
-      hintOk(`已成交：${side==="BUY"?"买入":"卖出"} ${qty} @ ${px.toFixed(m.dec)}`);
+      const fill=side==="BUY"?m.ask:m.bid;
+      settleFill(sym,side,qty,fill);
+      pushReturn("accepted",side==="BUY"?"限价买入":"限价卖出",`${qty} @ ${fill.toFixed(m.dec)}`,
+        `action PLACE_ORDER·${side} LIMIT ${px.toFixed(m.dec)}<br>委托即穿越盘口，按对手价 ${fill.toFixed(m.dec)} 成交`);
+      hintOk(`已成交：${side==="BUY"?"买入":"卖出"} ${qty} @ ${fill.toFixed(m.dec)}`);
     }else{
       orderSeq+=1;
       const id="o-"+orderSeq;
@@ -839,21 +849,23 @@ function updateLegend(b,mas){
     `<span style="color:#e543d0">MA25 ${ma(25)}</span>`+
     `<span style="color:#7c8ce0">MA99 ${ma(99)}</span>`;
 }
-function masOf(all,i){
-  const out={};
-  for(const p of [7,25,99]){
-    if(i>=p-1){let s=0;for(let k=i-p+1;k<=i;k++)s+=all[k].c;out[p]=s/p}
-    else out[p]=null;
-  }
-  return out;
-}
 function drawKline(){
   const W=cvs.width,H=cvs.height;
   const m=M();
+  if(m.last==null){
+    ctx.clearRect(0,0,W,H);
+    $("ohlc-legend").innerHTML="";
+    $("kline-empty").style.display="block";
+    return;
+  }
   ctx.clearRect(0,0,W,H);
-  const all=seriesFor(tfKey);
-  if(all.length===0){$("kline-empty").style.display="block";updateLegend(null);return}
+  const full=seriesFor(tfKey);
+  if(full.length===0){$("kline-empty").style.display="block";updateLegend(null);return}
   $("kline-empty").style.display="none";
+  const all=full.slice(-90);
+  const mas={};
+  for(const p of [7,25,99])mas[p]=maSeries(full,p).slice(-all.length);
+  const masAt=i=>({7:mas[7][i],25:mas[25][i],99:mas[99][i]});
   const dec=m.dec;
   const padR=72,padT=10,padB=26,chH=H-padT-padB,volH=Math.round(chH*0.16),gap=4;
   const ch=chH-volH-gap;
@@ -919,9 +931,9 @@ function drawKline(){
     ctx.setLineDash([]);
     ctx.fillStyle="#2b3444";ctx.fillRect(Math.max(0,x-23),H-padB+2,46,14);
     ctx.fillStyle="#d7dee8";ctx.fillText(fmtClock(b.t).slice(0,5),Math.max(4,x-19),H-padB+12);
-    updateLegend(b,masOf(all,i));
+    updateLegend(b,masAt(i));
   }else{
-    updateLegend(all[all.length-1],masOf(all,all.length-1));
+    updateLegend(all[all.length-1],masAt(all.length-1));
   }
 }
 cvs.addEventListener("mousemove",ev=>{
@@ -994,9 +1006,9 @@ function setInstrument(sym){
   activeSym=sym;
   $("q-sym").textContent=sym;
   $("chart-sym").textContent=sym;
-  $("btn-action").textContent=(side==="BUY"?"买入 ":"卖出 ")+coinOf();
   hover=null;
   renderQuote();renderTape();renderAccount();drawKline();renderResting();renderPositions();
+  renderButtonPx();
 }
 
 /* ---------- 全项目视图 ---------- */
@@ -1042,16 +1054,26 @@ function setState(s){
 $("side-buy").onclick=()=>setSide("BUY");
 $("side-sell").onclick=()=>setSide("SELL");
 $("btn-action").onclick=()=>submitOrder();
-$("qty-minus").onclick=()=>{const q=activeQtyCoins()-stepQty();$("qty").value=Math.max(q,stepQty()/10).toFixed(3);renderButtonPx()};
-$("qty-plus").onclick=()=>{const q=activeQtyCoins()+stepQty();$("qty").value=q.toFixed(3);renderButtonPx()};
+$("qty-minus").onclick=()=>{stepQtyInput(-1);renderButtonPx()};
+$("qty-plus").onclick=()=>{stepQtyInput(1);renderButtonPx()};
 function stepQty(){const m=M();return m.ins.price>1000?0.01:m.ins.price>100?0.1:1}
-$("px-minus").onclick=()=>{const d=pxStep();$("px").value=(parseFloat($("px").value||"0")-d).toFixed(m.dec);renderButtonPx()};
-$("px-plus").onclick=()=>{const d=pxStep();$("px").value=(parseFloat($("px").value||"0")+d).toFixed(m.dec);renderButtonPx()};
+function stepQtyInput(dir){
+  if(qtyUnit==="usdt"){
+    const v=parseFloat($("qty").value||"0")+dir*Math.max(1,Math.round(stepQty()*M().price));
+    $("qty").value=Math.max(0,v).toFixed(2);
+  }else{
+    const q=activeQtyCoins()+dir*stepQty();
+    $("qty").value=Math.max(q,stepQty()/10).toFixed(3);
+  }
+}
+$("px-minus").onclick=()=>{const m=M(),d=pxStep();$("px").value=Math.max(0,parseFloat($("px").value||"0")-d).toFixed(m.dec);renderButtonPx()};
+$("px-plus").onclick=()=>{const m=M(),d=pxStep();$("px").value=(parseFloat($("px").value||"0")+d).toFixed(m.dec);renderButtonPx()};
 function pxStep(){return Math.max(0.01, M().price*0.0001)}
 $("px").oninput=renderButtonPx;
 $("qty").oninput=renderButtonPx;
 $("px-quick").querySelectorAll("[data-px]").forEach(b=>b.onclick=()=>{
   const m=M();
+  if(m.last==null)return;
   if(b.dataset.px==="last")$("px").value=m.last.toFixed(m.dec);
   if(b.dataset.px==="ask")$("px").value=m.ask.toFixed(m.dec);
   if(b.dataset.px==="bid")$("px").value=m.bid.toFixed(m.dec);
@@ -1070,17 +1092,41 @@ $("pct").oninput=()=>{
   renderButtonPx();
 };
 $("info-btn").onclick=()=>$("info-pop").classList.toggle("show");
-$("lev-chip").onclick=()=>openModal(`
+document.querySelectorAll(".unit-btn[data-u]").forEach(u=>u.onclick=()=>{
+  qtyUnit=u.dataset.u;
+  document.querySelectorAll(".unit-btn[data-u]").forEach(x=>x.classList.toggle("on",x===u));
+  $("qty-label").textContent=qtyUnit==="usdt"?"金额":"数量";
+  renderButtonPx();
+});
+$("lev-chip").onclick=()=>openLeverageModal();
+function openLeverageModal(){
+  openModal(`
   <h2>调整杠杆（全仓）</h2>
   <p>杠杆决定开仓占用的保证金与预估强平价；强平与穿仓由交易所风控路径统一处理。</p>
   <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">${[1,2,3,5,10].map(l=>`<button class="lev-btn ${account.leverage===l?"on":""}" data-lv="${l}" onclick="setLeverage(${l})">${l}×</button>`).join("")}</div>
   <div class="row"><button id="lev-close">关闭</button></div>`);
+  $("lev-close").onclick=closeModal;
+}
 function openModal(html){$("modal").innerHTML=html;$("modal-root").classList.add("show")}
 function closeModal(){$("modal-root").classList.remove("show")}
+$("modal-root").onclick=e=>{if(e.target===$("modal-root"))closeModal()};
+function syncLevUI(){
+  document.querySelectorAll("#lev-btns button").forEach(b=>b.classList.toggle("on",+b.dataset.lv===account.leverage));
+  $("lev-chip").textContent=account.leverage+"×";
+}
 function setLeverage(lv){
   account.leverage=lv;
-  $("lev-chip").textContent=lv+"×";
+  syncLevUI();
   renderAccount();renderButtonPx();
+}
+function initLevBtns(){
+  const host=$("lev-btns");
+  for(const l of [1,2,3,5,10]){
+    const b=document.createElement("button");
+    b.textContent=l+"×";b.dataset.lv=l;
+    b.onclick=()=>setLeverage(l);
+    host.appendChild(b);
+  }
 }
 
 /* tab 切换 */
@@ -1105,9 +1151,6 @@ setInterval(()=>{
   if(view==="markets")renderMarkets();
 },1000);
 
-/* ---------- 顶部信息 ---------- */
-$("info-btn").onclick=()=>$("info-pop").classList.toggle("show");
-
 /* ---------- 状态切换器（评审模式） ---------- */
 const STATES=[
   ["trading","交易中 · 自由连续交易"],
@@ -1118,10 +1161,13 @@ STATES.forEach(([k,label])=>{const o=document.createElement("option");o.value=k;
 $("state-select").onchange=()=>setState($("state-select").value);
 
 /* ---------- 启动 ---------- */
+if(location.hash.indexOf("review")>=0)document.body.classList.add("review");
 function initAll(){
   for(const ins of INSTRUMENTS)MARKETS[ins.sym]=buildMarket(ins);
   initTfTabs();
   initTypeTabs();
+  initLevBtns();
+  syncLevUI();
   setSide("BUY");
   setState("trading");
   switchView("trade");
