@@ -251,3 +251,65 @@ def test_review_toolbar_reachable_and_ma99_renders():
     _assert_clean(results)
     assert results["proto-bar-visible"] == "flex"
     assert results["ma99-legend"].startswith("MA99 "), results["ma99-legend"]
+
+
+# design §6 自由模拟专用（采集态必须隐藏）字段关键词
+FORBIDDEN_TOKENS = ("MA7", "MA25", "MA99", "标记价格", "资金费率", "资金费用", "24h", "强平价", "1D")
+
+
+def test_collection_mode_hides_forbidden_fields():
+    """采集态全视图可见文本负向门 + 自由态阳性对照（防止门禁空转）。"""
+    results = _run_prototype(
+        """
+    function visibleText() {
+      return document.getElementById("app").innerText.replace(/\\s+/g, " ");
+    }
+    step("free-scan-trade", () => { switchView("trade"); return visibleText(); });
+    step("free-scan-assets", () => { switchView("assets"); return visibleText(); });
+    step("to-coll", () => { applyMode("coll");
+      return document.body.className; });
+    step("coll-badge", () => document.getElementById("sim-badge").textContent);
+    step("coll-scan-trade", () => { switchView("trade"); return visibleText(); });
+    step("coll-scan-assets", () => { switchView("assets"); return visibleText(); });
+    step("coll-markets-nav", () => getComputedStyle(document.getElementById("nav-markets")).display);
+    step("coll-mode-select", () => document.getElementById("mode-select").value);
+    """
+    )
+    _assert_clean(results)
+    # 阳性对照：自由态必须能看到禁区字段，否则扫描本身失效
+    assert "标记价格" in results["free-scan-trade"], "自由态看不到标记价格条，阳性对照失效"
+    assert "MA7" in results["free-scan-trade"], "自由态看不到 MA 图例，阳性对照失效"
+    # 负向断言：采集态任何视图不得出现白名单外字段
+    for key in ("coll-scan-trade", "coll-scan-assets"):
+        for token in FORBIDDEN_TOKENS:
+            assert token not in results[key], f"{key} 泄漏白名单外字段：{token}"
+    assert results["coll-badge"] == "SIM · 采集"
+    assert results["coll-markets-nav"] == "none"
+    assert results["coll-mode-select"] == "coll"
+
+
+def test_collection_mode_freezes_behavior():
+    """采集态协议冻结：杠杆/入金/重置入口只读，切回自由态恢复。"""
+    results = _run_prototype(
+        """
+    step("to-coll", () => { applyMode("coll"); return "ok"; });
+    step("lev-chip-no-modal", () => { document.getElementById("lev-chip").click();
+      return document.getElementById("modal-root").classList.contains("show"); });
+    step("lev-direct-frozen", () => { setLeverage(10);
+      return account.leverage; });
+    step("lev-btns-disabled", () => document.querySelector("#lev-btns button").disabled);
+    step("dep-frozen", () => { document.getElementById("dep-input").value = "999";
+      document.getElementById("dep-btn").click();
+      return document.getElementById("dep-btn").disabled + "/" + account.wallet; });
+    step("reset-frozen", () => document.getElementById("reset-btn").disabled);
+    step("back-free-restored", () => { applyMode("free"); setLeverage(5);
+      return account.leverage + "/" + document.getElementById("dep-btn").disabled; });
+    """
+    )
+    _assert_clean(results)
+    assert results["lev-chip-no-modal"] == "false"
+    assert results["lev-direct-frozen"] == "1"
+    assert results["lev-btns-disabled"] == "true"
+    assert results["dep-frozen"] == "true/10000"
+    assert results["reset-frozen"] == "true"
+    assert results["back-free-restored"] == "5/false"
