@@ -984,6 +984,7 @@ function renderMarkets(){
     drawSpark(cv, MARKETS[cv.dataset.row]);
   });
   body.querySelectorAll("[data-go]").forEach(b=>b.onclick=()=>{setInstrument(b.dataset.go);switchView("trade");});
+  body.querySelectorAll("tr[data-sym]").forEach(tr=>tr.onclick=()=>{setInstrument(tr.dataset.sym);switchView("trade");});
 }
 function drawSpark(cv,m){
   const c=cv.getContext("2d");
@@ -1172,6 +1173,7 @@ function initLevBtns(){
 }
 
 /* tab 切换 */
+document.querySelectorAll("#topnav nav [data-view]").forEach(x=>x.onclick=()=>switchView(x.dataset.view));
 function bindTabs(hostId,onSwitch){
   const host=$(hostId);
   host.querySelectorAll("button").forEach(b=>b.onclick=()=>{

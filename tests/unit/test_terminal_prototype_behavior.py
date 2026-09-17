@@ -237,6 +237,30 @@ def test_assets_deposit_and_reset():
     assert results["orders-cleared"] == "0"
 
 
+def test_topnav_and_markets_row_switch_views():
+    """顶部导航与行情行必须真实切换视图（重建曾丢失绑定：cursor:pointer 但无 onclick）。"""
+    results = _run_prototype(
+        """
+    step("nav-markets", () => { document.getElementById("nav-markets").click();
+      return !document.getElementById("view-markets").hidden + "/"
+        + document.getElementById("terminal-wrap").style.display; });
+    step("nav-assets", () => { document.querySelector('[data-view="assets"]').click();
+      return !document.getElementById("view-assets").hidden; });
+    step("nav-trade", () => { document.querySelector('[data-view="trade"]').click();
+      return document.getElementById("terminal-wrap").style.display; });
+    step("markets-row-click", () => { document.getElementById("nav-markets").click();
+      document.querySelector('#mkt-body tr[data-sym="ETH/USDT"]').click();
+      return document.getElementById("q-sym").textContent + "/"
+        + document.getElementById("terminal-wrap").style.display; });
+    """
+    )
+    _assert_clean(results)
+    assert results["nav-markets"] == "true/none", results["nav-markets"]
+    assert results["nav-assets"] == "true", results["nav-assets"]
+    assert results["nav-trade"] == "block", results["nav-trade"]
+    assert results["markets-row-click"] == "ETH/USDT/block", results["markets-row-click"]
+
+
 def test_review_toolbar_reachable_and_ma99_renders():
     results = _run_prototype(
         """
