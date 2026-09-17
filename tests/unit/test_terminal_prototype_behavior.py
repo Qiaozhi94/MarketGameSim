@@ -136,16 +136,11 @@ def test_trade_panel_controls_work():
       return document.getElementById("qty-label").textContent; });
     step("lev-btns-populated", () => document.getElementById("lev-btns").children.length);
     step("lev-btns-highlight", () => document.querySelector("#lev-btns button.on").textContent);
-    step("modal-open", () => { document.getElementById("lev-chip").click();
-      return document.getElementById("modal-root").classList.contains("show"); });
-    step("modal-set-leverage", () => { setLeverage(5);
-      return account.leverage; });
-    step("modal-close", () => { document.getElementById("lev-close").click();
-      return document.getElementById("modal-root").classList.contains("show"); });
-    step("modal-backdrop-close", () => { document.getElementById("lev-chip").click();
-      const root = document.getElementById("modal-root");
-      root.click();
-      return root.classList.contains("show"); });
+    step("lev-btn-click", () => { document.querySelectorAll("#lev-btns button")[3].click();
+      return account.leverage + "/" + document.querySelector("#lev-btns button.on").textContent; });
+    step("lev-more-select", () => { const sel = document.getElementById("lev-more");
+      sel.value = "10"; sel.dispatchEvent(new Event("change"));
+      return account.leverage + "/" + sel.value; });
     """
     )
     _assert_clean(results)
@@ -155,10 +150,8 @@ def test_trade_panel_controls_work():
     assert results["unit-toggle-back"] == "数量"
     assert results["lev-btns-populated"] == "5"
     assert results["lev-btns-highlight"] == "1×"
-    assert results["modal-open"] == "true"
-    assert results["modal-set-leverage"] == "5"
-    assert results["modal-close"] == "false"
-    assert results["modal-backdrop-close"] == "false"
+    assert results["lev-btn-click"] == "5/5×"
+    assert results["lev-more-select"] == "10/10"
 
 
 def test_instrument_switch_and_positions_table_alignment():
@@ -329,8 +322,9 @@ def test_collection_mode_freezes_behavior():
     results = _run_prototype(
         """
     step("to-coll", () => { applyMode("coll"); return "ok"; });
-    step("lev-chip-no-modal", () => { document.getElementById("lev-chip").click();
-      return document.getElementById("modal-root").classList.contains("show"); });
+    step("lev-btns-frozen-click", () => { document.querySelectorAll("#lev-btns button")[3].click();
+      return document.querySelector("#lev-btns button").disabled + "/" + account.leverage
+        + "/" + document.getElementById("lev-more").disabled; });
     step("lev-direct-frozen", () => { setLeverage(10);
       return account.leverage; });
     step("lev-btns-disabled", () => document.querySelector("#lev-btns button").disabled);
@@ -343,7 +337,7 @@ def test_collection_mode_freezes_behavior():
     """
     )
     _assert_clean(results)
-    assert results["lev-chip-no-modal"] == "false"
+    assert results["lev-btns-frozen-click"] == "true/1/true", results["lev-btns-frozen-click"]
     assert results["lev-direct-frozen"] == "1"
     assert results["lev-btns-disabled"] == "true"
     assert results["dep-frozen"] == "true/10000"

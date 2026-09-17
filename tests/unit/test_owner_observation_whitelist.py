@@ -90,7 +90,9 @@ def test_real_crypto_pairs_in_markets_table():
 def test_trade_page_leverage_defaults_to_1x_and_is_discoverable():
     assert "leverage:1" in PROTOTYPE, "杠杆默认必须为 1×"
     assert 'id="lev-btns"' in PROTOTYPE, "交易页缺杠杆选择条"
-    assert "[1,2,3,5,10]" in PROTOTYPE, "杠杆档位应由 JS 生成 1–10×"
+    assert "for(const l of [1,2,3,5])" in PROTOTYPE, "杠杆快选档位应由 JS 生成"
+    assert 'id="lev-more"' in PROTOTYPE, "溢出档位（10×）缺下拉选择"
+    assert '<option value="10">10×</option>' in PROTOTYPE, "下拉缺 10× 档"
 
 
 def test_assets_page_layout_and_content():
@@ -186,6 +188,8 @@ def test_js_rendered_forbidden_fields_marked_free_only():
 
 def test_collection_freeze_guards_present():
     """采集态行为冻结的守卫必须存在（行为验证由无头门实测）。"""
-    assert 'if(mode==="coll"){hintErr("采集模式下杠杆由实验协议冻结");return}' in PROTOTYPE
     assert 'if(mode==="coll")return;' in PROTOTYPE, "setLeverage 缺采集态短路"
     assert '["dep-btn","reset-btn","dep-input"].forEach(id=>$(id).disabled=frozen)' in PROTOTYPE
+    assert (
+        'document.querySelectorAll("#lev-btns button").forEach(b=>b.disabled=frozen)' in PROTOTYPE
+    ), "杠杆选择条缺采集态禁用布线"

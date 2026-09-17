@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MarketGame-SIM</title>
+<title>MarketGame</title>
 <style>
 :root{
   --bg:#0b0e11; --panel:#131722; --panel2:#1c2330; --line:#2b3444;
@@ -51,7 +51,7 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 .mkt-table tr.clickable:hover{background:#161d2a}
 .spark{width:90px;height:24px;display:block;margin-left:auto}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;position:relative}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;position:relative}
 .card h3{margin:0 0 6px;font-size:12px;font-weight:600;color:var(--dim);letter-spacing:.05em;display:flex;align-items:center;gap:8px}
 .card h3 .aux{margin-left:auto;font-weight:400;letter-spacing:0}
 .kv{display:flex;justify-content:space-between;gap:8px;padding:2px 0;font-size:12px}
@@ -64,7 +64,7 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 .tabs{display:flex;gap:2px;margin-bottom:6px;border-bottom:1px solid var(--line)}
 .tabs button{border:none;background:transparent;border-radius:0;padding:5px 10px;font-size:12px;color:var(--dim);border-bottom:2px solid transparent}
 .tabs button.on{color:var(--fg);border-bottom:2px solid var(--amber)}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 12px;position:relative}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px;position:relative}
 
 /* 盘口 */
 .book{font-family:var(--mono);font-size:11.5px}
@@ -100,27 +100,30 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 #kline-empty{display:none;border:1px dashed var(--line);border-radius:6px;padding:40px;text-align:center;color:var(--dim)}
 
 /* 下单面板 */
-.lev-line{display:flex;align-items:center;gap:6px;margin:6px 0}
+.lev-line{display:flex;align-items:center;gap:8px;margin:2px 0 8px}
 .lev-line .lb-label{font-size:12px;color:var(--dim)}
 .lev-btns{display:flex;gap:4px;flex:1}
-.lev-btns button{padding:3px 10px;font-size:11px;border-radius:4px}
+.lev-btns button{flex:1;padding:4px 0;font-size:11px;border-radius:4px}
 .lev-btns button.on{border-color:var(--amber);color:var(--amber)}
-.side-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.lev-btns select{flex:0 0 46px;padding:3px 2px;font-size:11px;color:var(--fg);background:var(--panel2);border:1px solid var(--line);border-radius:4px}
+.side-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:10px 0}
 .side-tabs button{font-size:14px;font-weight:700;padding:8px 0;background:transparent;color:var(--faint)}
 .side-tabs button.buy-on{background:#123a28;border-color:var(--green);color:var(--green)}
 .side-tabs button.sell-on{background:#3a1713;border-color:var(--red);color:var(--red)}
-#avail-line{font-size:12px;color:var(--dim);margin:6px 0 2px}
-.price-row,.qty-row{display:flex;gap:6px;align-items:center;margin:6px 0}
+#avail-line{font-size:12px;color:var(--dim);margin:8px 0 2px}
+.price-row,.qty-row{display:flex;gap:6px;align-items:center;margin:8px 0}
 .price-row input,.qty-row input{flex:1;width:70px;text-align:right;font-family:var(--mono)}
 .price-row .step,.qty-row .step{padding:2px 8px}
 .px-quick{display:flex;gap:4px;margin-bottom:2px}
 .px-quick button{font-size:11px;padding:2px 7px}
 .unit-btn{padding:2px 8px;font-size:11px;border-radius:4px;cursor:pointer;user-select:none}
 .unit-btn.on{border-color:var(--blue);color:var(--blue)}
-.pct-line{display:flex;align-items:center;gap:8px;margin:6px 0}
+#qty-sub{display:flex;align-items:center;gap:4px;margin:-4px 0 4px}
+#qty-conv{flex:1;font-size:11px;color:var(--faint)}
+.pct-line{display:flex;align-items:center;gap:8px;margin:8px 0}
 .pct-line input[type=range]{flex:1;accent-color:var(--green);height:4px}
 .pct-line .v{font-family:var(--mono);font-size:12px;min-width:34px;text-align:right}
-.est{font-size:12px;color:var(--dim);margin:6px 0;border-top:1px dashed var(--line);padding-top:6px}
+.est{font-size:12px;color:var(--dim);margin:8px 0;border-top:1px dashed var(--line);padding-top:8px}
 .est div{display:flex;justify-content:space-between;padding:1px 0}
 .est b{color:var(--fg);font-family:var(--mono)}
 .btn-action{width:100%;font-size:15px;font-weight:700;padding:12px 0;border:none;border-radius:6px}
@@ -145,20 +148,10 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 /* 断线遮罩 */
 #terminal-wrap{position:relative}
 
-/* 模态 */
-#modal-root{position:fixed;inset:0;display:none;z-index:80;background:#000a;align-items:center;justify-content:center}
-#modal-root.show{display:flex}
-.modal{background:var(--panel);border:1px solid var(--line);border-radius:10px;max-width:520px;width:92%;padding:20px 22px}
-.modal h2{margin:0 0 10px;font-size:16px}
-.modal p{color:var(--dim);font-size:13px}
-.modal .row{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
-.modal .danger{background:#3a1713;border-color:var(--red);color:var(--red)}
-
 /* 采集模式白名单：free-only 字段在采集态隐藏 */
 body.coll-mode .free-only{display:none !important}
 
-/* 资产页 */
-#assets-grid{display:grid;grid-template-columns:340px 1fr;gap:12px;align-items:start}
+/* 资产页 */#assets-grid{display:grid;grid-template-columns:340px 1fr;gap:12px;align-items:start}
 #assets-grid .col-left,#assets-grid .col-right{display:flex;flex-direction:column;gap:12px}
 
 /* 评审模式（#review 才显示；交付版用户不可见） */
@@ -189,7 +182,7 @@ body.review #proto-bar{display:flex}
   <!-- 顶部导航 -->
   <div id="topnav">
     <span class="sim-badge" id="sim-badge">SIM</span>
-    <span class="logo">MarketGame-SIM</span>
+    <span class="logo">MarketGame</span>
     <nav><span data-view="markets" id="nav-markets" class="free-only">行情</span><span data-view="trade" class="v-on">交易</span><span data-view="assets">资产</span><span id="nav-research" class="free-only" hidden></span></nav>
     <span class="spacer"></span>
     <button id="info-btn">ⓘ 市场说明</button>
@@ -293,16 +286,15 @@ body.review #proto-bar{display:flex}
       <div class="col">
         <section class="card" id="card-trade">
           <div class="lev-line">
-            <span class="lb-label">杠杆</span>
-            <div class="lev-btns" id="lev-btns"></div>
             <span class="lb-label">全仓</span>
+            <div class="lev-btns" id="lev-btns"></div>
           </div>
           <div class="side-tabs">
             <button id="side-buy" class="buy-on">买入</button>
             <button id="side-sell">卖出</button>
           </div>
           <div class="tabs" id="type-tabs"></div>
-          <div id="avail-line">可用 <b class="num" id="avail-usdt">—</b> USDT · 杠杆 <span class="unit-btn" id="lev-chip" style="cursor:pointer">1×</span></div>
+          <div id="avail-line">可用 <b class="num" id="avail-usdt">—</b> USDT</div>
           <div class="price-row" id="price-row">
             <span style="color:var(--dim)">价格</span>
             <button class="step" id="px-minus">−</button>
@@ -317,10 +309,13 @@ body.review #proto-bar{display:flex}
             <input id="qty" class="num" value="0.010" inputmode="decimal">
             <button class="step" id="qty-minus">−</button>
             <button class="step" id="qty-plus">+</button>
+          </div>
+          <div id="qty-sub">
+            <span id="qty-conv"></span>
+            <span style="flex:1"></span>
             <span class="unit-btn on" data-u="base" id="u-base">币</span>
             <span class="unit-btn" data-u="usdt" id="u-usdt">USDT</span>
           </div>
-          <div id="qty-conv" style="font-size:11px;color:var(--faint);margin:-2px 0 4px"></div>
           <div class="pct-line">
             <input type="range" id="pct" min="0" max="100" step="1" value="0">
             <span class="v" id="pct-val">0%</span>
@@ -409,8 +404,6 @@ body.review #proto-bar{display:flex}
     </div>
   </div>
 </div>
-
-<div id="modal-root"><div class="modal" id="modal"></div></div>
 
 <script>
 "use strict";
@@ -736,7 +729,6 @@ function renderButtonPx(){
   $("qty-conv").textContent=(px>0&&qty>0)
     ?(qtyUnit==="usdt"?`≈ ${(qty/px).toFixed(m.qdec===0?2:Math.min(m.qdec+1,4))} ${coin}`:`≈ ${notional.toFixed(2)} USDT`)
     :(qtyUnit==="usdt"?"输入 USDT 金额，按价格自动换算为币数量":"");
-  $("lev-chip").textContent=account.leverage+"×";
 }
 function submitOrder(){
   const m=M();
@@ -1063,6 +1055,8 @@ function applyMode(mv){
   const frozen=mv==="coll";
   ["dep-btn","reset-btn","dep-input"].forEach(id=>$(id).disabled=frozen);
   document.querySelectorAll("#lev-btns button").forEach(b=>b.disabled=frozen);
+  const more=$("lev-more");
+  if(more)more.disabled=frozen;
   $("assets-msg").textContent=frozen?"采集模式下初始资金、入金与杠杆由实验协议冻结（入口只读）":"";
   if(frozen&&view==="markets")switchView("trade");
   renderButtonPx();
@@ -1137,24 +1131,10 @@ document.querySelectorAll(".unit-btn[data-u]").forEach(u=>u.onclick=()=>{
   $("qty-label").textContent=qtyUnit==="usdt"?"金额":"数量";
   renderButtonPx();
 });
-$("lev-chip").onclick=()=>{
-  if(mode==="coll"){hintErr("采集模式下杠杆由实验协议冻结");return}
-  openLeverageModal();
-};
-function openLeverageModal(){
-  openModal(`
-  <h2>调整杠杆（全仓）</h2>
-  <p>杠杆决定开仓占用的保证金与预估强平价；强平与穿仓由交易所风控路径统一处理。</p>
-  <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px">${[1,2,3,5,10].map(l=>`<button class="lev-btn ${account.leverage===l?"on":""}" data-lv="${l}" onclick="setLeverage(${l})">${l}×</button>`).join("")}</div>
-  <div class="row"><button id="lev-close">关闭</button></div>`);
-  $("lev-close").onclick=closeModal;
-}
-function openModal(html){$("modal").innerHTML=html;$("modal-root").classList.add("show")}
-function closeModal(){$("modal-root").classList.remove("show")}
-$("modal-root").onclick=e=>{if(e.target===$("modal-root"))closeModal()};
 function syncLevUI(){
   document.querySelectorAll("#lev-btns button").forEach(b=>b.classList.toggle("on",+b.dataset.lv===account.leverage));
-  $("lev-chip").textContent=account.leverage+"×";
+  const more=$("lev-more");
+  if(more)more.value=account.leverage>5?String(account.leverage):"";
 }
 function setLeverage(lv){
   if(mode==="coll")return;
@@ -1164,12 +1144,17 @@ function setLeverage(lv){
 }
 function initLevBtns(){
   const host=$("lev-btns");
-  for(const l of [1,2,3,5,10]){
+  for(const l of [1,2,3,5]){
     const b=document.createElement("button");
     b.textContent=l+"×";b.dataset.lv=l;
     b.onclick=()=>setLeverage(l);
     host.appendChild(b);
   }
+  const sel=document.createElement("select");
+  sel.id="lev-more";
+  sel.innerHTML='<option value="" hidden>⋯</option><option value="10">10×</option>';
+  sel.onchange=()=>{if(sel.value)setLeverage(+sel.value)};
+  host.appendChild(sel);
 }
 
 /* tab 切换 */
