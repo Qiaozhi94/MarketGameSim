@@ -3,8 +3,8 @@ kind: milestone
 id: 0.3.2
 parent: v0.3-human-in-the-loop-crash-experiment
 version: "0.3"
-status: ready-for-development
-status_evidence: docs/reviews/CURRENT-doc.md@readiness PASS（2026-09-18 就绪门）
+status: developing
+status_evidence: G1 owner 批准（2026-09-18 会话指令：进入代码开发阶段）；[TEST] 组 T949-T952 已入驻
 research_claim_status: not-applicable
 research_claim_required: false
 evidence_class: experiment-preview
