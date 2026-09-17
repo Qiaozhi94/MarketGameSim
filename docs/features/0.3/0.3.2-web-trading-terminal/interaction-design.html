@@ -45,7 +45,7 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 .mkt-table th{color:var(--faint);font-weight:400;text-align:right;padding:7px 10px;border-bottom:1px solid var(--line);font-size:12px}
 .mkt-table th:first-child,.mkt-table td:first-child{text-align:left}
 .mkt-table th:nth-child(2),.mkt-table td:nth-child(2){text-align:left}
-.mkt-table td{padding:8px 10px;border-bottom:1px solid #1a2029;font-family:var(--mono)}
+.mkt-table td{padding:8px 10px;border-bottom:1px solid #1a2029;font-family:var(--mono);text-align:right}
 .mkt-table td:first-child{font-family:inherit}
 .mkt-table tr.clickable{cursor:pointer}
 .mkt-table tr.clickable:hover{background:#161d2a}
@@ -137,11 +137,13 @@ input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px so
 #bottom-card table{width:100%;border-collapse:collapse;font-size:12px}
 #bottom-card th{color:var(--faint);font-weight:400;text-align:left;padding:3px 8px;border-bottom:1px solid var(--line);font-size:11px;position:sticky;top:0;background:var(--panel)}
 #bottom-card td{padding:3px 8px;border-bottom:1px solid #1a2029;font-family:var(--mono)}
-#bottom-card tbody tr{cursor:pointer}
+#pane-positions :is(th,td):nth-child(n+3){text-align:right}
+#pane-orders :is(th,td):is(:nth-child(5),:nth-child(6),:nth-child(8)){text-align:right}
 #bottom-card tbody tr.sel{background:#1c2330}
 #bottom-scroll{max-height:190px;overflow-y:auto}
 .st-ok{color:var(--green);font-weight:600}.st-rej{color:var(--red);font-weight:600}
 .st-open{color:var(--blue);font-weight:600}.st-info{color:var(--amber);font-weight:600}
+#returns-body tr[data-idx]{cursor:pointer}
 #return-detail{margin-top:8px;border-top:1px dashed var(--line);padding-top:8px;font-family:var(--mono);
   font-size:12px;line-height:1.7;color:var(--dim);word-break:break-all;min-height:40px}
 
