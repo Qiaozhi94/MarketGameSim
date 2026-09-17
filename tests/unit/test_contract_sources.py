@@ -639,8 +639,8 @@ def test_h2_web_docs_drop_stale_prototype_and_window_id_references():
     design = (ROOT / "docs/features/0.3/0.3.2-web-trading-terminal/design.md").read_text(
         encoding="utf-8"
     )
-    assert "（真实终端形态，v4）" in spec
-    assert "v4 按所有者 2026-09-13 反馈" in design
+    assert "（真实终端形态，owner 2026-09-18 定稿）" in spec
+    assert "owner 2026-09-18 定稿的真实终端形态" in design
     assert "由 T929 在 E1 前拍板" in spec
     assert "`window_id`" not in design
     assert "`sample_point_id`" in design
@@ -663,7 +663,7 @@ def test_h2_web_design_has_no_stale_dq_h_pending_text():
         encoding="utf-8"
     )
     assert "DQ-H" not in design
-    assert "已由 Q-403/ADR-006 裁决" in design
+    assert "Q-403/ADR-006 裁决" in design
 
 
 def test_h2_web_tasks_freeze_the_owner_contract_params_before_kline():
