@@ -1,15 +1,15 @@
 # AI 对话归档索引
 
-> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 81
+> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 94
 
 ## 工具统计
 
 | 工具 | 会话数 |
 |---|---|
 
-| OpenCode | 46 |
-| Claude Code | 12 |
-| Codex CLI | 23 |
+| OpenCode | 50 |
+| Claude Code | 14 |
+| Codex CLI | 30 |
 
 ## 会话血缘树
 
@@ -71,6 +71,12 @@
   - Fix replay round-2 findings (@Sisyphus-Junior subagent) (`opencode` · 2026-08-11T16:02:03Z)
   - Fix report round-2 findings (@Sisyphus-Junior subagent) (`opencode` · 2026-08-11T16:02:49Z)
 - **78674ea7-cfdb-40e3-9b51-62bdbe78ec08** (`claude` · 2026-08-14T16:11:39Z)
+- **2f2f0e17-c1a4-4db1-b8cd-98e938b52c1c** (`claude` · 2026-09-13T04:53:22Z)
+- **按检视文档修复ADR与文档问题** (`opencode` · 2026-09-13T06:01:10Z)
+- **项目当前进度查询** (`opencode` · 2026-09-13T13:54:53Z)
+- **v0.3.2 设计文档检视问题修复** (`opencode` · 2026-09-13T14:14:03Z)
+- **ac49a835-fef9-48b3-ac2a-290c5fabfcd4** (`claude` · 2026-09-13T15:26:23Z)
+- **拉取最新代码** (`opencode` · 2026-09-14T14:08:42Z)
 
 ## 原始会话清单
 
@@ -157,3 +163,16 @@
 | 2026-08-14T13:23:02Z | Codex CLI | rollout-2026-08-14T21-22-59-01a00070-aa8e-71d0-ab12-76d5d8e9e6c0 | openai | `codex/rollout-2026-08-14T21-22-59-01a00070-aa8e-71d0-ab12-76d5d8e9e6c0.md` |
 | 2026-08-14T16:11:39Z | Claude Code | 78674ea7-cfdb-40e3-9b51-62bdbe78ec08 | claude-opus-5 | `claude/78674ea7-cfdb-40e3-9b51-62bdbe78ec08.md` |
 | 2026-08-15T02:47:51Z | Codex CLI | rollout-2026-08-15T10-47-24-01a00351-2353-75c3-a72b-a3db38628eab | openai | `codex/rollout-2026-08-15T10-47-24-01a00351-2353-75c3-a72b-a3db38628eab.md` |
+| 2026-09-12T10:51:45Z | Codex CLI | rollout-2026-09-12T18-51-34-01a0953e-78bd-7f23-8767-644b880bfac9 | openai | `codex/rollout-2026-09-12T18-51-34-01a0953e-78bd-7f23-8767-644b880bfac9.md` |
+| 2026-09-12T10:52:01Z | Codex CLI | rollout-2026-09-12T18-51-35-01a0953e-7cea-7a60-bc84-864ac66be185 | openai | `codex/rollout-2026-09-12T18-51-35-01a0953e-7cea-7a60-bc84-864ac66be185.md` |
+| 2026-09-12T13:28:24Z | Codex CLI | rollout-2026-09-12T21-27-20-01a095cd-12f0-7ba2-b73c-0866fd2c0a2f | openai | `codex/rollout-2026-09-12T21-27-20-01a095cd-12f0-7ba2-b73c-0866fd2c0a2f.md` |
+| 2026-09-12T13:28:59Z | Codex CLI | rollout-2026-09-12T21-27-20-01a095cd-166b-7bd2-a575-d4b85d1c8f7c | openai | `codex/rollout-2026-09-12T21-27-20-01a095cd-166b-7bd2-a575-d4b85d1c8f7c.md` |
+| 2026-09-12T15:15:42Z | Codex CLI | rollout-2026-09-12T23-01-18-01a09623-1ad8-73b0-bb8d-ac55f69b8dac | openai | `codex/rollout-2026-09-12T23-01-18-01a09623-1ad8-73b0-bb8d-ac55f69b8dac.md` |
+| 2026-09-13T04:53:22Z | Claude Code | 2f2f0e17-c1a4-4db1-b8cd-98e938b52c1c | claude-opus-5 | `claude/2f2f0e17-c1a4-4db1-b8cd-98e938b52c1c.md` |
+| 2026-09-13T06:01:10Z | OpenCode | 按检视文档修复ADR与文档问题 | deepseek-flash | `opencode/ses_f66a50aaeffehoKuLdXBNrMhZU.md` |
+| 2026-09-13T13:54:53Z | OpenCode | 项目当前进度查询 | deepseek-flash | `opencode/ses_f64f3552dffe6Zq6p2M8VqwFxm.md` |
+| 2026-09-13T14:01:38Z | Codex CLI | rollout-2026-09-13T22-00-39-01a09b11-f260-76b1-9a11-772cf907b69f | openai | `codex/rollout-2026-09-13T22-00-39-01a09b11-f260-76b1-9a11-772cf907b69f.md` |
+| 2026-09-13T14:14:03Z | OpenCode | v0.3.2 设计文档检视问题修复 | deepseek-flash | `opencode/ses_f64e1c8b0ffe2f2JvjS6cAHHkw.md` |
+| 2026-09-13T14:56:03Z | Codex CLI | rollout-2026-09-13T22-00-41-01a09b11-f86e-7790-b5f3-4e45e18ea801 | openai | `codex/rollout-2026-09-13T22-00-41-01a09b11-f86e-7790-b5f3-4e45e18ea801.md` |
+| 2026-09-13T15:26:23Z | Claude Code | ac49a835-fef9-48b3-ac2a-290c5fabfcd4 | claude-opus-5 | `claude/ac49a835-fef9-48b3-ac2a-290c5fabfcd4.md` |
+| 2026-09-14T14:08:42Z | OpenCode | 拉取最新代码 | deepseek-flash | `opencode/ses_f5fc05294ffet5LIKFdU7dpJIN.md` |
