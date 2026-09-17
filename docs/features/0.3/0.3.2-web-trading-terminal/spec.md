@@ -9,7 +9,7 @@ research_claim_required: false
 evidence_class: experiment-preview
 gate_version: 1
 created: 2026-09-12
-updated: 2026-09-13
+updated: 2026-09-18
 prerequisites:
   - 0.2.1
 ---
@@ -28,7 +28,7 @@ prerequisites:
   [`interactive-session`](../../../contracts/interactive-session.md)。
 - **架构决策**：[`ADR-006`](../../../decisions/006-realtime-free-trading-owner-terminal.md)
   （真实世界时间与自由连续交易，实验约束收敛到采集模式）。
-- **交互设计原型**：[`interaction-design.html`](interaction-design.html)（真实终端形态，v4）。
+- **交互设计原型**：[`interaction-design.html`](interaction-design.html)（真实终端形态，owner 2026-09-18 定稿）。
 - **功能类型**：user-facing / runtime / workflow / validation / docs。
 - **规格模式**：full。
 - **变更类型**：ADDED。
