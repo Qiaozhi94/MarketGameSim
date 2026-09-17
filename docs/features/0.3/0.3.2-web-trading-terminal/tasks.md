@@ -123,7 +123,29 @@ updated: 2026-09-13
       验证 — verify: `tests/integration/test_h2_owner_delivery.py`
 - [ ] T947 (`AC-401`, `AC-402`, `AC-403`, `AC-404`, `AC-405`, `AC-406`, `AC-407`, `AC-408`): 运行
       项目统一质量门 — verify: `python tools/verify.py`
-- [ ] T948 `[状态门]`: 回写 spec 验收证据、owner evidence index、版本索引和状态；必须是本文件最后
+
+### [TEST] 组：层 2 旅程验收轨（必填）
+
+从体验旅程派生（每旅程步骤 ≥1 条可执行断言）；**编写早、执行晚**——夹具随 T932 立红灯，
+收尾全量执行作为 E2 验收。交互语义已由原型行为门锁定（`tests/unit/test_terminal_prototype_behavior.py`），
+本组将其提升为真实现终端上的旅程验收。
+
+- [ ] T949 [TEST] (`AC-401`): 旅程一「先确认行情再交易」：新进程打开 loopback 页面（无外部
+      网络）→ 报价/盘口/最近成交/多周期 K 线可见 → 切换品种与周期刷新 → 空态不造假
+      — verify: `tests/e2e/test_h2_owner_terminal.py::test_journey_market_visibility`；RED/GREEN: 待回填
+- [ ] T950 [TEST] (`AC-402`, `AC-405`, `AC-406`): 旅程二「自由提交买卖委托」：市价成交回报 →
+      限价挂单 → 价格触及自动成交 → 撤单零成交 → 非法输入稳定拒绝 → 断线/刷新不重复委托
+      — verify: `tests/e2e/test_h2_owner_terminal.py::test_journey_free_trading`；RED/GREEN: 待回填
+- [ ] T951 [TEST] (`AC-403`, `AC-406`): 旅程三「页面通过后才开始训练」：preview 未过拒绝
+      training/formal → 通过后进入采集态（白名单外字段隐藏、无参照策略/结果泄漏）→ 退出
+      采集写 `OWNER_ABORT` 终态且不补跑 — verify:
+      `tests/e2e/test_h2_owner_terminal.py::test_journey_gating_and_collection`；RED/GREEN: 待回填
+- [ ] T952 [TEST] (`AC-407`, `AC-408`): 旅程四「个人结果可重建」：从 owner session artifact
+      重建个人描述性报告 → 无直接身份信息、不产生人群结论 → owner evidence index 与 AI
+      index 隔离可从 manifest 重建 — verify:
+      `tests/e2e/test_h2_owner_terminal.py::test_journey_rebuild_evidence`；RED/GREEN: 待回填
+
+- [ ] T953 `[状态门]`: 回写 spec 验收证据、owner evidence index、版本索引和状态；必须是本文件最后
       一项 — verify: `python tools/validate_spec_lifecycle.py`
 
 ## 4. 依赖与并行关系
