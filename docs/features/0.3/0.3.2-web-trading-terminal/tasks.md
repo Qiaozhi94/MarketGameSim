@@ -30,7 +30,8 @@ updated: 2026-09-13
 
 - [ ] T927 (`FR-302`, `IR-301`, `AC-405`): 在任务级接入已完成的 `0.3.1/T915` preview contract，
       验证 session controller、assignment、委托幂等、
-      时点采样和 canonical input contract 可供 Web adapter 复用 — verify: `docs/features/0.3/0.3.1-human-in-the-loop-experiment/design.md`
+      时点采样和 canonical input contract 可供 Web adapter 复用 — verify: `docs/features/0.3/0.3.1-human-in-the-loop-experiment/design.md`；
+      既有契约门：`tests/unit/experiment/test_h2_protocol.py`
 - [ ] T928 (`FR-401`, `NFR-403`, `AC-401`): 在仓库 CI 矩阵 Python 3.11/3.13 的目标环境确认
       loopback 服务、时间单调钟和静态资源加载约束，并把 OS/Python/启动命令记入环境记录；
       其它本地解释器版本只作额外冒烟，不作为验收目标 — verify: `tests/integration/test_h2_owner_web.py`
@@ -56,16 +57,19 @@ updated: 2026-09-13
 - [ ] T932 (`SC-401`, `AC-401`, `AC-403`, `AC-404`): 生成可打开的本地 Web preview
       页面，作为内部 preview contract 验收；入口和验收命令写入 `RUN.md`；固定假参与者可看到价格/
       K 线/账户，且采集模式只显示冻结观察白名单字段（自由模拟演示字段在采集态隐藏）；
-      证据标签为 `experiment-preview` — verify: `tests/e2e/test_h2_owner_terminal.py`
+      证据标签为 `experiment-preview` — verify: `tests/e2e/test_h2_owner_terminal.py`；
+      既有原型门：`tests/unit/test_owner_observation_whitelist.py`
 
 - [ ] T933 (`FR-402`, `IR-402`, `TR-401`, `AC-402`): 将市价/限价买卖委托与撤单映射到 canonical
       input，并实现数量、价格、幂等和稳定错误码校验 — verify:
-      `tests/unit/experiment/test_owner_input_contract.py`
+      `tests/unit/experiment/test_owner_input_contract.py`；
+      既有原型交互门：`tests/unit/test_terminal_prototype_behavior.py`
 - [ ] T934 (`FR-302`, `NFR-402`, `AC-405`): 接入幂等去重、逻辑时点采样和既有撮合/账本/风控路径，
       验证刷新、断线不重复委托或推进逻辑时间 — verify: `tests/integration/test_h2_owner_web.py`
 - [ ] T935 (`UX-402`, `UX-404`, `AC-406`): 完成按钮 enabled/submitting/disabled/rejected、无报价
       禁用、断线、退出、完成和错误空态；采集模式下退出需选择原因并写 `OWNER_ABORT` 终态
-      — verify: `tests/e2e/test_h2_owner_terminal.py`
+      — verify: `tests/e2e/test_h2_owner_terminal.py`；
+      既有原型交互门：`tests/unit/test_terminal_prototype_behavior.py`
 - [ ] T936 `[成果门:H2-D1]` (`SC-402`, `AC-402`, `AC-403`, `AC-405`, `AC-406`): 生成可交互的本地交易终端
       preview，固定输入完成合法市价/限价委托、成交、撤单、拒单、断线与退出，并验收 E2 的
       preview fail-closed 门控；证据标签为 `experiment-preview` — verify: `tests/e2e/test_h2_owner_terminal.py`
@@ -75,11 +79,13 @@ updated: 2026-09-13
 - [ ] T937 (`FR-403`, `DR-401`, `NFR-302`, `AC-403`, `AC-407`): 实现 training/formal
       assignment、阶段解盲、假名化和 owner artifact PII guard（preview gate fail closed 已在
       T931 落地，此处只消费其结果） — verify:
-      `tests/unit/experiment/test_owner_privacy.py`
+      `tests/unit/experiment/test_owner_privacy.py`；
+      既有原型门：`tests/unit/test_owner_observation_whitelist.py`
 - [ ] T938 (`TR-302`, `AC-408`): 按冻结粒度写 owner 逻辑时点采样快照，连接委托、成交、账本、
       盘口和强平事件因果链；区分技术中止（按冻结顺序从备用池整局补跑）与所有者主动中止
       （写 `OWNER_ABORT` reason code 后进入终态、不补跑、不进入 evidence index），并把
-      `abort_kind`/reason code 写入 owner-session.json — verify: `tests/integration/test_h2_owner_web.py`
+      `abort_kind`/reason code 写入 owner-session.json — verify: `tests/integration/test_h2_owner_web.py`；
+      既有证据合同门：`tests/unit/test_owner_incomplete_study.py`
 - [ ] T939 (`SC-403`, `AC-408`): 在 E2 gate 通过后按冻结台账完成 6 个训练场景；训练结果不写入
       formal evidence index。完成证据必须包含目标环境记录与真实 training manifest（6 条唯一
       `session_id`、哈希、排除/补跑流、非退化事件内容）；集成测试只验机制，不能替代真实场景
