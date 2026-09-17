@@ -3,8 +3,8 @@ kind: milestone
 id: 0.3.2
 parent: v0.3-human-in-the-loop-crash-experiment
 version: "0.3"
-status: doc-reviewing
-status_evidence: docs/reviews/CURRENT-doc.md@round7 + RETROSPECTIVE 循环26（原型 2026-09-18 定稿）
+status: ready-for-development
+status_evidence: docs/reviews/CURRENT-doc.md@readiness PASS（2026-09-18 就绪门）
 research_claim_status: not-applicable
 research_claim_required: false
 evidence_class: experiment-preview
