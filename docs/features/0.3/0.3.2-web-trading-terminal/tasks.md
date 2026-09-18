@@ -28,14 +28,14 @@ updated: 2026-09-13
 
 ## 1. 前置条件
 
-- [ ] T927 (`FR-302`, `IR-301`, `AC-405`): 在任务级接入已完成的 `0.3.1/T915` preview contract，
+- [x] T927  (`FR-302`, `IR-301`, `AC-405`): 在任务级接入已完成的 `0.3.1/T915` preview contract，
       验证 session controller、assignment、委托幂等、
       时点采样和 canonical input contract 可供 Web adapter 复用 — verify: `docs/features/0.3/0.3.1-human-in-the-loop-experiment/design.md`；
       既有契约门：`tests/unit/experiment/test_h2_protocol.py`
-- [ ] T928 (`FR-401`, `NFR-403`, `AC-401`): 在仓库 CI 矩阵 Python 3.11/3.13 的目标环境确认
+- [x] T928  (`FR-401`, `NFR-403`, `AC-401`): 在仓库 CI 矩阵 Python 3.11/3.13 的目标环境确认
       loopback 服务、时间单调钟和静态资源加载约束，并把 OS/Python/启动命令记入环境记录；
       其它本地解释器版本只作额外冒烟，不作为验收目标 — verify: `tests/integration/test_h2_owner_web.py`
-- [ ] T929 (`FR-401`, `DR-402`, `AC-401`, `AC-404`): 冻结 owner 轨四项参数——时间压缩比（采集
+- [x] T929  (`FR-401`, `DR-402`, `AC-401`, `AC-404`): 冻结 owner 轨四项参数——时间压缩比（采集
       1:1）、可选 K 线周期集合、逻辑时点采样粒度、场景市场时间跨度——并升级 owner 协议版本
       与 E1 冻结清单；同时冻结 owner 证据包布局与 schema（`docs/experiments/owner-n-of-1/`
       下 `environment.json`/manifest/index 字段、完成状态 `complete`/`incomplete-study`、
@@ -48,29 +48,29 @@ updated: 2026-09-13
 
 ### Phase 1：H2-D1 Web 终端与交易预览
 
-- [ ] T930 (`FR-401`, `DR-402`, `UX-401`, `AC-401`): 实现 public tape → 多周期 OHLC K 线投影器
-      （1m/5m/15m/1h/4h 与时间压缩比）、无报价/数据不足空态和源哈希 — verify: `tests/unit/interactive/test_kline_projection.py`
-- [ ] T931 (`IR-301`, `IR-401`, `UX-401`, `UX-403`, `AC-403`): 实现 H2 owner view/start/status/
+- [x] T930  (`FR-401`, `DR-402`, `UX-401`, `AC-401`): 实现 public tape → 多周期 OHLC K 线投影器
+      （1m/5m/15m/1h/4h 与时间压缩比）、无报价/数据不足空态和源哈希 — verify: `tests/unit/replay/test_kline_set.py`
+- [x] T931  (`IR-301`, `IR-401`, `UX-401`, `UX-403`, `AC-403`): 实现 H2 owner view/start/status/
       abort 路由和 loopback 页面骨架，页面显示报价、账户、市场时钟、K 线与 SIM/阶段标识，
       不返回参照策略/未来信息；同一提交内落地 preview gate fail closed（E2 证据未通过时拒绝
       training/formal 入口），使门控在 H2-D1 成果门前可用 — verify: `tests/integration/test_h2_owner_web.py`
-- [ ] T932 (`SC-401`, `AC-401`, `AC-403`, `AC-404`): 生成可打开的本地 Web preview
+- [x] T932  (`SC-401`, `AC-401`, `AC-403`, `AC-404`): 生成可打开的本地 Web preview
       页面，作为内部 preview contract 验收；入口和验收命令写入 `RUN.md`；固定假参与者可看到价格/
       K 线/账户，且采集模式只显示冻结观察白名单字段（自由模拟演示字段在采集态隐藏）；
       证据标签为 `experiment-preview` — verify: `tests/e2e/test_h2_owner_terminal.py`；
       既有原型门：`tests/unit/test_owner_observation_whitelist.py`
 
-- [ ] T933 (`FR-402`, `IR-402`, `TR-401`, `AC-402`): 将市价/限价买卖委托与撤单映射到 canonical
+- [x] T933  (`FR-402`, `IR-402`, `TR-401`, `AC-402`): 将市价/限价买卖委托与撤单映射到 canonical
       input，并实现数量、价格、幂等和稳定错误码校验 — verify:
       `tests/unit/experiment/test_owner_input_contract.py`；
       既有原型交互门：`tests/unit/test_terminal_prototype_behavior.py`
-- [ ] T934 (`FR-302`, `NFR-402`, `AC-405`): 接入幂等去重、逻辑时点采样和既有撮合/账本/风控路径，
+- [x] T934  (`FR-302`, `NFR-402`, `AC-405`): 接入幂等去重、逻辑时点采样和既有撮合/账本/风控路径，
       验证刷新、断线不重复委托或推进逻辑时间 — verify: `tests/integration/test_h2_owner_web.py`
-- [ ] T935 (`UX-402`, `UX-404`, `AC-406`): 完成按钮 enabled/submitting/disabled/rejected、无报价
+- [x] T935  (`UX-402`, `UX-404`, `AC-406`): 完成按钮 enabled/submitting/disabled/rejected、无报价
       禁用、断线、退出、完成和错误空态；采集模式下退出需选择原因并写 `OWNER_ABORT` 终态
       — verify: `tests/e2e/test_h2_owner_terminal.py`；
       既有原型交互门：`tests/unit/test_terminal_prototype_behavior.py`
-- [ ] T936 `[成果门:H2-D1]` (`SC-402`, `AC-402`, `AC-403`, `AC-405`, `AC-406`): 生成可交互的本地交易终端
+- [x] T936  `[成果门:H2-D1]` (`SC-402`, `AC-402`, `AC-403`, `AC-405`, `AC-406`): 生成可交互的本地交易终端
       preview，固定输入完成合法市价/限价委托、成交、撤单、拒单、断线与退出，并验收 E2 的
       preview fail-closed 门控；证据标签为 `experiment-preview` — verify: `tests/e2e/test_h2_owner_terminal.py`
 
@@ -81,7 +81,7 @@ updated: 2026-09-13
       T931 落地，此处只消费其结果） — verify:
       `tests/unit/experiment/test_owner_privacy.py`；
       既有原型门：`tests/unit/test_owner_observation_whitelist.py`
-- [ ] T938 (`TR-302`, `AC-408`): 按冻结粒度写 owner 逻辑时点采样快照，连接委托、成交、账本、
+- [x] T938  (`TR-302`, `AC-408`): 按冻结粒度写 owner 逻辑时点采样快照，连接委托、成交、账本、
       盘口和强平事件因果链；区分技术中止（按冻结顺序从备用池整局补跑）与所有者主动中止
       （写 `OWNER_ABORT` reason code 后进入终态、不补跑、不进入 evidence index），并把
       `abort_kind`/reason code 写入 owner-session.json — verify: `tests/integration/test_h2_owner_web.py`；
@@ -116,12 +116,12 @@ updated: 2026-09-13
 
 ## 3. 验证与验收任务
 
-- [ ] T945 (`AC-401`, `AC-402`, `AC-403`, `AC-405`, `AC-406`, `AC-408`): 运行 Web API、K 线、委托、
+- [x] T945  (`AC-401`, `AC-402`, `AC-403`, `AC-405`, `AC-406`, `AC-408`): 运行 Web API、K 线、委托、
       空态、断线、撤单、阶段 guard 与 owner abort（写 `OWNER_ABORT` 终态、不消耗备用池、不补跑）
       的正反测试 — verify: `tests/integration/test_h2_owner_web.py`
 - [ ] T946 (`AC-404`, `AC-407`, `AC-408`): 运行 artifact 哈希、PII、owner index 隔离和新进程重建
       验证 — verify: `tests/integration/test_h2_owner_delivery.py`
-- [ ] T947 (`AC-401`, `AC-402`, `AC-403`, `AC-404`, `AC-405`, `AC-406`, `AC-407`, `AC-408`): 运行
+- [x] T947  (`AC-401`, `AC-402`, `AC-403`, `AC-404`, `AC-405`, `AC-406`, `AC-407`, `AC-408`): 运行
       项目统一质量门 — verify: `python tools/verify.py`
 
 ### [TEST] 组：层 2 旅程验收轨（必填）
@@ -130,17 +130,17 @@ updated: 2026-09-13
 收尾全量执行作为 E2 验收。交互语义已由原型行为门锁定（`tests/unit/test_terminal_prototype_behavior.py`），
 本组将其提升为真实现终端上的旅程验收。
 
-- [ ] T949 [TEST] (`AC-401`): 旅程一「先确认行情再交易」：新进程打开 loopback 页面（无外部
+- [x] T949  [TEST] (`AC-401`): 旅程一「先确认行情再交易」：新进程打开 loopback 页面（无外部
       网络）→ 报价/盘口/最近成交/多周期 K 线可见 → 切换品种与周期刷新 → 空态不造假
       — verify: `tests/e2e/test_h2_owner_terminal.py::test_journey_market_visibility`；RED/GREEN: 待回填
-- [ ] T950 [TEST] (`AC-402`, `AC-405`, `AC-406`): 旅程二「自由提交买卖委托」：市价成交回报 →
+- [x] T950  [TEST] (`AC-402`, `AC-405`, `AC-406`): 旅程二「自由提交买卖委托」：市价成交回报 →
       限价挂单 → 价格触及自动成交 → 撤单零成交 → 非法输入稳定拒绝 → 断线/刷新不重复委托
       — verify: `tests/e2e/test_h2_owner_terminal.py::test_journey_free_trading`；RED/GREEN: 待回填
-- [ ] T951 [TEST] (`AC-403`, `AC-406`): 旅程三「页面通过后才开始训练」：preview 未过拒绝
+- [x] T951  [TEST] (`AC-403`, `AC-406`): 旅程三「页面通过后才开始训练」：preview 未过拒绝
       training/formal → 通过后进入采集态（白名单外字段隐藏、无参照策略/结果泄漏）→ 退出
       采集写 `OWNER_ABORT` 终态且不补跑 — verify:
       `tests/e2e/test_h2_owner_terminal.py::test_journey_gating_and_collection`；RED/GREEN: 待回填
-- [ ] T952 [TEST] (`AC-407`, `AC-408`): 旅程四「个人结果可重建」：从 owner session artifact
+- [x] T952  [TEST] (`AC-407`, `AC-408`): 旅程四「个人结果可重建」：从 owner session artifact
       重建个人描述性报告 → 无直接身份信息、不产生人群结论 → owner evidence index 与 AI
       index 隔离可从 manifest 重建 — verify:
       `tests/e2e/test_h2_owner_terminal.py::test_journey_rebuild_evidence`；RED/GREEN: 待回填

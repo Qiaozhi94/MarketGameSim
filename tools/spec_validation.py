@@ -15,7 +15,19 @@ import json
 import pathlib
 import re
 
-STATUSES = {"draft", "ready-for-development", "in-progress", "review", "done"}
+# v4 状态机（sdd-flow）：draft → doc-reviewing → ready-for-development → developing →
+# code-reviewing → done。in-progress/review/ready 是 v3 别名，兼容期保留。
+STATUSES = {
+    "draft",
+    "doc-reviewing",
+    "ready-for-development",
+    "developing",
+    "code-reviewing",
+    "done",
+    "in-progress",
+    "review",
+    "ready",
+}
 RESEARCH_CLAIM_STATUSES = {"not-applicable", "not-established", "established"}
 EVIDENCE_CLASSES = {"engineering-demonstration", "experiment-preview", "formal-research"}
 KINDS = {"version-spec", "milestone"}

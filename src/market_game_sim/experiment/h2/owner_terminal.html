@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>MarketGame · Owner 终端</title><style>
+:root{--bg:#0b0e11;--panel:#131722;--panel2:#1c2330;--line:#2b3444;--fg:#d7dee8;--dim:#8b97a8;
+--faint:#5b6676;--green:#2ebd85;--red:#f6465d;--amber:#f0b90b;--mono:ui-monospace,monospace}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);
+font:13px/1.5 system-ui,"PingFang SC","Microsoft YaHei",sans-serif}
+button{font:inherit;cursor:pointer;border:1px solid var(--line);background:var(--panel2);
+color:var(--fg);border-radius:5px;padding:4px 10px}
+button:disabled{cursor:not-allowed;opacity:.45}
+input,select{font:inherit;background:var(--panel2);color:var(--fg);border:1px solid var(--line);
+border-radius:5px;padding:4px 8px}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+#topnav{display:flex;align-items:center;gap:14px;padding:6px 14px;background:var(--panel);
+border-bottom:1px solid var(--line)}
+.sim-badge{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--amber);
+border:1px solid var(--amber);border-radius:4px;padding:1px 7px}
+.logo{font-weight:700}nav{display:flex;gap:14px;color:var(--dim)}
+nav [data-view]{cursor:pointer}nav .v-on{color:var(--fg);font-weight:700}
+.page{padding:14px 16px;max-width:1280px;margin:auto;display:flex;flex-direction:column;gap:12px}
+[hidden]{display:none !important}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px}
+.card h3{margin:0 0 8px;font-size:12px;color:var(--dim)}
+#terminal{display:grid;grid-template-columns:280px 1fr 290px;gap:10px;max-width:1500px;margin:auto;padding:10px}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{color:var(--faint);font-weight:400;text-align:right;padding:4px 8px;border-bottom:1px solid var(--line);font-size:11px}
+td{padding:4px 8px;border-bottom:1px solid #1a2029;font-family:var(--mono);text-align:right}
+th:first-child,td:first-child{text-align:left}
+.kv{display:flex;justify-content:space-between;padding:2px 0;font-size:12px}
+.kv .k{color:var(--dim)}.up{color:var(--green)}.down{color:var(--red)}
+#kline{width:100%;height:360px;background:#0b0e14;border:1px solid var(--line);border-radius:6px}
+#tf-tabs button.on{border-color:var(--amber);color:var(--amber)}
+.side-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:8px 0}
+.side-tabs button{font-weight:700;padding:8px 0;background:transparent;color:var(--faint)}
+.side-tabs .buy-on{background:#123a28;border-color:var(--green);color:var(--green)}
+.side-tabs .sell-on{background:#3a1713;border-color:var(--red);color:var(--red)}
+.price-row,.qty-row{display:flex;gap:6px;align-items:center;margin:8px 0}
+.price-row input,.qty-row input{flex:1;text-align:right;font-family:var(--mono)}
+.est{font-size:12px;color:var(--dim);margin:8px 0;border-top:1px dashed var(--line);padding-top:8px}
+.est div{display:flex;justify-content:space-between}
+.btn-action{width:100%;font-size:15px;font-weight:700;padding:12px 0;border:none;border-radius:6px}
+.btn-action.buy{background:var(--green);color:#04121c}.btn-action.sell{background:var(--red);color:#1c0705}
+#submit-hint{font-size:12px;color:var(--faint);margin-top:8px;min-height:18px}
+#submit-hint.err{color:var(--red)}#submit-hint.ok{color:var(--green)}
+body.collect .free-only{display:none !important}
+#abort-row{display:flex;gap:8px;margin-top:10px}
+.empty{color:var(--faint);padding:8px 0}
+</style></head><body>
+<div id="topnav"><span class="sim-badge" id="stage-badge">SIM</span><span class="logo">MarketGame</span>
+<nav><span data-view="trade" class="v-on">交易</span><span data-view="assets">资产</span></nav></div>
+<main id="terminal">
+  <div class="col">
+    <section class="card"><h3>盘口 <span id="q-sym" class="num">OWNER/USDT</span></h3>
+      <table><thead><tr><th>价格</th><th>数量</th></tr></thead><tbody id="asks"></tbody>
+      <tbody><tr><td colspan="2" style="text-align:center" id="mid">—</td></tr></tbody>
+      <tbody id="bids"></tbody></table></section>
+    <section class="card"><h3>最近成交</h3>
+      <table><thead><tr><th>时间</th><th>价格</th><th>数量</th><th>方向</th></tr></thead>
+      <tbody id="tape"></tbody></table></section>
+  </div>
+  <div class="col">
+    <section class="card"><div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">
+      <b id="chart-sym">OWNER/USDT</b><span id="tf-tabs" class="free-only"></span>
+      <span style="margin-left:auto;color:var(--faint)" id="clock" class="num">t=0s</span></div>
+      <canvas id="kline" width="840" height="360"></canvas></section>
+    <section class="card"><div class="tabs" style="display:flex;gap:2px;margin-bottom:6px">
+      <button id="tab-pos" class="on">当前持仓</button><button id="tab-ord">当前委托</button>
+      <button id="tab-ret">操作回报</button></div>
+      <div id="pane-pos"><table><thead><tr><th>方向</th><th>数量</th><th>开仓价</th><th>未实现盈亏</th></tr></thead>
+        <tbody id="pos-body"></tbody></table></div>
+      <div id="pane-ord" style="display:none"><table><thead><tr><th>订单号</th><th>方向</th><th>价格</th><th>数量</th><th>操作</th></tr></thead>
+        <tbody id="ord-body"></tbody></table></div>
+      <div id="pane-ret" style="display:none"><table><thead><tr><th>#</th><th>结果</th><th>原因码</th></tr></thead>
+        <tbody id="ret-body"></tbody></table></div></section>
+  </div>
+  <div class="col">
+    <section class="card free-only"><h3>杠杆（全仓）</h3>
+      <div style="display:flex;gap:4px" id="lev-btns"></div>
+      <div style="font-size:11px;color:var(--faint);margin-top:6px">Phase 1 预览引擎固定 1×；多档杠杆随采集引擎接入开放</div></section>
+    <section class="card"><div class="side-tabs">
+      <button id="side-buy" class="buy-on">买入</button><button id="side-sell">卖出</button></div>
+      <div style="display:flex;gap:2px;margin-bottom:6px">
+        <button id="type-limit" class="on">限价</button><button id="type-market">市价</button></div>
+      <div id="avail-line" style="font-size:12px;color:var(--dim);margin:8px 0">可用 <b class="num" id="avail">—</b></div>
+      <div class="price-row" id="price-row"><span style="color:var(--dim)">价格</span>
+        <input id="px" class="num" value=""><button id="px-last">最后价</button></div>
+      <div class="qty-row"><span style="color:var(--dim)">数量</span><input id="qty" class="num" value="1"></div>
+      <div class="est"><div><span>预估占用保证金</span><b class="num" id="est">—</b></div></div>
+      <button class="btn-action buy" id="btn-action">买入</button>
+      <div id="submit-hint"></div>
+      <div id="abort-row"><select id="abort-reason"><option value="owner-stop">owner-stop</option></select>
+        <button id="abort-btn" style="border-color:var(--red);color:var(--red)">退出会话</button></div>
+      <div style="display:flex;gap:6px;margin-top:10px">
+        <button id="ctl-step">单步</button><button id="ctl-resume">继续</button><button id="ctl-pause">暂停</button>
+        <button id="ctl-end">结束</button></div></section>
+  </div>
+</main>
+<div id="view-assets" class="page" hidden>
+  <section class="card"><h3>资产总览</h3><div id="assets-kv"></div></section>
+  <section class="card"><h3>最近操作回报</h3><div id="assets-ret" style="font-family:var(--mono);font-size:12px;color:var(--dim)"></div></section>
+</div>
+<div id="modal-root" style="display:none;position:fixed;inset:0;background:#000a;z-index:80;
+align-items:center;justify-content:center"><div class="card" style="max-width:420px" id="modal"></div></div>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const state={view:null,side:"BUY",type:"LIMIT",tf:60000000000,seq:0};
+const rid=()=>"web-"+Date.now()+"-"+(state.seq++);
+const fmt=v=>v==null?"—":Number(v).toLocaleString("zh-CN");
+async function post(path,body){const r=await fetch(path,{method:"POST",
+  headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});return r.json()}
+function hint(msg,ok){const el=$("submit-hint");el.textContent=msg;el.className=ok?"ok":"err"}
+async function refresh(){
+  const v=await fetch("/api/v1/h2/owner/session").then(r=>r.json());state.view=v;
+  document.body.classList.toggle("collect",v.collection_mode);
+  $("stage-badge").textContent=v.collection_mode?("SIM · "+v.stage.toUpperCase()):"SIM";
+  $("clock").textContent="t="+Math.round(v.logical_timestamp/1e9)+"s";
+  renderBook(v);renderTape(v);renderBottom(v);renderOrderPanel(v);renderChart(v);
+  if(!$("view-assets").hidden)renderAssets(v);
+}
+function renderBook(v){const m=v.market;$("mid").textContent=fmt(m.last_ticks);
+  const rows=(levels,rev)=>{let out="",cum=0;const list=rev?[...levels].reverse():levels;
+    for(const l of list){out+=`<tr><td class="num ${rev?"":"down"}">${fmt(l.price_ticks)}</td>
+      <td>${fmt(l.quantity_units)}</td></tr>`}return out};
+  $("asks").innerHTML=rows(m.asks,false)||'<tr><td colspan="2" class="empty">无卖盘</td></tr>';
+  $("bids").innerHTML=rows(m.bids,true)||'<tr><td colspan="2" class="empty">无买盘</td></tr>'}
+function renderTape(v){const rows=v.market.recent_trades.map(t=>`<tr>
+  <td class="num">${Math.round(t.timestamp/1e9)}s</td><td class="num">${fmt(t.price_ticks)}</td>
+  <td>${fmt(t.quantity_units)}</td><td class="${t.taker_side==="BUY"?"up":"down"}">${t.taker_side||"—"}</td></tr>`);
+  $("tape").innerHTML=rows.join("")||'<tr><td colspan="4" class="empty">尚无公开成交</td></tr>'}
+function renderBottom(v){const a=v.account;const hasPos=a.position_units!==0;
+  const un=a.equity_units-a.wallet_units;
+  $("pos-body").innerHTML=hasPos?`<tr><td class="${a.position_units>0?"up":"down"}">${a.position_units>0?"多":"空"}</td>
+    <td>${fmt(Math.abs(a.position_units))}</td><td>${fmt(a.entry_notional_units/Math.max(1,Math.abs(a.position_units)))}</td>
+    <td class="${un>=0?"up":"down"}">${un>=0?"+":""}${fmt(un)}</td></tr>`
+    :'<tr><td colspan="4" class="empty">当前无持仓</td></tr>';
+  $("ord-body").innerHTML=a.active_orders.map(o=>`<tr><td class="num">${o.order_id}</td>
+    <td class="${o.side==="BUY"?"up":"down"}">${o.side}</td><td>${fmt(o.price_ticks)}</td>
+    <td>${fmt(o.quantity_units)}</td><td><button onclick="cancelOrder('${o.order_id}')">撤单</button></td></tr>`).join("")
+    ||'<tr><td colspan="5" class="empty">无当前委托</td></tr>';
+  $("ret-body").innerHTML=v.recent_input_results.map(r=>`<tr><td>${r.input_seq??"—"}</td>
+    <td class="${r.accepted?"up":"down"}">${r.accepted?"已接受":"已拒绝"}</td>
+    <td>${r.reason_code}</td></tr>`).join("")||'<tr><td colspan="3" class="empty">暂无操作</td></tr>'}
+function renderOrderPanel(v){const a=v.account;const avail=Math.max(0,a.equity_units-a.reserved_units);
+  $("avail").textContent=fmt(avail);
+  const qty=parseFloat($("qty").value||"0"),px=state.type==="LIMIT"?parseFloat($("px").value||"0"):v.market.last_ticks;
+  $("est").textContent=(qty>0&&px>0)?fmt(qty*px):"—";
+  if(state.type==="LIMIT"&&!$("px").value&&v.market.last_ticks)$("px").value=v.market.last_ticks}
+function renderChart(v){const bars=v.market.klines[state.tf]||[];
+  const cvs=$("kline"),ctx=cvs.getContext("2d");ctx.clearRect(0,0,cvs.width,cvs.height);
+  if(!bars.length){ctx.fillStyle="#5b6676";ctx.font="13px system-ui";ctx.textAlign="center";
+    ctx.fillText("数据不足：公开成交 tape 尚无数据",cvs.width/2,cvs.height/2);return}
+  const view=bars.slice(-90);let hi=-1e18,lo=1e18;
+  for(const b of view){hi=Math.max(hi,b.high);lo=Math.min(lo,b.low)}
+  const range=(hi-lo)||1;hi+=range*.05;lo-=range*.05;
+  const padR=70,ch=cvs.height-36,bw=cvs.width/view.length;
+  const y=p=>(hi-p)/(hi-lo)*ch;
+  view.forEach((b,i)=>{const up=b.close>=b.open,col=up?"#2ebd85":"#f6465d";const x=bw*i+bw/2;
+    ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(x,y(b.high));ctx.lineTo(x,y(b.low));ctx.stroke();
+    ctx.fillStyle=col;const top=y(Math.max(b.open,b.close)),bot=y(Math.min(b.open,b.close));
+    ctx.fillRect(x-Math.max(1,bw*.3),top,Math.max(2,bw*.6),Math.max(1,bot-top))});
+  const last=v.market.last_ticks;
+  if(last!=null&&last>=lo&&last<=hi){ctx.strokeStyle="#2ebd85aa";ctx.setLineDash([4,4]);
+    ctx.beginPath();ctx.moveTo(0,y(last));ctx.lineTo(cvs.width-padR,y(last));ctx.stroke();ctx.setLineDash([])}}
+function renderAssets(v){const a=v.account;const un=a.equity_units-a.wallet_units;
+  const rows=[["账户权益",fmt(a.equity_units)],["可用余额",fmt(Math.max(0,a.equity_units-a.reserved_units))],
+    ["占用保证金",fmt(a.reserved_units)],["保证金比率",a.margin_ratio_bp!=null?(a.margin_ratio_bp/100).toFixed(2)+"%":"—"],
+    ["未实现盈亏",(un>=0?"+":"")+fmt(un)],["账户状态",a.state],["仓位",fmt(Math.abs(a.position_units))+(a.position_units?(a.position_units>0?"（多）":"（空）"):"")]];
+  $("assets-kv").innerHTML=rows.map(([k,val])=>`<div class="kv"><span class="k">${k}</span><span class="num">${val}</span></div>`).join("");
+  $("assets-ret").textContent=v.recent_input_results.map(r=>`#${r.input_seq??"-"} ${r.accepted?"OK":"REJ"} ${r.reason_code}`).join("\\n")||"暂无操作"}
+async function submitOrder(){const v=state.view;if(!v)return;
+  const btn=$("btn-action");if(btn.disabled)return;btn.disabled=true;
+  hint("提交中…");
+  try{
+    const qty=parseInt($("qty").value||"0",10);
+    const payload={order_id:"web-"+rid(),side:state.side,order_type:state.type,
+      quantity_units:qty,price_ticks:state.type==="LIMIT"?parseInt($("px").value||"0",10):null};
+    const res=await post("/api/v1/h2/owner/session/orders",{...payload,client_request_id:rid()});
+    hint(res.accepted?"已接受委托":"已拒绝："+res.reason_code,res.accepted)
+  }finally{btn.disabled=false}}
+async function cancelOrder(orderId){await post("/api/v1/h2/owner/session/cancels",
+  {order_id:orderId,client_request_id:rid()})}
+async function control(action){const res=await post("/api/v1/h2/owner/session/control",
+  {action,client_request_id:rid()});if(!res.accepted)hint("控制被拒："+res.reason_code,false)}
+async function abortSession(){const reason=$("abort-reason").value;
+  const res=await post("/api/v1/h2/owner/session/abort",{reason});
+  $("modal-root").style.display="flex";
+  $("modal").innerHTML=`<h3>会话已${res.accepted?"中止":"未中止"}</h3>
+  <p style="color:var(--dim)">${res.accepted?"OWNER_ABORT 已写终态：不补跑、不进入 evidence index。":"原因码："+res.reason_code}</p>
+  <div style="text-align:right;margin-top:10px"><button onclick='$("modal-root").style.display="none"'>关闭</button></div>`}
+$("side-buy").onclick=()=>{state.side="BUY";$("side-buy").className="buy-on";$("side-sell").className="";
+  $("btn-action").className="btn-action buy";$("btn-action").textContent="买入"};
+$("side-sell").onclick=()=>{state.side="SELL";$("side-sell").className="sell-on";$("side-buy").className="";
+  $("btn-action").className="btn-action sell";$("btn-action").textContent="卖出"};
+$("type-limit").onclick=()=>{state.type="LIMIT";$("type-limit").className="on";$("type-market").className="";$("price-row").style.display="flex"};
+$("type-market").onclick=()=>{state.type="MARKET";$("type-market").className="on";$("type-limit").className="";$("price-row").style.display="none"};
+$("btn-action").onclick=submitOrder;
+$("ctl-step").onclick=()=>control("STEP");$("ctl-resume").onclick=()=>control("RESUME");
+$("ctl-pause").onclick=()=>control("PAUSE");$("ctl-end").onclick=()=>control("END");
+$("abort-btn").onclick=abortSession;
+$("qty").oninput=renderOrderPanel;$("px").oninput=renderOrderPanel;
+document.querySelectorAll("nav [data-view]").forEach(x=>x.onclick=()=>{
+  document.querySelectorAll("nav [data-view]").forEach(y=>y.classList.toggle("v-on",y===x));
+  const trade=x.dataset.view==="trade";$("terminal").style.display=trade?"grid":"none";
+  $("view-assets").hidden=trade});
+(function initLev(){const host=$("lev-btns");for(const l of [1,2,3,5,10]){
+  const b=document.createElement("button");b.textContent=l+"×";
+  if(l===1)b.className="on";b.disabled=l!==1;b.title=l!==1?"Phase 1 预览引擎固定 1×":"";
+  b.onclick=()=>hint("Phase 1 预览引擎固定 1×（H1 合同演示参数）",false);host.appendChild(b)}})();
+(function initTf(){const names={60000000000:"1m",300000000000:"5m",900000000000:"15m",
+  3600000000000:"1h",14400000000000:"4h",86400000000000:"1D"};
+  const host=$("tf-tabs");for(const [ns,label] of Object.entries(names)){
+  const b=document.createElement("button");b.textContent=label;if(String(ns)===String(state.tf))b.className="on";
+  b.onclick=()=>{state.tf=Number(ns);host.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");renderChart(state.view)};host.appendChild(b)}})();
+refresh();setInterval(refresh,400);
+</script></body></html>

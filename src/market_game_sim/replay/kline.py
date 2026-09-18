@@ -8,10 +8,21 @@ trade carry ``initial_price``.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any
 
 DEFAULT_BAR_NS = 60 * 10**9  # 60s (metrics-dictionary §1.9)
+
+# T930 (0.3.2 E1): the frozen capture-period set for owner N-of-1 collection --
+# 1m / 5m / 15m / 1h / 4h.  1D must never be added here (0.3.2 E1 freeze).
+OWNER_KLINE_PERIODS_NS: tuple[int, ...] = (
+    60_000_000_000,  # 1m
+    300_000_000_000,  # 5m
+    900_000_000_000,  # 15m
+    3_600_000_000_000,  # 1h
+    14_400_000_000_000,  # 4h
+)
 
 
 @dataclass
@@ -97,3 +108,31 @@ def build_klines(
         )
 
     return out
+
+
+def build_kline_set(
+    events: list[dict[str, Any]],
+    *,
+    periods_ns: Sequence[int],
+    initial_price_ticks: int,
+) -> dict[int, list[Kline]]:
+    """T930 (FR-401): build completed-bar K-line series for multiple periods.
+
+    Each period in ``periods_ns`` is run through :func:`build_klines` against
+    the same event log, so all series are projections of one and the same
+    tape.  ``periods_ns`` must be a non-empty sequence of positive integers;
+    duplicates are collapsed and the result is keyed by period in ascending
+    order, which makes the mapping deterministic for a given input.  Empty
+    ``periods_ns`` or a non-positive entry raises :class:`ValueError`.
+    Empty ``events`` yields an empty list for every requested period.
+    """
+    unique_periods = sorted(set(periods_ns))
+    if not unique_periods:
+        raise ValueError("periods_ns must be a non-empty sequence of positive integers")
+    for period in unique_periods:
+        if not isinstance(period, int) or isinstance(period, bool) or period <= 0:
+            raise ValueError(f"periods_ns entries must be positive integers, got {period!r}")
+    return {
+        period: build_klines(events, period_ns=period, initial_price_ticks=initial_price_ticks)
+        for period in unique_periods
+    }
