@@ -301,3 +301,24 @@ def test_history_endpoint_free_only(tmp_path: Path):
     coll = OwnerWebSession(stage="training", preview_dir=evidence, session_id="hist-coll")
     assert coll.history_bars(86_400_000_000_000) is None, "采集态不提供历史端点"
     assert coll.history_bars(-1) is None
+
+
+def test_forming_bar_tracks_last_price(free_session):
+    """进行中蜡烛必须与最新价线同源（价格线动 = 蜡烛收口动）。"""
+    period = 60_000_000_000
+    assert free_session.view()["market"]["forming"][period] is None, "无成交时不伪造蜡烛"
+    free_session.place_order(
+        {
+            "order_id": "fm-1",
+            "side": "BUY",
+            "order_type": "MARKET",
+            "quantity_units": 1,
+            "price_ticks": None,
+        },
+        "fm-r1",
+    )
+    view = free_session.view()
+    forming = view["market"]["forming"][period]
+    assert forming is not None and forming["forming"] is True
+    assert forming["close"] == view["market"]["last_ticks"]
+    assert forming["volume"] > 0

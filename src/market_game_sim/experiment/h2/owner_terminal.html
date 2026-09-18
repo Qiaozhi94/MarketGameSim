@@ -160,7 +160,9 @@ function renderOrderPanel(v){const a=v.account;const avail=Math.max(0,a.equity_u
       hint("价格远离盘口：将作为挂单等待，短期不会成交",false)}
 }
 function renderChart(v){const live=v.market.klines[state.tf]||[];
-  const bars=(state.hist[state.tf]||[]).concat(live);
+  const forming=(v.market.forming||{})[state.tf];
+  const liveAll=forming?live.concat([forming]):live;
+  const bars=(state.hist[state.tf]||[]).concat(liveAll);
   const cvs=$("kline"),ctx=cvs.getContext("2d");ctx.clearRect(0,0,cvs.width,cvs.height);
   if(!bars.length){ctx.fillStyle="#5b6676";ctx.font="13px system-ui";ctx.textAlign="center";
     ctx.fillText("数据不足：公开成交 tape 尚无数据",cvs.width/2,cvs.height/2);return}

@@ -147,6 +147,9 @@ class OwnerWebSession:
         klines = build_kline_set(
             events, periods_ns=periods, initial_price_ticks=self.initial_price_ticks
         )
+        forming = {
+            period: self._forming_bar(events, period, bars) for period, bars in klines.items()
+        }
         view: dict[str, Any] = {
             "schema_version": 1,
             "stage": self.stage,
@@ -177,6 +180,7 @@ class OwnerWebSession:
                     ]
                     for period, bars in klines.items()
                 },
+                "forming": forming,
             },
             "account": base["account"],
             "recent_input_results": base["recent_input_results"],
@@ -189,6 +193,50 @@ class OwnerWebSession:
         }
         self._sample(view)
         return view
+
+    @staticmethod
+    def _forming_bar(
+        events: list[dict[str, Any]], period: int, completed: list[Any]
+    ) -> dict[str, Any] | None:
+        """当前未完成周期的进行中蜡烛：让蜡烛与最新价线实时对应。"""
+
+        trades = sorted(
+            (
+                (int(item["timestamp"]), int(item["price_ticks"]), int(item["quantity_units"]))
+                for item in events
+                if item.get("event_type") == "TRADE_SETTLE" and item.get("price_ticks") is not None
+            ),
+            key=lambda t: t[0],
+        )
+        if completed:
+            prev_close = completed[-1].close
+            cutoff = completed[-1].start_ns + period
+        else:
+            prev_close = None
+            cutoff = 0
+        recent = [t for t in trades if t[0] >= cutoff]
+        if not recent:
+            if prev_close is None:
+                return None
+            return {
+                "start_ns": cutoff,
+                "open": prev_close,
+                "high": prev_close,
+                "low": prev_close,
+                "close": prev_close,
+                "volume": 0,
+                "forming": True,
+            }
+        prices = [t[1] for t in recent]
+        return {
+            "start_ns": cutoff,
+            "open": prices[0],
+            "high": max(prices),
+            "low": min(prices),
+            "close": prices[-1],
+            "volume": sum(t[2] for t in recent),
+            "forming": True,
+        }
 
     @staticmethod
     def _recent_trades(events: list[dict[str, Any]], limit: int = 16) -> list[dict[str, Any]]:
