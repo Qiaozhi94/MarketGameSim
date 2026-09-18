@@ -83,7 +83,7 @@ body.collect .free-only{display:none !important}
       <div style="display:flex;gap:2px;margin-bottom:6px">
         <button id="type-limit" class="on">限价</button><button id="type-market">市价</button></div>
       <div id="avail-line" style="font-size:12px;color:var(--dim);margin:8px 0">可用 <b class="num" id="avail">—</b></div>
-      <div class="price-row" id="price-row"><span style="color:var(--dim)">价格</span>
+      <div class="price-row" id="price-row"><span style="color:var(--dim)">价格(ticks)</span>
         <input id="px" class="num" value=""><button id="px-last">最后价</button></div>
       <div class="qty-row"><span style="color:var(--dim)">数量</span><input id="qty" class="num" value="1"></div>
       <div class="est"><div><span>预估占用保证金</span><b class="num" id="est">—</b></div></div>
@@ -146,7 +146,14 @@ function renderOrderPanel(v){const a=v.account;const avail=Math.max(0,a.equity_u
   $("avail").textContent=fmt(avail);
   const qty=parseFloat($("qty").value||"0"),px=state.type==="LIMIT"?parseFloat($("px").value||"0"):v.market.last_ticks;
   $("est").textContent=(qty>0&&px>0)?fmt(qty*px):"—";
-  if(state.type==="LIMIT"&&!$("px").value&&v.market.last_ticks)$("px").value=v.market.last_ticks}
+  if(state.type==="LIMIT"&&!$("px").value){
+    const ref=state.side==="BUY"?v.market.best_ask:v.market.best_bid;
+    if(ref!=null)$("px").value=ref}
+  if(state.type==="LIMIT"&&qty>0&&px>0){
+    const bid=v.market.best_bid,ask=v.market.best_ask;
+    if(bid!=null&&ask!=null&&(state.side==="BUY"?px<bid*0.9:px>ask*1.9))
+      hint("价格远离盘口：将作为挂单等待，短期不会成交",false)}
+}
 function renderChart(v){const bars=v.market.klines[state.tf]||[];
   const cvs=$("kline"),ctx=cvs.getContext("2d");ctx.clearRect(0,0,cvs.width,cvs.height);
   if(!bars.length){ctx.fillStyle="#5b6676";ctx.font="13px system-ui";ctx.textAlign="center";
@@ -190,9 +197,11 @@ async function abortSession(){const reason=$("abort-reason").value;
   <p style="color:var(--dim)">${res.accepted?"OWNER_ABORT 已写终态：不补跑、不进入 evidence index。":"原因码："+res.reason_code}</p>
   <div style="text-align:right;margin-top:10px"><button onclick='$("modal-root").style.display="none"'>关闭</button></div>`}
 $("side-buy").onclick=()=>{state.side="BUY";$("side-buy").className="buy-on";$("side-sell").className="";
-  $("btn-action").className="btn-action buy";$("btn-action").textContent="买入"};
+  $("btn-action").className="btn-action buy";$("btn-action").textContent="买入";
+  if(!$("px").value&&state.view){const ref=state.view.market.best_ask;if(ref!=null)$("px").value=ref}};
 $("side-sell").onclick=()=>{state.side="SELL";$("side-sell").className="sell-on";$("side-buy").className="";
-  $("btn-action").className="btn-action sell";$("btn-action").textContent="卖出"};
+  $("btn-action").className="btn-action sell";$("btn-action").textContent="卖出";
+  if(!$("px").value&&state.view){const ref=state.view.market.best_bid;if(ref!=null)$("px").value=ref}};
 $("type-limit").onclick=()=>{state.type="LIMIT";$("type-limit").className="on";$("type-market").className="";$("price-row").style.display="flex"};
 $("type-market").onclick=()=>{state.type="MARKET";$("type-market").className="on";$("type-limit").className="";$("price-row").style.display="none"};
 $("btn-action").onclick=submitOrder;

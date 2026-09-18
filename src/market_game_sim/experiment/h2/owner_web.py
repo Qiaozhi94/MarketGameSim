@@ -19,6 +19,7 @@ from __future__ import annotations
 import hashlib
 import json
 import platform
+import threading
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from http import HTTPStatus
@@ -26,6 +27,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+from market_game_sim.experiment.h2.ai_flow import AiFlowGenerator
 from market_game_sim.experiment.h2.owner_freeze import (
     SAMPLING_INTERVAL_NS,
     TIME_COMPRESSION,
@@ -68,15 +70,57 @@ class OwnerWebSession:
     owner_aborted: bool = False
     abort_record: _AbortRecord | None = None
     snapshots: list[dict[str, Any]] = field(default_factory=list)
+    ai_live: bool = False
+    ai_seed: int = 7
+    prejoin_seconds: int = 90
+    live_interval: float = 1.0
     _last_sample_ns: int = field(default=-1, repr=False)
+    _ai_generator: AiFlowGenerator | None = field(default=None, repr=False)
+    _ai_thread: threading.Thread | None = field(default=None, repr=False)
+    _ai_next_second: int = field(default=0, repr=False)
 
     def __post_init__(self) -> None:
         if self.stage not in STAGES:
             raise ValueError(f"未知 stage：{self.stage}")
         if self.stage in COLLECTION_STAGES:
             self._require_preview_evidence()
-        self.runtime = InteractiveRuntime(session_id=self.session_id)
+        if self.ai_live:
+            self._ai_generator = AiFlowGenerator(seed=self.ai_seed)
+            self.runtime = InteractiveRuntime(
+                session_id=self.session_id,
+                context_accounts=self._ai_generator.seed_accounts(),
+            )
+        else:
+            self.runtime = InteractiveRuntime(session_id=self.session_id)
         self.runtime.start()
+        if self.ai_live:
+            self._warm_history()
+            self.runtime.control(InputAction.RESUME, "ai-live-resume")
+            self._ai_thread = threading.Thread(target=self._live_loop, daemon=True)
+            self._ai_thread.start()
+
+    def _warm_history(self) -> None:
+        """AI 预热：owner 中途加入前市场已交易 prejoin_seconds 个逻辑秒。"""
+
+        for second_index in range(1, self.prejoin_seconds + 1):
+            events = self._ai_generator.events_for_second(second_index)
+            self.runtime.logical_timestamp = second_index * 1_000_000_000
+            self.runtime.adapter.append_context_events(events)
+        self._ai_next_second = self.prejoin_seconds + 1
+        self.runtime.snapshot_revision += 1
+
+    def _live_loop(self) -> None:
+        """1:1 实时推进：每个墙钟秒注入一个逻辑秒的 AI 行情（ADR-006 采集压缩比）。"""
+
+        import time
+
+        while not self.owner_aborted and self.runtime.state.value not in {"COMPLETED", "ABORTED"}:
+            time.sleep(self.live_interval)
+            if self.runtime.state.value != "RUNNING":
+                continue
+            events = self._ai_generator.events_for_second(self._ai_next_second)
+            self._ai_next_second += 1
+            self.runtime.advance_second(events)
 
     def _require_preview_evidence(self) -> None:
         if self.preview_dir is None:
@@ -364,10 +408,20 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8791)
     parser.add_argument("--session-id", default="owner-web-1")
+    parser.add_argument(
+        "--ai-live",
+        dest="ai_live",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="AI 已在交易中（预热历史 + 1:1 实时流动）；--no-ai-live 关闭",
+    )
     args = parser.parse_args(argv)
     try:
         session = OwnerWebSession(
-            stage=args.stage, preview_dir=args.preview_dir, session_id=args.session_id
+            stage=args.stage,
+            preview_dir=args.preview_dir,
+            session_id=args.session_id,
+            ai_live=args.ai_live,
         )
     except PreviewGateBlocked as exc:
         print(f"OWNER_WEB_PREVIEW_BLOCKED: {exc}")

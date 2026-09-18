@@ -29,14 +29,23 @@ class HumanAdapter:
         run_id: str = "interactive",
         initial_price_ticks: int = 10_000,
         mult: int = 1,
+        context_accounts: dict[str, int] | None = None,
     ) -> None:
         self.run_id = run_id
         self.initial_price_ticks = initial_price_ticks
         self.mult = mult
         self._commands: list[tuple[str, dict[str, Any], int, int]] = []
+        self._context_events: list[dict[str, Any]] = []
         self.records: list[dict[str, Any]] = []
         self.accounts: dict[str, Account] = {}
         self.book = None
+        self._context_accounts = dict(context_accounts or {})
+        self._rebuild()
+
+    def append_context_events(self, events: list[dict[str, Any]]) -> None:
+        """追加 AI/市场上下文事件（确定性重放流的一部分），并重建市场。"""
+
+        self._context_events.extend(events)
         self._rebuild()
 
     def place_order(
@@ -103,11 +112,13 @@ class HumanAdapter:
             HUMAN_AGENT_ID: Account(agent_id=HUMAN_AGENT_ID, wallet_units=1_000_000),
             "maker": Account(agent_id="maker", wallet_units=100_000_000),
         }
+        for agent_id, wallet in self._context_accounts.items():
+            accounts[agent_id] = Account(agent_id=agent_id, wallet_units=wallet)
         levels = [
             BookLevel("BUY", "maker-bid", "maker", self.initial_price_ticks - 10, 10_000),
             BookLevel("SELL", "maker-ask", "maker", self.initial_price_ticks + 10, 10_000),
         ]
-        events: list[dict[str, Any]] = []
+        events: list[dict[str, Any]] = list(self._context_events)
         for action, payload, timestamp, input_seq in self._commands:
             decision_id = f"human-decision-{input_seq}"
             intent = {

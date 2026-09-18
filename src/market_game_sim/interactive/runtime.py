@@ -25,12 +25,17 @@ class InputResult:
 class InteractiveRuntime:
     """Single-writer session API shared by HTTP and integration callers."""
 
-    def __init__(self, session_id: str = "interactive-s7") -> None:
+    def __init__(
+        self,
+        session_id: str = "interactive-s7",
+        *,
+        context_accounts: dict[str, int] | None = None,
+    ) -> None:
         self.session_id = session_id
         self.state = SessionState.CREATED
         self.snapshot_revision = 0
         self.logical_timestamp = 0
-        self._adapter = HumanAdapter(run_id=session_id)
+        self._adapter = HumanAdapter(run_id=session_id, context_accounts=context_accounts)
         self._inbox = InputInbox()
         self._results: dict[int, InputResult] = {}
         self._lock = RLock()
@@ -57,6 +62,20 @@ class InteractiveRuntime:
         if action not in {InputAction.PAUSE, InputAction.RESUME, InputAction.STEP, InputAction.END}:
             return self._rejected(None, ReasonCode.INVALID_INPUT)
         return self._mutate(action, {"client_request_id": client_request_id})
+
+    def advance_second(self, events: list[dict[str, Any]]) -> dict[str, Any]:
+        """推进一个逻辑秒并注入市场上下文事件（0.3.2 AI 预热行情用，增量能力）。
+
+        不改变既有命令/幂等语义；仅在与 owner 终端的实时行情线程配合时使用。
+        """
+
+        with self._lock:
+            if self.state in {SessionState.COMPLETED, SessionState.ABORTED}:
+                return self.view(error_code=ReasonCode.INVALID_STATE)
+            self.logical_timestamp += 1_000_000_000
+            self._adapter.append_context_events(events)
+            self.snapshot_revision += 1
+            return self.view()
 
     def disconnect(self) -> None:
         """Finish the current atomic mutation, then stop continuous progress."""

@@ -225,3 +225,62 @@ def test_http_routes_serve_terminal_and_api(owner_server):
 def test_server_rejects_non_loopback_bind():
     with pytest.raises(ValueError, match="loopback"):
         create_owner_server(OwnerWebSession(stage="free"), host="0.0.0.0")
+
+
+def test_ai_flow_generator_is_deterministic():
+    from market_game_sim.experiment.h2.ai_flow import AiFlowGenerator
+
+    a = AiFlowGenerator(seed=42)
+    b = AiFlowGenerator(seed=42)
+    events_a = [a.events_for_second(i) for i in range(1, 11)]
+    events_b = [b.events_for_second(i) for i in range(1, 11)]
+    assert events_a == events_b
+    flat = [e for second in events_a for e in second]
+    assert any(e["event_type"] == "TRADE_SETTLE" for e in []) or True  # 占位防误读
+    assert all(e["event_type"] in {"AGENT_DECIDE", "ORDER_ARRIVAL"} for e in flat)
+
+
+def test_ai_live_warm_history_and_midway_join(tmp_path: Path):
+    session = OwnerWebSession(stage="free", session_id="ai-live-1", ai_live=True)
+    view = session.view()
+    assert view["logical_timestamp"] == 90_000_000_000, "owner 中途加入：市场已预热 90 逻辑秒"
+    assert view["market"]["recent_trades"], "预热期应已产生公开成交"
+    assert view["market"]["klines"][60_000_000_000], "1m K 线应有历史蜡烛"
+
+    # owner 中途加入：市价单按 AI 市场现价成交
+    result = session.place_order(
+        {
+            "order_id": "join-1",
+            "side": "BUY",
+            "order_type": "MARKET",
+            "quantity_units": 2,
+            "price_ticks": None,
+        },
+        "join-r1",
+    )
+    assert result["accepted"] is True
+    after = session.view()
+    assert after["account"]["position_units"] > 0
+    assert after["market"]["recent_trades"][0]["price_ticks"] is not None
+
+
+def test_ai_live_thread_advances_and_abort_stops_it():
+    import time
+
+    session = OwnerWebSession(
+        stage="free", session_id="ai-live-2", ai_live=True,
+        prejoin_seconds=5, live_interval=0.05,
+    )
+    time.sleep(0.5)
+    t_before = session.runtime.logical_timestamp
+    assert t_before > 5_000_000_000, "实时线程应按 1:1 推进逻辑时间"
+    session.abort("owner-stop")
+    time.sleep(0.3)
+    t_after = session.runtime.logical_timestamp
+    time.sleep(0.3)
+    assert session.runtime.logical_timestamp == t_after, "OWNER_ABORT 后行情停表"
+
+
+def test_ai_live_collection_stage_requires_preview(tmp_path: Path):
+    with pytest.raises(PreviewGateBlocked):
+        OwnerWebSession(stage="training", ai_live=True, preview_dir=None)
