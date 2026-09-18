@@ -56,7 +56,7 @@ class AiFlowGenerator:
         self.walk_ticks = walk_ticks
         self.quote_span_ticks = quote_span_ticks
         self.taker_probability = taker_probability
-        self._open_quote_order: str | None = None
+        self._open_quote_orders: dict[str, str] = {}  # side -> order_id
 
     def seed_accounts(self) -> dict[str, int]:
         """AI 代理的初始资金（HumanAdapter 上下文账户）。"""
@@ -130,27 +130,24 @@ class AiFlowGenerator:
         step = int(round((_draw(f"{self.seed}:walk:{second_index}") - 0.5) * 2 * self.walk_ticks))
         self.mid_ticks = max(1, self.mid_ticks + step)
 
-        # 2) AI 做市：撤旧挂新（围绕新中间价 ±span）
-        if self._open_quote_order is not None:
-            emit("ai-maker", "CANCEL", cancel_target=self._open_quote_order)
-        new_quote_id = f"ai-quote-{second_index}"
-        side = "BUY" if _draw(f"{self.seed}:side:{second_index}") < 0.5 else "SELL"
-        price = (
-            self.mid_ticks - self.quote_span_ticks
-            if side == "BUY"
-            else self.mid_ticks + self.quote_span_ticks
-        )
-        quantity = 5 + int(_draw(f"{self.seed}:q:{second_index}") * 10)
-        emit(
-            "ai-maker",
-            "SUBMIT",
-            side=side,
-            order_type="LIMIT",
-            price_ticks=price,
-            quantity_units=quantity,
-            order_id=new_quote_id,
-        )
-        self._open_quote_order = new_quote_id
+        # 2) AI 做市：双边撤旧挂新（围绕新中间价 ±span），游走带动整个报价
+        for quote_side, sign in (("BUY", -1), ("SELL", +1)):
+            prev = self._open_quote_orders.get(quote_side)
+            if prev is not None:
+                emit("ai-maker", "CANCEL", cancel_target=prev)
+            new_quote_id = f"ai-quote-{quote_side}-{second_index}"
+            price = self.mid_ticks + sign * self.quote_span_ticks
+            quantity = 5 + int(_draw(f"{self.seed}:q:{quote_side}:{second_index}") * 10)
+            emit(
+                "ai-maker",
+                "SUBMIT",
+                side=quote_side,
+                order_type="LIMIT",
+                price_ticks=price,
+                quantity_units=quantity,
+                order_id=new_quote_id,
+            )
+            self._open_quote_orders[quote_side] = new_quote_id
 
         # 3) AI 吃单：按概率市价穿过盘口（产生公开成交）
         if _draw(f"{self.seed}:taker:{second_index}") < self.taker_probability:

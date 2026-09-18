@@ -30,12 +30,17 @@ class InteractiveRuntime:
         session_id: str = "interactive-s7",
         *,
         context_accounts: dict[str, int] | None = None,
+        initial_levels: list[Any] | None = None,
     ) -> None:
         self.session_id = session_id
         self.state = SessionState.CREATED
         self.snapshot_revision = 0
         self.logical_timestamp = 0
-        self._adapter = HumanAdapter(run_id=session_id, context_accounts=context_accounts)
+        self._adapter = HumanAdapter(
+            run_id=session_id,
+            context_accounts=context_accounts,
+            initial_levels=initial_levels,
+        )
         self._inbox = InputInbox()
         self._results: dict[int, InputResult] = {}
         self._lock = RLock()

@@ -30,10 +30,12 @@ class HumanAdapter:
         initial_price_ticks: int = 10_000,
         mult: int = 1,
         context_accounts: dict[str, int] | None = None,
+        initial_levels: list[BookLevel] | None = None,
     ) -> None:
         self.run_id = run_id
         self.initial_price_ticks = initial_price_ticks
         self.mult = mult
+        self._initial_levels = initial_levels
         self._commands: list[tuple[str, dict[str, Any], int, int]] = []
         self._context_events: list[dict[str, Any]] = []
         self.records: list[dict[str, Any]] = []
@@ -114,10 +116,13 @@ class HumanAdapter:
         }
         for agent_id, wallet in self._context_accounts.items():
             accounts[agent_id] = Account(agent_id=agent_id, wallet_units=wallet)
-        levels = [
-            BookLevel("BUY", "maker-bid", "maker", self.initial_price_ticks - 10, 10_000),
-            BookLevel("SELL", "maker-ask", "maker", self.initial_price_ticks + 10, 10_000),
-        ]
+        if self._initial_levels is not None:
+            levels = list(self._initial_levels)
+        else:
+            levels = [
+                BookLevel("BUY", "maker-bid", "maker", self.initial_price_ticks - 10, 10_000),
+                BookLevel("SELL", "maker-ask", "maker", self.initial_price_ticks + 10, 10_000),
+            ]
         events: list[dict[str, Any]] = list(self._context_events)
         for action, payload, timestamp, input_seq in self._commands:
             decision_id = f"human-decision-{input_seq}"

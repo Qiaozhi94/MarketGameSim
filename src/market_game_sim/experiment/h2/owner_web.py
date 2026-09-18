@@ -89,6 +89,7 @@ class OwnerWebSession:
             self.runtime = InteractiveRuntime(
                 session_id=self.session_id,
                 context_accounts=self._ai_generator.seed_accounts(),
+                initial_levels=[],  # AI 报价即市场：不用静态 maker 兜底
             )
         else:
             self.runtime = InteractiveRuntime(session_id=self.session_id)
@@ -185,6 +186,7 @@ class OwnerWebSession:
     @staticmethod
     def _recent_trades(events: list[dict[str, Any]], limit: int = 16) -> list[dict[str, Any]]:
         trades = [item for item in events if item.get("event_type") == "TRADE_SETTLE"]
+        trades.sort(key=lambda item: (int(item["timestamp"]), str(item.get("event_id", ""))))
         return [
             {
                 "timestamp": int(item["timestamp"]),
