@@ -196,7 +196,7 @@ function renderChart(v){
   let hi=-1e18,lo=1e18,maxVol=0;
   for(const b of vBars){hi=Math.max(hi,b.high);lo=Math.min(lo,b.low);maxVol=Math.max(maxVol,b.volume)}
   const range=(hi-lo)||Math.max(1,hi*0.01);hi+=range*.06;lo-=range*.06;
-  const bw=W/view.length;
+  const bw=(W-padR)/view.length;
   const xAt=i=>bw*i+bw/2;
 
   const niceStep=(rg,count)=>{const raw=rg/count;const pow=10**Math.floor(Math.log10(raw));
@@ -235,7 +235,7 @@ function renderChart(v){
     const lineCol=lastUp?"#2ebd85":"#f6465d";
     const ly=Math.round(priceTop+(hi-v.market.last_ticks)/(hi-lo)*priceH);
     ctx.strokeStyle=lineCol;ctx.setLineDash([2,3]);ctx.beginPath();
-    ctx.moveTo(0,ly);ctx.lineTo(W,ly);ctx.stroke();ctx.setLineDash([]);
+    ctx.moveTo(0,ly);ctx.lineTo(W-padR,ly);ctx.stroke();ctx.setLineDash([]);
     const label=v.market.last_ticks.toLocaleString("zh-CN");
     ctx.font="10px ui-monospace,monospace";
     const tw=ctx.measureText(label).width+10;
