@@ -1196,3 +1196,32 @@ Q-308 关闭后拦截数由 13 降为 12 且其余 Q/DQ 仍被拦（门禁没被
   修复引入比例首次超过首次编码，直接驱动"重建须带门"规则。
 - **裁决分布**：owner 裁决 1 次（023 方案 A）；检视建议命中率：23 条 issue 的 suggested_fix
   与实际 fix_summary 实质一致（含 010 载体变更、023 按裁决扩展范围两处合理偏离）。
+
+---
+
+## 循环 27: 0.3.2 Phase 1 开发与代码检视（H2-D1 owner Web 终端）
+
+- **report_type**: code-review
+- **周期**: 2026-09-18（G1 批准后单日完成开发+检视）
+- **构成**: 复用 0.2.1 InteractiveRuntime（幂等收件箱+真实撮合/账本/风控路径）与 0.3.1
+  h2 证据设施；并行子代理交付 T930 K 线多周期投影与 T929 证据校验器；主干集成
+  owner_web 服务 + 定稿终端页 + 旅程 E2E
+- **回归测试**: pytest 2673 → 2705 passed（+32：集成 11、旅程 E2E 4、K 线 13、校验器 13、
+  契约门断言更新等）
+- **收尾状态**: 工程任务 17/26 勾选；T939-T941（6+24 真人场景）依设计必须由 owner 四天
+  采集完成，T937/T942-T944/T946 随之——**里程碑停在 developing，不做虚假收口**
+
+| ID | 标题 | 严重度 | 分类 | 根因/症状 | 来源 | 状态 | 修复方案 | 回归测试 | 首次出现轮次 | 修复轮次 | 模式标签 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| 0.3.2-D1 | spec_validation 不认 v4 状态名 developing | high | correctness | root-cause | process-gap | fixed | STATUSES 收编 v4 六态并保留 v3 别名 | `test_spec_lifecycle.py` | 开发期 | 同日 | harness-drift |
+| 0.3.2-D2 | 新增 src 文件破坏 0.1.5 证据索引源码树绑定 | high | correctness | root-cause | process-gap | fixed | 按既有实践重绑（842dea6 先例；证据路径 showcase/kernel/book/ledger 零改动） | `test_delivery_entry.py` | 开发期 | 同日 | evidence-binding |
+| 0.3.2-D3 | 旅程断言未适配 HTTP JSON 字符串键 | medium | test-coverage | symptom-patch | original-coding | fixed | 键按 int 归一化 | `test_journey_market_visibility` | 开发期 | 同日 | — |
+| 0.3.2-D4 | tests/unit/tools/__init__ 使 pytest 以 tools.* 导入并遮蔽仓库根 tools/ | medium | correctness | root-cause | process-gap | fixed | e2e 按 test_check_secrets 同款 importlib 路径加载 | `test_journey_rebuild_evidence` | 开发期 | 同日 | import-shadowing |
+| 0.3.2-D5 | 变异回滚对未跟踪文件失效（git checkout 不生效） | medium | correctness | symptom-patch | process-gap | fixed | 手动逆向恢复并断言守卫在位 | 变异后全量重跑 | 开发期 | 同日 | mutation-rollback-gap |
+| 0.3.2-D6 | 终端页买单档二次反转、[hidden] 被 display:flex 覆盖 | low | quality | symptom-patch | original-coding | fixed | 渲染顺序修正 + [hidden]!important | 无头截图冒烟 | 开发期 | 同日 | — |
+
+- **变异验证**：采集白名单门（去掉 if not collection）与 OWNER_ABORT 终态门（跳过拦截）
+  去守卫均变红，恢复后 15/15 绿。
+- **实现-设计稿偏差（已记录于 notes §9 附录，owner 可裁决）**：杠杆 Phase 1 固定 1×
+  （H1 合同演示参数，多档随采集引擎接入）；行情汇总页为单市场单行；submitting 态已实现。
+- **裁决分布**：无对外裁决；suggested_fix 命中率 6/6。
