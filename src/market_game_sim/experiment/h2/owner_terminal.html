@@ -159,11 +159,13 @@ function renderOrderPanel(v){const a=v.account;const avail=Math.max(0,a.equity_u
     if(bid!=null&&ask!=null&&(state.side==="BUY"?px<bid*0.9:px>ask*1.9))
       hint("价格远离盘口：将作为挂单等待，短期不会成交",false)}
 }
-function renderChart(v){const live=v.market.klines[state.tf]||[];
+function renderChart(v){
+  const live=v.market.klines[state.tf]||[];
   const forming=(v.market.forming||{})[state.tf];
   const liveAll=forming?live.concat([forming]):live;
   const bars=(state.hist[state.tf]||[]).concat(liveAll);
-  const cvs=$("kline"),ctx=cvs.getContext("2d");ctx.clearRect(0,0,cvs.width,cvs.height);
+  const cvs=$("kline"),ctx=cvs.getContext("2d");
+  ctx.clearRect(0,0,cvs.width,cvs.height);
   if(!bars.length){ctx.fillStyle="#5b6676";ctx.font="13px system-ui";ctx.textAlign="center";
     ctx.fillText("数据不足：公开成交 tape 尚无数据",cvs.width/2,cvs.height/2);return}
   const c=state.chart;
@@ -171,25 +173,111 @@ function renderChart(v){const live=v.market.klines[state.tf]||[];
   const off=Math.min(Math.max(c.offset,0),Math.max(0,bars.length-z));
   const end=bars.length-off, view=bars.slice(Math.max(0,end-z),end);
   const n=view.length;c.total=bars.length;
-  let hi=-1e18,lo=1e18;
-  for(const b of view){hi=Math.max(hi,b.high);lo=Math.min(lo,b.low)}
-  const range=(hi-lo)||1;hi+=range*.05;lo-=range*.05;
-  const padR=70,ch=cvs.height-36,bw=cvs.width/view.length;
-  const y=p=>(hi-p)/(hi-lo)*ch;
-  view.forEach((b,i)=>{const up=b.close>=b.open,col=up?"#2ebd85":"#f6465d";const x=bw*i+bw/2;
-    ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(x,y(b.high));ctx.lineTo(x,y(b.low));ctx.stroke();
-    ctx.fillStyle=col;const top=y(Math.max(b.open,b.close)),bot=y(Math.min(b.open,b.close));
-    ctx.fillRect(x-Math.max(1,bw*.3),top,Math.max(2,bw*.6),Math.max(1,bot-top))});
-  const last=v.market.last_ticks;
-  if(last!=null&&last>=lo&&last<=hi){ctx.strokeStyle="#2ebd85aa";ctx.setLineDash([4,4]);
-    ctx.beginPath();ctx.moveTo(0,y(last));ctx.lineTo(cvs.width-padR,y(last));ctx.stroke();ctx.setLineDash([])}
-  /* 时间刻度：nice 时间步长（自适应粒度），按 bar 序号去重 */
+
+  const collect=v.collection_mode;
+  const W=cvs.width,H=cvs.height,padR=70,padT=8,axisH=22,volH=54;
+  const macdH=collect?0:96,gap=collect?0:8;
+  const priceTop=padT,priceH=H-padT-axisH-volH-macdH-gap*2;
+  const volTop=priceTop+priceH+gap;
+  const macdTop=volTop+volH+gap;
+
+  let macdLine=[],signalLine=[],histArr=[];
+  if(!collect&&bars.length>1){
+    const closes=bars.map(b=>b.close);
+    const ema=(vals,len)=>{const k=2/(len+1);const out=[];let prev=vals[0];
+      for(let i=0;i<vals.length;i++){prev=vals[i]*k+prev*(1-k);out.push(prev)}return out};
+    const e12=ema(closes,12),e26=ema(closes,26);
+    macdLine=closes.map((_,i)=>e12[i]-e26[i]);
+    signalLine=ema(macdLine,9);
+    histArr=macdLine.map((m,i)=>m-signalLine[i]);
+  }
+
+  const vBars=view;
+  let hi=-1e18,lo=1e18,maxVol=0;
+  for(const b of vBars){hi=Math.max(hi,b.high);lo=Math.min(lo,b.low);maxVol=Math.max(maxVol,b.volume)}
+  const range=(hi-lo)||Math.max(1,hi*0.01);hi+=range*.06;lo-=range*.06;
+  const bw=W/view.length;
+  const xAt=i=>bw*i+bw/2;
+
+  const niceStep=(rg,count)=>{const raw=rg/count;const pow=10**Math.floor(Math.log10(raw));
+    for(const cc of [1,2,2.5,5,10]){if(raw<=cc*pow)return cc*pow}return 10*pow};
+  const priceStep=niceStep(hi-lo,5);
+  ctx.font="10px ui-monospace,monospace";ctx.textAlign="left";
+  for(let p=Math.ceil(lo/priceStep)*priceStep;p<=hi;p+=priceStep){
+    const yy=Math.round(priceTop+(hi-p)/(hi-lo)*priceH);
+    ctx.strokeStyle="#161c26";ctx.beginPath();ctx.moveTo(0,yy);ctx.lineTo(W-padR,yy);ctx.stroke();
+    ctx.fillStyle="#5b6676";ctx.fillText(p.toLocaleString("zh-CN"),W-padR+6,yy+3);
+  }
+
+  for(let i=0;i<n;i++){
+    const b=vBars[i];const up=b.close>=b.open;
+    const h=maxVol?Math.round(b.volume/maxVol*volH):0;
+    ctx.fillStyle=up?"rgba(46,189,133,.55)":"rgba(246,70,93,.55)";
+    ctx.fillRect(xAt(i)-Math.max(1,bw*.3),volTop+volH-h,Math.max(2,bw*.6),h);
+  }
+  ctx.fillStyle="#5b6676";ctx.font="10px system-ui";
+  ctx.fillText("成交量",4,volTop+10);
+  ctx.strokeStyle="#1c222c";ctx.beginPath();ctx.moveTo(0,volTop+volH+gap/2);ctx.lineTo(W-padR,volTop+volH+gap/2);ctx.stroke();
+
+  const bodyW=Math.max(1,bw*.6);
+  vBars.forEach((b,i)=>{
+    const up=b.close>=b.open,col=up?"#2ebd85":"#f6465d";const x=xAt(i);
+    ctx.strokeStyle=col;ctx.beginPath();ctx.moveTo(x,priceTop+(hi-b.high)/(hi-lo)*priceH);
+    ctx.lineTo(x,priceTop+(hi-b.low)/(hi-lo)*priceH);ctx.stroke();
+    ctx.fillStyle=col;const top=priceTop+(hi-Math.max(b.open,b.close))/(hi-lo)*priceH;
+    const h=Math.max(1,(Math.abs(b.open-b.close))/(hi-lo)*priceH);
+    ctx.fillRect(x-bodyW/2,top,bodyW,h);
+  });
+
+  const lastB=vBars[n-1];
+  if(lastB&&v.market.last_ticks!=null){
+    const lastUp=lastB.close>=lastB.open;
+    const lineCol=lastUp?"#2ebd85":"#f6465d";
+    const ly=Math.round(priceTop+(hi-v.market.last_ticks)/(hi-lo)*priceH);
+    ctx.strokeStyle=lineCol;ctx.setLineDash([2,3]);ctx.beginPath();
+    ctx.moveTo(0,ly);ctx.lineTo(W,ly);ctx.stroke();ctx.setLineDash([]);
+    const label=v.market.last_ticks.toLocaleString("zh-CN");
+    ctx.font="10px ui-monospace,monospace";
+    const tw=ctx.measureText(label).width+10;
+    ctx.fillStyle=lineCol;ctx.fillRect(W-padR+2,ly-9,tw,16);
+    ctx.fillStyle="#0b0e14";ctx.fillText(label,W-padR+7,ly+3);
+  }
+
+  if(!collect){
+    const viewMacd=macdLine.slice(macdLine.length-n);
+    const viewSignal=signalLine.slice(signalLine.length-n);
+    const viewHist=histArr.slice(histArr.length-n);
+    const mHi=Math.max(0.0001,...viewHist,...viewMacd,...viewSignal);
+    const mLo=Math.min(-0.0001,...viewHist,...viewMacd,...viewSignal);
+    const mRange=Math.max(mHi-mLo,0.0001);
+    const yM=val=>macdTop+(mHi-val)/mRange*macdH;
+    const zeroY=yM(0);
+    ctx.strokeStyle="#1c222c";ctx.beginPath();ctx.moveTo(0,zeroY);ctx.lineTo(W-padR,zeroY);ctx.stroke();
+    for(let i=0;i<n;i++){
+      const hv=viewHist[i];const y0=zeroY,y1=yM(hv);
+      const rising=i===0?hv>=0:hv>=viewHist[i-1];
+      ctx.fillStyle=hv>=0?(rising?"rgba(46,189,133,.8)":"rgba(46,189,133,.35)")
+                         :(rising?"rgba(246,70,93,.35)":"rgba(246,70,93,.8)");
+      const top=Math.min(y0,y1);ctx.fillRect(xAt(i)-bodyW/2,top,bodyW,Math.max(1,Math.abs(y1-y0)));
+    }
+    const drawLine=(vals,col)=>{ctx.strokeStyle=col;ctx.lineWidth=1.4;ctx.beginPath();
+      vals.forEach((val,i)=>{const x=xAt(i),y=yM(val);i===0?ctx.moveTo(x,y):ctx.lineTo(x,y)});ctx.stroke();ctx.lineWidth=1};
+    drawLine(viewMacd,"#2962ff");drawLine(viewSignal,"#ff6d00");
+    ctx.fillStyle="#5b6676";ctx.font="10px system-ui";
+    ctx.fillText("MACD 12 26 9",4,macdTop+10);
+    const mv=viewMacd[n-1];
+    if(mv!=null){const my=yM(mv);const label=mv.toFixed(2);
+      ctx.font="10px ui-monospace,monospace";const tw=ctx.measureText(label).width+10;
+      ctx.fillStyle="#2962ff";ctx.fillRect(W-padR+2,my-8,tw,15);
+      ctx.fillStyle="#fff";ctx.fillText(label,W-padR+7,my+3)}
+  }
+
   if(n&&state.epochMs!==null){
     ctx.fillStyle="#5b6676";ctx.font="10px ui-monospace,monospace";ctx.textAlign="center";
     const span=Math.max(state.tf,(view[n-1].start_ns-view[0].start_ns)+state.tf);
     const target=Math.max(2,Math.floor(cvs.width/170));
     const NICE=[1e9,5e9,15e9,3e10,6e10,12e10,3e11,6e11,12e11,24e11,48e11,96e11,
-      192e11,384e11,768e11,1536e11,3072e11,6144e11,12288e11,24576e11];
+      192e11,384e11,768e11,1536e11,3072e11,6144e11,12288e11,24576e11,49152e11,98304e11];
     let step=NICE[NICE.length-1];
     for(const cand of NICE){if(cand*target>=span){step=cand;break}}
     const p2=x=>String(x).padStart(2,"0");
@@ -205,12 +293,13 @@ function renderChart(v){const live=v.market.klines[state.tf]||[];
       else txt=`${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
       if(txt===lastTxt)continue;
       lastTxt=txt;lastIdx=idx;
-      const x=bw*idx+bw/2;
+      const x=xAt(idx);
       ctx.fillText(txt,x,cvs.height-6);
-      ctx.strokeStyle="#1c222c";ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,ch);ctx.stroke();
+      ctx.strokeStyle="#1c222c";ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,cvs.height-axisH);ctx.stroke();
     }
   }
-  ctx.textAlign="left"}
+  ctx.textAlign="left";
+}
 function renderAssets(v){const a=v.account;const un=a.equity_units-a.wallet_units;
   const rows=[["账户权益",fmt(a.equity_units)],["可用余额",fmt(Math.max(0,a.equity_units-a.reserved_units))],
     ["占用保证金",fmt(a.reserved_units)],["保证金比率",a.margin_ratio_bp!=null?(a.margin_ratio_bp/100).toFixed(2)+"%":"—"],
