@@ -268,8 +268,11 @@ def test_ai_live_thread_advances_and_abort_stops_it():
     import time
 
     session = OwnerWebSession(
-        stage="free", session_id="ai-live-2", ai_live=True,
-        prejoin_seconds=5, live_interval=0.05,
+        stage="free",
+        session_id="ai-live-2",
+        ai_live=True,
+        prejoin_seconds=5,
+        live_interval=0.05,
     )
     time.sleep(0.5)
     t_before = session.runtime.logical_timestamp
