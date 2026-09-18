@@ -671,7 +671,11 @@ def test_h2_web_tasks_freeze_the_owner_contract_params_before_kline():
     tasks = (ROOT / "docs/features/0.3/0.3.2-web-trading-terminal/tasks.md").read_text(
         encoding="utf-8"
     )
-    freeze_block = tasks.split("- [ ] T929", 1)[1].split("- [ ] T930", 1)[0]
+    # 勾选状态无关定位（gate-breaks-when-guarded-task-completes 教训：T929 勾选后
+    # 硬编码 `- [ ] T929` 会让门自己炸）
+    freeze_block = re.split(
+        r"- \[.\] T930", re.split(r"- \[.\] T929", tasks, maxsplit=1)[1], maxsplit=1
+    )[0]
     for param in ("时间压缩比", "K 线周期集合", "采样粒度", "场景市场时间跨度"):
         assert param in freeze_block, f"冻结任务缺少 {param}"
     assert "AC-401" in freeze_block
