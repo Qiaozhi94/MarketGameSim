@@ -644,7 +644,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "746095319cfd5b6138d09c16ec044d4e8e09417c57eba9c977a392a5ecfae284"
+    "source_tree_sha256": "c767be54aae4fdd40b97c305bd38343bfc7cf55b40f40f456eda375c9a333030"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {
