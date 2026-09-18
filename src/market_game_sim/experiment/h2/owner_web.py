@@ -20,6 +20,8 @@ import hashlib
 import json
 import platform
 import threading
+import time
+import urllib.parse
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from http import HTTPStatus
@@ -34,6 +36,7 @@ from market_game_sim.experiment.h2.owner_freeze import (
     owner_freeze_contract,
     owner_freeze_hash,
 )
+from market_game_sim.experiment.h2.owner_history import HISTORY_DEPTHS, generate_history
 from market_game_sim.interactive.runtime import InteractiveRuntime
 from market_game_sim.interactive.types import InputAction
 from market_game_sim.replay.kline import build_kline_set
@@ -72,6 +75,8 @@ class OwnerWebSession:
     snapshots: list[dict[str, Any]] = field(default_factory=list)
     ai_live: bool = False
     ai_seed: int = 7
+    _epoch_ms: int = field(default_factory=lambda: int(time.time() * 1000))
+    _history_cache: dict[int, list[dict[str, Any]]] | None = field(default=None, repr=False)
     prejoin_seconds: int = 90
     live_interval: float = 1.0
     _last_sample_ns: int = field(default=-1, repr=False)
@@ -146,6 +151,8 @@ class OwnerWebSession:
             "schema_version": 1,
             "stage": self.stage,
             "collection_mode": collection,
+            "epoch_ms": self._epoch_ms,
+            "history_available": self.stage == "free",
             "owner_aborted": self.owner_aborted,
             "freeze": owner_freeze_contract(),
             "freeze_hash": owner_freeze_hash(),
@@ -211,6 +218,15 @@ class OwnerWebSession:
 
     def control(self, action: str, client_request_id: str) -> dict[str, Any]:
         return self._result(self.runtime.control(InputAction(action), client_request_id))
+
+    def history_bars(self, period: int) -> dict[str, Any] | None:
+        """自由模拟专用：合成历史蜡烛（采集态不提供，spec §5 白名单外）。"""
+
+        if self.stage in COLLECTION_STAGES or period not in HISTORY_DEPTHS:
+            return None
+        if self._history_cache is None:
+            self._history_cache = generate_history(self.initial_price_ticks, seed=self.ai_seed)
+        return {"period": period, "bars": self._history_cache[period]}
 
     def abort(self, reason: str = "owner-stop") -> dict[str, Any]:
         """OWNER_ABORT：所有者主动中止，进入终态、不补跑、不入 evidence index。"""
@@ -352,6 +368,18 @@ def create_owner_server(
                 self._send(TERMINAL_HTML, "text/html; charset=utf-8")
             elif self.path == "/api/v1/h2/owner/session":
                 self._json(session.view())
+            elif self.path.startswith("/api/v1/h2/owner/session/history"):
+                query = urllib.parse.urlparse(self.path).query
+                params = urllib.parse.parse_qs(query)
+                try:
+                    period = int(params.get("period", [""])[0])
+                except ValueError:
+                    period = -1
+                result = session.history_bars(period)
+                if result is None:
+                    self._json({"error": "NOT_FOUND"}, HTTPStatus.NOT_FOUND)
+                else:
+                    self._json(result)
             else:
                 self._json({"error": "NOT_FOUND"}, HTTPStatus.NOT_FOUND)
 

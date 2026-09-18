@@ -287,3 +287,17 @@ def test_ai_live_thread_advances_and_abort_stops_it():
 def test_ai_live_collection_stage_requires_preview(tmp_path: Path):
     with pytest.raises(PreviewGateBlocked):
         OwnerWebSession(stage="training", ai_live=True, preview_dir=None)
+
+
+def test_history_endpoint_free_only(tmp_path: Path):
+    session = OwnerWebSession(stage="free", session_id="hist-free")
+    bars = session.history_bars(86_400_000_000_000)
+    assert bars is not None and len(bars["bars"]) == 365, "自由模式提供全年日线"
+    assert bars["bars"][-1]["close"] == 10_000
+
+    evidence = tmp_path / "preview-bundle"
+    evidence.mkdir()
+    (evidence / "manifest.json").write_text("{}", encoding="utf-8")
+    coll = OwnerWebSession(stage="training", preview_dir=evidence, session_id="hist-coll")
+    assert coll.history_bars(86_400_000_000_000) is None, "采集态不提供历史端点"
+    assert coll.history_bars(-1) is None

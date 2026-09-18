@@ -107,6 +107,7 @@ align-items:center;justify-content:center"><div class="card" style="max-width:42
 "use strict";
 const $=id=>document.getElementById(id);
 const state={view:null,side:"BUY",type:"LIMIT",tf:60000000000,seq:0,
+  epochMs:null,hist:{},histLoading:{},
   chart:{zoom:90,offset:0,dragging:false,startX:0,startOffset:0}};
 const rid=()=>"web-"+Date.now()+"-"+(state.seq++);
 const fmt=v=>v==null?"—":Number(v).toLocaleString("zh-CN");
@@ -115,6 +116,8 @@ async function post(path,body){const r=await fetch(path,{method:"POST",
 function hint(msg,ok){const el=$("submit-hint");el.textContent=msg;el.className=ok?"ok":"err"}
 async function refresh(){
   const v=await fetch("/api/v1/h2/owner/session").then(r=>r.json());state.view=v;
+  if(state.epochMs===null)state.epochMs=v.epoch_ms;
+  if(v.history_available&&!state.hist[state.tf]&&!state.histLoading[state.tf])loadHistory(state.tf);
   document.body.classList.toggle("collect",v.collection_mode);
   $("stage-badge").textContent=v.collection_mode?("SIM · "+v.stage.toUpperCase()):"SIM";
   $("clock").textContent="t="+Math.round(v.logical_timestamp/1e9)+"s";
@@ -156,14 +159,16 @@ function renderOrderPanel(v){const a=v.account;const avail=Math.max(0,a.equity_u
     if(bid!=null&&ask!=null&&(state.side==="BUY"?px<bid*0.9:px>ask*1.9))
       hint("价格远离盘口：将作为挂单等待，短期不会成交",false)}
 }
-function renderChart(v){const bars=v.market.klines[state.tf]||[];
+function renderChart(v){const live=v.market.klines[state.tf]||[];
+  const bars=(state.hist[state.tf]||[]).concat(live);
   const cvs=$("kline"),ctx=cvs.getContext("2d");ctx.clearRect(0,0,cvs.width,cvs.height);
   if(!bars.length){ctx.fillStyle="#5b6676";ctx.font="13px system-ui";ctx.textAlign="center";
     ctx.fillText("数据不足：公开成交 tape 尚无数据",cvs.width/2,cvs.height/2);return}
   const c=state.chart;
-  c.zoom=Math.round(Math.min(Math.max(c.zoom,10),Math.max(20,bars.length)));
+  c.zoom=Math.round(Math.min(Math.max(c.zoom,10),bars.length));
   c.offset=Math.min(Math.max(c.offset,0),Math.max(0,bars.length-c.zoom));
   const end=bars.length-c.offset, view=bars.slice(Math.max(0,end-c.zoom),end);
+  const n=view.length;
   let hi=-1e18,lo=1e18;
   for(const b of view){hi=Math.max(hi,b.high);lo=Math.min(lo,b.low)}
   const range=(hi-lo)||1;hi+=range*.05;lo-=range*.05;
@@ -175,7 +180,24 @@ function renderChart(v){const bars=v.market.klines[state.tf]||[];
     ctx.fillRect(x-Math.max(1,bw*.3),top,Math.max(2,bw*.6),Math.max(1,bot-top))});
   const last=v.market.last_ticks;
   if(last!=null&&last>=lo&&last<=hi){ctx.strokeStyle="#2ebd85aa";ctx.setLineDash([4,4]);
-    ctx.beginPath();ctx.moveTo(0,y(last));ctx.lineTo(cvs.width-padR,y(last));ctx.stroke();ctx.setLineDash([])}}
+    ctx.beginPath();ctx.moveTo(0,y(last));ctx.lineTo(cvs.width-padR,y(last));ctx.stroke();ctx.setLineDash([])}
+  /* 时间刻度（自适应：1D→日期 / 1h→日+时 / 其余→时:分:秒） */
+  ctx.fillStyle="#5b6676";ctx.font="10px ui-monospace,monospace";ctx.textAlign="center";
+  const labels=Math.min(8,Math.max(2,Math.floor(cvs.width/170)));
+  for(let k=0;k<labels;k++){
+    const i=Math.min(n-1,Math.floor((k+0.5)*n/labels));
+    const bar=view[i];
+    const d=new Date(state.epochMs+bar.start_ns/1e6);
+    const p2=x=>String(x).padStart(2,"0");
+    let txt;
+    if(state.tf>=86400000000)txt=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
+    else if(state.tf>=3600000000)txt=`${p2(d.getMonth()+1)}/${p2(d.getDate())} ${p2(d.getHours())}:00`;
+    else txt=`${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
+    const x=bw*i+bw/2;
+    ctx.fillText(txt,x,cvs.height-6);
+    ctx.strokeStyle="#1c222c";ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,ch);ctx.stroke();
+  }
+  ctx.textAlign="left"}
 function renderAssets(v){const a=v.account;const un=a.equity_units-a.wallet_units;
   const rows=[["账户权益",fmt(a.equity_units)],["可用余额",fmt(Math.max(0,a.equity_units-a.reserved_units))],
     ["占用保证金",fmt(a.reserved_units)],["保证金比率",a.margin_ratio_bp!=null?(a.margin_ratio_bp/100).toFixed(2)+"%":"—"],
@@ -227,8 +249,16 @@ document.querySelectorAll("nav [data-view]").forEach(x=>x.onclick=()=>{
   3600000000000:"1h",14400000000000:"4h",86400000000000:"1D"};
   const host=$("tf-tabs");for(const [ns,label] of Object.entries(names)){
   const b=document.createElement("button");b.textContent=label;if(String(ns)===String(state.tf))b.className="on";
-  b.onclick=()=>{state.tf=Number(ns);host.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
-    b.classList.add("on");renderChart(state.view)};host.appendChild(b)}})();
+  b.onclick=()=>{state.tf=Number(ns);state.chart.offset=0;
+    host.querySelectorAll("button").forEach(x=>x.classList.remove("on"));
+    b.classList.add("on");loadHistory(state.tf);renderChart(state.view)};host.appendChild(b)}})();
+async function loadHistory(tf){
+  if(state.hist[tf]||state.histLoading[tf])return;
+  state.histLoading[tf]=true;
+  try{const r=await fetch(`/api/v1/h2/owner/session/history?period=${tf}`).then(x=>x.json());
+    if(r.bars)state.hist[tf]=r.bars}catch(e){/* 采集态无历史端点 */}
+  state.histLoading[tf]=false;
+  if(state.view)renderChart(state.view)}
 /* ---------- 图表交互：滚轮缩放 / 拖拽平移 / 双击复位 ---------- */
 (function initChartZoomPan(){
   const cvs=$("kline");
