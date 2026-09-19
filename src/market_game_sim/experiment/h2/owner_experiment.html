@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width">
+<title>MarketGame · 训练实验</title><style>
+body{margin:0;background:#0b0e11;color:#d7dee8;font:14px/1.6 system-ui,"PingFang SC",sans-serif}
+main{max-width:760px;margin:24px auto;padding:0 16px}
+.card{background:#131722;border:1px solid #2b3444;border-radius:8px;padding:14px;margin-bottom:12px}
+h3{margin:0 0 8px;font-size:12px;color:#8b97a8}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-family:ui-monospace,monospace}
+.kv{display:flex;justify-content:space-between;font-size:13px}
+.kv .k{color:#8b97a8}.up{color:#2ebd85}.down{color:#f6465d}
+.big{font-size:20px;font-weight:700}
+button{font:inherit;cursor:pointer;border:1px solid #2b3444;background:#1c2330;color:#d7dee8;
+border-radius:5px;padding:6px 14px}
+.buy{background:#123a28;border-color:#2ebd85;color:#2ebd85;font-weight:700;padding:10px 0;width:100%}
+.sell{background:#3a1713;border-color:#f6465d;color:#f6465d;font-weight:700;padding:10px 0;width:100%}
+#abort{border-color:#f6465d;color:#f6465d}
+#msg{min-height:18px;color:#f0b90b;font-size:13px}
+input{font:inherit;background:#1c2330;color:#d7dee8;border:1px solid #2b3444;border-radius:5px;padding:6px 8px;width:90px}
+.row{display:flex;gap:8px;align-items:center;margin:8px 0}
+</style></head><body><main>
+<div class="card"><h3>训练实验进度（窗口 = 1 逻辑秒，1:1 实时）</h3>
+<div class="kv"><span class="k">状态</span><span id="st">启动中</span></div>
+<div class="kv"><span class="k">已完成窗口</span><span id="win" class="num">0</span></div>
+<div class="kv"><span class="k">工件</span><span id="art" class="num">—</span></div></div>
+<div class="card"><h3>冻结观察子集（Experiment）</h3>
+<div class="grid">
+  <div class="kv"><span class="k">买一</span><span id="bid" class="num">—</span></div>
+  <div class="kv"><span class="k">卖一</span><span class="num" id="ask">—</span></div>
+  <div class="kv"><span class="k">最近成交</span><span class="num" id="last">—</span></div>
+  <div class="kv"><span class="k">钱包</span><span class="num" id="wal">—</span></div>
+  <div class="kv"><span class="k">仓位</span><span class="num" id="pos">—</span></div>
+  <div class="kv"><span class="k">保证金比率(bp)</span><span class="num" id="mr">—</span></div>
+</div></div>
+<div class="card"><h3>市价委托（动作空间：市价单，与参照策略一致）</h3>
+<div class="row">数量 <input id="qty" type="number" value="1" min="1">
+  <button class="buy" id="buy">买入</button><button class="sell" id="sell">卖出</button></div>
+<div id="msg"></div></div>
+<div class="card"><button id="abort">退出会话（OWNER_ABORT：终态、不补跑、不入证据）</button></div>
+</main><script>
+const $=id=>document.getElementById(id);let seq=0;const rid=()=>"exp-"+Date.now()+"-"+(seq++);
+async function post(p,b){const r=await fetch(p,{method:"POST",headers:{"Content-Type":"application/json"},
+  body:JSON.stringify(b)});return r.json()}
+async function refresh(){try{
+  const v=await fetch("/api/v1/h2/owner/experiment").then(r=>r.json());
+  $("st").textContent=v.running?"进行中":(v.error?("出错："+v.error):(v.aborted?"OWNER_ABORT":"已完成"));
+  $("win").textContent=v.completed_windows;
+  $("art").textContent=v.artifact?"已落盘":"—";
+  const i=v.latest_info||{};
+  $("bid").textContent=i.best_bid??"—";$("ask").textContent=i.best_ask??"—";
+  $("last").textContent=i.last_ticks??"—";$("wal").textContent=i.wallet_units??"—";
+  $("pos").textContent=i.position_units??"—";$("mr").textContent=i.margin_ratio_bp??"—";
+}catch(e){}}
+async function order(side){
+  const qty=parseInt($("qty").value||"0",10);if(!(qty>0)){$("msg").textContent="数量必须为正整数";return}
+  const r=await post("/api/v1/h2/owner/experiment/orders",{side,quantity_units:qty});
+  $("msg").textContent=r.queued?("已排队："+side+" "+qty+"（下一窗口判定点执行）"):"排队失败"}
+$("buy").onclick=()=>order("buy");$("sell").onclick=()=>order("sell");
+$("abort").onclick=async()=>{await post("/api/v1/h2/owner/experiment/abort",{});$("msg").textContent="已请求中止"};
+refresh();setInterval(refresh,400);
+</script></body></html>
