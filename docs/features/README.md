@@ -73,6 +73,10 @@ docs/features/
   可观察行为或同等可消费产物，就不算阶段成果。
 - 研究项目的中间产物必须标记 `engineering-demonstration`、`experiment-preview` 或
   `formal-research`，不得把 smoke run 或预览升级成正式结论。
+- **owner-facing 里程碑的 G1 前置检查（ADR-010，2026-09-19 起）**：开工前须在
+  tasks.md §执行规则或计划批准记录中回答一句话——"本次交付如何服务
+  [`docs/research/owner-research-question.md`](../research/owner-research-question.md)
+  的研究问题"；答案缺失或与北极星冲突时 G1 不通过。
 - 以上前三条对 `gate_version: 1` 且 `created >= 2026-08-14`（规则引入日）的里程碑由
   `tools/validate_spec_lifecycle.py` 强制执行；规则引入前已完成的里程碑不追溯执法。
 - 任务 ID 在 `tasks.md` 内唯一且按文档顺序递增（允许跳号），同样由门禁执行——编号顺序

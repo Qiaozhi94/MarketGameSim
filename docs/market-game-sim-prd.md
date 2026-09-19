@@ -1,8 +1,8 @@
 # MarketGameSim 产品需求文档
 
-**文档版本**：0.5.3（**H2 双轨范围重置**）<br>
+**文档版本**：0.6.0（**市场生态方向重构**）<br>
 **状态**：Active<br>
-**创建日期**：2026-07-28　**更新日期**：2026-09-06<br>
+**创建日期**：2026-07-28　**更新日期**：2026-09-19<br>
 **产品阶段**：v0.1、v0.2 H1 已签收；v0.3 H2 规格草案<br>
 **项目原则**：[`docs/SOP.md`](SOP.md)（唯一入口，含安全与合规边界 §4）  
 **当前规格**：[`docs/features/0.3/spec.md`](features/0.3/spec.md)；
@@ -13,13 +13,20 @@
 
 **已生效 ADR**：[ADR-001](decisions/001-numeric-and-serialization-contract.md)
 （数值与序列化口径）、
-[ADR-002](decisions/002-same-timestamp-event-scheduling.md)（事件调度与因果链）  
+[ADR-002](decisions/002-same-timestamp-event-scheduling.md)（事件调度与因果链）、
+[ADR-006](decisions/006-realtime-free-trading-owner-terminal.md)（owner 终端自由连续交易）、
+[ADR-010](decisions/010-market-ecology-research-pivot.md)（市场生态与人类扰动研究方向）  
 **其余设计决策**：见
 [v0.1 规格 §设计决策与理由](features/0.1/spec.md)（D-1—D-7）
 
 ## 0. 关于本版
 
-本版是**方向重置**，不是增量修订。
+**0.6.0（2026-09-19）方向再重构**：[ADR-010](decisions/010-market-ecology-research-pivot.md)
+把第三层"可玩的市场模拟器"从远期提为主干——持续运行的 AI 市场生态 + 人类自由参与的
+稳定性研究，北极星见 [`research/owner-research-question.md`](research/owner-research-question.md)；
+N-of-1 配对对比轨归档。v0.5.3 的双轨重置记录如下，仅保留历史语境。
+
+本版（0.5.3）曾是**方向重置**，不是增量修订。
 
 v0.3.0 的定位是「观察异质代理如何形成价格」，其研究层已整体移除，不再保留为
 Superseded 文档——保留一份已作废方向的规格与冻结记录，只会让人误以为那些约束仍然
@@ -53,9 +60,9 @@ MarketGameSim 是一个本地运行、订单簿驱动、可复现的**合成市�
 产品分三层，逐层依赖：
 
 ```text
-第三层  可玩的市场模拟器      人可作为交易者亲身参与，建立直觉      （远期）
-第二层  交易信念检验实验室    条件性命题的可证伪检验                （核心产出）
-第一层  市场微观结构地基      证明这个市场像个市场                  （前提）
+当前主干  可玩的市场模拟器      人作为交易者亲身参与，研究人类扰动的稳定性影响（ADR-010）
+第二层    交易信念检验实验室    条件性命题的可证伪检验                （既有产出，保留）
+第一层    市场微观结构地基      证明这个市场像个市场                  （前提）
 ```
 
 第一层不产生交易洞察，但没有它，第二层的所有结论都不可信——在一个不像市场的市场里
@@ -481,6 +488,11 @@ H2-D 可并行开发，H2-C 不等待所有者四天时间。
 **范围调整（2026-09-12）**：`H2-C` 先以 AI 正式证据包独立闭环；价格/K 线/按钮和所有者
 训练不再作为 H2-C 的前置条件，统一移入 `H2-D`。这样训练期间不会阻塞 AI 研究收口，且 Web
 终端在所有者开始前有独立的可打开验收点。
+
+**范围调整（2026-09-19，ADR-010）**：owner 采集轨从"N-of-1 配对对比"重构为
+"持续 AI 市场生态 + 人类扰动稳定性研究"（live_market 主干，北极星见
+[`research/owner-research-question.md`](research/owner-research-question.md)）；
+N-of-1 场景流程与 0.3.1 配对协议归档待议，不再阻塞任何轨道。
 
 **H1 未与 R3/R4 并行，且现在才具备开工条件。** 理由是版本边界在本仓库有执行后果：
 Feature 三件套必须归属某个 `docs/features/<version>/`。若收口前开工，要么把与旗舰问题
