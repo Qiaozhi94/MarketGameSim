@@ -20,6 +20,8 @@ input{font:inherit;background:#1c2330;color:#d7dee8;border:1px solid #2b3444;bor
 </style></head><body><main>
 <div class="card"><h3>训练实验进度（窗口 = 1 逻辑秒，1:1 实时）</h3>
 <div class="kv"><span class="k">状态</span><span id="st">启动中</span></div>
+  <div class="row"><button id="start" style="border-color:#2ebd85;color:#2ebd85">开始交易</button>
+  <span style="color:#f0b90b;font-size:12px">点击后场景按 1:1 实时开始（约 30-60 秒）</span></div>
 <div class="kv"><span class="k">已完成窗口</span><span id="win" class="num">0</span></div>
 <div class="kv"><span class="k">工件</span><span id="art" class="num">—</span></div></div>
 <div class="card"><h3>冻结观察子集（Experiment）</h3>
@@ -42,7 +44,8 @@ async function post(p,b){const r=await fetch(p,{method:"POST",headers:{"Content-
   body:JSON.stringify(b)});return r.json()}
 async function refresh(){try{
   const v=await fetch("/api/v1/h2/owner/experiment").then(r=>r.json());
-  $("st").textContent=v.running?"进行中":(v.error?("出错："+v.error):(v.aborted?"OWNER_ABORT":"已完成"));
+  $("st").textContent=v.running?(v.wait_start?"等待开始":"进行中"):(v.error?("出错："+v.error):(v.aborted?"OWNER_ABORT":"已完成"));
+  $("start").disabled=!v.wait_start;
   $("win").textContent=v.completed_windows;
   $("art").textContent=v.artifact?"已落盘":"—";
   const i=v.latest_info||{};
@@ -56,5 +59,6 @@ async function order(side){
   $("msg").textContent=r.queued?("已排队："+side+" "+qty+"（下一窗口判定点执行）"):"排队失败"}
 $("buy").onclick=()=>order("buy");$("sell").onclick=()=>order("sell");
 $("abort").onclick=async()=>{await post("/api/v1/h2/owner/experiment/abort",{});$("msg").textContent="已请求中止"};
+$("start").onclick=async()=>{await post("/api/v1/h2/owner/experiment/start",{});$("msg").textContent="已开始：窗口每秒推进，委托即时入队"};
 refresh();setInterval(refresh,400);
 </script></body></html>

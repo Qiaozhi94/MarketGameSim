@@ -33,8 +33,9 @@ _EXPERIMENT_HTML = (Path(__file__).resolve().parent / "owner_experiment.html").r
 class WebOrderBridge:
     """网页委托 → 决定缝 的线程安全桥：订单队列 + 中止标志 + 最新观察。"""
 
-    def __init__(self) -> None:
+    def __init__(self, *, wait_start: bool = True) -> None:
         self._orders: queue.Queue[dict[str, Any]] = queue.Queue()
+        self.wait_start = wait_start
         self.abort_requested = False
         self.latest_info: dict[str, Any] = {}
         self.completed_windows = 0
@@ -71,6 +72,11 @@ def web_decision_ask(bridge: WebOrderBridge, *, window_wall_seconds: float = 1.0
     def _ask(window_index: int, info: dict[str, Any], window) -> dict[str, Any] | None:
         bridge.latest_info = dict(info)
         bridge.completed_windows = window_index
+        while bridge.wait_start:
+            if bridge.abort_requested:
+                bridge.aborted = True
+                raise OwnerAbort("owner 在就绪前请求中止")
+            time.sleep(0.05)
         deadline = time.monotonic() + window_wall_seconds
         decided: dict[str, Any] | None = None
         while True:
@@ -100,6 +106,7 @@ def make_experiment_handler(bridge: WebOrderBridge) -> type[BaseHTTPRequestHandl
                 self._json(
                     {
                         "running": bridge.running,
+                        "wait_start": bridge.wait_start,
                         "done": bridge.done,
                         "aborted": bridge.aborted,
                         "error": bridge.error,
@@ -122,6 +129,9 @@ def make_experiment_handler(bridge: WebOrderBridge) -> type[BaseHTTPRequestHandl
                 elif self.path == f"{EXPERIMENT_ROUTES_PREFIX}/abort":
                     bridge.abort_requested = True
                     self._json({"abort_requested": True})
+                elif self.path == f"{EXPERIMENT_ROUTES_PREFIX}/start":
+                    bridge.wait_start = False
+                    self._json({"started": True})
                 else:
                     self._json({"error": "NOT_FOUND"}, HTTPStatus.NOT_FOUND)
             except (ValueError, TypeError, json.JSONDecodeError) as exc:

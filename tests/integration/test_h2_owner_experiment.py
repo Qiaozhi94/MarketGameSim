@@ -32,7 +32,7 @@ def _wait_done(bridge: WebOrderBridge, timeout: float = 120.0) -> None:
 
 
 def test_web_orders_drive_real_training_scenario(tmp_path: Path):
-    bridge = WebOrderBridge()
+    bridge = WebOrderBridge(wait_start=False)
     run_scenario_in_thread(bridge, position=0, out_root=tmp_path, window_wall_seconds=0.02)
     time.sleep(0.1)
     bridge.push_order("buy", 2)
@@ -54,7 +54,7 @@ def test_web_orders_drive_real_training_scenario(tmp_path: Path):
 
 
 def test_abort_writes_audit_artifact(tmp_path: Path):
-    bridge = WebOrderBridge()
+    bridge = WebOrderBridge(wait_start=False)
     run_scenario_in_thread(bridge, position=1, out_root=tmp_path, window_wall_seconds=0.02)
     time.sleep(0.3)
     bridge.abort_requested = True
@@ -114,6 +114,8 @@ def test_web_ask_respects_slot_pacing():
 
     bridge = WebOrderBridge()
     ask = web_decision_ask(bridge, window_wall_seconds=0.2)
+    assert bridge.wait_start is True, "构造默认应等待开始（就绪门）"
+    bridge.wait_start = False
     start = time.monotonic()
     assert ask(0, {}, None) is None
     elapsed = time.monotonic() - start
