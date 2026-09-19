@@ -44,6 +44,33 @@ class WebOrderBridge:
         self.aborted = False
         self.error: str | None = None
         self.artifact: str | None = None
+        self.depth: dict[str, list[list[int]]] = {"bids": [], "asks": []}
+        self.snapshots: list[dict[str, Any]] = []
+
+    def observe(self, info: dict[str, Any], world: dict) -> None:
+        """每窗开窗回调：从内核 world 取盘口（≤10 档）与冻结观察快照。"""
+
+        self.latest_info = dict(info)
+        self.completed_windows = max(self.completed_windows, len(self.snapshots) + 1)
+        book = world.get("book")
+        if book is not None:
+            self.depth = {
+                "bids": [[p, q] for p, q in book.bid_levels()[:10]],
+                "asks": [[p, q] for p, q in book.ask_levels()[:10]],
+            }
+            last = book.last_ticks
+        else:
+            last = info.get("last_ticks")
+        self.snapshots.append(
+            {
+                "window": len(self.snapshots) + 1,
+                "last": last,
+                "bid": info.get("best_bid"),
+                "ask": info.get("best_ask"),
+                "wallet": info.get("wallet_units"),
+                "position": info.get("position_units"),
+            }
+        )
 
     def push_order(self, side: str, quantity_units: int) -> bool:
         normalized = side.strip().lower()
@@ -70,8 +97,6 @@ def web_decision_ask(bridge: WebOrderBridge, *, window_wall_seconds: float = 1.0
     """
 
     def _ask(window_index: int, info: dict[str, Any], window) -> dict[str, Any] | None:
-        bridge.latest_info = dict(info)
-        bridge.completed_windows = window_index
         while bridge.wait_start:
             if bridge.abort_requested:
                 bridge.aborted = True
@@ -112,6 +137,8 @@ def make_experiment_handler(bridge: WebOrderBridge) -> type[BaseHTTPRequestHandl
                         "error": bridge.error,
                         "completed_windows": bridge.completed_windows,
                         "latest_info": bridge.latest_info,
+                        "depth": bridge.depth,
+                        "snapshots": bridge.snapshots[-60:],
                         "artifact": bridge.artifact,
                     }
                 )
@@ -193,6 +220,7 @@ def run_scenario_in_thread(
                 position,
                 web_decision_ask(bridge, window_wall_seconds=window_wall_seconds),
                 out_root=out_root,
+                on_window=bridge.observe,
             )
             bridge.artifact = str(artifact_path)
             bridge.done = True

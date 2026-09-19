@@ -159,10 +159,13 @@ class _SessionDriver:
         ask: DecisionInput,
         *,
         window_duration_ns: int | None = None,
+        on_window: Callable[[dict[str, Any], dict], None] | None = None,
     ) -> None:
+        """``on_window``：每窗开窗时的观察回调（(info, world)），供展示层采样。"""
         self.formal = session.FormalSession(total_windows=total_windows)
         self._ask = ask
         self._window_duration_ns = window_duration_ns
+        self._on_window = on_window
         self.records: list[dict[str, Any]] = []
         self.late_rejected_total = 0
 
@@ -176,6 +179,8 @@ class _SessionDriver:
             )
         window = self.formal.open_next_window(duration_ns=self._window_duration_ns)
         info = {key: event.get("_observed_information_set", {}).get(key) for key in _DISPLAY_FIELDS}
+        if self._on_window is not None:
+            self._on_window(info, world)
         intent_id: str | None = None
         side: str | None = None
         quantity: int | None = None
@@ -291,6 +296,7 @@ def run_owner_scenario(
     out_root: Path | None = None,
     window_duration_ns: int | None = None,
     assignments: dict[str, Any] | None = None,
+    on_window: Callable[[dict[str, Any], dict], None] | None = None,
 ) -> dict[str, Any]:
     """跑一个所有者场景（training 或 formal），返回已落盘的会话工件。
 
@@ -338,6 +344,7 @@ def run_owner_scenario(
             int(contract["windows_per_scenario"]),
             ask,
             window_duration_ns=window_duration_ns,
+            on_window=on_window,
         )
         result = run_one(
             _owner_config(seed),

@@ -24,7 +24,7 @@ input{font:inherit;background:#1c2330;color:#d7dee8;border:1px solid #2b3444;bor
   <span style="color:#f0b90b;font-size:12px">点击后场景按 1:1 实时开始（约 30-60 秒）</span></div>
 <div class="kv"><span class="k">已完成窗口</span><span id="win" class="num">0</span></div>
 <div class="kv"><span class="k">工件</span><span id="art" class="num">—</span></div></div>
-<div class="card"><h3>冻结观察子集（Experiment）</h3>
+<div class="card"><h3>冻结观察白名单（spec §5：盘口≤10 档 · 快照 · 账户）</h3>
 <div class="grid">
   <div class="kv"><span class="k">买一</span><span id="bid" class="num">—</span></div>
   <div class="kv"><span class="k">卖一</span><span class="num" id="ask">—</span></div>
@@ -32,7 +32,20 @@ input{font:inherit;background:#1c2330;color:#d7dee8;border:1px solid #2b3444;bor
   <div class="kv"><span class="k">钱包</span><span class="num" id="wal">—</span></div>
   <div class="kv"><span class="k">仓位</span><span class="num" id="pos">—</span></div>
   <div class="kv"><span class="k">保证金比率(bp)</span><span class="num" id="mr">—</span></div>
-</div></div>
+</div>
+<canvas id="snapline" width="700" height="120" style="width:100%;height:120px;margin-top:10px;background:#0b0e14;border:1px solid #2b3444;border-radius:6px"></canvas>
+<div style="font-size:11px;color:#5b6676;margin-top:4px">采样价格线 = 服务端冻结粒度（每逻辑秒）时点采样可视化；白名单外指标（MA/MACD/24h/标记价格）采集态不提供</div>
+</div>
+<div class="card"><h3>盘口（≤10 档）</h3>
+<table style="width:100%;border-collapse:collapse;font-family:ui-monospace,monospace;font-size:12px">
+<thead><tr><th style="text-align:right;color:#8b97a8">价格</th><th style="text-align:right;color:#8b97a8">数量</th></tr></thead>
+<tbody id="asks"></tbody>
+<tbody><tr><td colspan="2" style="text-align:center;color:#8b97a8" id="mid">—</td></tr></tbody>
+<tbody id="bids"></tbody></table></div>
+<div class="card"><h3>最近快照（每逻辑秒）</h3>
+<table style="width:100%;border-collapse:collapse;font-family:ui-monospace,monospace;font-size:12px">
+<thead><tr><th style="text-align:left;color:#8b97a8">窗</th><th style="text-align:right;color:#8b97a8">最新</th><th style="text-align:right;color:#8b97a8">买一</th><th style="text-align:right;color:#8b97a8">卖一</th></tr></thead>
+<tbody id="snaps"></tbody></table></div>
 <div class="card"><h3>市价委托（动作空间：市价单，与参照策略一致）</h3>
 <div class="row">数量 <input id="qty" type="number" value="1" min="1">
   <button class="buy" id="buy">买入</button><button class="sell" id="sell">卖出</button></div>
@@ -52,7 +65,33 @@ async function refresh(){try{
   $("bid").textContent=i.best_bid??"—";$("ask").textContent=i.best_ask??"—";
   $("last").textContent=i.last_ticks??"—";$("wal").textContent=i.wallet_units??"—";
   $("pos").textContent=i.position_units??"—";$("mr").textContent=i.margin_ratio_bp??"—";
+  renderBook(v.depth||{bids:[],asks:[]});
+  renderSnapshots(v.snapshots||[]);
 }catch(e){}}
+function renderBook(d){
+  const row=(p,q,cls)=>`<tr><td class="num ${cls}">${p??"—"}</td><td>${q??"—"}</td></tr>`;
+  $("asks").innerHTML=(d.asks||[]).slice(0,10).reverse().map(l=>row(l[0],l[1],"down")).join("")
+    ||'<tr><td colspan="2" class="empty">无卖盘</td></tr>';
+  $("bids").innerHTML=(d.bids||[]).slice(0,10).map(l=>row(l[0],l[1],"up")).join("")
+    ||'<tr><td colspan="2" class="empty">无买盘</td></tr>';
+  const b=(d.bids||[])[0],a=(d.asks||[])[0];
+  $("mid").textContent=(b&&a)?((b[0]+a[0])/2).toFixed(1):"—"}
+function renderSnapshots(snaps){
+  const cvs=document.getElementById("snapline"),ctx=cvs.getContext("2d");
+  ctx.clearRect(0,0,cvs.width,cvs.height);
+  const rows=snaps.slice(-14).reverse().map(x=>`<tr><td>${x.window}</td><td class="num">${x.last??"—"}</td>
+    <td class="num">${x.bid??"—"}</td><td class="num">${x.ask??"—"}</td></tr>`).join("");
+  $("snaps").innerHTML=rows||'<tr><td colspan="4" style="color:#5b6676">暂无快照</td></tr>';
+  if(snaps.length<2)return;
+  const vals=snaps.map(x=>x.last).filter(x=>x!=null);
+  const hi=Math.max(...vals),lo=Math.min(...vals),rg=(hi-lo)||1;
+  ctx.strokeStyle="#2962ff";ctx.lineWidth=1.5;ctx.beginPath();
+  snaps.forEach((x,i)=>{if(x.last==null)return;
+    const px=i/(snaps.length-1)*(cvs.width-8)+4;
+    const py=cvs.height-6-(x.last-lo)/rg*(cvs.height-12);
+    i===0?ctx.moveTo(px,py):ctx.lineTo(px,py)});
+  ctx.stroke()}
+window.__exp={state:null};
 async function order(side){
   const qty=parseInt($("qty").value||"0",10);if(!(qty>0)){$("msg").textContent="数量必须为正整数";return}
   const r=await post("/api/v1/h2/owner/experiment/orders",{side,quantity_units:qty});

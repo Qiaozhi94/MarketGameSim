@@ -126,3 +126,18 @@ def test_web_ask_respects_slot_pacing():
     decision = ask(1, {}, None)
     assert time.monotonic() - start <= 0.25
     assert decision == {"kind": "MARKET", "side": "sell", "quantity_units": 2}
+
+
+def test_bridge_observes_book_depth_and_snapshots(tmp_path: Path):
+    """每窗回调应从内核 world 取盘口（≤10 档）并落采样快照。"""
+
+    bridge = WebOrderBridge(wait_start=False)
+    run_scenario_in_thread(bridge, position=0, out_root=tmp_path, window_wall_seconds=0.02)
+    time.sleep(0.3)
+    bridge.push_order("buy", 2)
+    _wait_done(bridge)
+
+    assert bridge.snapshots, "应有逐窗采样快照"
+    assert bridge.depth["bids"] and bridge.depth["asks"], "盘口深度缺失"
+    assert all(len(lv) == 2 for lv in bridge.depth["bids"][:3])
+    assert bridge.snapshots[0]["window"] == 1, "快照必须从窗口 1 开始编号"
