@@ -1,0 +1,255 @@
+{
+  "$comment": "v0.4 需求追踪真源；0.4.1 承担 L2 交易者策略层与市场真实性判据（ADR-011）。",
+  "matrix_version": 1,
+  "statuses": [
+    "owned",
+    "deferred",
+    "removed"
+  ],
+  "milestones": {
+    "0.4.1": "docs/features/0.4/0.4.1-ai-market-ecology"
+  },
+  "requirements": {
+    "US-501": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E3"
+          ]
+        }
+      ]
+    },
+    "US-502": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E3"
+          ]
+        }
+      ]
+    },
+    "US-503": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E5"
+          ]
+        }
+      ]
+    },
+    "FR-501": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E1",
+            "E2"
+          ]
+        }
+      ]
+    },
+    "FR-502": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E2",
+            "E3"
+          ]
+        }
+      ]
+    },
+    "FR-503": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E3",
+            "E4"
+          ]
+        }
+      ]
+    },
+    "FR-504": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E5"
+          ]
+        }
+      ]
+    },
+    "FR-505": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E1",
+            "E3",
+            "E4"
+          ]
+        }
+      ]
+    },
+    "DR-501": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E1",
+            "E3"
+          ]
+        }
+      ]
+    },
+    "DR-502": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E1",
+            "E3",
+            "E4"
+          ]
+        }
+      ]
+    },
+    "TR-501": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E3",
+            "E5"
+          ]
+        }
+      ]
+    },
+    "IR-501": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E2",
+            "E3"
+          ]
+        }
+      ]
+    },
+    "IR-502": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E5"
+          ]
+        }
+      ]
+    },
+    "NFR-501": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E3"
+          ]
+        }
+      ]
+    },
+    "NFR-502": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E2",
+            "E3"
+          ]
+        }
+      ]
+    },
+    "NFR-503": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E5"
+          ]
+        }
+      ]
+    },
+    "SC-501": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E3"
+          ]
+        }
+      ]
+    },
+    "SC-502": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E4"
+          ]
+        }
+      ]
+    },
+    "SC-503": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E4"
+          ]
+        }
+      ]
+    },
+    "SC-504": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E5"
+          ]
+        }
+      ]
+    }
+  },
+  "tracked_id_families": [
+    "US",
+    "FR",
+    "DR",
+    "TR",
+    "IR",
+    "NFR",
+    "SC",
+    "UX"
+  ]
+}

@@ -9,7 +9,6 @@
 |---|---|---|
 | [`0.3.1-human-in-the-loop-experiment/`](0.3.1-human-in-the-loop-experiment/spec.md) | done | H2 AI 正式机制基线与研究交付 |
 | [`0.3.2-web-trading-terminal/`](0.3.2-web-trading-terminal/spec.md) | developing | 本地 Web 交易终端、价格/K 线与所有者 N-of-1 数据采集 |
-| [`0.3.3-ai-market-ecology/`](0.3.3-ai-market-ecology/spec.md) | draft | L2 交易者策略层、冷启动锚与市场真实性判据（ADR-011） |
 
 ## 边界
 
@@ -19,9 +18,8 @@
   paired blocks；不招募外部真人。
 - 市场不接受外生基本面或价格冲击；价格崩盘、流动性枯竭和强平连锁始终分开报告。
 - `AI_FORMAL` 与未来的 `OWNER_N_OF_1` 使用独立 evidence index；H1 自由交互不得进入任一正式样本。
-- `0.3.3` 交付的是纯 AI 市场生态本身（L1 引擎 / L2 交易者策略层分层，见
-  [`ADR-011`](../../decisions/011-market-engine-trader-layering.md)），证据级别为
-  `engineering-demonstration`，不进入任何 evidence index，也不回流 alphamill 证据链。
+- 市场生态本身（L1 引擎 / L2 交易者策略层分层）由 [`v0.4`](../0.4/README.md) 承接，
+  见 [`ADR-011`](../../decisions/011-market-engine-trader-layering.md)；v0.3 不再扩大范围。
 
 ## 相关入口
 

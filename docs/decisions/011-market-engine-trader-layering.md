@@ -2,7 +2,7 @@
 
 日期：2026-09-19  
 状态：Accepted（owner 裁决，2026-09-19 实测复盘对话）  
-关联规格：[`../features/0.3/0.3.3-ai-market-ecology/spec.md`](../features/0.3/0.3.3-ai-market-ecology/spec.md)  
+关联规格：[`../features/0.4/0.4.1-ai-market-ecology/spec.md`](../features/0.4/0.4.1-ai-market-ecology/spec.md)  
 关联文档：[`ADR-010`](010-market-ecology-research-pivot.md)（研究方向）、
 [`../research/owner-research-question.md`](../research/owner-research-question.md)（北极星）、
 [`../../src/market_game_sim/agent/goal.py`](../../src/market_game_sim/agent/goal.py)、
@@ -43,15 +43,15 @@ owner 据此提出两层模型，并在同一次对话中裁决不引入基本�
 2. **不引入外生基本面/价值过程**（owner 2026-09-19 裁决）。价值投资者族不做；
    依赖市值、行业、财报的因子一并排除。市场价格只由订单流与策略互动决定，
    这同时保住 v0.1「无外生冲击」的可复现论证。
-3. **「真实有效」的判据是 stylized facts，不是「用了多少真实策略」**。0.3.3 的验收
+3. **「真实有效」的判据是 stylized facts，不是「用了多少真实策略」**。0.4.1 的验收
    门由两组数字构成：市场质量（成交率、盘口可用性、档位、价差、实时性能）与
    stylized facts（收益厚尾、波动聚集、收益无自相关、成交量—波动相关、订单流长记忆）。
-   具体门限值由 0.3.3 spec 唯一拥有。
+   具体门限值由 0.4.1 spec 唯一拥有。
 4. **量化交易者族的定位是异质信号源，不承担市场真实性**。Alpha101 只取纯时序子集：
    含 `rank`（横截面算子，单标的上退化为常数）、`IndNeutralize`、`cap` 的公式一律
    排除；窗口从日频重定义为 bar 频（`days(N)` → `bars(N×k)`），与 alphamill 调研
    结论一致（`alphamill/docs/alphamill-research-factor-mining.md` 关于公式库的日频
-   与行业/市值警告）。可用子集的逐条筛查结果由 0.3.3 的筛查任务产出，不在本 ADR 预判数量。
+   与行业/市值警告）。可用子集的逐条筛查结果由 0.4.1 的筛查任务产出，不在本 ADR 预判数量。
 5. **alphamill 单向边界**：MarketGameSim 单向消费 alphamill 产出的策略/信号。
    **沙盘内的盈亏、胜率、回撤永远不进入 alphamill 的证据链，也不得作为任何策略
    有效性的证据**——合成市场没有真实市场的微观结构，用它给实盘策略背书会污染
@@ -80,7 +80,7 @@ owner 据此提出两层模型，并在同一次对话中裁决不引入基本�
   与做市商报价分散都是必须解决的新工作，不是接线；价值投资者族在本决策下永久缺席，
   若 owner 将来改主意，需要先修订本 ADR 与北极星文档。
 - **后续行动**：
-  - 0.3.3 承接 L2 分层、冷启动锚、质量门与策略族落地；
+  - 0.4.1 承接 L2 分层、冷启动锚、质量门与策略族落地；
   - `0.3.2/spec.md` 仍以 N-of-1 采集为真源，与 ADR-010 冲突，收口方式待独立决策
     （不在本 ADR 范围）；
-  - `live_market.py` 目前无 CLI/RUN.md 入口，由 0.3.3 重建运行入口。
+  - `live_market.py` 目前无 CLI/RUN.md 入口，由 0.4.1 重建运行入口。

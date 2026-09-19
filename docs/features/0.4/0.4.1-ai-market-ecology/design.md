@@ -1,7 +1,7 @@
 ---
 kind: milestone
-id: 0.3.3
-version: "0.3"
+id: 0.4.1
+version: "0.4"
 related_features:
   - 0.3.1
   - 0.3.2
@@ -14,7 +14,7 @@ created: 2026-09-19
 updated: 2026-09-19
 ---
 
-# 0.3.3：AI 市场生态 - 技术设计
+# 0.4.1：AI 市场生态 - 技术设计
 
 > Spec: [`spec.md`](spec.md) | Tasks: [`tasks.md`](tasks.md)
 

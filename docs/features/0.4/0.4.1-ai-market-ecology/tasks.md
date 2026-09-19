@@ -1,7 +1,7 @@
 ---
 kind: milestone
-id: 0.3.3
-version: "0.3"
+id: 0.4.1
+version: "0.4"
 related_features:
   - 0.3.1
   - 0.3.2
@@ -14,7 +14,7 @@ created: 2026-09-19
 updated: 2026-09-19
 ---
 
-# 0.3.3：AI 市场生态 - 任务
+# 0.4.1：AI 市场生态 - 任务
 
 > Owner: TBD | Spec: `spec.md` | Design: `design.md`
 
@@ -73,15 +73,16 @@ updated: 2026-09-19
 - [ ] T971 (`FR-505`, `SC-502`, `AC-505`): 实现 stylized facts 五项度量，并在合成对照序列上
       做正反判定（已知厚尾序列判通过、独立正态序列判未通过）— verify:
       `tests/unit/metrics/test_stylized_facts.py`
-- [ ] T972 (`FR-503`, `SC-503`, `AC-506`): 跨种子运行纯 AI 市场，判定是否出现 ≥3% 分钟跳动或
-      强平连锁；无事件时产出如实的未达标记录 — verify:
+- [ ] T972 (`FR-503`, `SC-503`, `AC-506`): 跨种子运行纯 AI 市场，对内生不稳定事件做**存在性判定**
+      （出现→记录触发条件与频次；未出现→产出如实的「不存在」结论）。两条路径都要有断言，
+      阈值取自冻结常量；**不得为制造「出现」而调阈值或注入冲击** — verify:
       `tests/integration/test_endogenous_instability.py`
 - [ ] T973 `[成果门:H2-E2]` (`SC-502`, `SC-503`, `AC-505`, `AC-506`, `AC-509`): 生成异质策略族市场的
       跨种子质量报告集合——stylized facts 达到 SC-502 条数、出现 SC-503 的内生不稳定事件、
       实时性能达标；证据标签为 `engineering-demonstration` — verify:
       `tests/integration/test_endogenous_instability.py`
 
-### Phase 3：量化交易者族与运行入口
+### Phase 3：量化交易者族（不依赖 alphamill）与运行入口
 
 - [ ] T974 (`FR-504`, `AC-508`): 实现 Alpha101 公式筛查器——含 `rank`/`IndNeutralize`/`cap` 的
       公式在装配时拒绝并给出稳定原因码，纯时序子集通过；正反用例都要有 — verify:
@@ -92,7 +93,8 @@ updated: 2026-09-19
 - [ ] T976 (`FR-504`, `TR-501`, `SC-504`, `AC-507`): 量化交易者族的委托走既有撮合/账本/风控路径，
       因果链可回溯到族标识与信号版本 — verify: `tests/integration/test_external_signal_family.py`
 - [ ] T977 (`NFR-503`, `AC-508`): 为量化族 artifact 写入单向边界声明（不得用作策略有效性证据、
-      不回流 alphamill 证据链），并断言其不进入任何 evidence index — verify:
+      不回流 alphamill 证据链），并断言其不进入任何 evidence index；本 Phase 用固定信号序列
+      验收，**不依赖 alphamill 运行时**（其 M3 未开工，当前无可消费产出）— verify:
       `tests/integration/test_external_signal_family.py`
 - [ ] T978 `[成果门:H2-E3]` (`SC-504`, `AC-507`, `AC-508`): 生成量化交易者族的可消费运行 artifact，
       并把纯 AI 市场的启动入口与质量报告命令写入 `RUN.md`；证据标签为
@@ -133,6 +135,10 @@ updated: 2026-09-19
 
 - 外生基本面/价值过程与价值投资者族 → 需先修订 ADR-011 与研究北极星，不在本里程碑。
 - 多标的合约池与 Alpha101 横截面算子 → 独立 Feature：本里程碑只做单标的纯时序子集。
-- 人类扰动实验的设计与执行、owner 场次安排 → 后续里程碑：本里程碑只交付对照基线。
+- 人类扰动实验的设计与执行（同种子对照：无人类基线 vs 有人类 × N 次重复）→
+  PRD §15 交易者介入里程碑的 `H2-F`，待立项；本里程碑只交付它的对照基线与市场载体。
 - Web 终端界面改动与观察面调整 → 0.3.2 轨：本里程碑只保证终端背后的市场是活的。
+- **alphamill 适配器** → 独立 Feature，触发条件是 alphamill M3「策略到 paper 闭环 +
+  版本化信号」产出（2026-09-20 核实其活跃 Feature 为 F003/F007/F008，均在 0.2 版本 M2 阶段）。
+  本里程碑只交付不依赖上游的注入接口与公式筛查器。
 - alphamill 侧的任何改动与双向证据互认 → 永久后移（ADR-011 §决策 5 禁止回流）。
