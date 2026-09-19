@@ -3,21 +3,28 @@ kind: milestone
 id: 0.3.2
 parent: v0.3-human-in-the-loop-crash-experiment
 version: "0.3"
-status: developing
-status_evidence: G1 owner 批准（2026-09-18 会话指令：进入代码开发阶段）；[TEST] 组 T949-T952 已入驻
+status: done
+status_evidence: Web 终端（E1/E2）已交付并由 tests/e2e/test_h2_owner_terminal.py 与
+  tests/integration/test_h2_owner_web.py 验收；N-of-1 采集轨随 ADR-010 归档，已移出本里程碑范围
 research_claim_status: not-applicable
 research_claim_required: false
 evidence_class: experiment-preview
 gate_version: 1
 created: 2026-09-12
-updated: 2026-09-18
+updated: 2026-09-20
 prerequisites:
   - 0.2.1
 ---
 
-# 0.3.2：Web 交易终端与所有者 N-of-1 采集
+# 0.3.2：Web 交易终端
 
 > Owner: TBD | Target: v0.3
+
+> **范围收窄（2026-09-20，[ADR-010](../../../decisions/010-market-ecology-research-pivot.md)）**：
+> 原「所有者 N-of-1 采集」轨（6 训练 + 24 正式场景、配对观察白名单、采集态 evidence index）
+> 已整体归档，移出本里程碑范围——它不是未完成，是经 owner 裁决不再做。协议、assignment、
+> session guard 等机械与其测试保留在仓库，受控对照类研究问题出现时可复活。本里程碑
+> 收口的是已交付的 Web 交易终端。
 
 ## 0. 来源与意图
 
@@ -33,9 +40,9 @@ prerequisites:
 - **功能类型**：user-facing / runtime / workflow / validation / docs。
 - **规格模式**：full。
 - **变更类型**：ADDED。
-- **一句话意图**：在所有者训练开始前交付一个本地可打开的真实终端形态 Web 交易终端——
-  自由连续交易（市价/限价）、真实世界时间呈现、可审计操作回报；页面验收通过后再进入
-  采集模式完成 6 个训练和 24 个正式 N-of-1 场景。
+- **一句话意图**：交付一个本地可打开的真实终端形态 Web 交易终端——自由连续交易
+  （市价/限价）、真实世界时间呈现、可审计操作回报，并保留 preview fail-closed 门控与
+  会话采样审计链。
 - **窗口合同修订（Q-403，2026-09-13）**：owner 轨不再使用用户可见的决策窗口与"每窗一次
   动作"约束（修订 Q-303 中 owner 墙钟窗部分，见 ADR-006）；市场仍按冻结逻辑步进推进，
   服务端按冻结粒度对逻辑时点静默采样。AI 正式轨（0.3.1）不受影响。
@@ -54,15 +61,17 @@ prerequisites:
    多周期 K 线和本人账户，时间呈现采用合成交易所墙钟。
 2. 提供自由连续交易：市价与限价委托、挂单管理与撤单，全部映射到 canonical input 并
    生成操作回报；服务端幂等与既有撮合、账本、风控路径裁决。
-3. 先以固定假参与者完成 Web preview 和故障验收，再允许所有者进入采集模式开始训练。
-4. 采集模式严格隔离结果、参照策略和未来信息，生成可审计的 owner session artifact；
-   服务端按冻结粒度采样逻辑时点，维持场景级描述性对比。
+3. 先以固定假参与者完成 Web preview 和故障验收，preview 未通过时采集入口 fail closed。
+4. 生成可审计的 owner session artifact：服务端按冻结粒度采样逻辑时点，并区分
+   owner 主动中止与技术中止。
 
 ### 非目标
 
 - 不连接交易所、真实账户、真实资金或外部行情源。
 - 不实现多人协作、登录系统、公开部署、移动端适配或投资建议。
 - 不在本里程碑修改 AI 正式轨的研究 estimand，也不把 owner n=1 结果写成人群结论。
+- **不执行 N-of-1 采集**：6 训练 + 24 正式场景、owner evidence index 与个人描述性报告
+  随 [ADR-010](../../../decisions/010-market-ecology-research-pivot.md) 归档，不属于本里程碑。
 - 不把 K 线展示自动视为新的可用信息；正式采集前必须冻结其观察集语义与参照策略的同
   信息集方案（Q-401）。
 - 不在自由模拟终端引入实验性节奏约束（决策窗口、阶段徽标、解盲清单）；这些只属于
@@ -131,12 +140,13 @@ prerequisites:
 - 复用 H2 既有 protocol、assignment、session controller、撮合、账本、保证金和强平路径。
 - K 线由冻结 public tape 派生，提供 1m/5m/15m/1h/4h 派生视图；时间压缩比与周期集合在
   E1 前冻结（Q-401）。
-- 采集模式：训练 6 个场景、正式 24 个场景；每场场景为冻结的市场时间跨度；所有者只作为
-  项目唯一真人，不招募外部参与者。
-- owner session manifest、委托/成交/事件哈希、时点采样快照、技术中止和按备用池补跑的审计链。
+- owner session manifest、委托/成交/事件哈希、时点采样快照，以及 owner 主动中止与
+  技术中止的区分。
 
 ### 范围外
 
+- **N-of-1 采集执行**（6 训练 + 24 正式场景、owner evidence index、个人描述性报告）：
+  随 ADR-010 归档；协议与 guard 机械保留在仓库但不在本里程碑交付。
 - 真实行情/交易所、账户认证、凭据托管、远程访问、多人交易和公开排行榜。
 - AI formal evidence index、AI 主要结果、多重性校正和研究声明。
 - 任何跨轨合并、结果驱动的补跑、未来信息显示或替所有者提交动作的自动化。
@@ -220,8 +230,9 @@ prerequisites:
 
 ### 非功能需求
 
-- **NFR-302**：owner 数据最小化、假名化、退出和本地保留边界必须明确；成果包不得包含
-  直接身份信息，也不得把 owner 结果写成人群结论。
+- **NFR-302**：owner 数据最小化、假名化、退出和本地保留边界必须明确；session artifact
+  不得包含直接身份信息。（原条款中「不得把 owner 结果写成人群结论」随 N-of-1 采集轨
+  一并归档——本里程碑不产出 owner 结果。）
 - **NFR-401**：loopback 页面在无外部网络时可用；前端不引入交易凭据和第三方行情依赖。
 - **NFR-402**：页面状态以服务端 session 为准，刷新或短暂断线不得重复提交委托。
 - **NFR-403**：服务端部署与运行环境为 Linux（POSIX）；终端是浏览器页面，客户端操作系统不是部署面、不在验收范围；不得要求新增不可审计的全局服务或数据库。
@@ -240,6 +251,12 @@ FORMAL_RUNNING -> OWNER_ABORT      所有者主动中止正式场景：同上，
 FORMAL_RUNNING -> TECHNICAL_ABORT  断线/完整性/服务故障命中冻结无效条件
 TECHNICAL_ABORT -> RERUN_PENDING   仅技术原因且备用池仍有可用项
 ```
+
+**采集态转换已归档（2026-09-20，ADR-010）**：上表中 `TRAINING` / `FORMAL_ARMED` /
+`FORMAL_RUNNING` / `COMPLETED` / `INCOMPLETE_STUDY` / `RERUN_PENDING` 属已归档的 N-of-1
+采集轨，其 guard 机械与测试保留在仓库但本里程碑不执行；本里程碑交付并收口的是
+`PREVIEW_BLOCKED -> PREVIEW_READY` 以及自由模拟态下的 `OWNER_ABORT` / `TECHNICAL_ABORT`
+区分。下列语义描述保留为归档轨的契约记录。
 
 `OWNER_ABORT` 是终态，区别于可补跑的 `TECHNICAL_ABORT`：owner 主动中止不消耗备用池、
 不生成补跑样本，也不进入 owner evidence index；只有技术中止才按冻结顺序从备用池整局
@@ -274,9 +291,10 @@ TECHNICAL_ABORT -> RERUN_PENDING   仅技术原因且备用池仍有可用项
   完整 K 线。
 - **SC-402**：固定输入可完成合法市价/限价委托、撤单、拒单、断线、刷新恢复和退出，委托
   与事件哈希一致。
-- **SC-403**：6 个训练场景与 24 个正式场景均受阶段/assignment/解盲门控，且 owner
-  evidence index 与 AI evidence index 分离。
-- **SC-404**：owner 个人描述性结果可从 session artifact 重建，不产生人群研究声明。
+
+> **SC-403 / SC-404 已移除（2026-09-20，ADR-010）**：两者都以「6 训练 + 24 正式场景
+> 真实发生」为前提，该采集轨已归档。移除是范围裁决，不是未达标；版本根
+> [`traceability.json`](../traceability.json) 中两者的 `status` 为 `removed`。
 
 ### 退出条件
 
@@ -284,27 +302,27 @@ TECHNICAL_ABORT -> RERUN_PENDING   仅技术原因且备用池仍有可用项
 |---|---|---|
 | E1 | owner observation/K 线周期与时间压缩比、协议版本、动作空间（市价/限价）、时点采样粒度、隐私边界，以及 owner 证据包布局/schema 与机器校验入口冻结 | contract review + protocol diff + validator 通过记录 |
 | E2 | Web preview 可打开，价格/K 线/账户/下单/错误状态和门控通过 | browser preview bundle |
-| E3 | 6 个训练场景完成且未污染 formal；委托链和中止/补跑路径通过 | training manifest + guard matrix |
-| E4 | 24 个正式 owner 场景按冻结规则完成或形成 incomplete-study，个人报告明确不外推 | owner evidence index + descriptive report |
+
+E3（训练场景）与 E4（正式采集）随 N-of-1 轨归档移除；本里程碑以 E1、E2 收口。
 
 ### 验收清单
 
-- [ ] **AC-401** (`FR-401`, `IR-401`, `UX-401`, `SC-401`): 页面显示真实生成的 bid/ask/last、账户和
+- [x] **AC-401** (`FR-401`, `IR-401`, `UX-401`, `SC-401`): 页面显示真实生成的 bid/ask/last、账户和
       多周期 K 线，无报价时不显示伪价格。
-- [ ] **AC-402** (`FR-402`, `IR-402`, `TR-401`): 市价/限价委托进入既有撮合路径；非法输入稳定拒绝
+- [x] **AC-402** (`FR-402`, `IR-402`, `TR-401`): 市价/限价委托进入既有撮合路径；非法输入稳定拒绝
       且零副作用；限价成交/撤单状态流转与操作回报一致。
-- [ ] **AC-403** (`FR-403`, `IR-301`, `UX-403`): preview 未通过时 training/formal 被拒绝，采集模式
-      隐藏未来信息和结果。
-- [ ] **AC-404** (`DR-401`, `DR-402`, `NFR-401`, `NFR-403`): artifact 绑定协议/时间/哈希，loopback
-      无外部行情和凭据依赖。
-- [ ] **AC-405** (`FR-302`, `TR-302`, `NFR-402`): owner 委托沿既有撮合、账本和风控路径，时点采样
+- [x] **AC-403** (`FR-403`, `IR-301`, `UX-403`): preview 未通过时 training/formal 入口 fail closed；
+      采集态视图的白名单与结果隔离由归档轨的 guard 测试锁定。
+- [x] **AC-404** (`DR-401`, `DR-402`, `NFR-302`, `NFR-401`, `NFR-403`): artifact 绑定协议/时间/哈希，loopback
+      无外部行情和凭据依赖；session artifact 不含直接身份信息。
+- [x] **AC-405** (`FR-302`, `TR-302`, `NFR-402`): owner 委托沿既有撮合、账本和风控路径，时点采样
       完整；刷新/断线不重复委托。
-- [ ] **AC-406** (`UX-402`, `UX-404`): enabled/submitting/disabled/rejected 按钮状态与断线、空行情、
+- [x] **AC-406** (`UX-402`, `UX-404`): enabled/submitting/disabled/rejected 按钮状态与断线、空行情、
       拒单、中止、完成状态可见且可操作。
-- [ ] **AC-407** (`NFR-302`, `SC-404`): owner artifact 不含直接身份信息，报告只作个人描述，不产生
-      人群结论。
-- [ ] **AC-408** (`SC-402`, `SC-403`): 训练/正式阶段、备用补跑和 owner evidence index 可从 manifest
-      重建。
+
+> **AC-407 / AC-408 已移除（2026-09-20，ADR-010）**：两者分别验收个人描述性报告与
+> 训练/正式阶段的 evidence index 重建，均属已归档的采集轨。AC-407 中仍然有效的
+> 「artifact 不含直接身份信息」已并入 AC-404。
 
 ## 7. 测试、依赖与决策
 

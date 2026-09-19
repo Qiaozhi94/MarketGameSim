@@ -2,12 +2,15 @@
 kind: version-spec
 id: v0.3-human-in-the-loop-crash-experiment
 version: "0.3"
-status: draft
-research_claim_status: not-established
+status: done
+research_claim_status: established
 research_claim_required: true
 evidence_class: formal-research
+research_evidence:
+  - docs/experiments/H2-ai-evidence-index.json
+  - docs/experiments/H2-ai-analysis.json
 created: 2026-09-04
-updated: 2026-09-13
+updated: 2026-09-20
 ---
 
 # Feature Specification: AI Mechanism Baseline & Web Trading Terminal
@@ -18,7 +21,8 @@ updated: 2026-09-13
 **关联 PRD**：[`../../market-game-sim-prd.md`](../../market-game-sim-prd.md) §15 H2<br>
 **架构**：[`design.md`](design.md)<br>
 **里程碑**：[`0.3.1`](0.3.1-human-in-the-loop-experiment/spec.md)（AI 正式基线）→
-[`0.3.2`](0.3.2-web-trading-terminal/spec.md)（Web 终端与所有者采集）
+[`0.3.2`](0.3.2-web-trading-terminal/spec.md)（Web 交易终端）<br>
+**收口记录**：[`releases/0.3.md`](../releases/0.3.md)（2026-09-20 签收）
 
 ## 问题与目标
 
@@ -104,8 +108,8 @@ n=1 自我实验，[`SOP`](../../SOP.md) §2 把样本量 1、有学习效应的
 - **SC-304**：证据包可复建、可审计且不越过模型边界；正文见 [`0.3.1 spec §6`](0.3.1-human-in-the-loop-experiment/spec.md#6-成功与验收)。
 - **SC-401**：本地 Web 终端显示合成报价、账户和 K 线；正文见 [`0.3.2 spec §6`](0.3.2-web-trading-terminal/spec.md#6-成功与验收)。
 - **SC-402**：固定输入覆盖合法市价/限价委托、撤单、拒单、断线、刷新恢复和退出；正文见 [`0.3.2 spec §6`](0.3.2-web-trading-terminal/spec.md#6-成功与验收)。
-- **SC-403**：训练与正式场景受阶段、assignment 和解盲门控；正文见 [`0.3.2 spec §6`](0.3.2-web-trading-terminal/spec.md#6-成功与验收)。
-- **SC-404**：个人描述性结果可从 session artifact 重建且不产生人群声明；正文见 [`0.3.2 spec §6`](0.3.2-web-trading-terminal/spec.md#6-成功与验收)。
+- **SC-403**：训练与正式场景受阶段、assignment 和解盲门控；**已移除**（ADR-010 归档 N-of-1 采集轨），见 [`0.3.2 spec §6`](0.3.2-web-trading-terminal/spec.md#6-成功与验收)。
+- **SC-404**：个人描述性结果可从 session artifact 重建且不产生人群声明；**已移除**（同上），见 [`0.3.2 spec §6`](0.3.2-web-trading-terminal/spec.md#6-成功与验收)。
 
 版本级需求归属与退出条件由 [`traceability.json`](traceability.json) 唯一拥有。
 
@@ -117,6 +121,20 @@ n=1 自我实验，[`SOP`](../../SOP.md) §2 把样本量 1、有学习效应的
 4. 激进订单、流动性撤回和风险减仓首先作为预注册机制分析；未经额外识别设计不声称
    因果中介效应。
 5. H1 自由交互与 H2 培训/预览数据永不进入正式样本。
+
+## 收口说明（2026-09-20）
+
+v0.3 以 **0.3.1 的 AI 正式研究声明**收口：研究声明只挂在 AI 轨，证据为
+[`H2-ai-evidence-index.json`](../../experiments/H2-ai-evidence-index.json) 与
+[`H2-ai-analysis.json`](../../experiments/H2-ai-analysis.json)。
+
+0.3.2 的范围收窄为已交付的 Web 交易终端；其 N-of-1 采集轨（6 训练 + 24 正式场景、
+owner evidence index、个人描述性报告）随 [`ADR-010`](../../decisions/010-market-ecology-research-pivot.md)
+整体归档——**这是范围裁决，不是未达标**。`SC-403`/`SC-404` 在
+[`traceability.json`](traceability.json) 中状态为 `removed`，退出条件 `E3`/`E4` 一并移除。
+协议、assignment 与 session guard 机械及其测试保留在仓库，受控对照类研究问题出现时可复活。
+
+owner 的持续市场与人类扰动方向由 [`v0.4`](../0.4/spec.md) 承接，不在本版本范围。
 
 ## 待确认事项
 

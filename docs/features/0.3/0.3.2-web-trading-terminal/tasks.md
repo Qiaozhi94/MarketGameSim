@@ -23,8 +23,8 @@ updated: 2026-09-13
 - 技术方案与边界：[`design.md`](design.md)。
 - 每项任务只描述一个可验证动作，并引用合法的 US/需求/AC ID。
 - 每个 Phase 的最后一项任务是成果门；成果门必须产出可打开页面或可消费的 owner artifact。
-- 所有者时间不在工程任务完成前占用；E2 Web preview 未通过不得开始训练或正式场景。
-- owner 结果始终是个人描述性数据，不进入 AI formal evidence index 或研究声明。
+- 所有者时间不在工程任务完成前占用；E2 Web preview 未通过时采集入口 fail closed。
+- 自由模拟会话永不进入任何实验证据索引；owner session 不进入 AI 研究声明。
 
 ## 1. 前置条件
 
@@ -74,53 +74,28 @@ updated: 2026-09-13
       preview，固定输入完成合法市价/限价委托、成交、撤单、拒单、断线与退出，并验收 E2 的
       preview fail-closed 门控；证据标签为 `experiment-preview` — verify: `tests/e2e/test_h2_owner_terminal.py`
 
-### Phase 2：H2-D2 所有者训练、正式采集与个人交付
+### Phase 2：H2-D2 owner 会话采样与审计链
 
-- [ ] T937 (`FR-403`, `DR-401`, `NFR-302`, `AC-403`, `AC-407`): 实现 training/formal
-      assignment、阶段解盲、假名化和 owner artifact PII guard（preview gate fail closed 已在
-      T931 落地，此处只消费其结果） — verify:
-      `tests/unit/experiment/test_owner_privacy.py`；
-      既有原型门：`tests/unit/test_owner_observation_whitelist.py`
-- [x] T938  (`TR-302`, `AC-408`): 按冻结粒度写 owner 逻辑时点采样快照，连接委托、成交、账本、
+> **范围收窄（2026-09-20，[ADR-010](../../../decisions/010-market-ecology-research-pivot.md)）**：
+> 本 Phase 原有的 N-of-1 采集任务（T937 假名化与阶段解盲、T939 6 个训练场景、
+> T940 formal session bundle、T941 24 个正式场景、T942 evidence index 冻结、
+> T943 个人描述性报告、T944 交付包成果门，以及 T946 的 owner index 审计）随采集轨
+> 整体归档，已从本清单移除——它们不是未完成，是经 owner 裁决不再做。协议、
+> assignment、session guard 机械与其测试保留在仓库。本 Phase 收口的是已交付的
+> 会话采样与审计链，成果门产物为 `owner-session.json`。
+
+- [x] T938  `[成果门:H2-D2]` (`TR-302`, `AC-405`): 按冻结粒度写 owner 逻辑时点采样快照，连接委托、成交、账本、
       盘口和强平事件因果链；区分技术中止（按冻结顺序从备用池整局补跑）与所有者主动中止
       （写 `OWNER_ABORT` reason code 后进入终态、不补跑、不进入 evidence index），并把
       `abort_kind`/reason code 写入 owner-session.json — verify: `tests/integration/test_h2_owner_web.py`；
       既有证据合同门：`tests/unit/test_owner_incomplete_study.py`
-- [ ] T939 (`SC-403`, `AC-408`): 在 E2 gate 通过后按冻结台账完成 6 个训练场景；训练结果不写入
-      formal evidence index。完成证据必须包含目标环境记录与真实 training manifest（6 条唯一
-      `session_id`、哈希、排除/补跑流、非退化事件内容）；集成测试只验机制，不能替代真实场景
-      已经发生的完成声明 — verify: `tests/integration/test_h2_owner_delivery.py`
-- [ ] T940 (`SC-403`, `AC-403`, `AC-408`): 交付训练后可启动 formal 的 owner session bundle，
-      包含阶段/assignment/解盲 guard 矩阵；证据标签为 `experiment-preview`
-      — verify: `tests/integration/test_h2_owner_delivery.py`
-
-- [ ] T941 (`FR-302`, `TR-302`, `NFR-302`, `AC-405`, `AC-407`): 按冻结 assignment 完成 24 个正式
-      owner 场景，或在冻结停止规则命中时按规则结束并生成 `incomplete-study`（不得伪造完成）；
-      结果字段对中止、补跑和解盲裁决保持不可见。完成证据必须包含真实 owner evidence index
-      （唯一 `session_id`、哈希、排除/补跑流；非退化断言按完成状态条件化）与目标环境记录，
-      不得仅以集成测试代替 — verify:
-      `tests/integration/test_h2_owner_delivery.py`
-- [ ] T942 (`DR-401`, `DR-402`, `AC-408`): 正式采集完成后，用 T929 已冻结的 schema 与 validator
-      冻结 owner evidence index、session manifest、输入/事件/K 线 artifact 哈希和 sample flow，
-      产出 `docs/experiments/owner-n-of-1/` 固定布局；本任务只做采集后 index freeze，不再定义
-      或改动证据格式 — verify:
-      `tests/integration/test_h2_owner_delivery.py`
-- [ ] T943 (`SC-404`, `AC-407`, `AC-408`): 从 owner evidence index 生成个人描述性报告、代表性
-      回放和限制声明，明确不外推到人群 — verify: `tests/integration/test_h2_owner_delivery.py`
-- [ ] T944 `[成果门:H2-D2]` (`SC-403`, `SC-404`, `AC-407`, `AC-408`): 生成可打开的 owner
-      `experiment-preview` 交付包；若场景不足则生成 `incomplete-study` 而不伪造完成。完成
-      证据须断言 evidence index 计数、唯一 ID、哈希，并由目标环境记录佐证；非退化断言按完成
-      状态条件化——完整样本（24 场）断言非退化，`incomplete-study` 按实际样本数断言非退化，
-      零样本以文档化停止原因通过 — verify:
-      `tests/integration/test_h2_owner_delivery.py`
 
 ## 3. 验证与验收任务
 
 - [x] T945  (`AC-401`, `AC-402`, `AC-403`, `AC-405`, `AC-406`, `AC-408`): 运行 Web API、K 线、委托、
       空态、断线、撤单、阶段 guard 与 owner abort（写 `OWNER_ABORT` 终态、不消耗备用池、不补跑）
       的正反测试 — verify: `tests/integration/test_h2_owner_web.py`
-- [ ] T946 (`AC-404`, `AC-407`, `AC-408`): 运行 artifact 哈希、PII、owner index 隔离和新进程重建
-      验证 — verify: `tests/integration/test_h2_owner_delivery.py`
+
 - [x] T947  (`AC-401`, `AC-402`, `AC-403`, `AC-404`, `AC-405`, `AC-406`, `AC-407`, `AC-408`): 运行
       项目统一质量门 — verify: `python tools/verify.py`
 
@@ -145,8 +120,9 @@ updated: 2026-09-13
       index 隔离可从 manifest 重建 — verify:
       `tests/e2e/test_h2_owner_terminal.py::test_journey_rebuild_evidence`；RED/GREEN: 待回填
 
-- [ ] T953 `[状态门]`: 回写 spec 验收证据、owner evidence index、版本索引和状态；必须是本文件最后
-      一项 — verify: `python tools/validate_spec_lifecycle.py`
+- [x] T953 `[状态门]`: 回写 spec 验收证据、版本索引与状态（2026-09-20：范围收窄至 Web
+      终端并转 `done`，N-of-1 采集轨随 ADR-010 归档）；必须是本文件最后一项 — verify:
+      `python tools/validate_spec_lifecycle.py`
 
 ## 4. 依赖与并行关系
 
@@ -157,14 +133,14 @@ updated: 2026-09-13
   文件，可并行；preview gate fail closed 与 abort 路由在 T931 落地。
 - `T930, T931 -> T932`：K 线投影与页面汇合为可打开的 preview，验收包含门控。
 - `T932 -> T933 -> T934 -> T935 -> T936`：页面先能看，再允许自由委托，最后验收错误/恢复状态。
-- `T936 -> T937 -> T938 -> T939 -> T940`：preview gate 通过、且 T938 的逻辑时点采样因果链与
-  中止裁决完成后，才允许占用所有者训练时间；T938 是 T939 的显式前置。
-- `T940 -> T941 -> T942 -> T943 -> T944`：正式场景按冻结规则完成或结束后才冻结 owner index
-  和个人报告。
-- `T945 [P]` 与 `T946 [P]` 可并行：运行时正反测试与交付包审计不共享 session 状态。
+- `T936 -> T938`：preview gate 通过后交付逻辑时点采样因果链与中止裁决（Phase 2 成果门）。
+- 原 `T937 / T939—T944 / T946` 的依赖链随 N-of-1 采集轨归档一并移除（ADR-010）。
 
 ## 5. 明确后移
 
+- **N-of-1 采集执行**（6 训练 + 24 正式场景、owner evidence index、个人描述性报告）→
+  随 [ADR-010](../../../decisions/010-market-ecology-research-pivot.md) 归档；受控对照类
+  研究问题出现时可复活，届时须先修订研究北极星与配对协议。
 - 公开部署、登录/权限、多用户协作和真实行情 → 后续独立 Feature：当前目标是本地所有者终端。
 - 条件单（止损/止盈）与高级图表指标 → 后续交易产品 Feature：MVP 动作空间只含市价/限价委托与撤单。
 - owner 结果的人群统计推断或因果中介识别 → 后续研究：本里程碑只交付个人描述性结果。

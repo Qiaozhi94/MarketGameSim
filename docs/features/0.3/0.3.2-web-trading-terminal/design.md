@@ -81,7 +81,7 @@ public tape -------------------------> Kline projector
   带 `schema_version`、完成状态（`complete`/`incomplete-study`）、条数、唯一 `session_id`、
   每条哈希与 `exclusion`/`rerun_of` 流；机器校验入口为
   `python tools/validate_owner_evidence.py --dir <path>`，schema 与 validator 在 T929 先于任何
-  真实采集冻结/实现，T942 只在采集后冻结 index，不再改动证据格式。
+  真实采集冻结/实现；采集后的 index 冻结（原 T942）随 N-of-1 轨归档（ADR-010）。
 
 历史 H1 session 不迁移为 H2 owner evidence；H1 仍只能 replay。若 K 线成为新的正式观察字段，
 通过新 H2 protocol version 和新 assignment 处理。owner 轨的决策窗字段已按

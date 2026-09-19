@@ -59,7 +59,12 @@ def test_h2_web_terminal_uses_task_level_ai_dependency(sv):
 
 
 def test_h2_web_delivery_gates_have_unique_scope(sv):
-    """H2-D1 只收口可交易预览，H2-D2 只收口所有者交付。"""
+    """H2-D1 只收口可交易预览，H2-D2 只收口会话采样与审计链。
+
+    2026-09-20（ADR-010）：H2-D2 原由 T944（owner 交付包）承担，该任务随 N-of-1 采集轨
+    归档移除，Phase 2 收窄为已交付的会话采样与审计链，成果门改由 T938 承担。两个成果门
+    仍必须各自唯一、且不得落到非成果门任务上。
+    """
     tasks_path = ROOT / "docs" / "features" / "0.3" / "0.3.2-web-trading-terminal" / "tasks.md"
     tasks = tasks_path.read_text(encoding="utf-8")
     blocks = {tid: block for _mark, tid, block in sv._task_blocks(tasks)}
@@ -67,8 +72,9 @@ def test_h2_web_delivery_gates_have_unique_scope(sv):
 
     assert gates == ["H2-D1", "H2-D2"]
     assert "[成果门:H2-D1]" in blocks["T936"]
-    assert "[成果门:H2-D2]" in blocks["T944"]
+    assert "[成果门:H2-D2]" in blocks["T938"]
     assert "[成果门:" not in blocks["T932"]
+    assert "T944" not in blocks, "T944 已随 ADR-010 归档，不应作为任务复活"
 
 
 def test_declared_ids_accept_bullet_user_stories(sv):
