@@ -15,7 +15,8 @@
 （数值与序列化口径）、
 [ADR-002](decisions/002-same-timestamp-event-scheduling.md)（事件调度与因果链）、
 [ADR-006](decisions/006-realtime-free-trading-owner-terminal.md)（owner 终端自由连续交易）、
-[ADR-010](decisions/010-market-ecology-research-pivot.md)（市场生态与人类扰动研究方向）  
+[ADR-010](decisions/010-market-ecology-research-pivot.md)（市场生态与人类扰动研究方向）、
+[ADR-011](decisions/011-market-engine-trader-layering.md)（L1/L2 分层与 alphamill 单向边界）  
 **其余设计决策**：见
 [v0.1 规格 §设计决策与理由](features/0.1/spec.md)（D-1—D-7）
 
@@ -488,6 +489,12 @@ H2-D 可并行开发，H2-C 不等待所有者四天时间。
 **范围调整（2026-09-12）**：`H2-C` 先以 AI 正式证据包独立闭环；价格/K 线/按钮和所有者
 训练不再作为 H2-C 的前置条件，统一移入 `H2-D`。这样训练期间不会阻塞 AI 研究收口，且 Web
 终端在所有者开始前有独立的可打开验收点。
+
+**范围调整（2026-09-19，ADR-011）**：新增里程碑 `0.3.3`（AI 市场生态与 L2 交易者策略层），
+成果门 `H2-E1`（纯 AI 市场 + 首份市场质量报告）、`H2-E2`（异质策略族跨种子质量报告集合）、
+`H2-E3`（量化交易者族运行 artifact + 运行入口）。它承接实测暴露的前提缺口——当前 live 市场
+3.0 笔成交/分钟、盘口半数时间不可用、价格零波动——为 owner 研究问题 #2 提供对照基线。
+alphamill 策略只单向进入沙盘，沙盘结果不回流其证据链。
 
 **范围调整（2026-09-19，ADR-010）**：owner 采集轨从"N-of-1 配对对比"重构为
 "持续 AI 市场生态 + 人类扰动稳定性研究"（live_market 主干，北极星见

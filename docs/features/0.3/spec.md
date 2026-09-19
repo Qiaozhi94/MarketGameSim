@@ -18,7 +18,8 @@ updated: 2026-09-13
 **关联 PRD**：[`../../market-game-sim-prd.md`](../../market-game-sim-prd.md) §15 H2<br>
 **架构**：[`design.md`](design.md)<br>
 **里程碑**：[`0.3.1`](0.3.1-human-in-the-loop-experiment/spec.md)（AI 正式基线）→
-[`0.3.2`](0.3.2-web-trading-terminal/spec.md)（Web 终端与所有者采集）
+[`0.3.2`](0.3.2-web-trading-terminal/spec.md)（Web 终端与所有者采集）→
+[`0.3.3`](0.3.3-ai-market-ecology/spec.md)（AI 市场生态与 L2 交易者策略层）
 
 ## 问题与目标
 
@@ -51,6 +52,9 @@ n=1 自我实验，[`SOP`](../../SOP.md) §2 把样本量 1、有学习效应的
 - **US-401**：先确认行情再交易；正文见 [`0.3.2 spec §2`](0.3.2-web-trading-terminal/spec.md#2-用户场景)。
 - **US-402**：自由提交买卖委托；正文见 [`0.3.2 spec §2`](0.3.2-web-trading-terminal/spec.md#2-用户场景)。
 - **US-403**：页面通过后再开始所有者训练；正文见 [`0.3.2 spec §2`](0.3.2-web-trading-terminal/spec.md#2-用户场景)。
+- **US-501**：看到一个会自己活动的市场；正文见 [`0.3.3 spec §2`](0.3.3-ai-market-ecology/spec.md#2-用户场景)。
+- **US-502**：用异质策略族装配市场；正文见 [`0.3.3 spec §2`](0.3.3-ai-market-ecology/spec.md#2-用户场景)。
+- **US-503**：把外部量化策略接进沙盘；正文见 [`0.3.3 spec §2`](0.3.3-ai-market-ecology/spec.md#2-用户场景)。
 
 ## 功能需求
 
@@ -63,6 +67,11 @@ n=1 自我实验，[`SOP`](../../SOP.md) §2 把样本量 1、有学习效应的
 - **FR-401**：展示冻结行情、账户与多周期 K 线；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 - **FR-402**：将所有者市价/限价委托映射为可审计的规范输入；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 - **FR-403**：门控所有者训练与正式阶段，隔离结果和未来信息；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **FR-501**：消除冷启动死锁；正文见 [`0.3.3 spec §4`](0.3.3-ai-market-ecology/spec.md#4-需求)。
+- **FR-502**：提供可插拔的 L2 交易者策略层；正文见 [`0.3.3 spec §4`](0.3.3-ai-market-ecology/spec.md#4-需求)。
+- **FR-503**：按清单装配并运行异质策略族市场；正文见 [`0.3.3 spec §4`](0.3.3-ai-market-ecology/spec.md#4-需求)。
+- **FR-504**：量化交易者族与 alphamill 单向边界；正文见 [`0.3.3 spec §4`](0.3.3-ai-market-ecology/spec.md#4-需求)。
+- **FR-505**：市场真实性判据与门；正文见 [`0.3.3 spec §4`](0.3.3-ai-market-ecology/spec.md#4-需求)。
 
 ## 数据、事件与接口需求
 
@@ -76,6 +85,11 @@ n=1 自我实验，[`SOP`](../../SOP.md) §2 把样本量 1、有学习效应的
 - **TR-401**：记录带稳定裁决码的 Web 动作回执；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 - **IR-401**：提供不泄露未来信息的 owner view 接口；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 - **IR-402**：以幂等键约束所有者委托提交；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **DR-501**：记录可重建装配的策略族清单；正文见 [`0.3.3 spec §4`](0.3.3-ai-market-ecology/spec.md#4-需求)。
+- **DR-502**：记录带门限与逐项判定的市场质量报告；正文见 [`0.3.3 spec §4`](0.3.3-ai-market-ecology/spec.md#4-需求)。
+- **TR-501**：策略族决策连入既有因果链并可回溯族标识；正文见 [`0.3.3 spec §4`](0.3.3-ai-market-ecology/spec.md#4-需求)。
+- **IR-501**：提供 TraderStrategy 协议与策略族注册入口；正文见 [`0.3.3 spec §4`](0.3.3-ai-market-ecology/spec.md#4-需求)。
+- **IR-502**：提供非阻塞的外部策略信号注入接口；正文见 [`0.3.3 spec §4`](0.3.3-ai-market-ecology/spec.md#4-需求)。
 
 ## 非功能需求
 
@@ -85,6 +99,9 @@ n=1 自我实验，[`SOP`](../../SOP.md) §2 把样本量 1、有学习效应的
 - **NFR-401**：loopback 页面无外部网络也可用；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 - **NFR-402**：刷新和断线不得重复提交动作；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
 - **NFR-403**：部署与运行环境为 Linux（POSIX）；owner 终端是浏览器页面，客户端操作系统不在验收范围；正文见 [`0.3.2 spec §4`](0.3.2-web-trading-terminal/spec.md#4-需求)。
+- **NFR-501**：纯 AI 市场以 1:1 实时运行；正文见 [`0.3.3 spec §4`](0.3.3-ai-market-ecology/spec.md#4-需求)。
+- **NFR-502**：同装配同种子的价格序列逐点可复现；正文见 [`0.3.3 spec §4`](0.3.3-ai-market-ecology/spec.md#4-需求)。
+- **NFR-503**：沙盘产出不进入证据索引也不回流 alphamill；正文见 [`0.3.3 spec §4`](0.3.3-ai-market-ecology/spec.md#4-需求)。
 
 ### UX 需求
 
@@ -106,6 +123,10 @@ n=1 自我实验，[`SOP`](../../SOP.md) §2 把样本量 1、有学习效应的
 - **SC-402**：固定输入覆盖合法市价/限价委托、撤单、拒单、断线、刷新恢复和退出；正文见 [`0.3.2 spec §6`](0.3.2-web-trading-terminal/spec.md#6-成功与验收)。
 - **SC-403**：训练与正式场景受阶段、assignment 和解盲门控；正文见 [`0.3.2 spec §6`](0.3.2-web-trading-terminal/spec.md#6-成功与验收)。
 - **SC-404**：个人描述性结果可从 session artifact 重建且不产生人群声明；正文见 [`0.3.2 spec §6`](0.3.2-web-trading-terminal/spec.md#6-成功与验收)。
+- **SC-501**：纯 AI 市场自发成交且市场质量六项达标；正文见 [`0.3.3 spec §6`](0.3.3-ai-market-ecology/spec.md#6-成功与验收)。
+- **SC-502**：stylized facts 达到冻结条数；正文见 [`0.3.3 spec §6`](0.3.3-ai-market-ecology/spec.md#6-成功与验收)。
+- **SC-503**：无人类介入时出现内生不稳定事件；正文见 [`0.3.3 spec §6`](0.3.3-ai-market-ecology/spec.md#6-成功与验收)。
+- **SC-504**：量化交易者族可装配且可审计；正文见 [`0.3.3 spec §6`](0.3.3-ai-market-ecology/spec.md#6-成功与验收)。
 
 版本级需求归属与退出条件由 [`traceability.json`](traceability.json) 唯一拥有。
 

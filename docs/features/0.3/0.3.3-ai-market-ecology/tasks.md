@@ -1,0 +1,138 @@
+---
+kind: milestone
+id: 0.3.3
+version: "0.3"
+related_features:
+  - 0.3.1
+  - 0.3.2
+topics:
+  - market-ecology
+  - trader-strategy-layer
+  - stylized-facts
+doc_kind: tasks
+created: 2026-09-19
+updated: 2026-09-19
+---
+
+# 0.3.3：AI 市场生态 - 任务
+
+> Owner: TBD | Spec: `spec.md` | Design: `design.md`
+
+## 0. 来源与执行规则
+
+- 行为与验收真相源：[`spec.md`](spec.md)。
+- 技术方案与边界：[`design.md`](design.md)。
+- 每项任务只描述一个可验证动作，并引用合法的 US/需求/AC ID。
+- 每个 Phase 的最后一项任务是成果门；成果门必须产出可打开页面或可消费的 artifact。
+- **G1 研究问题前置检查**（features/README §阶段成果门，ADR-010）：本次交付服务
+  [`owner-research-question`](../../../research/owner-research-question.md) 的研究问题 #2
+  「AI 市场自身的均衡与突变」——它是研究问题 #1/#3 的对照基线，没有一个会自发成交、
+  能内生崩盘的纯 AI 市场，人类介入前后的差异无从测量。
+- L1 合同不可改：任何任务都不得修改撮合、账本、保证金、强平与事件 schema 的既有语义。
+- 质量门限值由 `spec.md` §6 唯一拥有；任务不得就地改门限，调门限须改 spec 并说明理由。
+
+## 1. 前置条件
+
+- [ ] T960 (`FR-501`, `AC-501`): 复现并锁定冷启动死锁——为「零公开成交流 ⇒ EWMA 预热
+      不结束 ⇒ 目标仓位恒 0 ⇒ 无委托」写可重复运行的复现测试，作为锚设计的红灯基线
+      — verify: `tests/unit/agent/test_bootstrap_anchor.py`
+- [ ] T961 (`FR-505`, `DR-502`, `AC-504`): 冻结市场质量六项与 stylized facts 五项的计算口径，
+      落地 `MarketQualityReport` schema 与机器校验入口 — verify: `tests/unit/metrics/test_market_quality.py`
+- [ ] T962 (`DR-501`, `NFR-502`, `AC-503`): 冻结 `StrategyRoster` schema（族标识/数量/参数/
+      时间尺度/冷启动锚/引擎指纹）与由 `roster_id` 重建装配的入口 — verify:
+      `tests/unit/experiment/test_strategy_roster.py`
+
+## 2. 实现任务
+
+### Phase 1：冷启动与 L2 分层
+
+- [ ] T963 (`FR-501`, `NFR-502`, `AC-501`): 实现冷启动锚——零公开成交流条件下的确定性首笔
+      意图，锚参数进入运行头；正反两侧都有断言（有锚产生委托 / 无锚复现死锁）— verify:
+      `tests/unit/agent/test_bootstrap_anchor.py`
+- [ ] T964 (`FR-502`, `IR-501`, `AC-502`): 实现 `TraderStrategy` 协议、分级信息集（L0—L3）与
+      策略族注册表；未注册族标识在装配阶段 fail closed 并返回稳定原因码 — verify:
+      `tests/unit/agent/test_strategy_registry.py`
+- [ ] T965 (`TR-501`, `NFR-502`, `AC-510`): 把策略族标识与信息集分级写入既有 `AGENT_DECIDE`
+      记录的 `internal_state`，不新增事件类型；覆盖多族、多记录并存的批量因果链场景
+      — verify: `tests/integration/test_strategy_layer_causality.py`
+- [ ] T966 (`FR-503`, `DR-501`, `AC-503`): 让 `live_market` 按 `StrategyRoster` 装配市场，
+      并验证同清单同种子价格序列逐点一致 — verify: `tests/integration/test_h2_live_market.py`
+- [ ] T967 `[成果门:H2-E1]` (`FR-501`, `FR-505`, `SC-501`, `AC-501`, `AC-504`): 生成可运行的纯 AI 市场与
+      第一份 `MarketQualityReport`——冷启动后自发成交、六项指标逐项判定、未通过项顶层可见；
+      证据标签为 `engineering-demonstration` — verify: `tests/integration/test_market_quality_gate.py`
+
+### Phase 2：异质策略族与市场真实性
+
+- [ ] T968 (`FR-503`, `AC-503`): 实现趋势跟随族（多时间尺度）与均值回归族 — verify:
+      `tests/unit/agent/test_native_strategy_families.py`
+- [ ] T969 (`FR-503`, `AC-503`): 实现情绪噪声族与改良做市商族（报价参数分散，消除全员同价位
+      导致的单档盘口）— verify: `tests/unit/agent/test_native_strategy_families.py`
+- [ ] T970 (`NFR-501`, `AC-509`): 把目标装配压到墙钟 ≤0.5 秒/逻辑秒；先测量事务构成再优化
+      （实测撤挂事务占绝大多数），断言失败即红而非警告 — verify:
+      `tests/performance/test_live_market_realtime.py`
+- [ ] T971 (`FR-505`, `SC-502`, `AC-505`): 实现 stylized facts 五项度量，并在合成对照序列上
+      做正反判定（已知厚尾序列判通过、独立正态序列判未通过）— verify:
+      `tests/unit/metrics/test_stylized_facts.py`
+- [ ] T972 (`FR-503`, `SC-503`, `AC-506`): 跨种子运行纯 AI 市场，判定是否出现 ≥3% 分钟跳动或
+      强平连锁；无事件时产出如实的未达标记录 — verify:
+      `tests/integration/test_endogenous_instability.py`
+- [ ] T973 `[成果门:H2-E2]` (`SC-502`, `SC-503`, `AC-505`, `AC-506`, `AC-509`): 生成异质策略族市场的
+      跨种子质量报告集合——stylized facts 达到 SC-502 条数、出现 SC-503 的内生不稳定事件、
+      实时性能达标；证据标签为 `engineering-demonstration` — verify:
+      `tests/integration/test_endogenous_instability.py`
+
+### Phase 3：量化交易者族与运行入口
+
+- [ ] T974 (`FR-504`, `AC-508`): 实现 Alpha101 公式筛查器——含 `rank`/`IndNeutralize`/`cap` 的
+      公式在装配时拒绝并给出稳定原因码，纯时序子集通过；正反用例都要有 — verify:
+      `tests/unit/agent/test_alpha_formula_screen.py`
+- [ ] T975 (`FR-504`, `IR-502`, `AC-507`): 扩展外部信号注入接口——支持 LIMIT 意图、非阻塞推进与
+      `signal_version`；信号缺失/超时/非法时降级为 `NO_ACTION` 并写稳定原因码，既有 owner 轨
+      阻塞式用法保持可用 — verify: `tests/integration/test_external_signal_family.py`
+- [ ] T976 (`FR-504`, `TR-501`, `SC-504`, `AC-507`): 量化交易者族的委托走既有撮合/账本/风控路径，
+      因果链可回溯到族标识与信号版本 — verify: `tests/integration/test_external_signal_family.py`
+- [ ] T977 (`NFR-503`, `AC-508`): 为量化族 artifact 写入单向边界声明（不得用作策略有效性证据、
+      不回流 alphamill 证据链），并断言其不进入任何 evidence index — verify:
+      `tests/integration/test_external_signal_family.py`
+- [ ] T978 `[成果门:H2-E3]` (`SC-504`, `AC-507`, `AC-508`): 生成量化交易者族的可消费运行 artifact，
+      并把纯 AI 市场的启动入口与质量报告命令写入 `RUN.md`；证据标签为
+      `engineering-demonstration` — verify: `tests/integration/test_external_signal_family.py`
+
+## 3. 验证与验收任务
+
+- [ ] T979 (`AC-501`, `AC-502`, `AC-503`): 运行冷启动锚、注册表 fail closed 与装配复现的正反测试
+      — verify: `tests/unit/agent/test_bootstrap_anchor.py`、
+      `tests/unit/agent/test_strategy_registry.py`
+- [ ] T980 (`AC-504`, `AC-505`, `AC-506`): 运行市场质量六项、stylized facts 五项与内生不稳定事件的
+      门禁测试，覆盖达标与未达标两种装配 — verify:
+      `tests/integration/test_market_quality_gate.py`
+- [ ] T981 (`AC-507`, `AC-508`, `AC-510`): 运行外部信号族的因果链、降级、边界声明与多族批量场景
+      测试 — verify: `tests/integration/test_strategy_layer_causality.py`
+- [ ] T982 (`AC-509`): 运行实时性能断言，并记录目标环境（OS/Python/装配清单）— verify:
+      `tests/performance/test_live_market_realtime.py`
+- [ ] T983 (`AC-501`—`AC-510`): 运行项目统一质量门，并确认 0.3.1 配对轨与 H2 双代理路径无回归
+      — verify: `python tools/verify.py`；既有回归门：`tests/integration/test_h2_live_market.py`
+- [ ] T984 `[状态门]`: 回写 spec 验收证据、版本索引与状态；必须是本文件最后一项 — verify:
+      `python tools/validate_spec_lifecycle.py`
+
+## 4. 依赖与并行关系
+
+- `T960 -> T961 [P]` 与 `T960 -> T962 [P]`：先把死锁复现成红灯，再并行冻结两类 schema
+  （质量报告与装配清单改不同文件）。
+- `T961, T962 -> T963 -> T964 -> T965 -> T966 -> T967`：先有锚才谈得上装配，先有装配
+  才谈得上度量；T967 是 Phase 1 成果门。
+- `T967 -> T968 [P]` 与 `T967 -> T969 [P]`：四个原生族分两批实现，互不共享文件。
+- `T968, T969 -> T970 -> T971 -> T972 -> T973`：策略族齐备后才有意义做性能压测与
+  stylized facts 判定；性能不达标时 stylized facts 的跨种子运行代价过高，故 T970 前置。
+- `T973 -> T974 -> T975 -> T976 -> T977 -> T978`：市场先真，再接外部策略；否则量化族
+  的行为无法与内生行为区分。
+- `T979 [P]`、`T980 [P]`、`T981 [P]`、`T982 [P]` 可并行：四组验收不共享运行状态。
+- `T979, T980, T981, T982 -> T983 -> T984`。
+
+## 5. 明确后移
+
+- 外生基本面/价值过程与价值投资者族 → 需先修订 ADR-011 与研究北极星，不在本里程碑。
+- 多标的合约池与 Alpha101 横截面算子 → 独立 Feature：本里程碑只做单标的纯时序子集。
+- 人类扰动实验的设计与执行、owner 场次安排 → 后续里程碑：本里程碑只交付对照基线。
+- Web 终端界面改动与观察面调整 → 0.3.2 轨：本里程碑只保证终端背后的市场是活的。
+- alphamill 侧的任何改动与双向证据互认 → 永久后移（ADR-011 §决策 5 禁止回流）。
