@@ -1,20 +1,18 @@
-"""0.3.2 转向：持续运行的 AI 市场生态 + 人类自由参与（ADR-007 方向）。
+"""0.3.2 转向（ADR-010）：持续运行的 AI 市场生态 + 人类自由参与。
 
-owner 2026-09-19 拍板的研究方向：不再做 60 逻辑秒的 N-of-1 配对对比，而是
-**持续运行的 AI 市场**——0.3.1 冻结配置的真实 AI 代理家族（做市商、因子、
-噪声/情绪）实时互相交易、市场无限演进；owner 通过 Web 终端随时进出、自由
-下单（市价/限价/撤单），研究人类参与对市场稳定性的影响（波动、崩盘、暴涨）。
+0.3.1 冻结配置的真实 AI 代理家族（做市商 + 因子策略）在增量驱动的内核里实时
+互相交易，市场无限演进；owner 通过 Web 终端随时进出、市价/限价/撤单直通内核
+撮合路径。逐逻辑秒记录价格序列、收益、大波动事件与最大回撤（稳定性研究仪表）。
 
-与既有机器的关系：
-- 内核/代理/事件契约 100% 复用（``runner.build_config``/``_owner_config``/
-  ``_dispatch_agents``/``EventKernel``），确定性由种子与队列全序保证——
-  owner 的每次介入都会让轨迹分叉，这正是被研究的对象；
-- 不走 0.3.1 正式配对协议（无 whitelist、无 N-of-1 场景序列、不入 evidence
-  index）；观测产出为稳定性指标序列（价格/波动/回撤/事件标记）。
+与 0.3.1 机器的关系：内核/代理/事件契约 100% 复用（``h2_runner.build_config``/
+``_dispatch_agents``/``EventKernel``），确定性由种子与队列全序保证——人类的每次
+介入都会让轨迹分叉，这正是被研究的对象。本模块不入 evidence index（ADR-010
+将 N-of-1 配对轨归档；受控对照问题复活时可启用归档机械）。
 """
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import queue
 import threading
@@ -34,7 +32,7 @@ TERMINAL_HTML = (Path(__file__).resolve().parent / "owner_terminal.html").read_t
     encoding="utf-8"
 )
 
-HUMAN_AGENT = "owner"  # 人类参与者账户（AI 生态之外的新增扰动源）
+HUMAN_AGENT = "owner"
 PRICE_PERIODS = (
     60_000_000_000,
     300_000_000_000,
@@ -42,6 +40,21 @@ PRICE_PERIODS = (
     3_600_000_000_000,
     14_400_000_000_000,
 )
+
+
+def _tuned_specs(specs: list[Any]) -> list[Any]:
+    """live 生态调参：mm 报价量 10M→300（可被吃穿）+ 库存上限 ×20（持续双边）。"""
+
+    import dataclasses as dc
+
+    return [
+        (
+            dc.replace(spec, quote_size=300, max_inventory=spec.max_inventory * 20)
+            if spec.agent_id.startswith("mm")
+            else spec
+        )
+        for spec in specs
+    ]
 
 
 class LiveMarket:
@@ -58,7 +71,10 @@ class LiveMarket:
         self.session_id = session_id
         self.seed = seed
         self.initial_price_ticks = initial_price_ticks
-        self.config = h2_runner.build_config(seed, arm)
+        base_config = h2_runner.build_config(seed, arm)
+        self.config = dataclasses.replace(
+            base_config, agent_specs=_tuned_specs(base_config.agent_specs)
+        )
         self.logical_ns = 0
         self._tx_budget = 0
         self._seq = 0
@@ -66,34 +82,22 @@ class LiveMarket:
         self._peak: int | None = None
         self._max_drawdown = 0.0
         self._epoch_ms: int | None = None
+        self._max_event_ts = 0
+        self.dead: str | None = None
         self.orders: queue.Queue[dict[str, Any]] = queue.Queue()
         self.snapshots: list[dict[str, Any]] = []
         self.price_series: list[dict[str, Any]] = []
         self.stability_events: list[dict[str, Any]] = []
         self.lock = threading.RLock()
-        self._max_event_ts = 0
-        self.dead: str | None = None
 
-        # live 生态调参：mm 报价量 10M→300，让 owner 的订单能产生真实价格冲击
-        # （原量级用于 60 逻辑秒配对实验的零冲击假设；本方向研究人类扰动的
-        # 价格影响，报价必须可被吃穿。仅改本模块构造，不动冻结配置文件。）
-        import dataclasses
-
-        def _tuned(spec: Any) -> Any:
-            if not spec.agent_id.startswith("mm"):
-                return spec
-            # live 生态：报价量 300（可被吃穿）+ 库存上限放宽（持续报价）
-            return dataclasses.replace(spec, quote_size=300, max_inventory=spec.max_inventory * 20)
-
-        tuned_specs = [_tuned(spec) for spec in self.config.agent_specs]
         self.accounts: dict[str, Account] = {
             spec.agent_id: Account(agent_id=spec.agent_id, wallet_units=10**14)
-            for spec in tuned_specs
+            for spec in self.config.agent_specs
         }
         for agent_id, wallet_units in self.config.extra_accounts.items():
             self.accounts[agent_id] = Account(agent_id=agent_id, wallet_units=wallet_units)
         # 人类参与者：独立账户，随时进出（研究 AI 市场的人类扰动）
-        self.accounts["owner"] = Account(agent_id="owner", wallet_units=10_000_000_000)
+        self.accounts[HUMAN_AGENT] = Account(agent_id=HUMAN_AGENT, wallet_units=10_000_000_000)
 
         from market_game_sim.eventlog.bootstrap import (
             build_account_payload_from_accounts,
@@ -114,11 +118,11 @@ class LiveMarket:
             "mult": self.config.mult,
             "maker_bps": self.config.maker_bps,
             "taker_bps": self.config.taker_bps,
-            "initial_price_ticks": initial_price_ticks,
+            "initial_price_ticks": self.initial_price_ticks,
             "maint_bp": self.config.maint_bp,
             "target_bp": self.config.target_bp,
             "liquidation_latency_ns": self.config.liquidation_latency_ns,
-            "agent_specs": {s.agent_id: s for s in tuned_specs},
+            "agent_specs": {s.agent_id: s for s in self.config.agent_specs},
             "agent_signals": self.config.agent_signals,
             "agent_decision_index": {},
             "experiment_seed": seed,
@@ -147,15 +151,13 @@ class LiveMarket:
     # ---------- 人类委托 ----------
 
     def _enqueue(self, event: dict[str, Any]) -> None:
-        """带水位追踪的入队：人类委托的时间戳必须严格晚于调度器水位。"""
+        """带水位追踪的入队：人类事件必须严格晚于调度器水位。"""
 
         ts = int(event.get("timestamp", 0))
         self._max_event_ts = max(self._max_event_ts, ts)
         self.kernel.enqueue(event)
 
     def _safe_ts(self) -> int:
-        """严格晚于（已提交尾部、已弹出水位、待处理队列尾部）的时间戳。"""
-
         floor = max(self.logical_ns, self._max_event_ts)
         popped = getattr(self.kernel, "_last_popped_key", None)
         if popped is not None:
@@ -244,30 +246,6 @@ class LiveMarket:
                 self._max_event_ts = max(self._max_event_ts, int(event["timestamp"]))
                 self.kernel.enqueue(event)
             target_logical = self.logical_ns + 1_000_000_000
-            # 噪声流（live-only 工程演示）：温和双向市价单维持市场活性
-            if (self.logical_ns // 1_000_000_000) % 3 == 0:
-                side = "BUY" if (self.logical_ns // 1) % 2 == 0 else "SELL"
-                self.kernel.enqueue(
-                    {
-                        "event_type": "ORDER_ARRIVAL",
-                        "timestamp": self._safe_ts(),
-                        "agent_id": "noise-flow",
-                        "order_id": f"noise-{self.logical_ns}",
-                        "action": "SUBMIT",
-                        "side": side,
-                        "order_type": "MARKET",
-                        "price_ticks": None,
-                        "quantity_units": 1 + (self.logical_ns // 1_000_000_000) % 3,
-                        "origin": "AGENT",
-                        "intent_id": f"noise-{self.logical_ns}",
-                        "decision_event_id": f"noise-d-{self.logical_ns}",
-                        "submitted_at": self.logical_ns,
-                    }
-                )
-                if "noise-flow" not in self.accounts:
-                    from market_game_sim.ledger.account import Account as _Acc
-
-                    self.accounts["noise-flow"] = _Acc(agent_id="noise-flow", wallet_units=10**14)
             for _ in range(32):
                 if self.logical_ns >= target_logical:
                     break
@@ -292,13 +270,13 @@ class LiveMarket:
             return None
         return max(int(item.get("timestamp", 0)) for item in records[-64:])
 
-    # ---------- 观察视图与指标 ----------
+    # ---------- 观察视图 ----------
 
     def view(self) -> dict[str, Any]:
         with self.lock:
             records = self.kernel.committed_records
             book = self.world["book"]
-            account = self.accounts["owner"]
+            account = self.accounts[HUMAN_AGENT]
             mult = self.world["mult"]
             mark = book.last_ticks or self.initial_price_ticks
             klines = {
@@ -345,7 +323,7 @@ class LiveMarket:
                     "asks": [[p, q] for p, q in book.ask_levels()[:10]],
                     "recent_trades": list(reversed(trades[-16:])),
                     "klines": klines,
-                    "forming": {60_000_000_000: forming},
+                    "forming": {60_000_000_000: forming} if forming else {},
                 },
                 "account": {
                     "wallet_units": account.wallet_units,
@@ -362,7 +340,7 @@ class LiveMarket:
                 "ui_state": None,
                 "snapshot_revision": len(self.snapshots),
                 "logical_timestamp": self.logical_ns,
-                "error_code": None,
+                "error_code": self.dead,
                 "boundary_notice": "持续 AI 市场 · 无真实资金 · 人类参与稳定性研究",
             }
 
@@ -403,6 +381,8 @@ class LiveMarket:
                         )
         return sorted(orders, key=lambda item: item["order_id"])
 
+    # ---------- 稳定性采样 ----------
+
     def _snapshot(self) -> None:
         book = self.world["book"]
         last = book.last_ticks
@@ -420,8 +400,6 @@ class LiveMarket:
         self._peak = max(self._peak or last, last)
         self._max_drawdown = min(self._max_drawdown, last / self._peak - 1)
         self.price_series.append(entry)
-
-    # ---------- 指标导出 ----------
 
     def export_metrics(self, out: Path) -> Path:
         out = Path(out)
