@@ -108,7 +108,7 @@ align-items:center;justify-content:center"><div class="card" style="max-width:42
 const $=id=>document.getElementById(id);
 const state={view:null,side:"BUY",type:"LIMIT",tf:60000000000,seq:0,
   epochMs:null,hist:{},histLoading:{},
-  chart:{zoom:90,offset:0,dragging:false,startX:0,startOffset:0}};
+  chart:{zoom:90,offset:-5,dragging:false,startX:0,startOffset:0}};
 const rid=()=>"web-"+Date.now()+"-"+(state.seq++);
 const fmt=v=>v==null?"—":Number(v).toLocaleString("zh-CN");
 async function post(path,body){const r=await fetch(path,{method:"POST",
@@ -170,7 +170,7 @@ function renderChart(v){
     ctx.fillText("数据不足：公开成交 tape 尚无数据",cvs.width/2,cvs.height/2);return}
   const c=state.chart;
   const z=Math.min(Math.max(c.zoom,Math.min(10,bars.length)),bars.length);
-  const off=Math.min(Math.max(c.offset,0),Math.max(0,bars.length-z));
+  const off=Math.min(Math.max(c.offset,-(z-1)),Math.max(0,bars.length-z));
   const end=bars.length-off, view=bars.slice(Math.max(0,end-z),end);
   const n=view.length;c.total=bars.length;
 
@@ -196,7 +196,7 @@ function renderChart(v){
   let hi=-1e18,lo=1e18,maxVol=0;
   for(const b of vBars){hi=Math.max(hi,b.high);lo=Math.min(lo,b.low);maxVol=Math.max(maxVol,b.volume)}
   const range=(hi-lo)||Math.max(1,hi*0.01);hi+=range*.06;lo-=range*.06;
-  const bw=(W-padR)/view.length;
+  const bw=(W-padR)/z;
   const xAt=i=>bw*i+bw/2;
 
   const niceStep=(rg,count)=>{const raw=rg/count;const pow=10**Math.floor(Math.log10(raw));
@@ -283,9 +283,9 @@ function renderChart(v){
     const p2=x=>String(x).padStart(2,"0");
     const firstT=Math.ceil(view[0].start_ns/step)*step;
     let lastIdx=-1,lastTxt="";
-    for(let t=firstT;t<=view[n-1].start_ns+state.tf;t+=step){
+    for(let t=firstT;t<=end*state.tf;t+=step){
       const idx=Math.round((t-view[0].start_ns)/state.tf);
-      if(idx<0||idx>n-1||idx===lastIdx)continue;
+      if(idx<0||idx===lastIdx)continue;
       const d=new Date(state.epochMs+t/1e6);
       let txt;
       if(step>=24e11)txt=`${d.getFullYear()}-${p2(d.getMonth()+1)}-${p2(d.getDate())}`;
@@ -379,12 +379,13 @@ async function loadHistory(tf){
     const rect=cvs.getBoundingClientRect();
     const bw=(cvs.width-70)/Math.max(1,state.chart.zoom);
     const dx=(e.clientX-state.chart.startX)*(cvs.width/rect.width);
-    state.chart.offset=Math.min(Math.max(state.chart.startOffset+Math.round(dx/bw),0),
+    const zLim=Math.max(1,state.chart.zoom);
+    state.chart.offset=Math.min(Math.max(state.chart.startOffset+Math.round(dx/bw),-(zLim-1)),
       Math.max(0,state.chart.total-state.chart.zoom));
     renderChart(state.view)});
   window.addEventListener("mouseup",()=>{if(state.chart.dragging){state.chart.dragging=false;
     cvs.style.cursor="crosshair"}});
-  cvs.addEventListener("dblclick",()=>{state.chart.zoom=90;state.chart.offset=0;
+  cvs.addEventListener("dblclick",()=>{state.chart.zoom=90;state.chart.offset=-5;
     if(state.view)renderChart(state.view)});
   window.__chart=state.chart;
 })();
