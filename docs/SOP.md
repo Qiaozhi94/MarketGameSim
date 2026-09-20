@@ -77,9 +77,15 @@
 - 目录结构改造等路径迁移提交额外运行 Markdown 链接检查，迁移前后全仓扫描。
 - 复核（review）检查：规格完整性、测试证据、复现信息、研究边界；机器门只证明引用与
   结构自洽，语义覆盖由人工复核判断。
+- owner-facing 交付的复核额外对照北极星（`docs/research/owner-research-question.md`）：
+  与其冲突的设计不得进入实现，除非先修订北极星并留 git 痕迹。
 
 ## 6. 相关入口
 
+- `docs/research/owner-research-question.md`：**owner 研究问题（北极星）**——所有
+  owner-facing 设计（终端、实验、观察面、场景参数）的第一判据；冲突时以它为准，或先
+  修订它再动工。owner-facing 里程碑开工前的 G1 前置检查见 `docs/features/README.md`
+  §阶段成果门；人类扰动问题的可证伪化形态由 `PRD §15` 拥有。
 - `docs/README.md`：全仓文档所有权地图。
 - `docs/features/README.md`：Feature/里程碑生命周期与模板规则。
 - `docs/market-game-sim-prd.md`、`docs/market-game-sim-architecture.md`、
