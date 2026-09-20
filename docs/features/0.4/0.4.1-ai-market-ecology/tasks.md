@@ -11,7 +11,7 @@ topics:
   - stylized-facts
 doc_kind: tasks
 created: 2026-09-19
-updated: 2026-09-19
+updated: 2026-09-20
 ---
 
 # 0.4.1：AI 市场生态 - 任务
@@ -57,9 +57,12 @@ updated: 2026-09-19
       — verify: `tests/integration/test_strategy_layer_causality.py`
 - [ ] T966 (`FR-503`, `DR-501`, `AC-503`): 让 `live_market` 按 `StrategyRoster` 装配市场，
       并验证同清单同种子价格序列逐点一致 — verify: `tests/integration/test_h2_live_market.py`
-- [ ] T967 `[成果门:H2-E1]` (`FR-501`, `FR-505`, `SC-501`, `AC-501`, `AC-504`): 生成可运行的纯 AI 市场与
-      第一份 `MarketQualityReport`——冷启动后自发成交、六项指标逐项判定、未通过项顶层可见；
-      证据标签为 `engineering-demonstration` — verify: `tests/integration/test_market_quality_gate.py`
+- [ ] T967 `[成果门:H2-E1]` (`FR-501`, `FR-505`, `AC-501`, `AC-504`, `E6`): 生成可运行的纯 AI 市场与
+      第一份 `MarketQualityReport`——冷启动后自发成交、双边盘口可用、六项指标**逐项如实判定**、
+      未通过项顶层可见。**本门不要求六项全部达标**（退出条件 E6）：异质策略族在 Phase 2 才实现，
+      而价格发现来自策略族异质（ADR-011 §决策 3），Phase 1 达标在机制上不成立；`SC-501` 的
+      「全部达标」由 `H2-E2`/`H2-E3` 承接。证据标签为 `engineering-demonstration`
+      — verify: `tests/integration/test_market_quality_gate.py`
 
 ### Phase 2：异质策略族与市场真实性
 
@@ -70,16 +73,21 @@ updated: 2026-09-19
 - [ ] T970 (`NFR-501`, `AC-509`): 把目标装配压到墙钟 ≤0.5 秒/逻辑秒；先测量事务构成再优化
       （实测撤挂事务占绝大多数），断言失败即红而非警告 — verify:
       `tests/performance/test_live_market_realtime.py`
-- [ ] T971 (`FR-505`, `SC-502`, `AC-505`): 实现 stylized facts 五项度量，并在合成对照序列上
-      做正反判定（已知厚尾序列判通过、独立正态序列判未通过）— verify:
+- [ ] T971 (`FR-505`, `SC-502`, `AC-505`): 按 spec §6 SC-502 表实现 stylized facts 五项度量——
+      前三项**复用** `metrics/validation.py` 的既有检验（厚尾用超额峰度 z 检验、收益自相关、
+      `|r|` ACF），只新增 lag 50 延伸与协议未覆盖的两项，不新建第二套口径或第二份校正算法；
+      在合成对照序列上做正反判定（已知厚尾序列判通过、独立正态序列判未通过）— verify:
       `tests/unit/metrics/test_stylized_facts.py`
 - [ ] T972 (`FR-503`, `SC-503`, `AC-506`): 跨种子运行纯 AI 市场，对内生不稳定事件做**存在性判定**
       （出现→记录触发条件与频次；未出现→产出如实的「不存在」结论）。两条路径都要有断言，
       阈值取自冻结常量；**不得为制造「出现」而调阈值或注入冲击** — verify:
       `tests/integration/test_endogenous_instability.py`
-- [ ] T973 `[成果门:H2-E2]` (`SC-502`, `SC-503`, `AC-505`, `AC-506`, `AC-509`): 生成异质策略族市场的
-      跨种子质量报告集合——stylized facts 达到 SC-502 条数、出现 SC-503 的内生不稳定事件、
-      实时性能达标；证据标签为 `engineering-demonstration` — verify:
+- [ ] T973 `[成果门:H2-E2]` (`SC-501`, `SC-502`, `SC-503`, `AC-505`, `AC-506`, `AC-509`): 生成异质策略族
+      市场的跨种子质量报告集合——市场质量六项达标、stylized facts 达到 SC-502 条数、实时性能达标，
+      并产出 SC-503 的**内生不稳定事件存在性判定报告**（出现→记录触发条件与频次；未出现→产出
+      「该市场结构在冻结参数下不产生离散崩盘事件」的结论）。**「出现」不是本门的通过条件**：
+      把「必须出现崩盘」写进收口前提，压力会精确落在调阈值上，而这正是 SC-503、§5 不变量与
+      ADR-005 共同禁止的动作。证据标签为 `engineering-demonstration` — verify:
       `tests/integration/test_endogenous_instability.py`
 
 ### Phase 3：量化交易者族（不依赖 alphamill）与运行入口

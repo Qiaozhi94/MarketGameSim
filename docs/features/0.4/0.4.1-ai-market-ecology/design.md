@@ -11,7 +11,7 @@ topics:
   - stylized-facts
 doc_kind: design
 created: 2026-09-19
-updated: 2026-09-19
+updated: 2026-09-20
 ---
 
 # 0.4.1：AI 市场生态 - 技术设计
@@ -41,8 +41,13 @@ updated: 2026-09-19
 2. **L2 策略层**——新增 `agent/strategy_layer/` 包：`TraderStrategy` 协议、注册表、
    分级信息集与原生策略族实现；通过既有 `GoalModel` 注册表与
    `world["behavior_mapping"]` 接缝接入，`_dispatch_agents` 的分发逻辑不变。
-3. **质量判据**——新增 `metrics/market_quality.py` 与 `metrics/stylized_facts.py`，
-   以及 `StrategyRoster` / `MarketQualityReport` 两类 artifact 与校验入口。
+3. **质量判据**——新增 `metrics/market_quality.py`（市场质量六项，本里程碑首次定义）；
+   stylized facts **扩展既有的 `metrics/validation.py`**，不新建并列模块：厚尾（超额峰度
+   z 检验）、收益自相关、`|r|` ACF 三项的口径与实现由已冻结的
+   [`0.1.2 基准市场验证协议`](../../../experiments/0.1.2-market-validation-protocol.md)
+   拥有，本里程碑只追加 lag 50 延伸与协议未覆盖的两项（成交量—波动相关、订单流长记忆），
+   并复用 `experiment/stats.py::holm_bonferroni` 做家族校正。另交付 `StrategyRoster` /
+   `MarketQualityReport` 两类 artifact 与校验入口。
 
 影响面：`experiment/h2/live_market.py`（换装配来源、补运行入口）、
 `bench/population.py`（复用群体构建，不改其对 BENCH-001 的既有语义）、
@@ -66,8 +71,9 @@ L2 交易者策略层（本里程碑新增）
         │
 装配与度量
   experiment/h2/live_market.py        持续市场载体（换装配来源 + 运行入口）
-  metrics/market_quality.py           市场质量六项
-  metrics/stylized_facts.py           stylized facts 五项
+  metrics/market_quality.py           市场质量六项（新增）
+  metrics/validation.py               stylized facts：既有三项复用 + 新增两项与 lag 50 延伸
+                                      （口径拥有者仍是 0.1.2 冻结协议）
 ```
 
 边界规则：L2 只能读分级信息集、只能输出目标仓位或委托意图；它不持有账本引用，
@@ -109,9 +115,13 @@ L2 交易者策略层（本里程碑新增）
   本里程碑只换装配来源与补度量，不改推进语义。
 - 并发：HTTP 服务线程与推进线程仍由 `LiveMarket.lock` 串行化；外部信号适配器必须
   非阻塞，避免把网络/文件延迟带进内核事务（IR-502）。
-- 性能路径（NFR-501）：先测量事务构成，再决定手段。实测显示撤挂事务占绝对多数
-  （50 万笔委托对 0 笔成交），优先考察做市商重报价频率与撤单策略，其次才是降低
-  代理数或拉长观察间隔。
+- 性能路径（NFR-501）：**退路顺序与各自代价已在 spec §7 决策表冻结，设计阶段不再重开**。
+  已知实测（ADR-011 背景表 + live_market 实测）：40 交易者装配 4–5 秒墙钟/逻辑秒，
+  事务以做市商撤挂为主——50 万笔委托对 0 笔成交，成交/委托 = 0.00019，说明绝大多数
+  事务是「挂上去又撤掉」。`T970` 的第一步是把这个构成量化落盘（按事件类型统计
+  `ORDER_ARRIVAL` / `ORDER_CANCELLED` / `TRADE_SETTLE` 的占比与耗时），再按 spec §7
+  的固定顺序取用退路：① 做市商重报价频率/撤单策略 → ② 拉长观察/采样间隔 →
+  ③ 降低代理数。取用 ③ 时不得同时下调 SC-502 的任何判据。
 
 ## 6. UI 与可观测性
 
@@ -157,8 +167,9 @@ L2 交易者策略层（本里程碑新增）
   「无公开成交流」条件下生效，且既有测试全绿作为回归门。
 - 残余风险 2：stylized facts 可能在门限内仍「看起来不像」——缓解是门限与口径
   冻结在 spec §6，调整须留 git 痕迹与理由，禁止为通过而调门限。
-- 残余风险 3：性能可能需要降低代理数，而代理数下降又会削弱 stylized facts——
-  这是真实的取舍，由 Q-503 在实测后拍板，不在设计阶段预判。
+- 残余风险 3：性能可能需要降低代理数，而代理数下降又会削弱 stylized facts。
+  **取舍方式本身不再留到实测后拍板**：退路顺序、各自代价与「取用降代理数时禁止同时
+  下调 SC-502 判据」已写进 spec §7 决策表；Q-503 只剩一个待实测填入的参数（临界代理数）。
 
 ## 10. 待确认设计问题
 
