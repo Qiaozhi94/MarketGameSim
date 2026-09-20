@@ -1,22 +1,28 @@
 # MarketGameSim 产品需求文档
 
-**文档版本**：0.6.0（**市场生态方向重构**）<br>
+**文档版本**：0.6.1（**市场生态方向重构** + v0.3 签收后同步）<br>
 **状态**：Active<br>
-**创建日期**：2026-07-28　**更新日期**：2026-09-19<br>
-**产品阶段**：v0.1、v0.2 H1 已签收；v0.3 H2 规格草案<br>
+**创建日期**：2026-07-28　**更新日期**：2026-09-20<br>
+**产品阶段**：v0.1、v0.2（H1）、v0.3（H2 AI 机制基线 + Web 终端）已签收；v0.4 草案<br>
 **项目原则**：[`docs/SOP.md`](SOP.md)（唯一入口，含安全与合规边界 §4）  
-**当前规格**：[`docs/features/0.3/spec.md`](features/0.3/spec.md)；
-[`v0.3.1 H2 AI 正式基线`](features/0.3/0.3.1-human-in-the-loop-experiment/spec.md)<br>
-**已签收规格**：[`v0.1`](features/0.1/spec.md)、[`v0.2`](features/0.2/spec.md)<br>
+**当前规格**：[`docs/features/0.4/spec.md`](features/0.4/spec.md)（draft）；里程碑
+[`0.4.1 AI 市场生态`](features/0.4/0.4.1-ai-market-ecology/spec.md)、
+[`0.4.2 人类扰动实验`](features/0.4/0.4.2-human-perturbation/spec.md)<br>
+**已签收规格**：[`v0.1`](features/0.1/spec.md)、[`v0.2`](features/0.2/spec.md)、
+[`v0.3`](features/0.3/spec.md)（签收记录见 [`releases/0.3.md`](features/releases/0.3.md)）<br>
 **方法论说明**：[`docs/research/methodology.md`](research/methodology.md)　
 **指标字典**：[`docs/research/metrics-dictionary.md`](research/metrics-dictionary.md)
 
 **已生效 ADR**：[ADR-001](decisions/001-numeric-and-serialization-contract.md)
 （数值与序列化口径）、
 [ADR-002](decisions/002-same-timestamp-event-scheduling.md)（事件调度与因果链）、
+[ADR-003](decisions/003-goal-driven-agents-and-flagship-identification.md)（目标驱动代理与旗舰识别）、
+[ADR-004](decisions/004-replay-critical-header-config.md)（回放关键运行头字段）、
+[ADR-005](decisions/005-evidence-binding-stays-full-tree.md)（证据索引全树哈希绑定）、
 [ADR-006](decisions/006-realtime-free-trading-owner-terminal.md)（owner 终端自由连续交易）、
 [ADR-010](decisions/010-market-ecology-research-pivot.md)（市场生态与人类扰动研究方向）、
-[ADR-011](decisions/011-market-engine-trader-layering.md)（L1/L2 分层与 alphamill 单向边界）  
+[ADR-011](decisions/011-market-engine-trader-layering.md)（L1/L2 分层与 alphamill 单向边界）、
+[ADR-012](decisions/012-evidence-rebinding-attestation.md)（证据索引重绑的显式盖章）  
 **其余设计决策**：见
 [v0.1 规格 §设计决策与理由](features/0.1/spec.md)（D-1—D-7）
 
@@ -431,10 +437,15 @@ v0.1 已完成 R1—R5 并于 2026-08-30 正式签收。当前可见交付包括
 [正式总结报告](experiments/0.1.5-flagship-report.md)、
 [代表性离线回放](experiments/0.1.5-representative-replay.html)、
 [正式证据索引](experiments/0.1.5-evidence-index.json)与
-[版本签收记录](features/releases/0.1.md)。H1 手动交易沙盒亦已签收；当前下一动作是评审并
-冻结 [`v0.3.1 H2`](features/0.3/0.3.1-human-in-the-loop-experiment/spec.md) 的 AI 正式研究协议，
-在 paired-seed 校准和 AI preview 通过前不采集正式 AI 样本；所有者 Web 终端与训练由后续
-[`v0.3.2`](features/0.3/0.3.2-web-trading-terminal/spec.md) 单独承接。
+[版本签收记录](features/releases/0.1.md)。H1 手动交易沙盒（v0.2）已签收；
+**v0.3 已于 2026-09-20 签收**——`0.3.1` 的 AI 正式机制基线（168 个 paired-seed block，
+`formal-research`）与 `0.3.2` 的 Web 交易终端均为 `done`，N-of-1 采集轨是范围裁决而非
+未达标，处置见 [`releases/0.3.md`](features/releases/0.3.md)。
+
+**当前下一动作**：评审并批准 [`v0.4`](features/0.4/spec.md) 的两个里程碑——
+`0.4.1`（L2 交易者策略层、冷启动锚与市场真实性判据，成果门 `H2-E1`—`H2-E3`）先行，
+`0.4.2`（人类扰动实验，成果门 `H2-F1`/`H2-F2`）在其后；两者都是
+`engineering-demonstration` / `experiment-preview`，不产生研究声明。
 
 ### v0.1 用户可见成果门
 
@@ -465,7 +476,24 @@ v0.1 已完成 R1—R5 并于 2026-08-30 正式签收。当前可见交付包括
 | **H2-C AI 正式研究** | H2-B 后；H2-C 与 H2-D 均可独立开始，owner 轨只受自身 Web/协议门控 | 交付 AI 正式研究包（0.3.1，已 `done`/`established`） | 独立 AI `formal-research`，不与 H1 或 owner 样本合并 |
 | **H2-D Web 终端** | H2-B 后 | 真实终端形态的本地页面：价格、K 线、市价/限价下单（0.3.2 Phase 1 已交付） | `experiment-preview`；N-of-1 采集轨已由 ADR-010 归档 |
 | **H2-E owner 可自由游玩** | **v0.4 成果门 `H2-E2` 之后** | 在一个会自发成交、由异质策略族形成价格的持续 AI 市场里随时进出、自由下单 | `engineering-demonstration`；这是 owner 研究问题 #1/#3 的载体与对照基线 |
-| **H2-F 人类扰动实验** | H2-E 之后（里程碑待立项） | 同种子对照（无人类基线 vs 有人类）× N 次重复，测量人类介入对稳定性的影响 | 证据级别随立项时的实验设计确定 |
+| **H2-F 人类扰动实验** | H2-E 之后；里程碑 [`0.4.2`](features/0.4/0.4.2-human-perturbation/spec.md) 已于 2026-09-20 立项（draft） | 同种子对照（无人类基线 vs 有人类）× N 次重复，测量人类介入对稳定性的影响 | `experiment-preview`；是否升级为 `formal-research` 由 0.4.2 的 Q-601 裁决 |
+
+**人类扰动问题的可证伪化桥接条款（H2-F 的命题形态，本节唯一拥有）**：
+研究北极星的「扰动即数据、不存在错误用法」是 **owner 侧的设计判据**——系统不拦截、
+不判错、不做画像；它不规定结论的形态。结论形态由 §13.5 的可证伪要求决定，因此 H2-F
+必须落成**同种子对照的效应量命题**：
+
+- 设计：无人类基线 vs 有人类 × N 次重复，两臂共享装配清单、种子与引擎配置指纹；
+- 报告：`{最大回撤, 大波动频次, 盘口可用率}` 的**分布移动 + 不确定性区间 + 失效边界**；
+- **禁止**把「人类能否造成崩盘」作为研究命题——在允许高杠杆与大单量的市场里它自我
+  实现（资金够、杠杆够，答案必然为「能」），既不可证伪也不构成发现；
+- 任一臂退化（零成交、单边空簿）时输出退化判定，不得产出效应量：`effect = 0.0 /
+  CI = [0,0] / p = 1.0` 全表出现是零功效，不是零结果；
+- owner 自由会话的 artifact 格式必须在**第一场会话之前**冻结，否则前若干场数据无法
+  与基线配对（归档的 N-of-1 轨已经付过一次这个代价）。
+
+正文落点见 [`0.4.2 spec`](features/0.4/0.4.2-human-perturbation/spec.md)；本条款变更
+须同时评估 §13.5 与研究北极星。
 
 H1 按可独立演示成果切分，合计仍为 24–40 工程小时：
 
@@ -482,7 +510,9 @@ H2 同样按可独立复核的成果切分；工程投入不包含项目所有�
 | **H2-A 冻结协议与配对骨架** | 16–24 小时 | 可打开的冻结协议、配对 manifest diff 与 evidence guard 矩阵 | 协议漂移、H1 数据和不完整 pair 均被拒绝；控制运行可复现 | `experiment-preview` |
 | **H2-B 锁定协议与实验预览** | 24–40 小时 | 固定假参与者会话、三结果与机制预览、owner 下游接口契约 | 有限窗口、阶段隔离、处理重放及中止路径通过；不启动所有者训练 | `experiment-preview` |
 | **H2-C AI 正式运行与研究交付** | 16–24 小时 + AI 运行时间 | AI evidence index、正式机制报告、代表性回放与限制说明 | 完成 168 个 AI paired blocks；新进程重建且不接受 owner/H1 数据 | `formal-research` |
-| **H2-D Web 交易终端与所有者采集** | 16–24 小时 + 所有者分四天场景时间 | 真实终端形态：可见价格、多周期 K 线、市价/限价下单、训练入口和个人 N-of-1 记录 | **H2-D1** 本地页面可完成价格/K 线核对、合法委托/拒单/撤单；**H2-D2** 再执行 6 个训练和 24 个正式采集场景 | `experiment-preview` |
+| **H2-D Web 交易终端** | 16–24 小时 | 真实终端形态：可见价格、多周期 K 线、市价/限价下单 | **H2-D1** 本地页面可完成价格/K 线核对、合法委托/拒单/撤单（已交付）；**H2-D2**（6 训练 + 24 正式采集场景）随 ADR-010 **整体归档**，裁决与处置见 [`releases/0.3.md`](features/releases/0.3.md)——是范围裁决，不是未达标，也不伪造勾选 | `experiment-preview` |
+| **H2-E 持续 AI 市场生态**（v0.4 / `0.4.1`） | 见下方工程投入修订 | **H2-E1** 纯 AI 市场 + 第一份市场质量报告（六项逐项如实判定，不要求全部达标）；**H2-E2** 异质策略族跨种子质量报告集合 + 内生不稳定事件的**存在性判定报告**；**H2-E3** 量化交易者族运行 artifact + `RUN.md` 运行入口 | 逐门见 [`0.4.1 tasks`](features/0.4/0.4.1-ai-market-ecology/tasks.md) 的 T967/T973/T978 | `engineering-demonstration` |
+| **H2-F 人类扰动实验**（v0.4 / `0.4.2`） | 立项后估算 | **H2-F1** 可重放的自由会话 artifact + 无人类基线运行记录；**H2-F2** 同种子配对运行 + 稳定性效应量报告（分布移动 + 区间 + 失效边界） | 逐门见 [`0.4.2 tasks`](features/0.4/0.4.2-human-perturbation/tasks.md) 的 T990/T994 | `experiment-preview` |
 
 主研究交付顺序为：
 `R1 → R2 → R3 → R4 → R5（v0.1 收口）→ H1-A → H1-B → H1-C → H2-A → H2-B → H2-C`。
@@ -511,7 +541,10 @@ v0.1 的研究声明由连续 `severity` 指标建立。因此「异质策略族
 **工程投入修订**：v0.4 的 `0.4.1` 共 25 项任务 / 3 个 Phase，估 **10–15 个工作日**
 （含回归测试、检视轮次与 CI 等待）。最大不确定项是把 `live_market` 从 4–5 秒墙钟/逻辑秒
 压到 ≤0.5 秒（8–10 倍），单项可能 3–5 天，且可能被迫降低代理数，而代理数下降又会削弱
-stylized facts——该取舍在实测后拍板，不在设计阶段预判。
+stylized facts——退路顺序与各自代价已预先写进
+[`0.4.1 spec §7`](features/0.4/0.4.1-ai-market-ecology/spec.md#7-测试依赖与决策) 决策表，
+不留「实测后拍板」。`0.4.2`（人类扰动实验）共 15 项任务 / 2 个 Phase，在 `0.4.1` 的
+`H2-E2` 之后开工，工程投入待其 Q-601—Q-603 闭合后估算。
 
 **范围调整（2026-09-19，ADR-010）**：owner 采集轨从"N-of-1 配对对比"重构为
 "持续 AI 市场生态 + 人类扰动稳定性研究"（live_market 主干，北极星见
