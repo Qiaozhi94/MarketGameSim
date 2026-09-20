@@ -27,8 +27,17 @@
 
 ## 当前规格
 
-- [`docs/features/0.3/`](docs/features/0.3/README.md)：H2 AI 机制基线与个人决策实验室草案。
-  - `0.3.1-human-in-the-loop-experiment/`：不少于 158 个 AI paired-seed blocks、所有者 N-of-1 配对体验（`experiment-preview`）、三类结果与机制分析
+- [`docs/features/0.4/`](docs/features/0.4/README.md)：**当前规格（draft）**——AI 市场生态与
+  L2 交易者策略层。
+  - `0.4.1-ai-market-ecology/`：冷启动锚、`TraderStrategy` 策略层、市场质量六项与
+    stylized facts 判据（`engineering-demonstration`）
+  - `0.4.2-human-perturbation/`：人类扰动实验（PRD §15 的 `H2-F`）——会话 artifact 冻结、
+    同种子对照与稳定性效应量（`experiment-preview`）
+- [`docs/features/0.3/`](docs/features/0.3/README.md)：**已签收**的 H2 AI 机制基线与 Web 交易终端。
+  - `0.3.1-human-in-the-loop-experiment/`：168 个 AI paired-seed blocks、三类结果与机制分析
+    （`formal-research`，研究声明已建立）
+  - `0.3.2-web-trading-terminal/`：owner Web 交易终端；**N-of-1 采集轨随 ADR-010 归档**，
+    属范围裁决而非未达标（见 [`releases/0.3.md`](docs/features/releases/0.3.md)）
 - [`docs/features/0.2/`](docs/features/0.2/README.md)：已签收的 H1 手动交易沙盒。
   - `spec.md` 版本需求　`design.md` 跨里程碑约束　`traceability.json` 需求归属
   - `0.2.1-interactive-sandbox/`：观察、下单、撤单、输入重放与研究证据隔离
@@ -44,6 +53,10 @@
 **v0.1 已签收**：0.1.1—0.1.5 全部退出条件通过，0.1.5 研究声明已建立；不可变记录见
 [`docs/features/releases/0.1.md`](docs/features/releases/0.1.md)，需求归属见版本根 `spec.md`
 与 `docs/features/0.1/traceability.json`。
+
+**v0.3 已签收（2026-09-20）**：`0.3.1` 的 AI 正式机制基线（`formal-research`）与 `0.3.2` 的
+Web 交易终端均为 `done`；签收范围、被归档的 N-of-1 采集轨及其处置见
+[`docs/features/releases/0.3.md`](docs/features/releases/0.3.md)。
 
 ## 产品与研究文档
 
@@ -76,10 +89,14 @@
 | `DS-` `EV-` `TI-` | 退化参数 / 经济终点 / 技术无效 | `docs/contracts/degenerate-states.md` |
 | `E-` | 事件 Schema 参数 | `docs/contracts/event-schema.md` |
 | `OB-` | 订单簿验收向量 | `docs/contracts/orderbook-vectors.md` |
-| `T0xx`—`T7xx` | 实现任务，**每个里程碑文件内局部唯一**（0.1.1—0.1.4） | `docs/features/0.1/0.1.x-*/tasks.md` |
+| `T0xx`—`T2xx` | 实现任务（0.1.1—0.1.5） | `docs/features/0.1/0.1.x-*/tasks.md` |
+| `T8xx` | 实现任务（0.2.1 H1 交互沙盒） | `docs/features/0.2/0.2.1-*/tasks.md` |
+| `T9xx` | 实现任务（0.3.1 / 0.3.2 / 0.4.1 / 0.4.2） | `docs/features/0.3/`、`docs/features/0.4/` 下各 `tasks.md` |
 
 **任务编号只在单个里程碑内唯一。** 0.1.1 与 0.1.2 都有 `T104`、`T604`，含义完全不同。
 跨里程碑引用任务时必须带前缀：写 `0.1.1 T604`，不写 `T604`。
+**2026-09-01 起创建的里程碑另有更强约束**：任务 ID 必须与全仓其他里程碑唯一，由门禁
+校验（`docs/features/README.md` §阶段成果门），不能只靠号段约定。
 
 **文件编号沿革**：方向重置（2026-07-31）移除了旧方向的 `001` 规格与
 ADR-001—004、007—009，其决策要点并入 v0.1 规格的「设计决策与理由」章。现有编号已
@@ -105,10 +122,27 @@ ADR-001—004、007—009，其决策要点并入 v0.1 规格的「设计决策�
 ADR 只记录**跨规格生效、且已被多轮检视验证**的工程合同。尚未被实现检验的设计意图
 写在规格的「设计决策与理由」章（v0.1 / D-1—D-7），不占用 ADR 编号。
 
+本清单与 [`PRD 头部的「已生效 ADR」`](docs/market-game-sim-prd.md) 是同一份集合，
+两处必须同时更新。
+
 - `docs/decisions/001-numeric-and-serialization-contract.md`：金额与数量以最小单位整数
   承载，手续费为唯一舍入点，日志缺失值用 `null`。
 - `docs/decisions/002-same-timestamp-event-scheduling.md`：新事件全序键严格递增
   （禁止零延迟），因果外键与账户分录写入事件 Schema。
+- `docs/decisions/003-goal-driven-agents-and-flagship-identification.md`：目标驱动代理、
+  杠杆约束解耦与旗舰实验识别。
+- `docs/decisions/004-replay-critical-header-config.md`：`RUN_HEADER` 增加回放关键配置
+  字段，事件日志 schema 升至 v3。
+- `docs/decisions/005-evidence-binding-stays-full-tree.md`：证据索引维持全树哈希绑定，
+  哈希范围收窄降级为观察项。
+- `docs/decisions/006-realtime-free-trading-owner-terminal.md`：owner 终端采用真实世界
+  时间与自由连续交易，实验约束收敛到采集模式。
+- `docs/decisions/010-market-ecology-research-pivot.md`：方向重构为持续 AI 市场生态与
+  人类扰动研究；N-of-1 配对对比轨归档。
+- `docs/decisions/011-market-engine-trader-layering.md`：L1 交易引擎 / L2 交易者策略层
+  正式分层，alphamill 单向边界。
+- `docs/decisions/012-evidence-rebinding-attestation.md`：证据索引重绑必须显式盖章，
+  改哈希不改盖章即门禁变红。
 
 ## 建议工作流
 
