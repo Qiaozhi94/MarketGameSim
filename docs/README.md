@@ -9,12 +9,13 @@
 |---|---|
 | 产品目标、范围、安全边界、阶段成果与交易者介入顺序 | [`docs/market-game-sim-prd.md`](market-game-sim-prd.md) |
 | 全局模块边界与技术不变量 | [`docs/market-game-sim-architecture.md`](market-game-sim-architecture.md) |
+| **owner 研究问题与 owner-facing 设计第一判据** | [`docs/research/owner-research-question.md`](research/owner-research-question.md) |
 | 指标、研究方法与解释边界 | [`docs/research/`](research/methodology.md)（methodology、metrics-dictionary） |
 | 跨 Feature 实现合同 | [`docs/contracts/`](contracts/matching.md) |
 | 长期架构决策（ADR） | [`docs/decisions/`](decisions/000-template.md) |
 | Feature/里程碑行为与状态 | 对应 `spec.md`（见 [`docs/features/README.md`](features/README.md)） |
 | Feature/里程碑实现方案 | 对应 `design.md`（见 [`docs/features/README.md`](features/README.md)） |
-| requirement owner 与 exit | 对应版本的 `traceability.json`（当前为 [`v0.3`](features/0.3/traceability.json)） |
+| requirement owner 与 exit | 对应版本的 `traceability.json`（当前为 [`v0.4`](features/0.4/traceability.json)） |
 | 开发纪律与质量门 | [`docs/SOP.md`](SOP.md) |
 | 当前项目入口和强提醒 | [`CLAUDE.md`](../CLAUDE.md) |
 | 实验协议与结果索引 | [`docs/experiments/`](experiments/experiment-template.md) |
@@ -28,6 +29,9 @@
 - `spec.md` frontmatter 是状态唯一真源；design/tasks 不得声明独立状态。
 - architecture 不复制字段级合同；Feature design 不重新定义全局不变量。
 - release / RETROSPECTIVE 不是当前产品或实现真相源。
+- **owner-facing 交付（终端、实验、观察面、场景参数）与北极星冲突时以北极星为准**，
+  或先修订北极星再动工；北极星只拥有「owner 想研究什么」与 owner 侧设计判据，
+  结论形态与可证伪要求仍由 [`PRD §13.5/§15`](market-game-sim-prd.md) 拥有。
 
 ## 验证入口
 
