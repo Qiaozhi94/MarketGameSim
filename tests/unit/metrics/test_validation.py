@@ -13,6 +13,7 @@ import random
 from market_game_sim.metrics.liquidation import LiquidationMetrics
 from market_game_sim.metrics.sampling import ImpactSample, MarketSample
 from market_game_sim.metrics.validation import (
+    _FAMILY_A,
     MAX_FILL_RATIO,
     MIN_SAMPLE_POINTS,
     MIN_TAKER_ORDERS,
@@ -438,6 +439,11 @@ def _item(name: str, verdict: str, p_value: float | None) -> ValidationItem:
     return ValidationItem(name, verdict, 2.0, p_value, "desc", {})
 
 
+def _matrix_from_items(items: dict[str, ValidationItem]) -> dict[str, ValidationItem]:
+    """默认家族（冻结的组 A）校正结果。"""
+    return apply_family_correction(dict(items))
+
+
 def test_apply_family_correction_downgrades_marginal_items_but_keeps_strongest():
     items = {
         "fat_tails": _item("fat_tails", "PASS", 0.04),
@@ -547,3 +553,63 @@ def test_market_validation_matrix_as_dict_round_trips_item_fields():
         "liquidation_chain",
     }
     assert d["items"]["fat_tails"]["verdict"] == "NOT_APPLICABLE"
+
+
+# ---------------------------------------------------------------------------
+# 冻结协议的组 A 成员集合（0.1.2 协议 §2 / ADR：判定不得回头改）
+#
+# 0.4.1 的 SC-502 复用同一个 Holm-Bonferroni 原语，但它的组 A 是另一个集合
+# （厚尾 / 波动聚集 / 成交量—波动 / 订单流长记忆）。把新增项并进下面这个实例，
+# KPI-005 矩阵的判定会在没人察觉的情况下变化——校正强度取决于家族内全部成员的
+# p 值分布。这两条测试就是那个「静默」的拦截点。
+# ---------------------------------------------------------------------------
+
+
+def test_kpi005_family_a_membership_is_frozen():
+    """KPI-005 组 A 的成员集合是冻结协议的一部分，增减成员必须是显式改动。"""
+    assert _FAMILY_A == (
+        "fat_tails",
+        "volatility_clustering",
+        "price_impact_nonlinearity",
+        "spread_depth_regime",
+    )
+    matrix = _matrix_from_items(
+        {
+            "fat_tails": _item("fat_tails", "PASS", 0.04),
+            "volatility_clustering": _item("volatility_clustering", "PASS", 0.03),
+            "price_impact_nonlinearity": _item("price_impact_nonlinearity", "PASS", 0.02),
+            "spread_depth_regime": _item("spread_depth_regime", "PASS", 0.01),
+        }
+    )
+    # 默认家族即冻结集合：四项按 Holm 步降，只有最小 p 存活。
+    assert matrix["spread_depth_regime"].verdict == "PASS"
+    assert matrix["fat_tails"].verdict == "FAIL"
+
+
+def test_adding_0_4_1_features_to_the_frozen_family_would_change_kpi005_verdicts():
+    """证明「不得并入既有家族实例」这条约束不是洁癖：并入会改判 KPI-005。
+
+    同一批冻结协议项，family 里多两个 0.4.1 新增特征（成交量—波动、订单流长记忆）后，
+    原本存活的 `spread_depth_regime` 被降级——KPI-005 的判定被一次无关改动改写了。
+    """
+    frozen_items = {
+        "fat_tails": _item("fat_tails", "PASS", 0.04),
+        "volatility_clustering": _item("volatility_clustering", "PASS", 0.03),
+        "price_impact_nonlinearity": _item("price_impact_nonlinearity", "PASS", 0.02),
+        "spread_depth_regime": _item("spread_depth_regime", "PASS", 0.0124),
+    }
+    frozen = apply_family_correction(dict(frozen_items))
+    assert frozen["spread_depth_regime"].verdict == "PASS"
+
+    widened_items = dict(frozen_items)
+    widened_items["volume_volatility_correlation"] = _item(
+        "volume_volatility_correlation", "PASS", 0.045
+    )
+    widened_items["order_flow_long_memory"] = _item("order_flow_long_memory", "PASS", 0.046)
+    widened = apply_family_correction(
+        widened_items,
+        family_names=(*_FAMILY_A, "volume_volatility_correlation", "order_flow_long_memory"),
+    )
+    assert widened["spread_depth_regime"].verdict == "FAIL", (
+        "把 0.4.1 的新增特征并进 KPI-005 家族会静默改判冻结协议的结论"
+    )

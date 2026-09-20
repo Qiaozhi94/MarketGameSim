@@ -36,8 +36,11 @@ updated: 2026-09-20
 - [ ] T960 (`FR-501`, `AC-501`): 复现并锁定冷启动死锁——为「零公开成交流 ⇒ EWMA 预热
       不结束 ⇒ 目标仓位恒 0 ⇒ 无委托」写可重复运行的复现测试，作为锚设计的红灯基线
       — verify: `tests/unit/agent/test_bootstrap_anchor.py`
-- [ ] T961 (`FR-505`, `DR-502`, `AC-504`): 冻结市场质量六项与 stylized facts 五项的计算口径，
-      落地 `MarketQualityReport` schema 与机器校验入口 — verify: `tests/unit/metrics/test_market_quality.py`
+- [ ] T961 (`FR-505`, `DR-502`, `AC-504`, `AC-505`): 冻结市场质量六项与 stylized facts 五项的计算口径
+      （含 Q-505：特征 3 的 lag 1 / lag 50 组合判据，定完写回 spec §6 SC-502 表），落地
+      `MarketQualityReport` schema 与机器校验入口；本里程碑的组 A 家族**另建实例**，
+      不得并入 `build_market_validation_matrix` 既有家族 — verify:
+      `tests/unit/metrics/test_market_quality.py`
 - [ ] T962 (`DR-501`, `NFR-502`, `AC-503`): 冻结 `StrategyRoster` schema（族标识/数量/参数/
       时间尺度/冷启动锚/引擎指纹）与由 `roster_id` 重建装配的入口 — verify:
       `tests/unit/experiment/test_strategy_roster.py`
