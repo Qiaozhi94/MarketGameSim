@@ -147,6 +147,13 @@ prerequisites:
 
 - **N-of-1 采集执行**（6 训练 + 24 正式场景、owner evidence index、个人描述性报告）：
   随 ADR-010 归档；协议与 guard 机械保留在仓库但不在本里程碑交付。
+  **归档保留的机械清单**（受控对照类研究问题复活时可启用，届时须先修订研究北极星与
+  配对协议）：`experiment/h2/protocol.py`、`assignment.py`、`session.py` 的采集态守卫，
+  `experiment/h2/owner_experiment.py` 与 `owner_experiment.html`（训练实验启动器，
+  原 T937/T939 机制层），以及 `tests/integration/test_h2_owner_experiment.py`。
+  这些文件**不是遗留垃圾**，也**不属于本里程碑的交付面**；运行入口见
+  [`RUN.md`](../../../../RUN.md) 的「已归档入口」小节。没有这份清单时，将来无人能判断
+  它们可否删除。
 - 真实行情/交易所、账户认证、凭据托管、远程访问、多人交易和公开排行榜。
 - AI formal evidence index、AI 主要结果、多重性校正和研究声明。
 - 任何跨轨合并、结果驱动的补跑、未来信息显示或替所有者提交动作的自动化。
