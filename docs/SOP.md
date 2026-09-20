@@ -30,7 +30,8 @@
 - **提交前本地全绿**：`python tools/verify.py`（唯一公开入口）运行真源校验、生命周期/
   链接/所有权校验、pytest、ruff check、ruff format check，失败即返回非零。
 - **推送后确认 CI**：`git push` 后用 `gh run watch <run-id> --exit-status` 确认当前
-  HEAD 的全部必需 CI job 全绿（真源自校验、ruff、pytest 3.11、pytest 3.13）。
+  HEAD 的全部必需 CI job 全绿。当前为 **5 个**（`.github/workflows/ci.yml` 是唯一真源）：
+  真源与生命周期校验、`ruff`、`pytest 3.11`、`pytest 3.13`、H1 interactive (Windows)。
 - **每次修复补回归测试**：同一提交内为修复的行为补正反两面的仓库内测试；已知但暂不
   修复的缺口用 `pytest.mark.xfail(strict=True)` 标记并写明原因。
 - **安全校验降级必须声明**：若「失败即拒绝」改为「仅警告/仅记录」，必须在提交信息或
