@@ -1,5 +1,5 @@
 {
-  "$comment": "v0.4 需求追踪真源；0.4.1 承担 L2 交易者策略层与市场真实性判据（ADR-011）。",
+  "$comment": "v0.4 需求追踪真源；0.4.1 承担 L2 交易者策略层与市场真实性判据（ADR-011），0.4.2 承担人类扰动实验 H2-F（北极星研究问题 #1）。",
   "matrix_version": 1,
   "statuses": [
     "owned",
@@ -7,7 +7,8 @@
     "removed"
   ],
   "milestones": {
-    "0.4.1": "docs/features/0.4/0.4.1-ai-market-ecology"
+    "0.4.1": "docs/features/0.4/0.4.1-ai-market-ecology",
+    "0.4.2": "docs/features/0.4/0.4.2-human-perturbation"
   },
   "requirements": {
     "US-501": {
@@ -98,7 +99,8 @@
           "exits": [
             "E1",
             "E3",
-            "E4"
+            "E4",
+            "E6"
           ]
         }
       ]
@@ -203,7 +205,8 @@
         {
           "milestone": "0.4.1",
           "exits": [
-            "E3"
+            "E3",
+            "E6"
           ]
         }
       ]
@@ -237,6 +240,188 @@
           "milestone": "0.4.1",
           "exits": [
             "E5"
+          ]
+        }
+      ]
+    },
+    "US-601": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E1"
+          ]
+        }
+      ]
+    },
+    "US-602": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E3",
+            "E4"
+          ]
+        }
+      ]
+    },
+    "FR-601": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E1"
+          ]
+        }
+      ]
+    },
+    "FR-602": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E2",
+            "E3"
+          ]
+        }
+      ]
+    },
+    "FR-603": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E4"
+          ]
+        }
+      ]
+    },
+    "FR-604": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E1"
+          ]
+        }
+      ]
+    },
+    "DR-601": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E1",
+            "E3"
+          ]
+        }
+      ]
+    },
+    "DR-602": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E4"
+          ]
+        }
+      ]
+    },
+    "TR-601": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E2"
+          ]
+        }
+      ]
+    },
+    "IR-601": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E2",
+            "E3"
+          ]
+        }
+      ]
+    },
+    "NFR-601": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E2"
+          ]
+        }
+      ]
+    },
+    "NFR-602": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E1",
+            "E4"
+          ]
+        }
+      ]
+    },
+    "SC-601": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E1"
+          ]
+        }
+      ]
+    },
+    "SC-602": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E2",
+            "E3"
+          ]
+        }
+      ]
+    },
+    "SC-603": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E4"
+          ]
+        }
+      ]
+    },
+    "SC-604": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E1"
           ]
         }
       ]
