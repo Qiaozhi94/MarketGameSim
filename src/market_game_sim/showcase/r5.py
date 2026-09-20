@@ -135,6 +135,18 @@ def _render_r5_report(
             "- 本 R5 交付由已提交 evidence index 与同源码、同配置、同 seed 的双次确定性重放生成。"
         ),
     )
+    attestation = index["attestation"]
+    if attestation["rerun"]:
+        binding_lines = [f"- 源码摘要：`{index['code']['source_tree_sha256']}`（T215 实跑绑定）。"]
+    else:
+        # ADR-012：重绑不提升证明力，必须对读者如实披露证据真正的产出环境。
+        binding_lines = [
+            f"- 源码摘要：`{index['code']['source_tree_sha256']}`"
+            f"（{attestation['rebound_at']} 重绑，**未重跑 T215**）。",
+            f"- 证据产出时的源码树：`{attestation['t215_source_tree_sha256']}`"
+            f"（{attestation['t215_bound_at']} 实跑）；重绑理由见 evidence index 的 "
+            "`attestation.reason`（ADR-012）。",
+        ]
     lines = [
         base.rstrip(),
         "",
@@ -142,7 +154,7 @@ def _render_r5_report(
         "",
         f"- 里程碑：`{index['milestone']}`；成果门：`R5`。",
         f"- 包版本：`{index['code']['package_version']}`。",
-        f"- 源码摘要：`{index['code']['source_tree_sha256']}`。",
+        *binding_lines,
         f"- 配置摘要：`{index['code']['config_hash']}`。",
         f"- 正式 evidence index SHA-256：`{evidence_sha256}`。",
         f"- 研究声明资格：`{index['research_claim_eligibility']}`；证据类别：`formal-research`。",

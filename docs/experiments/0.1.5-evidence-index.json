@@ -1,4 +1,12 @@
 {
+  "attestation": {
+    "attested_source_tree_sha256": "372a2754f280ede60a2ec836f9425d5ee9358a2575b9bd8924c7884c6c8380ee",
+    "reason": "自 v0.1 签收（2026-08-30，源码树 81984fdc…）以来本索引被重绑 29 次，其中 19 次的提交只改了 code.source_tree_sha256 一行（git numstat 可逐条核验），无任何一次伴随 T215 重跑；改动集中在 Web 终端、K 线、live 市场等与 T215 运行路径无关的呈现层。ADR-012 决定把这一实践显式盖章：本索引的统计证据仍只由 t215_source_tree_sha256 那棵源码树产出，重绑不提升证明力。",
+    "rebound_at": "2026-09-20",
+    "rerun": false,
+    "t215_bound_at": "2026-08-30",
+    "t215_source_tree_sha256": "81984fdc6f39f535cc1763a7f4da15a9be8e15b0e15261b9248c0550d01b64a8"
+  },
   "checkpoints": [
     {
       "path": "artifacts/formal/T215/checkpoints/seed-40000.json.gz",
@@ -644,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "009d329058f2573f67346587851cd5d135f429a12b4f8e4df75f48b144bb4144"
+    "source_tree_sha256": "372a2754f280ede60a2ec836f9425d5ee9358a2575b9bd8924c7884c6c8380ee"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {

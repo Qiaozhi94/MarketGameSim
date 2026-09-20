@@ -12,6 +12,7 @@ import argparse
 import hashlib
 import json
 import pathlib
+import re
 import sys
 from typing import Any
 
@@ -524,6 +525,15 @@ def build_evidence_index(t215_dir: str | pathlib.Path = DEFAULT_T215_DIR) -> dic
             "source_tree_sha256": manifest["source_tree_sha256"],
             "config_hash": manifest["config_hash"],
         },
+        "attestation": {
+            # 由 T215 产物现场构建 ⇒ 这一次绑定就是实跑；重绑另由人工盖章（ADR-012）。
+            "rerun": True,
+            "attested_source_tree_sha256": manifest["source_tree_sha256"],
+            "t215_source_tree_sha256": manifest["source_tree_sha256"],
+            "t215_bound_at": None,
+            "rebound_at": None,
+            "reason": "T215 产物现场重建，绑定即实跑",
+        },
         "preregistration": binding.report_reference(),
         "seed_plan": {
             "executed_seeds": progress["executed_seeds"],
@@ -548,6 +558,96 @@ def build_evidence_index(t215_dir: str | pathlib.Path = DEFAULT_T215_DIR) -> dic
     }
 
 
+ATTESTATION_KEYS = {
+    "rerun",
+    "attested_source_tree_sha256",
+    "t215_source_tree_sha256",
+    "t215_bound_at",
+    "rebound_at",
+    "reason",
+}
+_ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def _validate_hex(value: Any, length: int, label: str) -> None:
+    if (
+        not isinstance(value, str)
+        or len(value) != length
+        or any(char not in "0123456789abcdef" for char in value)
+    ):
+        raise EvidenceIndexError(f"{label} must be lowercase hex")
+
+
+def _validate_attestation(attestation: Any, source_tree_sha256: str) -> None:
+    """ADR-012：重绑必须显式盖章，且盖章必须跟着哈希走。
+
+    ADR-005 的守卫写的是「代码变了就重跑 T215」，实践却是 19 次只改
+    `code.source_tree_sha256` 一行的纯重绑，没有一次重跑——等于走了 ADR-005 明确拒绝的
+    「不重跑就重盖章」，而且不留痕。这里不提升证明力（证据仍只由
+    `t215_source_tree_sha256` 那棵树产出），只让重绑**无法再静默发生**：
+    改哈希不改盖章即红。
+    """
+    if not isinstance(attestation, dict):
+        raise EvidenceIndexError("evidence index.attestation must be an object")
+    _require_exact_keys(attestation, ATTESTATION_KEYS, "evidence index.attestation")
+    rerun = attestation["rerun"]
+    if not isinstance(rerun, bool):
+        raise EvidenceIndexError("evidence index.attestation.rerun must be a boolean")
+    _validate_hex(
+        attestation["attested_source_tree_sha256"],
+        64,
+        "evidence index.attestation.attested_source_tree_sha256",
+    )
+    _validate_hex(
+        attestation["t215_source_tree_sha256"],
+        64,
+        "evidence index.attestation.t215_source_tree_sha256",
+    )
+    reason = attestation["reason"]
+    if not isinstance(reason, str) or not reason.strip():
+        raise EvidenceIndexError("evidence index.attestation.reason must be a non-empty string")
+    t215_bound_at = attestation["t215_bound_at"]
+    if t215_bound_at is not None and not (
+        isinstance(t215_bound_at, str) and _ISO_DATE.match(t215_bound_at)
+    ):
+        raise EvidenceIndexError(
+            "evidence index.attestation.t215_bound_at must be YYYY-MM-DD or null"
+        )
+    if attestation["attested_source_tree_sha256"] != source_tree_sha256:
+        raise EvidenceIndexError(
+            "evidence index.attestation.attested_source_tree_sha256 differs from "
+            "code.source_tree_sha256; rebinding the index requires re-attesting it "
+            "in the same commit (ADR-012)"
+        )
+    rebound_at = attestation["rebound_at"]
+    if rerun:
+        if attestation["t215_source_tree_sha256"] != source_tree_sha256:
+            raise EvidenceIndexError(
+                "evidence index.attestation claims a T215 rerun but its t215_source_tree_sha256 "
+                "differs from the bound source tree"
+            )
+        if rebound_at is not None:
+            raise EvidenceIndexError(
+                "evidence index.attestation.rebound_at must be null when rerun is true"
+            )
+        return
+    if attestation["t215_source_tree_sha256"] == source_tree_sha256:
+        raise EvidenceIndexError(
+            "evidence index.attestation records no rerun yet binds the T215 source tree; "
+            "declare rerun: true instead"
+        )
+    if not isinstance(rebound_at, str) or not _ISO_DATE.match(rebound_at):
+        raise EvidenceIndexError(
+            "evidence index.attestation.rebound_at must be YYYY-MM-DD when rerun is false"
+        )
+    if not isinstance(t215_bound_at, str):
+        raise EvidenceIndexError(
+            "evidence index.attestation.t215_bound_at is required when rerun is false"
+        )
+    if rebound_at < t215_bound_at:
+        raise EvidenceIndexError("evidence index.attestation.rebound_at precedes t215_bound_at")
+
+
 def validate_evidence_index(index: dict[str, Any], *, require_paths: bool = True) -> None:
     expected = {
         "schema_version",
@@ -565,6 +665,7 @@ def validate_evidence_index(index: dict[str, Any], *, require_paths: bool = True
         "experimental_validity",
         "direction_asymmetry",
         "limitations",
+        "attestation",
     }
     _require_exact_keys(index, expected, "evidence index")
     fixed = {
@@ -597,6 +698,7 @@ def validate_evidence_index(index: dict[str, Any], *, require_paths: bool = True
         raise EvidenceIndexError(
             "evidence index code binding differs from the current package; rebuild T215/T216"
         )
+    _validate_attestation(index["attestation"], index["code"]["source_tree_sha256"])
     _require_exact_keys(
         index["seed_plan"],
         {

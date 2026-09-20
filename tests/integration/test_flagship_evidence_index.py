@@ -430,3 +430,155 @@ def test_validator_rejects_conclusion_text_that_disagrees_with_statistics(synthe
     tampered["endpoint_results"]["crash"]["statement"] = "处理有显著影响。"
     with pytest.raises(EvidenceIndexError, match="conclusion does not match"):
         validate_evidence_index(tampered)
+
+
+# --------------------------------------------------------------------------- #
+# ADR-012：证据索引重绑必须显式盖章
+#
+# 守卫报错原文是 `rerun T215 after source changes`，但实践是 19 次只改
+# `code.source_tree_sha256` 一行的纯重绑，无一次重跑。下面每条都是负向变异：
+# 只断言"当前仓库通过"证明不了这个门禁在挡任何东西。
+# --------------------------------------------------------------------------- #
+
+REPO_INDEX = ROOT / "docs" / "experiments" / "0.1.5-evidence-index.json"
+
+
+def _rebound_attestation(index: dict) -> dict:
+    """把一份实跑索引改写成"重绑但已盖章"的合法形态。"""
+    rebound = copy.deepcopy(index)
+    rebound["attestation"] = {
+        "rerun": False,
+        "attested_source_tree_sha256": index["code"]["source_tree_sha256"],
+        "t215_source_tree_sha256": "a" * 64,
+        "t215_bound_at": "2026-08-30",
+        "rebound_at": "2026-09-20",
+        "reason": "呈现层改动，与 T215 运行路径无关",
+    }
+    return rebound
+
+
+def test_repository_index_attestation_tracks_its_code_binding():
+    """已提交的 0.1.5 索引必须自带与其哈希同步的盖章（ADR-012 正向）。"""
+    index = json.loads(REPO_INDEX.read_text(encoding="utf-8"))
+    attestation = index["attestation"]
+    assert attestation["attested_source_tree_sha256"] == index["code"]["source_tree_sha256"]
+    assert attestation["rerun"] is False, "当前索引是重绑而非重跑，不得声明 rerun"
+    assert attestation["t215_source_tree_sha256"] != index["code"]["source_tree_sha256"]
+    assert attestation["reason"].strip()
+    assert attestation["rebound_at"] >= attestation["t215_bound_at"]
+
+
+def test_builder_attests_a_real_rerun(synthetic_index):
+    """由 T215 产物现场构建 ⇒ rerun=true，两个哈希同源，无重绑日期。"""
+    attestation = synthetic_index["attestation"]
+    assert attestation["rerun"] is True
+    assert attestation["t215_source_tree_sha256"] == synthetic_index["code"]["source_tree_sha256"]
+    assert attestation["rebound_at"] is None
+    validate_evidence_index(synthetic_index)
+
+
+def test_rebinding_without_reattesting_is_rejected(synthetic_index):
+    """改哈希不改盖章即红——这是本门禁的全部执行力所在。"""
+    stale = copy.deepcopy(synthetic_index)
+    stale["attestation"]["attested_source_tree_sha256"] = "b" * 64
+    with pytest.raises(EvidenceIndexError, match="re-attesting"):
+        validate_evidence_index(stale)
+
+
+def test_wellformed_rebinding_attestation_is_accepted(synthetic_index):
+    """盖过章的重绑必须能通过——门禁不是禁止重绑，而是禁止静默重绑。"""
+    validate_evidence_index(_rebound_attestation(synthetic_index))
+
+
+def test_attestation_cannot_claim_a_rerun_it_did_not_do(synthetic_index):
+    faked = copy.deepcopy(synthetic_index)
+    faked["attestation"]["t215_source_tree_sha256"] = "c" * 64
+    with pytest.raises(EvidenceIndexError, match="claims a T215 rerun"):
+        validate_evidence_index(faked)
+
+
+def test_rebinding_must_not_present_itself_as_the_t215_tree(synthetic_index):
+    """rerun=false 却把 T215 源码树写成当前哈希 = 抹掉"证据产出环境"这一事实。"""
+    laundered = _rebound_attestation(synthetic_index)
+    laundered["attestation"]["t215_source_tree_sha256"] = synthetic_index["code"][
+        "source_tree_sha256"
+    ]
+    with pytest.raises(EvidenceIndexError, match="declare rerun: true"):
+        validate_evidence_index(laundered)
+
+
+@pytest.mark.parametrize("field", sorted({"rerun", "reason", "t215_bound_at", "rebound_at"}))
+def test_attestation_missing_field_is_rejected(synthetic_index, field):
+    broken = _rebound_attestation(synthetic_index)
+    del broken["attestation"][field]
+    with pytest.raises(EvidenceIndexError, match="attestation"):
+        validate_evidence_index(broken)
+
+
+def test_rebinding_requires_a_reason_and_a_date(synthetic_index):
+    undated = _rebound_attestation(synthetic_index)
+    undated["attestation"]["rebound_at"] = None
+    with pytest.raises(EvidenceIndexError, match="rebound_at must be YYYY-MM-DD"):
+        validate_evidence_index(undated)
+
+    unexplained = _rebound_attestation(synthetic_index)
+    unexplained["attestation"]["reason"] = "   "
+    with pytest.raises(EvidenceIndexError, match="reason must be a non-empty string"):
+        validate_evidence_index(unexplained)
+
+
+def test_rebinding_cannot_predate_the_t215_run(synthetic_index):
+    inverted = _rebound_attestation(synthetic_index)
+    inverted["attestation"]["rebound_at"] = "2026-08-29"
+    with pytest.raises(EvidenceIndexError, match="precedes t215_bound_at"):
+        validate_evidence_index(inverted)
+
+
+def test_rerun_attestation_must_not_carry_a_rebinding_date(synthetic_index):
+    mixed = copy.deepcopy(synthetic_index)
+    mixed["attestation"]["rebound_at"] = "2026-09-20"
+    with pytest.raises(EvidenceIndexError, match="must be null when rerun is true"):
+        validate_evidence_index(mixed)
+
+
+def test_r5_report_discloses_a_rebinding_instead_of_claiming_a_rerun():
+    """R5 是给人读的交付面：重绑不得只显示当前哈希，必须披露证据真正的产出环境。"""
+    from market_game_sim.showcase.r5 import _render_r5_report
+
+    index = json.loads(REPO_INDEX.read_text(encoding="utf-8"))
+    report = _render_r5_report(
+        index,
+        seed=index["seed_plan"]["valid_seeds"][0],
+        model_id="risk_budget_linear_v1",
+        cell_id="L0M0",
+        keep_every=1,
+        evidence_sha256="0" * 64,
+        replay_link="replay.html",
+        evidence_link="evidence.json",
+    )
+    signoff = report.split("## 版本签收", 1)[1]
+    assert "未重跑 T215" in signoff
+    assert index["attestation"]["t215_source_tree_sha256"] in signoff
+
+    rerun = copy.deepcopy(index)
+    rerun["attestation"] = {
+        "rerun": True,
+        "attested_source_tree_sha256": index["code"]["source_tree_sha256"],
+        "t215_source_tree_sha256": index["code"]["source_tree_sha256"],
+        "t215_bound_at": None,
+        "rebound_at": None,
+        "reason": "T215 产物现场重建，绑定即实跑",
+    }
+    rerun_report = _render_r5_report(
+        rerun,
+        seed=index["seed_plan"]["valid_seeds"][0],
+        model_id="risk_budget_linear_v1",
+        cell_id="L0M0",
+        keep_every=1,
+        evidence_sha256="0" * 64,
+        replay_link="replay.html",
+        evidence_link="evidence.json",
+    )
+    rerun_signoff = rerun_report.split("## 版本签收", 1)[1]
+    assert "T215 实跑绑定" in rerun_signoff
+    assert "未重跑" not in rerun_signoff
