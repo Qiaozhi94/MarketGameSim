@@ -1984,3 +1984,41 @@ def test_repository_outcome_gate_ids_are_all_registered_in_prd(sv):
         assert errors == [], errors
         seen += len(re.findall(r"\[成果门:([A-Za-z0-9-]+)\]", tasks_text))
     assert seen >= 16, "成果门标记数量异常下降，交叉校验可能失去了检查对象"
+
+
+# --------------------------------------------------------------------------- #
+# SOP §2「interactive 运行不进任何统计」× 0.4.2 的人类扰动效应量报告
+#
+# 这两份文档对同一命题给出判断：只读 SOP 的人会判 0.4.2 违规，只读 0.4.2 的人会照做。
+# 0.4.2 已用 Q-601 显式挂起该裁决，SOP 侧此前没有任何指针。下面这条门禁**随裁决状态
+# 翻面**：Q-601 一天不闭合，SOP 就必须带作用域指针；闭合那天，这条测试会立刻要求
+# 回来改 SOP，而不是让旧禁令静默失效。
+# --------------------------------------------------------------------------- #
+
+
+def _sop_interactive_statistics_clause() -> str:
+    sop = (ROOT / "docs" / "SOP.md").read_text(encoding="utf-8")
+    section = sop.split("## 2. 实验可复现与确定性", 1)[1].split("\n## ", 1)[0]
+    bullets = re.split(r"\n- ", section)
+    clause = [b for b in bullets if "不进任何统计" in b]
+    assert len(clause) == 1, f"SOP §2 的 interactive 统计禁令必须唯一，找到 {len(clause)} 条"
+    return clause[0]
+
+
+def test_sop_interactive_statistics_clause_tracks_the_open_human_perturbation_adjudication():
+    spec = (ROOT / "docs/features/0.4/0.4.2-human-perturbation/spec.md").read_text(encoding="utf-8")
+    open_q601 = re.search(r"^- \[ \] Q-601:", spec, re.M)
+    closed_q601 = re.search(r"^- \[x\] Q-601:", spec, re.M)
+    assert open_q601 or closed_q601, "0.4.2 必须仍然拥有 Q-601（SOP §2 的作用域裁决）"
+
+    clause = _sop_interactive_statistics_clause()
+    if open_q601:
+        assert "Q-601" in clause, (
+            "Q-601 未闭合时，SOP §2 必须指向它，否则两份文档各自自洽、合起来冲突"
+        )
+        assert "0.4.2-human-perturbation/spec.md" in clause, "指针必须可点击到裁决拥有者"
+        assert "裁决前" in clause, "未闭合时必须写明裁决前按字面全额生效"
+    else:
+        assert "裁决前" not in clause, (
+            "Q-601 已闭合，SOP §2 的「裁决前」措辞必须随裁决结果一并修订，不能留着旧禁令"
+        )
