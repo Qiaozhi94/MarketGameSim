@@ -836,7 +836,7 @@ def test_h2_fr301_prose_has_no_accidental_indentation():
 
 def test_h2_retrospective_preserves_nonadoption_dispositions():
     """忽略的 CURRENT/FIX-log 即使被误删，裁决理由也必须在 Git 历史中有无损兜底。"""
-    retrospective = (ROOT / "docs" / "reviews" / "RETROSPECTIVE.md").read_text(encoding="utf-8")
+    retrospective = (ROOT / "docs" / "reviews" / "0.3.md").read_text(encoding="utf-8")
     section = retrospective.split("### 裁决记录（从被误删的 CURRENT-doc 恢复）", 1)[1]
     section = section.split("### 审查过程稿保留约束（恢复）", 1)[0]
     for issue_id in (
@@ -852,7 +852,7 @@ def test_h2_retrospective_preserves_nonadoption_dispositions():
 
 def test_h2_retrospective_issue_table_is_lossless():
     """循环 21 的每条 issue 必须保持固定 13 列，不能让缺列把状态整体左移。"""
-    retrospective = (ROOT / "docs" / "reviews" / "RETROSPECTIVE.md").read_text(encoding="utf-8")
+    retrospective = (ROOT / "docs" / "reviews" / "0.3.md").read_text(encoding="utf-8")
     table = retrospective.split("## 循环 21:", 1)[1].split("### 裁决记录", 1)[0]
     rows = [line for line in table.splitlines() if line.startswith("| ")]
     header, *issues = rows

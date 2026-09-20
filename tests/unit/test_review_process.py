@@ -52,10 +52,33 @@ def _assert_h2_closure_summaries_are_evidenced(retrospective: str) -> None:
         )
 
 
+def _version_retrospectives() -> list[pathlib.Path]:
+    """按版本切分后的复盘文件；RETROSPECTIVE.md 只是索引，不含循环正文。
+
+    用 glob 而不是硬编码文件名：v0.4 期新建 `0.4.md` 时不需要回来改这条测试，
+    否则新版本的复盘会静默逃出 CI 证据门。
+    """
+    paths = sorted((ROOT / "docs" / "reviews").glob("[0-9].[0-9].md"))
+    assert paths, "docs/reviews/ 下找不到任何按版本切分的复盘文件"
+    return paths
+
+
+def test_retrospective_index_holds_no_cycle_bodies():
+    """索引不得回退成第二份正文——否则切分等于没做。"""
+    index = (ROOT / "docs/reviews/RETROSPECTIVE.md").read_text(encoding="utf-8")
+    assert not CYCLE_HEADING.search(index)
+    for path in _version_retrospectives():
+        assert f"({path.name})" in index, f"{path.name} 未登记在复盘索引里"
+
+
 def test_tracked_h2_retrospective_records_only_ci_evidenced_closure():
-    """Tracked H2 cycle summaries must carry successful CI evidence, never candidate states."""
-    retrospective = (ROOT / "docs/reviews/RETROSPECTIVE.md").read_text(encoding="utf-8")
-    _assert_h2_closure_summaries_are_evidenced(retrospective)
+    """Tracked H2 cycle summaries must carry successful CI evidence, never candidate states.
+
+    按版本切分后逐份读取再拼接：H2 循环目前只在 `0.3.md`，但断言必须覆盖**全部**版本
+    文件——否则把一条候选状态的闭环写进新版本文件就能绕过这道门。
+    """
+    combined = "\n".join(path.read_text(encoding="utf-8") for path in _version_retrospectives())
+    _assert_h2_closure_summaries_are_evidenced(combined)
 
 
 def _retrospective_with_cycle_entry(closure_line: str, heading: str) -> str:
