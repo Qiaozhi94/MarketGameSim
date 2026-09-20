@@ -1904,3 +1904,83 @@ def test_repository_template_covers_all_required_items(sv):
     template = (ROOT / sv.PREREG_TEMPLATE).read_text(encoding="utf-8")
     for item in sv.PREREG_REQUIRED_ITEMS:
         assert item in template, f"模板缺 {item}"
+
+
+# --------------------------------------------------------------------------- #
+# 成果门 ID 与 PRD §15 的交叉校验
+#
+# features/README 早就写着「ID 与 PRD §15 的成果门编号一致」，但一直只靠人工检视执行，
+# 结果 H2-E1/E2/E3 只活在 PRD 散文里、从未进过 §15 的成果门表。下面三条是变异测试：
+# 只断言"当前仓库通过"证明不了这个门禁在挡任何东西。
+# --------------------------------------------------------------------------- #
+
+
+_PRD_WITH_GATES = (
+    "## 14. 风险与缓解\n\n略。\n\n"
+    "## 15. 交付路线图\n\n"
+    "| 成果门 | 用户会拿到什么 |\n|---|---|\n"
+    "| **R1 可打开的工程基线** | 成果包 |\n"
+    "| **H2-E1** 纯 AI 市场 | 市场质量报告 |\n\n"
+    "## 16. 需求追溯\n\n略。\n"
+)
+
+
+def test_outcome_gate_id_missing_from_prd_is_rejected(sv):
+    tasks = _tasks_with_phases(
+        "### Phase 1：基线\n\n"
+        "- [ ] **T001** `[成果门:H2-E9]` (`FR-001`): 产出成果包 — verify: `tests/a.py`\n",
+    )
+    errors: list[str] = []
+    sv.validate_outcome_gate_ids_registered(_GATE_FRONT, tasks, _PRD_WITH_GATES, errors, "m")
+    assert any("H2-E9" in e and "PRD §15" in e for e in errors)
+
+
+def test_outcome_gate_id_present_in_prd_passes(sv):
+    tasks = _tasks_with_phases(
+        "### Phase 1：基线\n\n"
+        "- [ ] **T001** `[成果门:H2-E1]` (`FR-001`): 产出成果包 — verify: `tests/a.py`\n",
+        "### Phase 2：扩展\n\n"
+        "- [ ] **T002** `[成果门:R1]` (`FR-002`): 产出预览 — verify: `tests/b.py`\n",
+    )
+    errors: list[str] = []
+    sv.validate_outcome_gate_ids_registered(_GATE_FRONT, tasks, _PRD_WITH_GATES, errors, "m")
+    assert errors == []
+
+
+def test_outcome_gate_id_must_not_match_a_longer_prd_id(sv):
+    """`H2-E` 不能靠 PRD 里的 `H2-E1` 蒙混过关——前缀匹配会让错编号静默通过。"""
+    tasks = _tasks_with_phases(
+        "### Phase 1：基线\n\n"
+        "- [ ] **T001** `[成果门:H2-E]` (`FR-001`): 产出成果包 — verify: `tests/a.py`\n",
+    )
+    errors: list[str] = []
+    sv.validate_outcome_gate_ids_registered(_GATE_FRONT, tasks, _PRD_WITH_GATES, errors, "m")
+    assert any("H2-E " in e or "成果门 H2-E" in e for e in errors)
+
+
+def test_outcome_gate_cross_check_reports_a_missing_prd_section(sv):
+    """PRD §15 读不到时必须报错，不能因为"没找到章节"就静默放行（fail closed）。"""
+    tasks = _tasks_with_phases(
+        "### Phase 1：基线\n\n"
+        "- [ ] **T001** `[成果门:R1]` (`FR-001`): 产出成果包 — verify: `tests/a.py`\n",
+    )
+    errors: list[str] = []
+    sv.validate_outcome_gate_ids_registered(_GATE_FRONT, tasks, "# PRD 正文缺失", errors, "m")
+    assert any("PRD §15" in e for e in errors)
+
+
+def test_repository_outcome_gate_ids_are_all_registered_in_prd(sv):
+    """全仓正向：每个里程碑 tasks.md 的成果门 ID 都能在 PRD §15 找到。"""
+    prd = (ROOT / "docs" / "market-game-sim-prd.md").read_text(encoding="utf-8")
+    seen = 0
+    for tasks_path in sorted((ROOT / "docs" / "features").glob("*/*/tasks.md")):
+        spec_path = tasks_path.parent / "spec.md"
+        front = sv.parse_frontmatter(spec_path.read_text(encoding="utf-8"))
+        errors: list[str] = []
+        tasks_text = tasks_path.read_text(encoding="utf-8")
+        sv.validate_outcome_gate_ids_registered(
+            front, tasks_text, prd, errors, f"milestone {front.get('id')}"
+        )
+        assert errors == [], errors
+        seen += len(re.findall(r"\[成果门:([A-Za-z0-9-]+)\]", tasks_text))
+    assert seen >= 16, "成果门标记数量异常下降，交叉校验可能失去了检查对象"

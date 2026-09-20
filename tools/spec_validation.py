@@ -888,6 +888,54 @@ def validate_outcome_gates(
             fail(errors, f"{where}: 「{title}」的成果门不是本阶段最后一项任务")
 
 
+# PRD §15 是项目级成果顺序的唯一拥有者，features/README 也写着「ID 与 PRD §15 的成果门
+# 编号一致」——但这条一直只靠人工检视执行。实测结果与本仓库对这类规则的一贯规律一致：
+# H2-E1/E2/E3 只活在 PRD 散文里，从未进过 §15 的成果门表。凡是写成「必须一致」却没有
+# 机器执法的规则，在本仓库平均活不过两个版本。
+_PRD_ROADMAP_HEADING = re.compile(r"^##\s+15\.\s", re.M)
+
+
+def _prd_roadmap_section(prd_text: str) -> str:
+    """截出 PRD §15「交付路线图」正文；取不到就返回空串（由调用方判定）。"""
+    start = _PRD_ROADMAP_HEADING.search(prd_text)
+    if not start:
+        return ""
+    rest = prd_text[start.end() :]
+    end = re.search(r"^##\s+\d+\.\s", rest, re.M)
+    return rest[: end.start()] if end else rest
+
+
+def validate_outcome_gate_ids_registered(
+    front: dict, tasks_text: str, prd_text: str, errors: list[str], where: str
+) -> None:
+    """`tasks.md` 里的每个成果门 ID 必须出现在 PRD §15。
+
+    成果门是「项目级成果顺序」的一部分，PRD §15 拥有它；里程碑只说明自己如何满足。
+    ID 只在 tasks 里存在时，读 PRD 的人看不到这个交付点，读 tasks 的人也无法判断它
+    对应项目路线上的哪一步——两边各自自洽，合起来不成立。
+    """
+    if front.get("gate_version") != 1:
+        return
+    created = front.get("created", "")
+    if not isinstance(created, str) or created < OUTCOME_GATE_RULE_DATE:
+        return
+    body = _implementation_section(tasks_text)
+    gates = {m.group("gate") for m in _OUTCOME_GATE_MARK.finditer(body)}
+    if not gates:
+        return
+    section = _prd_roadmap_section(prd_text)
+    if not section:
+        fail(errors, f"{where}: 找不到 PRD §15 交付路线图，成果门 ID 无法交叉校验")
+        return
+    for gate in sorted(gates):
+        if not re.search(rf"(?<![A-Za-z0-9-]){re.escape(gate)}(?![A-Za-z0-9-])", section):
+            fail(
+                errors,
+                f"{where}: 成果门 {gate} 未出现在 PRD §15 交付路线图；"
+                "成果门 ID 由 PRD §15 唯一拥有，只写在 tasks.md 里等于没有项目级落点",
+            )
+
+
 # 状态回写任务用显式标记声明，不从自然语言推断。
 # 上一版靠正则猜措辞（"推进 done"/"标记为 done"…），两头都不成立：换个说法就能无声
 # 绕过（"更新为 done"、"设为 done"），而一句"核对 `done / established` 的前置证据"
@@ -1353,6 +1401,15 @@ def validate_spec_lifecycle(
 
         validate_completion_state(mid, front, spec_text, tasks_text, all_ids, errors)
         validate_outcome_gates(front, tasks_text, errors, where)
+        validate_outcome_gate_ids_registered(
+            front,
+            tasks_text,
+            (root / "docs" / "market-game-sim-prd.md").read_text(encoding="utf-8")
+            if (root / "docs" / "market-game-sim-prd.md").is_file()
+            else "",
+            errors,
+            where,
+        )
         validate_task_id_order(front, tasks_text, errors, where)
         validate_status_writeback_is_last(front, tasks_text, errors, where)
 
