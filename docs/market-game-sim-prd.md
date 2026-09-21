@@ -22,7 +22,8 @@
 [ADR-006](decisions/006-realtime-free-trading-owner-terminal.md)（owner 终端自由连续交易）、
 [ADR-010](decisions/010-market-ecology-research-pivot.md)（市场生态与人类扰动研究方向）、
 [ADR-011](decisions/011-market-engine-trader-layering.md)（L1/L2 分层与 alphamill 单向边界）、
-[ADR-012](decisions/012-evidence-rebinding-attestation.md)（证据索引重绑的显式盖章）  
+[ADR-012](decisions/012-evidence-rebinding-attestation.md)（证据索引重绑的显式盖章）、
+[ADR-013](decisions/013-l1-matching-core-clearing-split.md)（L1a 撮合核心 / L1b 清算风控拆分）  
 **其余设计决策**：见
 [v0.1 规格 §设计决策与理由](features/0.1/spec.md)（D-1—D-7）
 

@@ -1,4 +1,12 @@
-"""T302-T306b + T404/T405: Matching engine -- the TransactionHandler for ORDER_ARRIVAL.
+"""T302-T306b + T404/T405: L1b clearing adapter -- the TransactionHandler for ORDER_ARRIVAL.
+
+ADR-013: price-time matching itself lives in the ledger-free L1a core
+(``book/engine.py``).  This module owns everything around it: admission
+(session, margin, liquidation staleness), per-fill settlement and postings,
+reserved-margin bookkeeping, causal event ids, and the post-batch risk scan
+that drives liquidation cascades.  It consumes ``engine.MatchResult`` steps
+strictly in order, so settlement sees exactly the state sequence it saw when
+matching and settlement were one loop.
 
 [撮合 §2.1] 成交价 = maker 挂单价
 [撮合 §2.2] 跨档拆分: 逐档 TRADE_SETTLE, valuation_mark 逐笔推进
@@ -18,9 +26,9 @@ lazily initialised with BENCH-001 defaults so existing tests keep working.
 
 from __future__ import annotations
 
-from collections import deque
 from typing import Any
 
+from market_game_sim.book import engine
 from market_game_sim.book.orderbook import Book, RestingOrder
 from market_game_sim.hook.crypto_perp import CryptoPerpRegime
 from market_game_sim.hook.interface import RegimeHook
@@ -115,26 +123,28 @@ def match_order(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
     caused_by = f"e{kernel.current_transaction_seq}_0"
     records: list[dict] = []
 
+    # ── L1a: pure matching (ADR-013); L1b settles each step in order ──
     taker_side = event["side"]
-    opposite_side = "SELL" if taker_side == "BUY" else "BUY"
-    remaining = event["quantity_units"]
-    limit_price = event.get("price_ticks")
-    vm_running = book.valuation_mark_half_ticks()
+    result = engine.match(
+        book,
+        engine.IncomingOrder(
+            order_id=event["order_id"],
+            owner_id=event["agent_id"],
+            side=taker_side,
+            order_type=event["order_type"],
+            price_ticks=event.get("price_ticks"),
+            quantity_units=event["quantity_units"],
+            sequence=kernel.current_transaction_seq,
+        ),
+    )
     trade_idx = 0
 
-    while remaining > 0:
-        maker = book.peek_best_maker(opposite_side)
-        if maker is None:
-            break
-        if not _crosses(taker_side, limit_price, maker.price_ticks):
-            break
-
-        if maker.agent_id == event["agent_id"]:
-            cancelled = book.pop_best_maker(opposite_side)
-            assert cancelled is not None
+    for step in result.steps:
+        if isinstance(step, engine.SelfTradeCancel):
+            cancelled = step.order
             _remove_active_order(world, cancelled.order_id, cancelled.agent_id)
             account = world["accounts"].get(cancelled.agent_id)
-            risk_mark = book.last_ticks or initial_price
+            risk_mark = step.last_ticks or initial_price
             old_r = account.reserved_units if account else 0
             new_r = _reserved_for(world, account, cancelled.agent_id, risk_mark) if account else 0
             if account:
@@ -150,38 +160,19 @@ def match_order(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
             )
             continue
 
-        fill_qty = min(remaining, maker.quantity_units)
-        vm_before = vm_running
-        maker.quantity_units -= fill_qty
-        remaining -= fill_qty
-        maker_consumed = maker.quantity_units == 0
-        if maker_consumed:
-            book.pop_best_maker(opposite_side)
-        else:
-            book._dirty = True
-        book.last_ticks = maker.price_ticks
-        vm_after = book.valuation_mark_half_ticks()
-        vm_running = vm_after
-
         postings = _settle_fill(
-            maker=maker,
+            fill=step,
             taker_agent_id=event["agent_id"],
             taker_side=taker_side,
-            fill_qty=fill_qty,
-            maker_consumed=maker_consumed,
             world=world,
             parent_ts=event["timestamp"],
         )
 
         records.append(
             _build_trade_settle(
-                maker=maker,
+                fill=step,
                 taker_order_id=event["order_id"],
                 taker_agent_id=event["agent_id"],
-                fill_qty=fill_qty,
-                vm_before=vm_before,
-                vm_after=vm_after,
-                risk_mark=maker.price_ticks,
                 caused_by=caused_by,
                 trade_idx=trade_idx,
                 txn_seq=kernel.current_transaction_seq,
@@ -191,38 +182,27 @@ def match_order(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
         )
         trade_idx += 1
 
-    if remaining > 0:
-        if event["order_type"] == "LIMIT":
-            assert limit_price is not None
-            rest = RestingOrder(
+    if result.rested is not None:
+        rest = result.rested
+        _add_active_order(world, rest)
+        acct = world["accounts"].get(rest.agent_id)
+        if acct:
+            acct.reserved_units = _reserved_for(
+                world,
+                acct,
+                rest.agent_id,
+                book.last_ticks or world.get("initial_price_ticks", 10000),
+            )
+    elif result.unfilled_units > 0:
+        records.append(
+            _build_ioc_cancel(
                 order_id=event["order_id"],
                 agent_id=event["agent_id"],
                 side=taker_side,
-                order_type="LIMIT",
-                price_ticks=limit_price,
-                quantity_units=remaining,
-                transaction_seq=kernel.current_transaction_seq,
+                cancelled_qty=result.unfilled_units,
+                caused_by=caused_by,
             )
-            book.insert(rest)
-            _add_active_order(world, rest)
-            acct = world["accounts"].get(rest.agent_id)
-            if acct:
-                acct.reserved_units = _reserved_for(
-                    world,
-                    acct,
-                    rest.agent_id,
-                    book.last_ticks or world.get("initial_price_ticks", 10000),
-                )
-        else:
-            records.append(
-                _build_ioc_cancel(
-                    order_id=event["order_id"],
-                    agent_id=event["agent_id"],
-                    side=taker_side,
-                    cancelled_qty=remaining,
-                    caused_by=caused_by,
-                )
-            )
+        )
 
     # ── 撮合 §5 step 6: price bounds (stub in 0.1.1) ────────────
     # settlement_rule is INSTANT (inline — no delayed clearing needed).
@@ -306,18 +286,20 @@ def _remove_active_order(world: dict, order_id: str, agent_id: str) -> None:
         ao_by_agent[agent_id].pop(order_id, None)
 
 
-def _reduce_active_order(world: dict, order: RestingOrder, fill_qty: int, consumed: bool) -> None:
+def _reduce_active_order(
+    world: dict, agent_id: str, order_id: str, fill_qty: int, consumed: bool
+) -> None:
     ao_by_agent = world.get("active_orders_by_agent", {})
-    agent_orders = ao_by_agent.get(order.agent_id, {})
+    agent_orders = ao_by_agent.get(agent_id, {})
     if consumed:
-        agent_orders.pop(order.order_id, None)
-    elif order.order_id in agent_orders:
-        old = agent_orders[order.order_id]
+        agent_orders.pop(order_id, None)
+    elif order_id in agent_orders:
+        old = agent_orders[order_id]
         new_qty = old.quantity_units - fill_qty
         if new_qty <= 0:
-            agent_orders.pop(order.order_id, None)
+            agent_orders.pop(order_id, None)
         else:
-            agent_orders[order.order_id] = ActiveOrder(old.side, old.price_ticks, new_qty)
+            agent_orders[order_id] = ActiveOrder(old.side, old.price_ticks, new_qty)
 
 
 # --------------------------------------------------------------------------- #
@@ -338,11 +320,9 @@ def _reserved_for(world: dict, account: Account, agent_id: str, risk_mark_ticks:
 
 
 def _settle_fill(
-    maker: RestingOrder,
+    fill: engine.Fill,
     taker_agent_id: str,
     taker_side: str,
-    fill_qty: int,
-    maker_consumed: bool,
     world: dict,
     parent_ts: int = 0,
 ) -> list[dict[str, Any]]:
@@ -350,7 +330,9 @@ def _settle_fill(
     mult = cfg["mult"]
     maker_bps = cfg["maker_bps"]
     taker_bps = cfg["taker_bps"]
-    price = maker.price_ticks
+    price = fill.price_ticks
+    fill_qty = fill.quantity_units
+    maker_agent_id = fill.maker_owner_id
     risk_mark = price
 
     notional, maker_fee, taker_fee = compute_notional_and_fees(
@@ -358,28 +340,28 @@ def _settle_fill(
     )
     world["exchange_fee_units"] += maker_fee + taker_fee
 
-    maker_acct = _get_account(world, maker.agent_id)
+    maker_acct = _get_account(world, maker_agent_id)
     taker_acct = _get_account(world, taker_agent_id)
 
-    maker_reserved_before = _reserved_for(world, maker_acct, maker.agent_id, risk_mark)
+    maker_reserved_before = _reserved_for(world, maker_acct, maker_agent_id, risk_mark)
     taker_reserved_before = _reserved_for(world, taker_acct, taker_agent_id, risk_mark)
 
-    maker_deltas = apply_fill(maker_acct, maker.side, price, fill_qty, mult, maker_bps)
+    maker_deltas = apply_fill(maker_acct, fill.maker_side, price, fill_qty, mult, maker_bps)
     taker_deltas = apply_fill(taker_acct, taker_side, price, fill_qty, mult, taker_bps)
 
-    _reduce_active_order(world, maker, fill_qty, maker_consumed)
+    _reduce_active_order(world, maker_agent_id, fill.maker_order_id, fill_qty, fill.maker_consumed)
 
-    maker_reserved_after = _reserved_for(world, maker_acct, maker.agent_id, risk_mark)
+    maker_reserved_after = _reserved_for(world, maker_acct, maker_agent_id, risk_mark)
     taker_reserved_after = _reserved_for(world, taker_acct, taker_agent_id, risk_mark)
     maker_acct.reserved_units = maker_reserved_after
     taker_acct.reserved_units = taker_reserved_after
 
-    _record_trade_history(world, maker.agent_id, price, fill_qty, parent_ts)
-    if taker_agent_id != maker.agent_id:
+    _record_trade_history(world, maker_agent_id, price, fill_qty, parent_ts)
+    if taker_agent_id != maker_agent_id:
         _record_trade_history(world, taker_agent_id, price, fill_qty, parent_ts)
 
     maker_posting = _build_trade_posting(
-        agent_id=maker.agent_id,
+        agent_id=maker_agent_id,
         role="MAKER",
         deltas=maker_deltas,
         account=maker_acct,
@@ -432,14 +414,6 @@ def _build_trade_posting(
 # --------------------------------------------------------------------------- #
 
 
-def _crosses(taker_side: str, limit_price: int | None, maker_price: int) -> bool:
-    if limit_price is None:
-        return True
-    if taker_side == "BUY":
-        return maker_price <= limit_price
-    return maker_price >= limit_price
-
-
 def _pre_match(event: dict, book: Book, mult: int) -> PreMatchResult:
     """T102/T103 (§2.18): non-mutating dry-run walk of the opposite side of
     the book, at the REAL per-level maker prices, to split a candidate
@@ -448,29 +422,17 @@ def _pre_match(event: dict, book: Book, mult: int) -> PreMatchResult:
     (unknown future fill price -- estimated at the candidate's own limit
     price, the worst case for a resting order per 账户合同 §3.3).
 
-    Does not account for self-trade-prevention skips (matching.py's real
+    Does not account for self-trade-prevention skips (engine.match's real
     loop cancels a resting order that shares the taker's agent_id instead
     of filling it) -- reserved_units is a worst-case margin estimate, and
     treating a would-be-skipped level as fillable only makes the estimate
     more conservative, never under-reserves.
     """
-    taker_side = event.get("side", "BUY")
-    opposite_side = "SELL" if taker_side == "BUY" else "BUY"
     limit_price = event.get("price_ticks")
-    remaining = event.get("quantity_units", 0)
-    levels = book.ask_levels() if opposite_side == "SELL" else book.bid_levels()
-
-    immediate_qty = 0
-    immediate_notional = 0
-    for level_price, level_qty in levels:
-        if remaining <= 0:
-            break
-        if not _crosses(taker_side, limit_price, level_price):
-            break
-        take = min(remaining, level_qty)
-        immediate_qty += take
-        immediate_notional += take * level_price * mult
-        remaining -= take
+    immediate_qty, price_qty_sum = engine.dry_run(
+        book, event.get("side", "BUY"), limit_price, event.get("quantity_units", 0)
+    )
+    immediate_notional = price_qty_sum * mult
 
     resting_qty = max(event.get("quantity_units", 0) - immediate_qty, 0)
     return PreMatchResult(
@@ -516,21 +478,7 @@ def _handle_cancel(event: dict, book: Book, world: dict, kernel: EventKernel) ->
 
 
 def _find_and_remove(book: Book, order_id: str) -> RestingOrder | None:
-    for side in ("BUY", "SELL"):
-        book_dict, prices = book._side_refs(side)  # type: ignore[attr-defined]
-        for price in list(prices):
-            dq = book_dict[price]
-            for o in dq:
-                if o.order_id == order_id:
-                    new_dq = deque((x for x in dq if x.order_id != order_id), maxlen=dq.maxlen)
-                    if new_dq:
-                        book_dict[price] = new_dq
-                    else:
-                        del book_dict[price]
-                        prices.remove(price)
-                    book._dirty = True  # type: ignore[attr-defined]
-                    return o
-    return None
+    return engine.cancel(book, order_id)
 
 
 # --------------------------------------------------------------------------- #
@@ -607,13 +555,9 @@ def _populate_r0_defaults(event: dict, book: Book, initial_price: int, world: di
 
 
 def _build_trade_settle(
-    maker: RestingOrder,
+    fill: engine.Fill,
     taker_order_id: str,
     taker_agent_id: str,
-    fill_qty: int,
-    vm_before: int,
-    vm_after: int,
-    risk_mark: int,
     caused_by: str,
     trade_idx: int,
     txn_seq: int,
@@ -622,23 +566,23 @@ def _build_trade_settle(
 ) -> dict[str, Any]:
     cfg = world["_cfg"]
     mult = cfg["mult"]
-    notional = maker.price_ticks * fill_qty * mult
+    notional = fill.price_ticks * fill.quantity_units * mult
     maker_fee = postings[0]["fee_delta_units"]
     taker_fee = postings[1]["fee_delta_units"]
     return {
         "event_type": "TRADE_SETTLE",
-        "maker_order_id": maker.order_id,
+        "maker_order_id": fill.maker_order_id,
         "taker_order_id": taker_order_id,
-        "maker_agent_id": maker.agent_id,
+        "maker_agent_id": fill.maker_owner_id,
         "taker_agent_id": taker_agent_id,
-        "price_ticks": maker.price_ticks,
-        "quantity_units": fill_qty,
+        "price_ticks": fill.price_ticks,
+        "quantity_units": fill.quantity_units,
         "notional_cash_units": notional,
         "maker_fee_cash_units": maker_fee,
         "taker_fee_cash_units": taker_fee,
-        "valuation_mark_before_half_ticks": vm_before,
-        "valuation_mark_after_half_ticks": vm_after,
-        "risk_mark_ticks": risk_mark,
+        "valuation_mark_before_half_ticks": fill.valuation_mark_before_half_ticks,
+        "valuation_mark_after_half_ticks": fill.valuation_mark_after_half_ticks,
+        "risk_mark_ticks": fill.price_ticks,
         "postings": postings,
         "trade_id": f"t{txn_seq}_{trade_idx}",
         "caused_by_event_id": caused_by,
