@@ -11,7 +11,7 @@ topics:
   - stylized-facts
 doc_kind: tasks
 created: 2026-09-19
-updated: 2026-09-20
+updated: 2026-09-21
 ---
 
 # 0.4.1：AI 市场生态 - 任务
@@ -27,7 +27,7 @@ updated: 2026-09-20
 - **G1 研究问题前置检查**（features/README §阶段成果门，ADR-010）：本次交付服务
   [`owner-research-question`](../../../research/owner-research-question.md) 的研究问题 #2
   「AI 市场自身的均衡与突变」——它是研究问题 #1/#3 的对照基线，没有一个会自发成交、
-  能内生崩盘的纯 AI 市场，人类介入前后的差异无从测量。
+  能内生崩盘的纯 AI 市场，人类介入前后的差异无从测量。**owner 2026-09-21 批准。**
 - L1 合同不可改：任何任务都不得修改撮合、账本、保证金、强平与事件 schema 的既有语义。
 - 质量门限值由 `spec.md` §6 唯一拥有；任务不得就地改门限，调门限须改 spec 并说明理由。
 
@@ -37,7 +37,8 @@ updated: 2026-09-20
       不结束 ⇒ 目标仓位恒 0 ⇒ 无委托」写可重复运行的复现测试，作为锚设计的红灯基线
       — verify: `tests/unit/agent/test_bootstrap_anchor.py`
 - [ ] T961 (`FR-505`, `DR-502`, `AC-504`, `AC-505`): 冻结市场质量六项与 stylized facts 五项的计算口径
-      （含 Q-505：特征 3 的 lag 1 / lag 50 组合判据，定完写回 spec §6 SC-502 表），落地
+      （Q-505 已裁决：特征 3 要求 lag 1 与 lag 50 都显著，p 取两者最大值；统计窗口按 Q-501
+      从最后一个代理退出冷启动后开始），落地
       `MarketQualityReport` schema 与机器校验入口；本里程碑的组 A 家族**另建实例**，
       不得并入 `build_market_validation_matrix` 既有家族 — verify:
       `tests/unit/metrics/test_market_quality.py`
@@ -50,9 +51,12 @@ updated: 2026-09-20
 ### Phase 1：冷启动与 L2 分层
 
 - [ ] T963 (`FR-501`, `NFR-502`, `AC-501`): 实现冷启动锚——零公开成交流条件下的确定性首笔
-      意图，锚参数进入运行头；正反两侧都有断言（有锚产生委托 / 无锚复现死锁）— verify:
+      意图（Q-501：±1 最小单位、方向按装配顺序奇偶交替且不用随机数、按对手最优价、退出复用预热条件），
+      并写明 `ewma_half_life_trades` 在 live 生态下的语义（spec §3 范围内的澄清项），
+      锚来源做成可插拔接口且只注册 `synthetic`，锚参数与来源标识进入运行头；正反两侧都有
+      断言（有锚产生委托 / 无锚复现死锁 / 未注册来源 fail closed）— verify:
       `tests/unit/agent/test_bootstrap_anchor.py`
-- [ ] T964 (`FR-502`, `IR-501`, `AC-502`): 实现 `TraderStrategy` 协议、分级信息集（L0—L3）与
+- [ ] T964 (`FR-502`, `IR-501`, `AC-502`): 实现 `TraderStrategy` 协议、分级信息集（I0—I3）与
       策略族注册表；未注册族标识在装配阶段 fail closed 并返回稳定原因码 — verify:
       `tests/unit/agent/test_strategy_registry.py`
 - [ ] T965 (`TR-501`, `NFR-502`, `AC-510`): 把策略族标识与信息集分级写入既有 `AGENT_DECIDE`
@@ -154,3 +158,7 @@ updated: 2026-09-20
   版本化信号」产出（2026-09-20 核实其活跃 Feature 为 F003/F007/F008，均在 0.2 版本 M2 阶段）。
   本里程碑只交付不依赖上游的注入接口与公式筛查器。
 - alphamill 侧的任何改动与双向证据互认 → 永久后移（ADR-011 §决策 5 禁止回流）。
+- **实盘盘面分叉锚（`historical_snapshot`）** → [`ADR-014`](../../../decisions/014-historical-snapshot-fork-anchor.md)
+  与独立里程碑（owner 2026-09-21 批准方向）：需要行情数据与许可、快照格式与哈希入运行头、
+  「只继承价格与成交带、不继承挂单」的设计以及「分叉后走势不是预测」的产物声明。本里程碑
+  只交付可插拔的锚来源接口，保证它以后接入时不用改 L2。

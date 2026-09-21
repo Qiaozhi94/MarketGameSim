@@ -11,7 +11,7 @@ topics:
   - stylized-facts
 doc_kind: design
 created: 2026-09-19
-updated: 2026-09-20
+updated: 2026-09-21
 ---
 
 # 0.4.1：AI 市场生态 - 技术设计
@@ -37,7 +37,8 @@ updated: 2026-09-20
 三件事按依赖顺序落地：
 
 1. **冷启动锚**——改 `agent/goal.py` 的 degenerate 分支语义（新增锚定分支，不动既有
-   `EWMA_WARMUP` 语义的对外行为），使零成交市场可产生首笔委托。
+   `EWMA_WARMUP` 语义的对外行为），使零成交市场可产生首笔委托。锚来源是可插拔接口，
+   本里程碑只注册 `synthetic`（spec Q-501）；`historical_snapshot` 由 ADR-014 承接。
 2. **L2 策略层**——新增 `agent/strategy_layer/` 包：`TraderStrategy` 协议、注册表、
    分级信息集与原生策略族实现；通过既有 `GoalModel` 注册表与
    `world["behavior_mapping"]` 接缝接入，`_dispatch_agents` 的分发逻辑不变。
@@ -57,16 +58,17 @@ updated: 2026-09-20
 ## 2. 架构与模块边界
 
 ```text
-L1 交易引擎（不改）
-  kernel/ book/ ledger/ eventlog/     撮合、账本、保证金、强平、事件因果链
+L1 交易引擎（不改；分层见架构文档 §1 与 ADR-013）
+  L1b kernel/ book/matching.py ledger/ eventlog/ hook/   准入、结算、保证金、强平、事件因果链
+  L1a book/orderbook.py book/engine.py                    纯撮合核心
         ▲ ORDER_ARRIVAL / TRADE_SETTLE / 事件记录
         │
-L2 交易者策略层（本里程碑新增）
+L2 交易者策略层（本里程碑新增；即架构文档的 L2b）
   agent/strategy_layer/
     protocol.py     TraderStrategy 协议 + 分级信息集定义
     registry.py     策略族注册表（fail closed）
     families/       trend_following / mean_reversion / sentiment_noise / market_maker_v2
-    external.py     外部信号适配器（Alpha101 子集 / alphamill）
+    external.py     外部信号注入接口（Alpha101 子集；alphamill 适配器移出，见 spec §3）
         ▲ StrategyRoster 装配
         │
 装配与度量
@@ -82,7 +84,7 @@ L2 交易者策略层（本里程碑新增）
 ## 3. 数据模型与 Migration
 
 - `StrategyRoster`（新增，JSON）：`roster_id`、`seed`、`families[]`（族标识、数量、
-  参数、时间尺度）、`bootstrap_anchor`（冷启动锚冻结参数）、`engine_config_digest`。
+  参数、时间尺度）、`bootstrap_anchor`（冷启动锚冻结参数，含来源标识 `source`）、`engine_config_digest`。
   由 `roster_id` 可重建装配（DR-501）。
 - `MarketQualityReport`（新增，JSON）：`run_id`、`roster_id`、`logical_seconds`、
   `quality{}`（六项实测）、`stylized_facts{}`（五项实测）、`thresholds{}`、
@@ -96,8 +98,9 @@ L2 交易者策略层（本里程碑新增）
 - `TraderStrategy` 协议（IR-501）：`decide(info: TieredInformationSet, state, prefs)
   -> StrategyDecision`；`StrategyDecision` 携带目标仓位或委托意图 + 族标识。
   协议版本号随协议变更递增。
-- 分级信息集：按策略族声明的**信息层级**裁剪——`L0` 盘口顶档 + 自己账户；
-  `L1` 增加最近成交流；`L2` 增加多周期 K 线；`L3` 增加外部信号通道。
+- 分级信息集：按策略族声明的**信息层级**裁剪——`I0` 盘口顶档 + 自己账户；
+  `I1` 增加最近成交流；`I2` 增加多周期 K 线；`I3` 增加外部信号通道。层级用 `I`
+  前缀，避免与架构分层 L0—L4 撞名（同一仓库两个「L2」的教训见架构文档 §1）。
   裁剪在 L2 内完成，L1 的信息集构建逻辑不变。
 - 注册表：`register_strategy(family)` / `get_strategy(family_id)`；未注册标识抛出
   稳定错误码，装配阶段即失败（fail closed）。
@@ -128,7 +131,8 @@ L2 交易者策略层（本里程碑新增）
 - 本里程碑不改 Web 终端界面。
 - 可观测产物是两类 artifact 与一个 CLI 报告：运行结束（或按间隔）导出
   `MarketQualityReport`，未通过项在报告顶层与 CLI 输出的第一屏可见。
-- live 市场运行入口恢复为模块 `__main__`，并在 `RUN.md` 记录启动命令与端口。
+- live 市场的 CLI 已存在（`experiment/h2/live_market.py::main`），缺的只是 `RUN.md` 登记，
+  由 T978 承接。
 
 ## 7. 失败、恢复、安全与兼容
 
@@ -151,7 +155,7 @@ L2 交易者策略层（本里程碑新增）
 | AC-503 | 同清单同种子逐点复现、`roster_id` 重建装配 | 集成 |
 | AC-504 | 市场质量六项口径；达标与未达标两种装配 | 单元 + 集成 |
 | AC-505 | stylized facts 在合成对照序列上的正反判定 | 单元 |
-| AC-506 | 跨种子内生不稳定事件；无事件时如实未达标 | 集成 |
+| AC-506 | 跨种子内生不稳定事件存在性判定；出现→记录触发条件与频次，未出现→如实产出「不存在」结论（两者都算达标，SC-503） | 集成 |
 | AC-507 | 外部信号族的委托因果链、降级路径 | 集成 |
 | AC-508 | 公式筛查器拒绝 `rank`/`IndNeutralize`/`cap`；边界声明落盘 | 单元 |
 | AC-509 | 墙钟/逻辑秒断言（失败即红） | 性能 |
@@ -174,5 +178,5 @@ L2 交易者策略层（本里程碑新增）
 ## 10. 待确认设计问题
 
 - [ ] DQ-501: 冷启动锚放在 `goal.py` 的 degenerate 分支，还是放在 L2 策略层内各族自行实现？
-- [ ] DQ-502: 分级信息集的四个层级（L0—L3）是否够用，外部信号通道是否需要独立层级？
+- [ ] DQ-502: 分级信息集的四个层级（I0—I3）是否够用，外部信号通道是否需要独立层级？
 - [ ] DQ-503: `external_decision_sources` 扩展为非阻塞后，owner 轨既有阻塞式用法如何保持二者共存？
