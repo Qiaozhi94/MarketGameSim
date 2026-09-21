@@ -145,6 +145,8 @@ ADR 只记录**跨规格生效、且已被多轮检视验证**的工程合同。
   改哈希不改盖章即门禁变红。
 - `docs/decisions/013-l1-matching-core-clearing-split.md`：L1 拆为 L1a 通用撮合核心与
   L1b 清算风控层，开源撮合引擎只作参考。
+- `docs/decisions/014-historical-snapshot-fork-anchor.md`（Proposed）：以实盘历史时点作为
+  冷启动锚，市场从该时点分叉为模拟盘。
 
 ## 建议工作流
 
