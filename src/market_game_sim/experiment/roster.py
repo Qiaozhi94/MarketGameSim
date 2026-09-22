@@ -16,9 +16,10 @@ unknown anchor sources and wrongly typed values are rejected with a stable
 
 The family table here only covers the two families that exist today
 (``inventory_market_maker`` and ``goal_belief``); T964 replaces it with the
-``TraderStrategy`` registry.  The ``synthetic`` anchor's schema is frozen here,
-but assembling it fails closed until T963 implements the behaviour -- a roster
-that asks for an anchor must never run without one.
+``TraderStrategy`` registry.  The anchor's schema is frozen here; whether a
+source can *run* is the anchor interface's call (``agent/anchor.py``, T963), so
+a roster asking for a source with no runtime fails closed instead of running
+without an anchor.
 """
 
 from __future__ import annotations
@@ -31,6 +32,11 @@ from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
 
+from market_game_sim.agent.anchor import (
+    AnchorError,
+    registered_anchor_sources,
+    resolve_for_agents,
+)
 from market_game_sim.agent.goal import get_goal_model
 from market_game_sim.agent.scheduler import AgentSpec
 from market_game_sim.experiment.config import ExperimentConfig
@@ -64,9 +70,8 @@ ANCHOR_KEYS = {
     ANCHOR_NONE: frozenset({"source"}),
     ANCHOR_SYNTHETIC: frozenset({"source", "quantity_units", "direction", "pricing"}),
 }
-# Sources the anchor interface has registered.  ADR-014's historical_snapshot is
-# deliberately absent: it is rejected until its own milestone registers it.
-IMPLEMENTED_ANCHOR_SOURCES = frozenset({ANCHOR_NONE})
+# Which sources can run is owned by agent/anchor.py (registered_anchor_sources).
+# ADR-014's historical_snapshot is absent from both the schema and the runtime.
 
 
 class RosterError(ValueError):
@@ -392,14 +397,35 @@ def build_agent_specs(roster: StrategyRoster) -> list[AgentSpec]:
     return specs
 
 
+def _runtime_anchor(roster: StrategyRoster, specs: list[AgentSpec]) -> dict[str, Any] | None:
+    """The roster's anchor plus the goal-agent families its direction rule runs over."""
+    anchor = _thaw(roster.bootstrap_anchor)
+    if anchor["source"] == ANCHOR_NONE:
+        return None
+    families: list[list[Any]] = []
+    start = 0
+    for family in roster.families:
+        members = specs[start : start + family.count]
+        start += family.count
+        if all(s.goal_model_id is not None and not s.is_market_maker for s in members):
+            families.append([family.family_id, [s.agent_id for s in members]])
+    return {**anchor, "families": families}
+
+
 def build_experiment_config(roster: StrategyRoster, *, max_transactions: int) -> ExperimentConfig:
-    """Assemble a runnable config from a roster (fail closed on unimplemented anchors)."""
+    """Assemble a runnable config from a roster (fail closed on unrunnable anchors)."""
     source = roster.bootstrap_anchor["source"]
-    if source not in IMPLEMENTED_ANCHOR_SOURCES:
+    if source not in registered_anchor_sources():
         raise RosterError(
             "ANCHOR_SOURCE_NOT_IMPLEMENTED",
-            f"bootstrap_anchor.source {source!r} has no runtime yet (0.4.1 T963)",
+            f"bootstrap_anchor.source {source!r} has no runtime",
         )
+    specs = build_agent_specs(roster)
+    anchor = _runtime_anchor(roster, specs)
+    try:
+        resolve_for_agents(anchor, specs)
+    except AnchorError as exc:
+        raise RosterError(exc.code, str(exc)) from exc
     engine = roster.engine
     return ExperimentConfig(
         seed=roster.seed,
@@ -411,5 +437,6 @@ def build_experiment_config(roster: StrategyRoster, *, max_transactions: int) ->
         maint_bp=engine["maint_bp"],
         target_bp=engine["target_bp"],
         liquidation_latency_ns=engine["liquidation_latency_ns"],
-        agent_specs=build_agent_specs(roster),
+        agent_specs=specs,
+        bootstrap_anchor=anchor,
     )

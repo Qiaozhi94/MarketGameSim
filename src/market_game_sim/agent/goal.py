@@ -397,17 +397,31 @@ def _warmup(internal_state: AgentInternalStateV1, half_life_in_trades: int) -> b
     return internal_state.ewma_sample_count < 2 * half_life_in_trades
 
 
+def in_bootstrap(internal_state: AgentInternalStateV1, model: GoalModel) -> bool:
+    """0.4.1 T963: the anchor is live exactly while the agent is in warmup and
+    has an anchor target -- the exit test is the unchanged warmup test."""
+    anchor = getattr(model, "bootstrap_anchor_units", None)
+    return anchor is not None and _warmup(internal_state, getattr(model, "half_life_in_trades", 0))
+
+
 def _degenerate(
     information_set: InformationSetV1,
     internal_state: AgentInternalStateV1,
     mult: int,
     half_life_in_trades: int,
+    bootstrap_anchor_units: int | None = None,
 ) -> GoalDecision | None:
     """Apply 代理策略 §5.2.3 degenerate rules in their fixed order.
 
     Returns a ``GoalDecision`` for the degenerate case, or ``None`` to let the
     model equation run.  Order matters: mark-undefined -> skip, then
     non-positive-equity -> reduce-only, then EWMA warmup -> zero target.
+
+    0.4.1 T963 (FR-501, DQ-501): the one shared anchor branch.  With an anchor
+    target, warmup emits that target instead of 0 and carries no degenerate
+    reason, so it passes through the ordinary margin constraint like any
+    other target (agent/anchor.py).  Without one (``None``, the default and
+    every pre-0.4.1 caller) the warmup branch is byte-for-byte unchanged.
     """
     mark = valuation_mark_ticks(information_set.book_top)
     if mark is None or mark <= 0:
@@ -430,6 +444,13 @@ def _degenerate(
             updated_state=internal_state,
         )
     if _warmup(internal_state, half_life_in_trades):
+        if bootstrap_anchor_units is not None:
+            return GoalDecision(
+                desired_position_units=bootstrap_anchor_units,
+                action="emit_decision",
+                degenerate_reason=None,
+                updated_state=internal_state,
+            )
         # EWMA warmup -> cold-start anchor, desired 0, still emit a decision.
         return GoalDecision(
             desired_position_units=0,
@@ -466,6 +487,7 @@ class RiskBudgetLinearV1(GoalModel):
     version: int = 1
     half_life_in_trades: int = 0  # EWMA anchor optional for the linear model
     mult: int = 1000
+    bootstrap_anchor_units: int | None = None  # 0.4.1 T963, set per agent
 
     def decide(
         self,
@@ -474,7 +496,13 @@ class RiskBudgetLinearV1(GoalModel):
         preferences: AgentPreferences,
         rng: GoalRng | None = None,
     ) -> GoalDecision:
-        deg = _degenerate(information_set, internal_state, self.mult, self.half_life_in_trades)
+        deg = _degenerate(
+            information_set,
+            internal_state,
+            self.mult,
+            self.half_life_in_trades,
+            self.bootstrap_anchor_units,
+        )
         if deg is not None:
             return deg
         mark = valuation_mark_ticks(information_set.book_top)
@@ -524,6 +552,7 @@ class RiskBudgetThresholdV1(GoalModel):
     version: int = 1
     half_life_in_trades: int = 0
     mult: int = 1000
+    bootstrap_anchor_units: int | None = None  # 0.4.1 T963, set per agent
 
     def __post_init__(self) -> None:
         # param_bounds (goal_contract_v2.json::goal_models.risk_budget_
@@ -546,7 +575,13 @@ class RiskBudgetThresholdV1(GoalModel):
         preferences: AgentPreferences,
         rng: GoalRng | None = None,
     ) -> GoalDecision:
-        deg = _degenerate(information_set, internal_state, self.mult, self.half_life_in_trades)
+        deg = _degenerate(
+            information_set,
+            internal_state,
+            self.mult,
+            self.half_life_in_trades,
+            self.bootstrap_anchor_units,
+        )
         if deg is not None:
             return deg
         mark = valuation_mark_ticks(information_set.book_top)
@@ -735,6 +770,7 @@ __all__ = [
     "trunc_toward_zero",
     "valuation_mark_ticks",
     "equity_units",
+    "in_bootstrap",
     "build_decision_evidence",
     "register_goal_model",
     "get_goal_model",

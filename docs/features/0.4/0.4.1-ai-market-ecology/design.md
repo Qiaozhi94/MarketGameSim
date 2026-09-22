@@ -94,6 +94,13 @@ L2 交易者策略层（本里程碑新增；即架构文档的 L2b）
 - 无既有数据迁移：两类 artifact 都是新增文件，不改写任何既有 artifact 布局。
 - 运行头新增字段：`strategy_roster_id` 与 `bootstrap_anchor`，供重放判定（NFR-502）。
   字段增补遵循既有运行头合同的向后兼容规则，不改既有字段语义。
+  T963 现状：锚的运行块（来源、量、方向/定价规则、参与方向判定的族与代理）落在
+  `ExperimentConfig.bootstrap_anchor`，因此进入 `config_hash`（已是 `RUN_HEADER` 字段）；
+  `run_one` 另在 `RunResult.bootstrap_anchor` 返回同一块。`None` 不进哈希，既有配置哈希
+  不变。`RUN_HEADER` 的显式字段尚未加：`event_fields.json` 要求字段 `required: always`，
+  加字段即改 L1 事件合同与全部头部生产者，留给首个写事件日志的 live 入口一并处理。
+  实现：`agent/anchor.py`（可插拔来源 + 装配期 fail closed）+ `goal.py::_degenerate`
+  的共享锚定分支；`ewma_half_life_trades` 在 live 生态下的语义写在 `agent/anchor.py` 模块说明。
 
 ## 4. 接口、Contract 与 Event
 

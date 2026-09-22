@@ -1,8 +1,8 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "dc6dae2dc1f8deba8d6f2a19576c485bd5c5fabf06b035b801dda38c5aa86656",
-    "reason": "2026-09-22 重绑：0.4.1 T962 新增 src/market_game_sim/experiment/roster.py（StrategyRoster 装配清单），T215 运行路径不导入该模块。按惯例以实测而非推断为据：用当前源码树重跑 artifacts/formal/T215 全部 128 个种子块 × 8 单元 × 主跑与审计，2048 次运行的 event_summary_sha256 与冻结检查点全部一致。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。上一次重绑（2026-09-21，ADR-013 撮合核心拆分，同样 2048/2048 实测一致）及更早历史见 git log 与 ADR-012 背景。",
-    "rebound_at": "2026-09-22",
+    "attested_source_tree_sha256": "1baedc0be9b1e5c87bbb592d320d578d3a9eb631b80033156b629988baaee37c",
+    "reason": "2026-09-23 重绑：0.4.1 T963 冷启动锚改动位于 T215 运行路径上（agent/goal.py 退化分支新增锚定分支、agent/handler.py 与 experiment/runner.py 接入锚、experiment/config.py 新增 bootstrap_anchor 字段且为 None 时不进 config_hash，另新增 agent/anchor.py）。T215 配置不启用锚，因此不以「与运行路径无关」为理由，而以行为等价实测为理由：用当前源码树重跑 artifacts/formal/T215 全部 128 个种子块 × 8 单元 × 主跑与审计，2048 次运行的 event_summary_sha256 与冻结检查点全部一致，且 128 块的 config_hashes 与检查点逐项一致。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。上一次重绑（2026-09-22，T962 新增 roster.py，同样 2048/2048 实测一致）及更早历史见 git log 与 ADR-012 背景。",
+    "rebound_at": "2026-09-23",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
     "t215_source_tree_sha256": "81984fdc6f39f535cc1763a7f4da15a9be8e15b0e15261b9248c0550d01b64a8"
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "dc6dae2dc1f8deba8d6f2a19576c485bd5c5fabf06b035b801dda38c5aa86656"
+    "source_tree_sha256": "1baedc0be9b1e5c87bbb592d320d578d3a9eb631b80033156b629988baaee37c"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {

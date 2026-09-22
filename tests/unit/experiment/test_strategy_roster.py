@@ -241,7 +241,7 @@ def test_invalid_roster_fails_closed_with_stable_code(mutate, code) -> None:
 
 
 # --------------------------------------------------------------------------- #
-# Cold-start anchor (schema frozen here, behaviour arrives in T963)
+# Cold-start anchor (schema frozen here by T962, behaviour in agent/anchor.py by T963)
 # --------------------------------------------------------------------------- #
 
 
@@ -269,7 +269,11 @@ def test_invalid_anchor_fails_closed(anchor, code) -> None:
     assert _code(body) == code
 
 
-def test_roster_asking_for_an_anchor_never_runs_without_one() -> None:
+def test_roster_asking_for_an_anchor_never_runs_without_one(monkeypatch) -> None:
+    """A schema-valid source with no registered runtime fails closed at assembly."""
+    import market_game_sim.experiment.roster as roster_module
+
+    monkeypatch.setattr(roster_module, "registered_anchor_sources", lambda: frozenset({"none"}))
     body = _body()
     body["bootstrap_anchor"] = _synthetic_anchor()
     with pytest.raises(RosterError) as exc:
@@ -277,11 +281,45 @@ def test_roster_asking_for_an_anchor_never_runs_without_one() -> None:
     assert exc.value.code == "ANCHOR_SOURCE_NOT_IMPLEMENTED"
 
 
-@pytest.mark.xfail(strict=True, reason="T963 实现 synthetic 冷启动锚后，该清单应可装配运行")
-def test_synthetic_anchor_roster_assembles() -> None:
+def test_anchor_on_agents_that_never_warm_up_fails_closed() -> None:
+    """``ewma_half_life_trades == 0`` would make the anchor silently inert."""
     body = _body()
     body["bootstrap_anchor"] = _synthetic_anchor()
-    build_experiment_config(parse_roster(body), max_transactions=100)
+    assert body["families"][1]["params"]["ewma_half_life_trades"] == 0
+    with pytest.raises(RosterError) as exc:
+        build_experiment_config(parse_roster(body), max_transactions=100)
+    assert exc.value.code == "ANCHOR_WITHOUT_WARMUP"
+
+
+def test_synthetic_anchor_roster_assembles_and_breaks_the_deadlock() -> None:
+    body = _body()
+    body["bootstrap_anchor"] = _synthetic_anchor()
+    body["families"][1]["params"]["ewma_half_life_trades"] = 5
+    config = build_experiment_config(parse_roster(body), max_transactions=600)
+    goal_ids = ["goal_belief-0", "goal_belief-1", "goal_belief-2"]
+    # Only goal-model families are anchored; the market makers are not.
+    assert config.bootstrap_anchor == {
+        **_synthetic_anchor(),
+        "families": [["goal_belief", goal_ids]],
+    }
+
+    result = run_one(config)
+    assert result.bootstrap_anchor["source"] == "synthetic"
+    submitted = {
+        e["agent_id"]
+        for e in result.events
+        if e["event_type"] == "ORDER_ARRIVAL" and e.get("action") == "SUBMIT"
+    }
+    assert set(goal_ids) <= submitted
+
+    # Same roster, no anchor: the same goal agents stay silent (AC-501 反向).
+    body["bootstrap_anchor"] = {"source": "none"}
+    silent = run_one(build_experiment_config(parse_roster(body), max_transactions=600))
+    assert not {
+        e["agent_id"]
+        for e in silent.events
+        if e["event_type"] == "ORDER_ARRIVAL" and e.get("action") == "SUBMIT"
+    } & set(goal_ids)
 
 
 # --------------------------------------------------------------------------- #
