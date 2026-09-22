@@ -1,7 +1,7 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "2579a58362aa6336ab5531e389ee9260dafd76272c9de79a62f819160283e72b",
-    "reason": "2026-09-23 重绑：合入 0.4.1 T961（metrics/market_quality.py）、T963（agent/anchor.py 冷启动锚，默认 none）、T964（agent/strategy_layer/）、T974（Alpha101 筛查器）与 L1 合规修复（撤单改变盘口时补发 MARKET_DATA_PUBLISH，ADR-015）。撤单修复使 T215 事件流新增行情发布记录，事件摘要不再与冻结检查点逐字节一致，因此本次不以摘要一致为据，而以 ADR-015 的经济等价证明为据：在合并后的源码树上重跑全部 128 个种子块，1024 个主跑的经济投影（economic_projection v1）与检查点内冻结事件流逐一相同，运行分类、终局价格、终止态全部不变（python tools/prove_economic_equivalence.py --baseline 9e514bd --t215）。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "attested_source_tree_sha256": "ac1e8aaf8bbce6447068addea18fb407535beea42cc33a15891336c853f3a76a",
+    "reason": "2026-09-23 重绑：合入 0.4.1 T961（metrics/market_quality.py）、T963（agent/anchor.py 冷启动锚，默认 none）、T964（agent/strategy_layer/）、T974（Alpha101 筛查器）与 L1 合规修复（撤单改变盘口时补发 MARKET_DATA_PUBLISH，ADR-015）。撤单修复使 T215 事件流新增行情发布记录，事件摘要不再与冻结检查点逐字节一致，因此本次不以摘要一致为据，而以 ADR-015 的经济等价证明为据：在合并后的源码树上重跑全部 128 个种子块，1024 个主跑的经济投影（economic_projection v1）与检查点内冻结事件流逐一相同，运行分类、终局价格、终止态全部不变（python tools/prove_economic_equivalence.py --baseline 9e514bd --t215）。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。（含 2026-09-23 的 Python 3.11 兼容修复：StylizedFactResult.evidence 改用 default_factory，该模块不在 T215 运行路径上，修复后 1024/1024 经济投影仍与检查点一致）",
     "rebound_at": "2026-09-23",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "2579a58362aa6336ab5531e389ee9260dafd76272c9de79a62f819160283e72b"
+    "source_tree_sha256": "ac1e8aaf8bbce6447068addea18fb407535beea42cc33a15891336c853f3a76a"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {

@@ -39,7 +39,7 @@ import math
 import pathlib
 import sys
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from types import MappingProxyType
 from typing import Any
 
@@ -145,7 +145,9 @@ class StylizedFactResult:
     raw_verdict: str
     statistic: float | None
     p_value: float | None
-    evidence: Mapping[str, Any] = MappingProxyType({})
+    # default_factory: Python 3.11 拒绝把 mappingproxy 当 dataclass 默认值
+    # （3.13+ 接受），CI 的 pytest 3.11 job 会在导入期就红。
+    evidence: Mapping[str, Any] = field(default_factory=lambda: MappingProxyType({}))
 
 
 def combine_volatility_clustering(
