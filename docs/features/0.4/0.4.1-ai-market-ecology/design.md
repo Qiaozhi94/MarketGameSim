@@ -88,9 +88,16 @@ L2 交易者策略层（本里程碑新增；即架构文档的 L2b）
   由 `roster_id` 可重建装配（DR-501）。实现：`experiment/roster.py`——`roster_id` 与
   `engine_config_digest` 由内容派生、落盘时写入并在加载时复核；校验为封闭键集 +
   稳定原因码（`RosterError.code`）。
-- `MarketQualityReport`（新增，JSON）：`run_id`、`roster_id`、`logical_seconds`、
-  `quality{}`（六项实测）、`stylized_facts{}`（五项实测）、`thresholds{}`、
-  `verdicts{}`（逐项通过判定）、`failed[]`（顶层可见的未通过项）、`content_hash`。
+- `MarketQualityReport`（新增，JSON）：`schema_version`、`run_id`、`roster_id`、`logical_seconds`、
+  `window_start_logical_ns`（Q-501 统计窗口起点；`null` = 有代理未退出冷启动，全部判定为
+  `NOT_APPLICABLE` 且 `window` 进入 `failed[]`）、
+  `quality{}`（六项实测）、`stylized_facts{}`（五项族校正前的原始结果）、`thresholds{}`、
+  `verdicts{}`（逐项通过判定 + SC-501/SC-502 汇总）、`failed[]`（顶层可见的未通过项，
+  `NOT_APPLICABLE` 也算未通过）、`content_hash`。实现：`metrics/market_quality.py`——
+  门限表只允许等于 spec §6 冻结值，`thresholds`/`verdicts`/`failed`/`content_hash` 加载时
+  重新派生并复核（稳定原因码 `MarketQualityError.code`）；组 A 家族 {1,3,4,5} 为本模块
+  自建实例，只复用 `holm_bonferroni`；机器校验入口
+  `python -m market_game_sim.metrics.market_quality FILE...`。
 - 无既有数据迁移：两类 artifact 都是新增文件，不改写任何既有 artifact 布局。
 - 运行头新增字段：`strategy_roster_id` 与 `bootstrap_anchor`，供重放判定（NFR-502）。
   字段增补遵循既有运行头合同的向后兼容规则，不改既有字段语义。
