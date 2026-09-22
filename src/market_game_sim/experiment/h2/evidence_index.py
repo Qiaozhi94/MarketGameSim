@@ -40,6 +40,25 @@ ARCHIVE_PROTOCOL_PATH = (
 _FORBIDDEN_RESULT_FIELDS = ("severity", "effect", "p_value", "ci_low", "ci_high", "holm")
 
 
+#: ADR-015：冻结后唯一允许重绑的字段——都是「事件流 / 工件字节」的摘要，不是样本、
+#: 分配或裁决。重绑还必须附带经济等价证明（``tools/prove_economic_equivalence.py``）。
+REBIND_ATTESTATIONS_KEY = "rebind_attestations"
+REBINDABLE_FIELDS = frozenset({"artifact_sha256", "events_sha256"})
+_ATTESTATION_KEYS = frozenset(
+    {"rebound_at", "adr", "reason", "prior_index_sha256", "changed_fields", "economic_equivalence"}
+)
+_EQUIVALENCE_KEYS = frozenset(
+    {
+        "projection",
+        "baseline_ref",
+        "arms_compared",
+        "arms_identical",
+        "baseline_reproduces_frozen_index",
+        "reproduce",
+    }
+)
+
+
 class EvidenceIndexError(RuntimeError):
     """evidence index 的构建或冻结合同被违反。"""
 
@@ -244,7 +263,9 @@ def freeze_index(
         if f'"{field}"' in blob:
             raise EvidenceIndexError(f"index 不得预支分析结论字段：{field}")
     if target.exists():
-        existing = target.read_text(encoding="utf-8")
+        existing_payload = json.loads(target.read_text(encoding="utf-8"))
+        existing_payload.pop(REBIND_ATTESTATIONS_KEY, None)
+        existing = json.dumps(existing_payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
         if existing != blob:
             raise EvidenceIndexError(
                 f"{target} 已冻结且与当前重建结果不同——冻结证据不可原地改写；"
@@ -270,4 +291,98 @@ def load_frozen_index(path: Path | None = None) -> dict[str, Any]:
     table = artifacts.load_assignments()
     if payload.get("protocol_hash") != table["protocol_hash"]:
         raise EvidenceIndexError("index 协议哈希与当前冻结归档不一致")
+    validate_rebind_attestations(payload.get(REBIND_ATTESTATIONS_KEY, []))
     return payload
+
+
+# --------------------------------------------------------------------------- #
+# ADR-015：冻结后重绑（只换摘要、不换样本），带经济等价证明留痕
+# --------------------------------------------------------------------------- #
+
+
+def validate_rebind_attestations(attestations: Any) -> None:
+    """每条重绑记录必须结构完整、且声明的经济等价是全量且成立的。"""
+    if not isinstance(attestations, list):
+        raise EvidenceIndexError(f"{REBIND_ATTESTATIONS_KEY} 必须是列表")
+    for i, att in enumerate(attestations):
+        where = f"{REBIND_ATTESTATIONS_KEY}[{i}]"
+        if not isinstance(att, dict) or set(att) != _ATTESTATION_KEYS:
+            raise EvidenceIndexError(f"{where} 字段集合必须恰为 {sorted(_ATTESTATION_KEYS)}")
+        if att["adr"] != "ADR-015":
+            raise EvidenceIndexError(f"{where}.adr 必须为 ADR-015")
+        if not isinstance(att["reason"], str) or not att["reason"].strip():
+            raise EvidenceIndexError(f"{where}.reason 不能为空")
+        changed = att["changed_fields"]
+        if not isinstance(changed, list) or not changed or not set(changed) <= REBINDABLE_FIELDS:
+            raise EvidenceIndexError(
+                f"{where}.changed_fields 只能是 {sorted(REBINDABLE_FIELDS)} 的非空子集"
+            )
+        eq = att["economic_equivalence"]
+        if not isinstance(eq, dict) or set(eq) != _EQUIVALENCE_KEYS:
+            raise EvidenceIndexError(f"{where}.economic_equivalence 字段集合不符")
+        if eq["baseline_reproduces_frozen_index"] is not True:
+            raise EvidenceIndexError(f"{where}：基线未能复现冻结 index，等价证明无效")
+        compared, identical = eq["arms_compared"], eq["arms_identical"]
+        if type(compared) is not int or compared <= 0 or identical != compared:
+            raise EvidenceIndexError(f"{where}：经济等价必须全量成立（{identical}/{compared}）")
+
+
+def _changed_fields(old: Any, new: Any, path: str = "") -> set[str]:
+    """两棵 JSON 树里取值不同的叶子字段名（按最后一段键名归类）。"""
+    if isinstance(old, dict) and isinstance(new, dict):
+        if set(old) != set(new):
+            return {f"<keys@{path or 'root'}>"}
+        out: set[str] = set()
+        for key in old:
+            leaf = _changed_fields(old[key], new[key], f"{path}.{key}")
+            out |= {key} if leaf == {"<leaf>"} else leaf
+        return out
+    if isinstance(old, list) and isinstance(new, list):
+        if len(old) != len(new):
+            return {f"<length@{path}>"}
+        out = set()
+        for a, b in zip(old, new, strict=True):
+            out |= _changed_fields(a, b, path)
+        return out
+    return set() if old == new else {"<leaf>"}
+
+
+def rebind_frozen_index(
+    path: Path | None = None,
+    *,
+    economic_equivalence: dict[str, Any],
+    reason: str,
+    rebound_at: str,
+    out_dir: Path | None = None,
+    assignments: dict[str, Any] | None = None,
+    required_blocks: int | None = None,
+) -> Path:
+    """ADR-015：用重采样的工件重建 index；与旧 index 相比只允许摘要字段变化。
+
+    样本、分配、裁决、样本流任何一处变化都会让重建与旧 index 在非摘要字段上
+    出现差异，这里直接拒绝——那不是重绑，是重新做实验。
+    """
+    target = path or DEFAULT_INDEX_PATH
+    prior_bytes = target.read_bytes()
+    prior = json.loads(prior_bytes)
+    history = prior.pop(REBIND_ATTESTATIONS_KEY, [])
+    rebuilt = build_index(out_dir=out_dir, assignments=assignments, minimum_blocks=required_blocks)
+    changed = _changed_fields(prior, rebuilt)
+    if not changed:
+        raise EvidenceIndexError("重建结果与冻结 index 完全相同，无需重绑")
+    if not changed <= REBINDABLE_FIELDS:
+        raise EvidenceIndexError(
+            f"重建结果在非摘要字段上变化：{sorted(changed - REBINDABLE_FIELDS)}——拒绝重绑"
+        )
+    attestation = {
+        "rebound_at": rebound_at,
+        "adr": "ADR-015",
+        "reason": reason,
+        "prior_index_sha256": hashlib.sha256(prior_bytes).hexdigest(),
+        "changed_fields": sorted(changed),
+        "economic_equivalence": economic_equivalence,
+    }
+    attestations = [*history, attestation]
+    validate_rebind_attestations(attestations)
+    write_json_atomic(target, {**rebuilt, REBIND_ATTESTATIONS_KEY: attestations})
+    return target

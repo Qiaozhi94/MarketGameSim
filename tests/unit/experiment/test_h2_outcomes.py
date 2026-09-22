@@ -338,3 +338,67 @@ def test_projection_matches_observe_ai_block():
     seed = 50_000
     block = runner.run_ai_block(seed)
     assert analysis._observe_block(seed, block) == outcomes.observe_ai_block(seed)
+
+
+# --------------------------------------------------------------------------- #
+# ADR-015：index 重绑后，分析结果只允许 index_binding 变化
+# --------------------------------------------------------------------------- #
+
+
+@pytest.fixture
+def rebindable(small_frozen_index, tmp_path):
+    """同内容、不同字节的 index 副本 + 基于原字节冻结的分析结果。"""
+    from market_game_sim.experiment.h2 import analysis
+
+    index = tmp_path / small_frozen_index.name
+    index.write_bytes(small_frozen_index.read_bytes())
+    out = tmp_path / "analysis.json"
+    analysis.freeze_analysis(index_path=index, out_path=out)
+    index.write_text(json.dumps(json.loads(index.read_text(encoding="utf-8"))), encoding="utf-8")
+    return index, out
+
+
+def test_rebind_analysis_only_moves_the_index_binding(rebindable):
+    import hashlib
+
+    from market_game_sim.experiment.h2 import analysis
+
+    index, out = rebindable
+    before = json.loads(out.read_text(encoding="utf-8"))
+    analysis.rebind_analysis(index_path=index, out_path=out)
+    after = json.loads(out.read_text(encoding="utf-8"))
+    assert after["index_binding"]["sha256"] == hashlib.sha256(index.read_bytes()).hexdigest()
+    assert after["index_binding"]["path"] == before["index_binding"]["path"]
+    assert {k: v for k, v in after.items() if k != "index_binding"} == {
+        k: v for k, v in before.items() if k != "index_binding"
+    }
+
+
+def test_rebind_analysis_refuses_changed_results(rebindable):
+    from market_game_sim.experiment.h2 import analysis
+
+    index, out = rebindable
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    payload["primary"][FAMILIES[0]]["n_blocks"] = 99  # frozen result no longer reproduced
+    out.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(analysis.AnalysisError, match="分析结果变化"):
+        analysis.rebind_analysis(index_path=index, out_path=out)
+
+
+def test_rebind_analysis_refuses_an_unchanged_index(small_frozen_index, tmp_path):
+    from market_game_sim.experiment.h2 import analysis
+
+    out = tmp_path / "analysis.json"
+    analysis.freeze_analysis(index_path=small_frozen_index, out_path=out)
+    with pytest.raises(analysis.AnalysisError, match="无需重绑"):
+        analysis.rebind_analysis(index_path=small_frozen_index, out_path=out)
+
+
+def test_rebind_analysis_refuses_a_different_index_file(rebindable):
+    from market_game_sim.experiment.h2 import analysis
+
+    index, out = rebindable
+    other = index.with_name("other-idx.json")
+    other.write_bytes(index.read_bytes())
+    with pytest.raises(analysis.AnalysisError, match="另一个 index"):
+        analysis.rebind_analysis(index_path=other, out_path=out)

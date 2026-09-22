@@ -12,6 +12,7 @@ T908/T914 已实现，xfail 骨架摘除。
 
 from __future__ import annotations
 
+import hashlib
 import json
 
 import pytest
@@ -411,3 +412,124 @@ def test_load_frozen_index_fails_closed_on_drift(tmp_path, frozen_assignments):
         path.write_text(json.dumps(mutated), encoding="utf-8")
         with pytest.raises(evidence_index.EvidenceIndexError, match=match):
             evidence_index.load_frozen_index(path)
+
+
+# --------------------------------------------------------------------------- #
+# ADR-015：冻结后重绑只换摘要、不换样本，且必须带全量经济等价证明
+# --------------------------------------------------------------------------- #
+
+
+def _equivalence(**overrides):
+    base = {
+        "projection": "market_game_sim.evidence.economic_projection v1",
+        "baseline_ref": "abc1234",
+        "arms_compared": 4,
+        "arms_identical": 4,
+        "baseline_reproduces_frozen_index": True,
+        "reproduce": "python tools/prove_economic_equivalence.py --baseline abc1234 --h2",
+    }
+    return base | overrides
+
+
+def _frozen_two_blocks(tmp_path, frozen_assignments):
+    _sample(tmp_path, frozen_assignments, count=2)
+    kwargs = {"out_dir": tmp_path, "assignments": frozen_assignments, "required_blocks": 2}
+    return evidence_index.freeze_index(tmp_path / "idx.json", **kwargs), kwargs
+
+
+def _rewrite_events_digest(tmp_path, order_index: int) -> None:
+    [artifact] = tmp_path.glob(f"block-{order_index:03d}-seed-*.json")
+    payload = json.loads(artifact.read_text(encoding="utf-8"))
+    payload["runs"][0]["events_sha256"] = "f" * 64  # same pair, new bookkeeping digest
+    artifact.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def test_digest_only_change_is_rebound_with_an_attestation(tmp_path, frozen_assignments):
+    path, kwargs = _frozen_two_blocks(tmp_path, frozen_assignments)
+    prior = path.read_bytes()
+    _rewrite_events_digest(tmp_path, 0)
+    evidence_index.rebind_frozen_index(
+        path,
+        economic_equivalence=_equivalence(),
+        reason="L1 撤单补发行情",
+        rebound_at="2026-09-23",
+        **kwargs,
+    )
+    payload = evidence_index.load_frozen_index(path)
+    [att] = payload[evidence_index.REBIND_ATTESTATIONS_KEY]
+    assert att["changed_fields"] == ["artifact_sha256", "events_sha256"]
+    assert att["prior_index_sha256"] == hashlib.sha256(prior).hexdigest()
+    assert payload["included"][0]["arms"]["linear"]["events_sha256"] == "f" * 64
+    # 重绑之后，同样的工件再冻结仍是幂等的（留痕块不参与重建比较）。
+    assert evidence_index.freeze_index(path, **kwargs) == path
+
+
+def test_rebind_refuses_a_changed_sample(tmp_path, frozen_assignments):
+    path, kwargs = _frozen_two_blocks(tmp_path, frozen_assignments)
+    next(tmp_path.glob("block-001-seed-*.json")).unlink()
+    kwargs["required_blocks"] = 1
+    with pytest.raises(evidence_index.EvidenceIndexError, match="非摘要字段"):
+        evidence_index.rebind_frozen_index(
+            path,
+            economic_equivalence=_equivalence(),
+            reason="x",
+            rebound_at="2026-09-23",
+            **kwargs,
+        )
+
+
+def test_rebind_refuses_when_nothing_changed(tmp_path, frozen_assignments):
+    path, kwargs = _frozen_two_blocks(tmp_path, frozen_assignments)
+    with pytest.raises(evidence_index.EvidenceIndexError, match="无需重绑"):
+        evidence_index.rebind_frozen_index(
+            path,
+            economic_equivalence=_equivalence(),
+            reason="x",
+            rebound_at="2026-09-23",
+            **kwargs,
+        )
+
+
+@pytest.mark.parametrize(
+    "equivalence",
+    [
+        _equivalence(arms_identical=3),
+        _equivalence(baseline_reproduces_frozen_index=False),
+        _equivalence(arms_compared=0, arms_identical=0),
+        {k: v for k, v in _equivalence().items() if k != "reproduce"},
+    ],
+    ids=["partial-equivalence", "baseline-not-reproducing", "empty-proof", "missing-field"],
+)
+def test_rebind_refuses_an_incomplete_equivalence_proof(tmp_path, frozen_assignments, equivalence):
+    path, kwargs = _frozen_two_blocks(tmp_path, frozen_assignments)
+    before = path.read_bytes()
+    _rewrite_events_digest(tmp_path, 0)
+    with pytest.raises(evidence_index.EvidenceIndexError):
+        evidence_index.rebind_frozen_index(
+            path, economic_equivalence=equivalence, reason="x", rebound_at="2026-09-23", **kwargs
+        )
+    assert path.read_bytes() == before  # 拒绝路径零落盘
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda a: a.__setitem__("adr", "ADR-012"),
+        lambda a: a.__setitem__("changed_fields", ["seed"]),
+        lambda a: a.__setitem__("reason", " "),
+        lambda a: a.__setitem__("extra", 1),
+        lambda a: a["economic_equivalence"].__setitem__("arms_identical", 1),
+    ],
+    ids=["wrong-adr", "non-digest-field", "empty-reason", "unknown-key", "tampered-proof"],
+)
+def test_load_rejects_a_tampered_attestation(tmp_path, frozen_assignments, mutate):
+    path, kwargs = _frozen_two_blocks(tmp_path, frozen_assignments)
+    _rewrite_events_digest(tmp_path, 0)
+    evidence_index.rebind_frozen_index(
+        path, economic_equivalence=_equivalence(), reason="x", rebound_at="2026-09-23", **kwargs
+    )
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    mutate(payload[evidence_index.REBIND_ATTESTATIONS_KEY][0])
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(evidence_index.EvidenceIndexError):
+        evidence_index.load_frozen_index(path)

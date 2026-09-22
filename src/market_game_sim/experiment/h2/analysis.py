@@ -338,3 +338,37 @@ def freeze_analysis(
         return target
     write_json_atomic(target, payload)
     return target
+
+
+def rebind_analysis(
+    *,
+    index_path: Path | None = None,
+    out_path: Path | None = None,
+) -> Path:
+    """ADR-015：index 重绑后，分析结果必须除 ``index_binding`` 外逐字节不变。
+
+    ``index_binding.sha256`` 随重绑的 index 必然变化；``index_binding.path`` 是
+    落盘时的绝对路径，只作信息用途——同一相对位置时沿用旧值，免得换个检出目录
+    就改写冻结结果。任何其他字段不同即拒绝：那说明重绑改变了研究结果，不能走
+    ADR-015 通道。
+    """
+    target = out_path or DEFAULT_ANALYSIS_PATH
+    prior = json.loads(target.read_text(encoding="utf-8"))
+    payload = run_formal_analysis(index_path=index_path)
+    old_binding = prior.get("index_binding", {})
+    new_binding = payload.get("index_binding", {})
+    if {k: v for k, v in prior.items() if k != "index_binding"} != {
+        k: v for k, v in payload.items() if k != "index_binding"
+    }:
+        raise AnalysisError(f"{target}：重绑后分析结果变化——不是簿记重绑，禁止改写")
+    if set(old_binding) != set(new_binding) or any(
+        old_binding[k] != new_binding[k] for k in old_binding if k not in {"sha256", "path"}
+    ):
+        raise AnalysisError(f"{target}：index_binding 出现 sha256/path 以外的变化")
+    if Path(str(old_binding.get("path"))).name != Path(str(new_binding.get("path"))).name:
+        raise AnalysisError(f"{target}：index_binding.path 指向了另一个 index 文件")
+    if old_binding.get("sha256") == new_binding.get("sha256"):
+        raise AnalysisError(f"{target}：index 未变化，无需重绑")
+    payload["index_binding"] = {**new_binding, "path": old_binding["path"]}
+    write_json_atomic(target, payload)
+    return target
