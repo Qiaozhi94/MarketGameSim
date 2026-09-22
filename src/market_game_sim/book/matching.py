@@ -81,7 +81,17 @@ def match_order(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
         return []
 
     if event["action"] == "CANCEL":
-        return _handle_cancel(event, book, world, kernel)
+        # 事件 Schema §4.2 推论 3: a transaction that changes any §4.3 field
+        # must end with MARKET_DATA_PUBLISH.  The cancel path used to return
+        # without one, so a cancel that emptied a side left the public record
+        # showing a two-sided book until the next submit.  Compare the §4.3
+        # fields rather than the dirty flag: cancelling an order that shares
+        # its level with others changes nothing observable and stays silent.
+        before = _market_data_fields(book)
+        records = _handle_cancel(event, book, world, kernel)
+        if _market_data_fields(book) != before:
+            records.append(_build_market_data_publish(book))
+        return records
 
     # ── 0.1.2 T202b: LIQUIDATION_STALE check for expired liquidation orders ──
     if event.get("origin") == "LIQUIDATION":
@@ -630,15 +640,19 @@ def _build_ioc_cancel(
     }
 
 
-def _build_market_data_publish(book: Book) -> dict[str, Any]:
+def _market_data_fields(book: Book) -> dict[str, Any]:
+    """The 事件 Schema §4.3 fields -- the only ones a publish reports."""
     return {
-        "event_type": "MARKET_DATA_PUBLISH",
         "best_bid": book.best_bid(),
         "best_ask": book.best_ask(),
         "bid_depth_k": book.bid_depth_k(),
         "ask_depth_k": book.ask_depth_k(),
         "last": book.last_ticks,
     }
+
+
+def _build_market_data_publish(book: Book) -> dict[str, Any]:
+    return {"event_type": "MARKET_DATA_PUBLISH", **_market_data_fields(book)}
 
 
 def _record_trade_history(world: dict, agent_id: str, price: int, qty: int, ts: int) -> None:
