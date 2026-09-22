@@ -11,7 +11,7 @@ topics:
   - stylized-facts
 doc_kind: tasks
 created: 2026-09-19
-updated: 2026-09-21
+updated: 2026-09-22
 ---
 
 # 0.4.1：AI 市场生态 - 任务
@@ -33,7 +33,7 @@ updated: 2026-09-21
 
 ## 1. 前置条件
 
-- [ ] T960 (`FR-501`, `AC-501`): 复现并锁定冷启动死锁——为「零公开成交流 ⇒ EWMA 预热
+- [x] T960 (`FR-501`, `AC-501`): 复现并锁定冷启动死锁——为「零公开成交流 ⇒ EWMA 预热
       不结束 ⇒ 目标仓位恒 0 ⇒ 无委托」写可重复运行的复现测试，作为锚设计的红灯基线
       — verify: `tests/unit/agent/test_bootstrap_anchor.py`
 - [ ] T961 (`FR-505`, `DR-502`, `AC-504`, `AC-505`): 冻结市场质量六项与 stylized facts 五项的计算口径

@@ -7,7 +7,7 @@
 
 | 里程碑 | 状态（见 spec frontmatter） | 目标 |
 |---|---|---|
-| [`0.4.1-ai-market-ecology/`](0.4.1-ai-market-ecology/spec.md) | ready-for-development | L2 交易者策略层、冷启动锚与市场真实性判据 |
+| [`0.4.1-ai-market-ecology/`](0.4.1-ai-market-ecology/spec.md) | in-progress | L2 交易者策略层、冷启动锚与市场真实性判据 |
 | [`0.4.2-human-perturbation/`](0.4.2-human-perturbation/spec.md) | draft | 人类扰动实验 H2-F：会话 artifact 冻结、同种子对照与稳定性效应量 |
 
 ## 边界

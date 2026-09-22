@@ -3,14 +3,14 @@ kind: milestone
 id: 0.4.1
 parent: v0.4-market-ecology
 version: "0.4"
-status: ready-for-development
-status_evidence: owner 2026-09-21 批准 G1 并裁决 spec §8 Q-501—Q-505 与 design §10 DQ-501—DQ-503；0.4.1 专项文档检视（循环 29，docs/reviews/0.4.md）闭环
+status: in-progress
+status_evidence: 2026-09-22 T960 落地（冷启动死锁红灯基线 tests/unit/agent/test_bootstrap_anchor.py）；owner 2026-09-21 批准 G1 并裁决 spec §8 Q-501—Q-505 与 design §10 DQ-501—DQ-503；0.4.1 专项文档检视（循环 29，docs/reviews/0.4.md）闭环
 research_claim_status: not-applicable
 research_claim_required: false
 evidence_class: engineering-demonstration
 gate_version: 1
 created: 2026-09-19
-updated: 2026-09-21
+updated: 2026-09-22
 prerequisites:
   - 0.3.1
   - 0.3.2
