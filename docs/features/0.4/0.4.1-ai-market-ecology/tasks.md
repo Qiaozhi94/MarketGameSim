@@ -36,7 +36,7 @@ updated: 2026-09-22
 - [x] T960 (`FR-501`, `AC-501`): 复现并锁定冷启动死锁——为「零公开成交流 ⇒ EWMA 预热
       不结束 ⇒ 目标仓位恒 0 ⇒ 无委托」写可重复运行的复现测试，作为锚设计的红灯基线
       — verify: `tests/unit/agent/test_bootstrap_anchor.py`
-- [ ] T961 (`FR-505`, `DR-502`, `AC-504`, `AC-505`): 冻结市场质量六项与 stylized facts 五项的计算口径
+- [x] T961 (`FR-505`, `DR-502`, `AC-504`, `AC-505`): 冻结市场质量六项与 stylized facts 五项的计算口径
       （Q-505 已裁决：特征 3 要求 lag 1 与 lag 50 都显著，p 取两者最大值；统计窗口按 Q-501
       从最后一个代理退出冷启动后开始），落地
       `MarketQualityReport` schema 与机器校验入口；本里程碑的组 A 家族**另建实例**，
@@ -56,7 +56,7 @@ updated: 2026-09-22
       锚来源做成可插拔接口且只注册 `synthetic`，锚参数与来源标识进入运行头；正反两侧都有
       断言（有锚产生委托 / 无锚复现死锁 / 未注册来源 fail closed）— verify:
       `tests/unit/agent/test_bootstrap_anchor.py`
-- [ ] T964 (`FR-502`, `IR-501`, `AC-502`): 实现 `TraderStrategy` 协议、分级信息集（I0—I3）与
+- [x] T964 (`FR-502`, `IR-501`, `AC-502`): 实现 `TraderStrategy` 协议、分级信息集（I0—I3）与
       策略族注册表；未注册族标识在装配阶段 fail closed 并返回稳定原因码 — verify:
       `tests/unit/agent/test_strategy_registry.py`
 - [ ] T965 (`TR-501`, `NFR-502`, `AC-510`): 把策略族标识与信息集分级写入既有 `AGENT_DECIDE`
