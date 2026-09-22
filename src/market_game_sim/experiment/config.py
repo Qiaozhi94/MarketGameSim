@@ -67,6 +67,10 @@ class ExperimentConfig:
     stress_protocol: object | None = None
     synthetic_shock_accounts: dict[str, int] | None = None
     outcome_conditional_orders: object | None = None
+    # 0.4.1 T963 (FR-501): the cold-start anchor's runtime block
+    # (agent/anchor.py::resolve_anchor).  ``None`` = no anchor, and is left out
+    # of compute_config_hash so every pre-0.4.1 config keeps its hash.
+    bootstrap_anchor: dict | None = None
 
 
 def compute_config_hash(config: ExperimentConfig) -> str:
@@ -79,5 +83,8 @@ def compute_config_hash(config: ExperimentConfig) -> str:
     ``hash()``, which is per-process-salted and would make the same config
     hash differently across runs (reference-machine.md §3).
     """
-    canonical = json.dumps(asdict(config), sort_keys=True, separators=(",", ":"))
+    payload = asdict(config)
+    if payload["bootstrap_anchor"] is None:
+        del payload["bootstrap_anchor"]
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.blake2b(canonical.encode("utf-8"), digest_size=16).hexdigest()

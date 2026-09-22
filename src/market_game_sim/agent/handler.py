@@ -6,6 +6,7 @@ from copy import deepcopy
 from dataclasses import replace
 from decimal import Decimal
 
+from market_game_sim.agent.anchor import anchor_order_intent
 from market_game_sim.agent.constraint import (
     ConstraintAccountView,
     ConstraintPolicy,
@@ -33,6 +34,7 @@ from market_game_sim.agent.goal import (
     TriggerProvenance,
     build_decision_evidence,
     get_goal_model,
+    in_bootstrap,
 )
 from market_game_sim.agent.observation import Bar, InformationSet
 from market_game_sim.agent.scheduler import AgentSpec
@@ -224,6 +226,7 @@ def _belief_intent_v2(
     ewma_count: int = 0,
     public_trades: tuple = (),
     completed_bars: tuple = (),
+    bootstrap_anchor: object | None = None,
 ) -> tuple[dict | None, dict, DecisionEvidenceV1]:
     """v2 goal + constraint pipeline (代理策略 §5.2, ADR-003).
 
@@ -240,6 +243,13 @@ def _belief_intent_v2(
         # model is a shared frozen instance, so the per-agent half-life is
         # applied via dataclasses.replace (frozen dataclass copy).
         model = replace(model, half_life_in_trades=spec.ewma_half_life_trades)
+    # 0.4.1 T963: an anchored agent carries its warmup target on its model
+    # copy; the anchored branch itself lives in goal.py::_degenerate.
+    anchor_units = (
+        bootstrap_anchor.target_units(spec.agent_id) if bootstrap_anchor is not None else None
+    )
+    if anchor_units is not None:
+        model = replace(model, bootstrap_anchor_units=anchor_units)
     own = OwnAccountView(
         wallet_units=iset["wallet_units"],
         position_units=iset["position_units"],
@@ -303,8 +313,23 @@ def _belief_intent_v2(
         cursor_to_event_id=cursor_to_event_id,
     )
 
+    anchored = in_bootstrap(state, model) and goal_decision.degenerate_reason is None
     intent = None
-    if goal_decision.action != "skip_decision" and goal_decision.desired_position_units is not None:
+    if anchored:
+        intent = anchor_order_intent(
+            intent_id=f"{spec.agent_id}-dec{decision_index}",
+            target_position_units=executable.executable_position_units,
+            current_position=iset["position_units"],
+            leverage_tier=spec.leverage_tier,
+            best_bid=iset["best_bid"],
+            best_ask=iset["best_ask"],
+            initial_price_ticks=iset["initial_price_ticks"],
+            max_order_qty=spec.max_order_qty,
+            min_qty=min_qty,
+        )
+    elif (
+        goal_decision.action != "skip_decision" and goal_decision.desired_position_units is not None
+    ):
         intent = order_intent_from_target(
             intent_id=f"{spec.agent_id}-dec{decision_index}",
             target_position_units=executable.executable_position_units,
@@ -326,6 +351,10 @@ def _belief_intent_v2(
             str(evidence.constraint_reason) if evidence.constraint_reason is not None else None
         ),
     }
+    if anchored:
+        # Only anchored decisions carry the key, so unanchored runs keep their
+        # AGENT_DECIDE records byte-identical.
+        internal_state["bootstrap_anchor"] = bootstrap_anchor.source  # type: ignore[union-attr]
     return intent, internal_state, evidence
 
 
@@ -653,6 +682,7 @@ def handle_agent_decide(
                 ewma_count=ewma_state.get("count", 0),
                 public_trades=public_trades,
                 completed_bars=completed_bars,
+                bootstrap_anchor=world.get("bootstrap_anchor"),
             )
             intents = [intent] if intent else []
         else:

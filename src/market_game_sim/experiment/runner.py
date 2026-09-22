@@ -9,6 +9,7 @@ from __future__ import annotations
 import dataclasses
 from dataclasses import dataclass, field
 
+from market_game_sim.agent.anchor import anchor_header, resolve_for_agents
 from market_game_sim.agent.handler import handle_agent_decide, handle_agent_observe
 from market_game_sim.agent.mapping import get_mapping
 from market_game_sim.agent.scheduler import AgentSpec
@@ -309,6 +310,8 @@ class RunResult:
     initial_baseline: dict[str, int] = field(default_factory=dict)
     exchange_fee_units: int = 0
     exchange_risk_pnl_units: int = 0
+    # 0.4.1 T963 (NFR-502): the anchor's source and frozen parameters as run.
+    bootstrap_anchor: dict = field(default_factory=lambda: {"source": "none"})
 
 
 def _dispatch_agents(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
@@ -599,6 +602,10 @@ def run_one(
         if config.seed_plan is not None:
             validate_seed_plan(config.seed_plan)
 
+    # 0.4.1 T963: resolve the cold-start anchor before building any state, so a
+    # bad anchor fails at assembly rather than as a silently deadlocked run.
+    bootstrap_anchor = resolve_for_agents(config.bootstrap_anchor, config.agent_specs)
+
     accounts: dict[str, Account] = {}
     for spec in config.agent_specs:
         accounts[spec.agent_id] = Account(agent_id=spec.agent_id, wallet_units=10**14)
@@ -660,6 +667,8 @@ def run_one(
         "behavior_mapping": get_mapping(config.behavior_mapping).target_position,
         "disabled_factor": config.disabled_factor,
     }
+    if bootstrap_anchor is not None:
+        world["bootstrap_anchor"] = bootstrap_anchor
     if world_overrides:
         # H2 所有者轨（T917）：把外生决策源与运行时界注入 world。默认 None 时
         # 不碰任何字段——AI 两臂与全部既有路径的字节级行为保持不变。
@@ -759,6 +768,7 @@ def run_one(
         initial_baseline=initial_baseline,
         exchange_fee_units=world["exchange_fee_units"],
         exchange_risk_pnl_units=world["exchange_risk_pnl_units"],
+        bootstrap_anchor=anchor_header(bootstrap_anchor),
     )
 
 
