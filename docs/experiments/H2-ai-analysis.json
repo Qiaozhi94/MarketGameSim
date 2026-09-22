@@ -55,7 +55,7 @@
     "n_included": 168,
     "path": "/home/georg/projects/MarketGameSim/docs/experiments/H2-ai-evidence-index.json",
     "protocol_hash": "ff3978c45b6fdd31b01863e93e988c54ced41951e64cf08e3a899a89c8d70c9f",
-    "sha256": "a51bdc20788550fd834048ccb6e8d5d332ae5e381182c00b8868491fbd823129"
+    "sha256": "060cc9deef44ef1268b5db70130d5310e014886f8fff7469ed978c722793831f"
   },
   "mechanisms": {
     "aggressive_orders": {

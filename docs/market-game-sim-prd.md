@@ -24,7 +24,8 @@
 [ADR-011](decisions/011-market-engine-trader-layering.md)（L1/L2 分层与 alphamill 单向边界）、
 [ADR-012](decisions/012-evidence-rebinding-attestation.md)（证据索引重绑的显式盖章）、
 [ADR-013](decisions/013-l1-matching-core-clearing-split.md)（L1a 撮合核心 / L1b 清算风控拆分）、
-[ADR-014](decisions/014-historical-snapshot-fork-anchor.md)（实盘时点分叉锚，Proposed）  
+[ADR-014](decisions/014-historical-snapshot-fork-anchor.md)（实盘时点分叉锚，Proposed）、
+[ADR-015](decisions/015-rebind-frozen-evidence-after-bookkeeping-fix.md)（簿记修复的冻结证据重绑）  
 **其余设计决策**：见
 [v0.1 规格 §设计决策与理由](features/0.1/spec.md)（D-1—D-7）
 

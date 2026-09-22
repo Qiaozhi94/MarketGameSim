@@ -147,6 +147,8 @@ ADR 只记录**跨规格生效、且已被多轮检视验证**的工程合同。
   L1b 清算风控层，开源撮合引擎只作参考。
 - `docs/decisions/014-historical-snapshot-fork-anchor.md`（Proposed）：以实盘历史时点作为
   冷启动锚，市场从该时点分叉为模拟盘。
+- `docs/decisions/015-rebind-frozen-evidence-after-bookkeeping-fix.md`：L1 缺陷修复只改变
+  簿记记录时，冻结证据可凭全量经济等价证明重绑（H2 index / analysis 的重绑通道）。
 
 ## 建议工作流
 
