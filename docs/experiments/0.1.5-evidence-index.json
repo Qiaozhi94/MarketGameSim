@@ -1,7 +1,7 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "dc6dae2dc1f8deba8d6f2a19576c485bd5c5fabf06b035b801dda38c5aa86656",
-    "reason": "2026-09-22 重绑：0.4.1 T962 新增 src/market_game_sim/experiment/roster.py（StrategyRoster 装配清单），T215 运行路径不导入该模块。按惯例以实测而非推断为据：用当前源码树重跑 artifacts/formal/T215 全部 128 个种子块 × 8 单元 × 主跑与审计，2048 次运行的 event_summary_sha256 与冻结检查点全部一致。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。上一次重绑（2026-09-21，ADR-013 撮合核心拆分，同样 2048/2048 实测一致）及更早历史见 git log 与 ADR-012 背景。",
+    "attested_source_tree_sha256": "f8fa108fad1e6c063e5f7a089f076971e9d3495c0a053f652f2c13a4e045b940",
+    "reason": "2026-09-22 重绑：0.4.1 T964 新增 src/market_game_sim/agent/strategy_layer/（TraderStrategy 协议、分级信息集与策略族注册表），只新增文件，不改任何既有模块；实测全仓 src 除该包自身外没有任何模块导入 strategy_layer，T215 运行路径不可能加载它。本次是并行开发分支上的静态盖章，未重跑 T215；合入 main 后应与其他并行线的改动一并按惯例重跑 2048 次并统一重盖章。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。上一次重绑（T962，2048/2048 实测一致）及更早历史见 git log 与 ADR-012 背景。",
     "rebound_at": "2026-09-22",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "dc6dae2dc1f8deba8d6f2a19576c485bd5c5fabf06b035b801dda38c5aa86656"
+    "source_tree_sha256": "f8fa108fad1e6c063e5f7a089f076971e9d3495c0a053f652f2c13a4e045b940"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {
