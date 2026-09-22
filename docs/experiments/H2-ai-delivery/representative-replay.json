@@ -2,13 +2,13 @@
   "arms": {
     "linear": {
       "book_last_ticks": 9915,
-      "events_sha256": "c2c9880c7221b178a927479bdaa6d6056d9b1ea6ef87d7f3383a2477147d1c72",
+      "events_sha256": "fc1174f50d93ed447b7b9013b6601755f0f042c52bec37b5404c4fd54f377ef1",
       "policy_id": "risk_budget_linear_v1",
       "terminated": "COMPLETED"
     },
     "threshold": {
       "book_last_ticks": null,
-      "events_sha256": "984ea78978fd56ad3d37aec0ecabc7944c1e83a9fb2460699809c9c5e54ba301",
+      "events_sha256": "e70be2c626061717c8744748b216cdac072a2c93a40bccf973abaf7d63aac7ba",
       "policy_id": "risk_budget_threshold_v1",
       "terminated": "COMPLETED"
     }
