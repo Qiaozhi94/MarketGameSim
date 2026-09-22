@@ -42,7 +42,7 @@ updated: 2026-09-22
       `MarketQualityReport` schema 与机器校验入口；本里程碑的组 A 家族**另建实例**，
       不得并入 `build_market_validation_matrix` 既有家族 — verify:
       `tests/unit/metrics/test_market_quality.py`
-- [ ] T962 (`DR-501`, `NFR-502`, `AC-503`): 冻结 `StrategyRoster` schema（族标识/数量/参数/
+- [x] T962 (`DR-501`, `NFR-502`, `AC-503`): 冻结 `StrategyRoster` schema（族标识/数量/参数/
       时间尺度/冷启动锚/引擎指纹）与由 `roster_id` 重建装配的入口 — verify:
       `tests/unit/experiment/test_strategy_roster.py`
 

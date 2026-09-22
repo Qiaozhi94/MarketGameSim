@@ -1,8 +1,8 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "282eec4d4c50490fbbc834976f9ecc9e7c72a28adb12f08d4724d2e227ada75c",
-    "reason": "2026-09-21 重绑：ADR-013 把 book/matching.py 的撮合循环抽到零依赖的 book/engine.py（L1a），matching.py 改为按顺序消费撮合步骤的 L1b 适配层。该改动位于 T215 运行路径上，因此不以「与运行路径无关」为理由，而以行为等价实测为理由：用当前源码树重跑 artifacts/formal/T215 全部 128 个种子块 × 8 个单元 × 主跑与审计，共 2048 次运行的 event_summary_sha256 与冻结检查点全部一致；BENCH-001 标定/未标定 × 种子 1–3 的完整事件流 sha256 与拆分前逐位一致。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。此前重绑历史（自 2026-08-30 签收起 29 次，无一伴随 T215 重跑）见 ADR-012 背景。",
-    "rebound_at": "2026-09-21",
+    "attested_source_tree_sha256": "dc6dae2dc1f8deba8d6f2a19576c485bd5c5fabf06b035b801dda38c5aa86656",
+    "reason": "2026-09-22 重绑：0.4.1 T962 新增 src/market_game_sim/experiment/roster.py（StrategyRoster 装配清单），T215 运行路径不导入该模块。按惯例以实测而非推断为据：用当前源码树重跑 artifacts/formal/T215 全部 128 个种子块 × 8 单元 × 主跑与审计，2048 次运行的 event_summary_sha256 与冻结检查点全部一致。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。上一次重绑（2026-09-21，ADR-013 撮合核心拆分，同样 2048/2048 实测一致）及更早历史见 git log 与 ADR-012 背景。",
+    "rebound_at": "2026-09-22",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
     "t215_source_tree_sha256": "81984fdc6f39f535cc1763a7f4da15a9be8e15b0e15261b9248c0550d01b64a8"
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "282eec4d4c50490fbbc834976f9ecc9e7c72a28adb12f08d4724d2e227ada75c"
+    "source_tree_sha256": "dc6dae2dc1f8deba8d6f2a19576c485bd5c5fabf06b035b801dda38c5aa86656"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {

@@ -85,7 +85,9 @@ L2 交易者策略层（本里程碑新增；即架构文档的 L2b）
 
 - `StrategyRoster`（新增，JSON）：`roster_id`、`seed`、`families[]`（族标识、数量、
   参数、时间尺度）、`bootstrap_anchor`（冷启动锚冻结参数，含来源标识 `source`）、`engine_config_digest`。
-  由 `roster_id` 可重建装配（DR-501）。
+  由 `roster_id` 可重建装配（DR-501）。实现：`experiment/roster.py`——`roster_id` 与
+  `engine_config_digest` 由内容派生、落盘时写入并在加载时复核；校验为封闭键集 +
+  稳定原因码（`RosterError.code`）。
 - `MarketQualityReport`（新增，JSON）：`run_id`、`roster_id`、`logical_seconds`、
   `quality{}`（六项实测）、`stylized_facts{}`（五项实测）、`thresholds{}`、
   `verdicts{}`（逐项通过判定）、`failed[]`（顶层可见的未通过项）、`content_hash`。
@@ -137,7 +139,8 @@ L2 交易者策略层（本里程碑新增；即架构文档的 L2b）
 ## 7. 失败、恢复、安全与兼容
 
 - 冷启动锚缺失或参数非法：装配阶段失败，不进入运行——避免再次出现「跑起来了但
-  一单不发」的静默死锁。
+  一单不发」的静默死锁。「不要锚」只能显式声明为 `source: none`（AC-501 反向对照与既有
+  路径需要它），它进入 `roster_id`，因此不是静默的；字段缺失仍是 `MISSING_FIELD`。
 - 某策略族全员退出（强平/风控）：市场继续，质量报告记录该族的退出时点与存活数。
 - 外部信号源异常（缺失、超时、非法、版本不匹配）：该族降级为 `NO_ACTION`，写稳定
   原因码，内核照常推进。
