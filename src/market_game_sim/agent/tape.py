@@ -17,6 +17,7 @@ anchor yields the same anchor, which is what makes a retry safe.
 
 from __future__ import annotations
 
+from bisect import bisect_right
 from decimal import Decimal
 
 #: The bootstrap ACCOUNT snapshot's r0 (event-schema.md §4.6.3) precedes
@@ -31,6 +32,11 @@ def event_id_rank(event_id: str) -> tuple[int, int]:
     return int(txn_s), int(idx_s)
 
 
+def _fill_rank(fill: dict) -> tuple[int, int]:
+    """Ordering key of a tape entry; raises on a malformed/absent event id."""
+    return event_id_rank(fill["event_id"])
+
+
 def tape_interval(
     tape: list[dict],
     cursor_from_event_id: str,
@@ -39,11 +45,39 @@ def tape_interval(
     """Fills in the half-open interval ``(from, to]`` of the public tape.
 
     ``from`` is exclusive, ``to`` is inclusive (代理策略 §1).  The tape is
-    ordered by commit time == event-id rank, so a single pass suffices.
+    ordered by commit time == event-id rank, so the interval is a contiguous
+    slice and both endpoints are found by binary search.
+
+    A linear scan here is quadratic over a run: the tape grows with every
+    fill, and every agent consumes through it once per observation, so the
+    per-observation cost grew with the number of trades so far (measured: 30
+    agents, work per logical second flat, wall clock per event +42% over 60
+    logical seconds; at 2200 logical seconds the live market broke the
+    NFR-501 budget at 0.549 s/s).  ``O(n)`` -> ``O(log n + k)`` with ``k``
+    the interval size keeps the cost proportional to the *new* fills, which
+    is what an observation actually consumes.
+
+    The binary search only touches ``O(log n)`` entries, so -- unlike the
+    former full scan -- it cannot by itself notice a corrupt entry elsewhere
+    on the tape.  The returned slice is therefore validated entry by entry:
+    consumption stays fail-closed on a malformed ``event_id`` (the rollback
+    path in tests/integration/test_tape_cursor.py depends on it), and an
+    out-of-order tape -- which would silently break the slice's premise --
+    raises instead of returning a quietly wrong interval.
     """
     from_rank = event_id_rank(cursor_from_event_id)
     to_rank = event_id_rank(cursor_to_event_id)
-    return [fill for fill in tape if from_rank < event_id_rank(fill["event_id"]) <= to_rank]
+    start = bisect_right(tape, from_rank, key=_fill_rank)
+    end = bisect_right(tape, to_rank, lo=start, key=_fill_rank)
+    interval = tape[start:end]
+    for fill in interval:
+        rank = _fill_rank(fill)
+        if not from_rank < rank <= to_rank:
+            raise ValueError(
+                f"public tape is out of order: {fill['event_id']} is outside "
+                f"({cursor_from_event_id}, {cursor_to_event_id}]"
+            )
+    return interval
 
 
 def ewma_alpha(half_life_in_trades: int) -> Decimal:
