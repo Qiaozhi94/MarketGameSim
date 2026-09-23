@@ -60,6 +60,24 @@ TIMED_SECONDS = 20
 #: DEFAULT_LIVE_ROSTER: 6 market_maker_v2 + 9 trend + 9 mean-reversion + 6 noise.
 EXPECTED_AGENTS = 30
 
+#: The assembly list T982 records beside the wall clock, in roster order.
+EXPECTED_FAMILIES = (
+    ("market_maker_v2", 6),
+    ("trend_following", 9),
+    ("mean_reversion", 9),
+    ("sentiment_noise", 6),
+)
+
+
+class _RosterlessMarket:
+    """A market driven without a roster -- the negative case for T982."""
+
+    def __init__(self) -> None:
+        self.kernel = EventKernel()
+
+    def advance(self) -> None:
+        return None
+
 
 def _market() -> LiveMarket:
     return LiveMarket(roster=parse_roster(DEFAULT_LIVE_ROSTER))
@@ -148,6 +166,20 @@ def test_environment_is_recorded_for_ac509(report):
     assert environment()["python"] == env["python"]
 
 
+def test_assembly_list_is_recorded_for_ac509(report):
+    """T982: the number is worthless without the assembly it was measured on."""
+    assert report.roster_id is not None
+    assert report.roster_families == EXPECTED_FAMILIES
+    assert sum(count for _, count in report.roster_families) == EXPECTED_AGENTS
+
+
+def test_assembly_list_is_none_when_the_market_has_no_roster():
+    """A rosterless market records ``None``, never an empty assembly."""
+    report = measure(_RosterlessMarket(), logical_seconds=1)
+    assert report.roster_families is None
+    assert report.to_dict()["roster_families"] is None
+
+
 def test_artifact_round_trips_with_verdict_and_boundary(report, tmp_path):
     out = export(report, tmp_path / "live-perf.json")
     payload = json.loads(out.read_text(encoding="utf-8"))
@@ -156,6 +188,7 @@ def test_artifact_round_trips_with_verdict_and_boundary(report, tmp_path):
     assert payload["budget_seconds_per_logical_second"] == BUDGET_SECONDS_PER_LOGICAL_SECOND
     assert payload["agent_count"] == EXPECTED_AGENTS
     assert payload["roster_id"] == report.roster_id
+    assert payload["roster_families"] == dict(EXPECTED_FAMILIES)
     assert len(payload["wall_seconds"]) == TIMED_SECONDS
     assert payload["environment"]["python"] == report.environment["python"]
 

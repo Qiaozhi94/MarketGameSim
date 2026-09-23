@@ -125,7 +125,7 @@ updated: 2026-09-23
       `tests/integration/test_market_quality_gate.py`
 - [ ] T981 (`AC-507`, `AC-508`, `AC-510`): 运行外部信号族的因果链、降级、边界声明与多族批量场景
       测试 — verify: `tests/integration/test_strategy_layer_causality.py`
-- [ ] T982 (`AC-509`): 运行实时性能断言，并记录目标环境（OS/Python/装配清单）— verify:
+- [x] T982 (`AC-509`): 运行实时性能断言，并记录目标环境（OS/Python/装配清单）— verify:
       `tests/performance/test_live_market_realtime.py`
 - [ ] T983 (`AC-501`—`AC-510`): 运行项目统一质量门，并确认 0.3.1 配对轨与 H2 双代理路径无回归
       — verify: `python tools/verify.py`；既有回归门：`tests/integration/test_h2_live_market.py`

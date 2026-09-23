@@ -92,6 +92,10 @@ class PerfReport:
     mix: dict[str, int]
     total_records: int
     roster_id: str | None = None
+    #: AC-509/T982: the assembly the number was measured on, family by family.
+    #: ``None`` means the market exposed no roster -- never an empty dict, so a
+    #: report cannot silently claim "measured on nothing" as a valid assembly.
+    roster_families: tuple[tuple[str, int], ...] | None = None
     environment: dict[str, Any] = field(default_factory=environment)
 
     @property
@@ -118,6 +122,9 @@ class PerfReport:
         return {
             "schema_version": 1,
             "roster_id": self.roster_id,
+            "roster_families": (
+                None if self.roster_families is None else dict(self.roster_families)
+            ),
             "agent_count": self.agent_count,
             "logical_seconds": self.logical_seconds,
             "warmup_seconds": self.warmup_seconds,
@@ -170,7 +177,17 @@ def measure(
         mix={str(k): int(v) for k, v in mix.items() if k is not None},
         total_records=kernel.committed_record_count,
         roster_id=getattr(market, "roster_id", None),
+        roster_families=_roster_families(market),
     )
+
+
+def _roster_families(market: object) -> tuple[tuple[str, int], ...] | None:
+    """The assembly list AC-509 has to record beside the wall clock (T982)."""
+    roster = getattr(market, "roster", None)
+    families = getattr(roster, "families", None)
+    if not families:
+        return None
+    return tuple((str(f.family_id), int(f.count)) for f in families)
 
 
 def verdict(
