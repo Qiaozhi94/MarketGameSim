@@ -1,7 +1,7 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "b4da3d900fe3845b64879b33f65752bb7797a3527dea733cf2fd27d1ee42934b",
-    "reason": "2026-09-23 重绑：0.4.1 T967 根因修复——做市商族报价相位改为逐代理 keyed draw（此前同族相位同步，415/415 个报价时刻全族同侧，盘口几乎永远单边，信号族下不出单）；约束层跳过决策不再兜底成 MARK_UNDEFINED，改为如实留空并由 internal_state.family_reason_code 记录族原因。两处都只影响 0.4.1 新增的策略族路径：既有目标模型的 skip 一律自带 MARK_UNDEFINED，记录逐字节不变。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）；H2 冻结摘要未变，无需重绑。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "attested_source_tree_sha256": "40a2ae2d6c9b9664074c7a495e63c4e5327e3450f904c8511d3ca0ac1bb2b818",
+    "reason": "2026-09-23 重绑：0.4.1 T967 新增 metrics/quality_run.py（市场质量实测管线），纯新增模块，T215 运行路径不导入它。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）；H2 冻结摘要未变，无需重绑。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
     "rebound_at": "2026-09-23",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "b4da3d900fe3845b64879b33f65752bb7797a3527dea733cf2fd27d1ee42934b"
+    "source_tree_sha256": "40a2ae2d6c9b9664074c7a495e63c4e5327e3450f904c8511d3ca0ac1bb2b818"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {

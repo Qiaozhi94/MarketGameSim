@@ -64,12 +64,13 @@ updated: 2026-09-23
       — verify: `tests/integration/test_strategy_layer_causality.py`
 - [x] T966 (`FR-503`, `DR-501`, `AC-503`): 让 `live_market` 按 `StrategyRoster` 装配市场，
       并验证同清单同种子价格序列逐点一致 — verify: `tests/integration/test_h2_live_market.py`
-- [ ] T967 `[成果门:H2-E1]` (`FR-501`, `FR-505`, `AC-501`, `AC-504`, `E6`): 生成可运行的纯 AI 市场与
+- [x] T967 `[成果门:H2-E1]` (`FR-501`, `FR-505`, `AC-501`, `AC-504`, `E6`): 生成可运行的纯 AI 市场与
       第一份 `MarketQualityReport`——冷启动后自发成交、双边盘口可用、六项指标**逐项如实判定**、
       未通过项顶层可见。**本门不要求六项全部达标**（退出条件 E6）：异质策略族在 Phase 2 才实现，
       而价格发现来自策略族异质（ADR-011 §决策 3），Phase 1 达标在机制上不成立；`SC-501` 的
       「全部达标」由 `H2-E2`/`H2-E3` 承接。证据标签为 `engineering-demonstration`
-      — verify: `tests/integration/test_market_quality_gate.py`
+      — verify: `tests/integration/test_market_quality_gate.py`；实测记录：
+      [`0.4.1-market-quality-baseline.md`](../../../experiments/0.4.1-market-quality-baseline.md)
 
 ### Phase 2：异质策略族与市场真实性
 
