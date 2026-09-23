@@ -1,7 +1,7 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "b43d565441eedba4cc6129c7a6ef24ae590050e79f87098b9114fe0e237322c9",
-    "reason": "2026-09-23 重绑（事件日志格式 v4 → v5）：运行头新增 bootstrap_anchor，冷启动锚声明进入日志（0.4.1 FR-501/NFR-502，owner 裁决 B）。格式版本写在每条记录上并进入事件摘要，T215 的事件摘要因此全部变化；按 ADR-015 以经济等价证明为据：在当前源码树上重跑全部 128 个种子块，1024 个主跑的经济投影（economic_projection v2，排除格式版本与行情簿记）与冻结检查点逐一相同，运行分类、终局价格、终止态全部不变（python tools/prove_economic_equivalence.py --t215）。本次同时覆盖 0.4.1 T961/T963/T964/T974 与撤单补发行情修复。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "attested_source_tree_sha256": "0107ec2e5643d689c145080e7df1a0bc3567d9add80b6a6ad8a698bbaac0b75d",
+    "reason": "2026-09-23 重绑：合入 0.4.1 T965（族标识与信息集分级写入 AGENT_DECIDE）、T968/T969（四个原生策略族）、T971（stylized facts 五项度量）、T974（Alpha101 逐条筛查与 k 冻结）。按 ADR-015 以经济等价证明为据：在当前源码树上重跑全部 128 个种子块，1024 个主跑的经济投影（economic_projection v2）与冻结检查点逐一相同，运行分类、终局价格、终止态全部不变（python tools/prove_economic_equivalence.py --t215）；H2 冻结摘要本次未变（事件流未变），无需重绑。此前 v5 升版与撤单补发行情的重绑记录见 git 历史。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
     "rebound_at": "2026-09-23",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "b43d565441eedba4cc6129c7a6ef24ae590050e79f87098b9114fe0e237322c9"
+    "source_tree_sha256": "0107ec2e5643d689c145080e7df1a0bc3567d9add80b6a6ad8a698bbaac0b75d"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {

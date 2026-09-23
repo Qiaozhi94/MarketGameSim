@@ -11,7 +11,7 @@ topics:
   - stylized-facts
 doc_kind: tasks
 created: 2026-09-19
-updated: 2026-09-22
+updated: 2026-09-23
 ---
 
 # 0.4.1：AI 市场生态 - 任务
@@ -50,7 +50,7 @@ updated: 2026-09-22
 
 ### Phase 1：冷启动与 L2 分层
 
-- [ ] T963 (`FR-501`, `NFR-502`, `AC-501`): 实现冷启动锚——零公开成交流条件下的确定性首笔
+- [x] T963 (`FR-501`, `NFR-502`, `AC-501`): 实现冷启动锚——零公开成交流条件下的确定性首笔
       意图（Q-501：±1 最小单位、方向按族内装配顺序奇偶交替且不用随机数、奇数族的余数轮流分配、按对手最优价且对手方为空时以初始价挂限价、退出复用预热条件），
       并写明 `ewma_half_life_trades` 在 live 生态下的语义（spec §3 范围内的澄清项），
       锚来源做成可插拔接口且只注册 `synthetic`，锚参数与来源标识进入运行头；正反两侧都有
@@ -59,7 +59,7 @@ updated: 2026-09-22
 - [x] T964 (`FR-502`, `IR-501`, `AC-502`): 实现 `TraderStrategy` 协议、分级信息集（I0—I3）与
       策略族注册表；未注册族标识在装配阶段 fail closed 并返回稳定原因码 — verify:
       `tests/unit/agent/test_strategy_registry.py`
-- [ ] T965 (`TR-501`, `NFR-502`, `AC-510`): 把策略族标识与信息集分级写入既有 `AGENT_DECIDE`
+- [x] T965 (`TR-501`, `NFR-502`, `AC-510`): 把策略族标识与信息集分级写入既有 `AGENT_DECIDE`
       记录的 `internal_state`，不新增事件类型；覆盖多族、多记录并存的批量因果链场景
       — verify: `tests/integration/test_strategy_layer_causality.py`
 - [ ] T966 (`FR-503`, `DR-501`, `AC-503`): 让 `live_market` 按 `StrategyRoster` 装配市场，
@@ -73,14 +73,14 @@ updated: 2026-09-22
 
 ### Phase 2：异质策略族与市场真实性
 
-- [ ] T968 (`FR-503`, `AC-503`): 实现趋势跟随族（多时间尺度）与均值回归族 — verify:
+- [x] T968 (`FR-503`, `AC-503`): 实现趋势跟随族（多时间尺度）与均值回归族 — verify:
       `tests/unit/agent/test_native_strategy_families.py`
-- [ ] T969 (`FR-503`, `AC-503`): 实现情绪噪声族与改良做市商族（报价参数分散，消除全员同价位
+- [x] T969 (`FR-503`, `AC-503`): 实现情绪噪声族与改良做市商族（报价参数分散，消除全员同价位
       导致的单档盘口）— verify: `tests/unit/agent/test_native_strategy_families.py`
 - [ ] T970 (`NFR-501`, `AC-509`): 把目标装配压到墙钟 ≤0.5 秒/逻辑秒；先测量事务构成再优化
       （实测撤挂事务占绝大多数），断言失败即红而非警告 — verify:
       `tests/performance/test_live_market_realtime.py`
-- [ ] T971 (`FR-505`, `SC-502`, `AC-505`): 按 spec §6 SC-502 表实现 stylized facts 五项度量——
+- [x] T971 (`FR-505`, `SC-502`, `AC-505`): 按 spec §6 SC-502 表实现 stylized facts 五项度量——
       前三项**复用** `metrics/validation.py` 的既有检验（厚尾用超额峰度 z 检验、收益自相关、
       `|r|` ACF），只新增 lag 50 延伸与协议未覆盖的两项，不新建第二套口径或第二份校正算法；
       在合成对照序列上做正反判定（已知厚尾序列判通过、独立正态序列判未通过）— verify:
@@ -99,7 +99,7 @@ updated: 2026-09-22
 
 ### Phase 3：量化交易者族（不依赖 alphamill）与运行入口
 
-- [ ] T974 (`FR-504`, `AC-508`): 实现 Alpha101 公式筛查器——含 `rank`/`IndNeutralize`/`cap` 的
+- [x] T974 (`FR-504`, `AC-508`): 实现 Alpha101 公式筛查器——含 `rank`/`IndNeutralize`/`cap` 的
       公式在装配时拒绝并给出稳定原因码，纯时序子集通过；正反用例都要有 — verify:
       `tests/unit/agent/test_alpha_formula_screen.py`
 - [ ] T975 (`FR-504`, `IR-502`, `AC-507`): 扩展外部信号注入接口——支持 LIMIT 意图、非阻塞推进与
