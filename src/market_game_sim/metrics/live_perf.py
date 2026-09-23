@@ -91,6 +91,13 @@ class PerfReport:
     wall_seconds: tuple[float, ...]
     mix: dict[str, int]
     total_records: int
+    #: New committed records per timed second, aligned with ``wall_seconds``.
+    #: Wall clock alone cannot tell a busier market from a slower one: a rising
+    #: per-second wall time means either more work per second (fine, that is an
+    #: active market) or the same work getting slower (an O(n^2) read path, the
+    #: defect class already found once in ``_newest_timestamp``).  Dividing the
+    #: two separates the cases.
+    events_per_second: tuple[int, ...] = ()
     roster_id: str | None = None
     #: AC-509/T982: the assembly the number was measured on, family by family.
     #: ``None`` means the market exposed no roster -- never an empty dict, so a
@@ -105,6 +112,21 @@ class PerfReport:
     @property
     def max_wall(self) -> float:
         return max(self.wall_seconds)
+
+    @property
+    def wall_per_event(self) -> tuple[float | None, ...]:
+        """Per-second wall clock divided by that second's new records.
+
+        ``None`` for a second that committed nothing -- an idle second has no
+        unit cost, and reporting 0.0 would flatten a growth curve that is the
+        whole point of this series.
+        """
+        if len(self.events_per_second) != len(self.wall_seconds):
+            return ()
+        return tuple(
+            (wall / count) if count > 0 else None
+            for wall, count in zip(self.wall_seconds, self.events_per_second, strict=True)
+        )
 
     @property
     def trade_per_order(self) -> float:
@@ -131,6 +153,10 @@ class PerfReport:
             "wall_seconds": [round(v, 6) for v in self.wall_seconds],
             "median_wall_seconds": round(self.median_wall, 6),
             "max_wall_seconds": round(self.max_wall, 6),
+            "events_per_second": list(self.events_per_second),
+            "wall_per_event_seconds": [
+                None if v is None else round(v, 9) for v in self.wall_per_event
+            ],
             "mix": dict(sorted(self.mix.items())),
             "mix_share": {et: round(self.share(et), 6) for et in MIX_EVENT_TYPES if et in self.mix},
             "total_records": self.total_records,
@@ -160,10 +186,15 @@ def measure(
         market.advance()
 
     walls: list[float] = []
+    events: list[int] = []
+    before = market.kernel.committed_record_count
     for _ in range(logical_seconds):
         started = time.perf_counter()
         market.advance()
         walls.append(time.perf_counter() - started)
+        after = market.kernel.committed_record_count
+        events.append(after - before)
+        before = after
 
     kernel = market.kernel
     mix = Counter(r.get("event_type") for r in kernel.committed_records)
@@ -174,6 +205,7 @@ def measure(
         logical_seconds=logical_seconds,
         warmup_seconds=warmup_seconds,
         wall_seconds=tuple(walls),
+        events_per_second=tuple(events),
         mix={str(k): int(v) for k, v in mix.items() if k is not None},
         total_records=kernel.committed_record_count,
         roster_id=getattr(market, "roster_id", None),

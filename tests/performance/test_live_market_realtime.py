@@ -158,6 +158,29 @@ def test_measurement_describes_a_live_market(report):
     assert report.mix.get("ORDER_ARRIVAL", 0) > 0
 
 
+def test_unit_cost_series_separates_a_busier_market_from_a_slower_one(report):
+    """Wall clock alone cannot tell the two apart; wall/event can.
+
+    A rising per-second wall time is only a defect if the work per second
+    stayed flat.  This series is what the next O(n^2) hunt reads, so it has to
+    line up with ``wall_seconds`` second by second and carry real counts.
+    """
+    assert len(report.events_per_second) == len(report.wall_seconds)
+    assert sum(report.events_per_second) > 0
+    assert all(count >= 0 for count in report.events_per_second)
+    costs = [c for c in report.wall_per_event if c is not None]
+    assert len(costs) == sum(1 for c in report.events_per_second if c > 0)
+    assert all(c > 0 for c in costs)
+
+
+def test_idle_seconds_report_no_unit_cost_instead_of_zero():
+    """An idle second has no unit cost; 0.0 would flatten the growth curve."""
+    report = measure(_RosterlessMarket(), logical_seconds=3)
+    assert report.events_per_second == (0, 0, 0)
+    assert report.wall_per_event == (None, None, None)
+    assert report.to_dict()["wall_per_event_seconds"] == [None, None, None]
+
+
 def test_transaction_mix_is_reported_for_every_spec_named_type(report):
     """spec §7 step 1: the mix is the artifact a retreat decision cites."""
     for event_type in ("ORDER_ARRIVAL", "ORDER_CANCELLED", "TRADE_SETTLE"):
