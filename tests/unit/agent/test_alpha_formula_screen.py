@@ -8,6 +8,9 @@ reason code, and the assembly gate raises instead of passing them through.
 
 from __future__ import annotations
 
+import json
+from pathlib import Path
+
 import pytest
 
 from market_game_sim.agent import alpha_screen as a
@@ -184,3 +187,86 @@ def test_batch_screen_preserves_order_and_mixes_results() -> None:
     # Screening is pure: re-screening gives identical results.
     assert screen_formulas(batch) == results
     assert screen_formulas(iter(batch)) == results
+
+
+# --------------------------------------------------------------------------- #
+# Frozen corpus: all 101 formulas of arXiv:1601.00991, spec Q-502
+# --------------------------------------------------------------------------- #
+
+CORPUS = json.loads(Path(__file__).with_name("alpha101_corpus.json").read_text(encoding="utf-8"))
+CORPUS_FORMULAS: list[str] = CORPUS["formulas"]
+
+# The numbers spec Q-502 freezes.  They are literals here on purpose: if the
+# screener's verdict moves, spec and test must be updated together.
+FROZEN_ACCEPTED = (6, 7, 9, 12, 21, 23, 24, 26, 35, 41, 43, 46, 49, 51, 53, 54, 84, 101)
+FROZEN_CODE_COUNTS = {
+    a.CROSS_SECTIONAL_OPERATOR: 83,
+    a.INDUSTRY_INPUT: 18,
+    a.MARKET_CAP_INPUT: 1,
+}
+
+
+def test_frozen_corpus_holds_the_whole_paper() -> None:
+    assert len(CORPUS_FORMULAS) == 101
+    for i, formula in enumerate(CORPUS_FORMULAS, 1):
+        assert formula.strip() == formula and formula, f"Alpha#{i} is blank or padded"
+        assert formula.isascii(), f"Alpha#{i} carries non-ASCII text"
+        assert formula.count("(") == formula.count(")"), f"Alpha#{i} has unbalanced parens"
+
+
+def test_frozen_corpus_agrees_with_the_hand_written_cases() -> None:
+    """The two data sets in this file must not drift apart."""
+    hand_written = {name: text for name, text in PURE_TIME_SERIES.items()}
+    hand_written.update({name: text for name, (text, _) in REJECTED.items()})
+    for name, text in sorted(hand_written.items()):
+        number = int(name.removeprefix("alpha"))
+        assert " ".join(text.split()) == CORPUS_FORMULAS[number - 1], name
+
+
+def test_screening_the_corpus_reproduces_the_frozen_verdicts() -> None:
+    results = screen_formulas(CORPUS_FORMULAS)
+    accepted = tuple(n for n, r in enumerate(results, 1) if r.accepted)
+    assert accepted == FROZEN_ACCEPTED
+    assert accepted == tuple(CORPUS["expected_accepted"])
+
+    reason_codes = {str(n): r.reason_code for n, r in enumerate(results, 1) if not r.accepted}
+    assert reason_codes == CORPUS["expected_reason_codes"]
+
+    violation_codes = {
+        str(n): sorted({v.code for v in r.violations})
+        for n, r in enumerate(results, 1)
+        if not r.accepted
+    }
+    assert violation_codes == CORPUS["expected_violation_codes"]
+
+
+def test_frozen_counts_match_spec_q502() -> None:
+    results = screen_formulas(CORPUS_FORMULAS)
+    assert len(FROZEN_ACCEPTED) == 18
+    assert sum(1 for r in results if not r.accepted) == 83
+
+    counts: dict[str, int] = {}
+    for result in results:
+        for code in {v.code for v in result.violations}:
+            counts[code] = counts.get(code, 0) + 1
+    assert counts == FROZEN_CODE_COUNTS
+    assert counts == CORPUS["expected_code_counts"]
+
+
+def test_accepted_subset_is_free_of_cross_sectional_constructs() -> None:
+    """Positive side of the freeze: the 18 really are pure time-series."""
+    for number in FROZEN_ACCEPTED:
+        result = require_accepted(CORPUS_FORMULAS[number - 1])
+        assert result.operators <= set(a.TIME_SERIES_OPERATORS), number
+        assert not result.operators & a.CROSS_SECTIONAL_OPERATORS, number
+        assert not result.inputs & (a.MARKET_CAP_INPUTS | a.INDUSTRY_INPUTS), number
+
+
+def test_rejected_subset_fails_the_assembly_gate() -> None:
+    """Negative side: every other formula raises, carrying its frozen code."""
+    rejected = [n for n in range(1, 102) if n not in FROZEN_ACCEPTED]
+    assert len(rejected) == 83
+    for number in rejected:
+        with pytest.raises(AlphaScreenError) as excinfo:
+            require_accepted(CORPUS_FORMULAS[number - 1])
+        assert excinfo.value.code == CORPUS["expected_reason_codes"][str(number)]
