@@ -45,6 +45,10 @@ from market_game_sim.agent.strategy import (
     order_intent_from_target,
     target_position,
 )
+from market_game_sim.agent.strategy_layer.protocol import (
+    InformationTier,
+    StrategyLayerError,
+)
 from market_game_sim.agent.tape import tape_interval, update_ewma
 from market_game_sim.book.orderbook import Book
 from market_game_sim.kernel.runner import EventKernel
@@ -575,6 +579,30 @@ def _cancel_stale_orders(
     return summaries
 
 
+def strategy_tags(spec: AgentSpec) -> dict[str, str]:
+    """0.4.1 T965 (TR-501 / AC-510): the strategy-layer labels for a decision record.
+
+    Returns ``{}`` for an untagged spec (bench / H2 / legacy assemblies), so
+    their ``AGENT_DECIDE`` records stay byte-identical.  A *half* tagged spec
+    is a mislabelled agent, not a legacy one: it fails closed here rather than
+    producing a decision whose family cannot be traced (TR-501 requires the
+    chain to reach the family, and a silently dropped label would break it
+    without any run ever turning red).
+    """
+    family_id, tier = spec.strategy_family_id, spec.info_tier
+    if family_id is None and tier is None:
+        return {}
+    if type(family_id) is not str or not family_id:
+        raise StrategyLayerError(
+            "INVALID_STRATEGY_TAG", f"{spec.agent_id}: info_tier {tier!r} without a family id"
+        )
+    if tier not in InformationTier.__members__:
+        raise StrategyLayerError(
+            "INVALID_STRATEGY_TAG", f"{spec.agent_id}: {family_id} declares info_tier {tier!r}"
+        )
+    return {"strategy_family_id": family_id, "info_tier": tier}
+
+
 def handle_agent_decide(
     event: dict,
     world: dict,
@@ -738,6 +766,10 @@ def handle_agent_decide(
     ]
     event["accepted"] = True
     event["reject_reason"] = None
+    # 0.4.1 T965 (TR-501): one seam for all three decision paths (market
+    # maker / goal v2 / v1 legacy) -- every tagged agent's record carries its
+    # family and tier, no new event type, no schema change.
+    internal_state.update(strategy_tags(spec))
     event["internal_state"] = internal_state
     # 0.1.5 T206 (ADR-003 §4): every AGENT_DECIDE carries DecisionEvidenceV1.
     # The v1 BENCHMARK and market-maker paths produce a path-tagged minimal
