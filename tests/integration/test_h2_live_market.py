@@ -321,3 +321,32 @@ def test_unknown_family_fails_closed_at_assembly():
     with pytest.raises(RosterError) as exc:
         LiveMarket(roster=bad)
     assert exc.value.code == "UNKNOWN_FAMILY"
+
+
+def test_advance_never_copies_the_whole_log(monkeypatch):
+    """0.4.1 T970: 推进循环只读尾部。
+
+    性能门（tests/performance）断言的是墙钟，依机器而变；这条断言的是**机制**：
+    每逻辑秒工作量恒定，却随记录数增长的墙钟来自 ``committed_records`` 的全量
+    复制。这里直接禁止驱动循环碰它——否则 O(n²) 会悄悄长回来，而墙钟断言在
+    短测试里未必红。
+    """
+    from market_game_sim.kernel.runner import EventKernel
+
+    copies: list[int] = []
+    original = EventKernel.committed_records.fget
+
+    def counting(self):
+        copies.append(len(self._committed_records))
+        return original(self)
+
+    monkeypatch.setattr(EventKernel, "committed_records", property(counting))
+
+    market = LiveMarket(roster=DEFAULT_LIVE_ROSTER)
+    for _ in range(10):
+        market.advance()
+    assert copies == [], f"advance() 复制了 {len(copies)} 次全量记录"
+
+    # view() 需要全量记录是合理的（它要重建 K 线与盘口快照），不在禁令范围内。
+    market.view()
+    assert copies, "view() 未读取记录，说明这条守卫失去了对照"

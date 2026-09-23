@@ -366,11 +366,16 @@ class LiveMarket:
             self.logical_ns = max(self.logical_ns, target_logical)
             self._snapshot()
 
+    #: 推进循环每逻辑秒最多读 32 次尾部，只为取最新时间戳。
+    _NEWEST_TAIL = 64
+
     def _newest_timestamp(self) -> int | None:
-        records = self.kernel.committed_records
+        # 0.4.1 T970：只读尾部。``committed_records`` 每次访问复制全部记录，
+        # 每秒工作量恒定时墙钟仍随记录数增长（O(n²)）。
+        records = self.kernel.committed_records_tail(self._NEWEST_TAIL)
         if not records:
             return None
-        return max(int(item.get("timestamp", 0)) for item in records[-64:])
+        return max(int(item.get("timestamp", 0)) for item in records)
 
     # ---------- 观察视图 ----------
 

@@ -1,7 +1,7 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "accc426643da20ec790ace2470aef3301a4ad6fa47ffb46d852e8f4491b58363",
-    "reason": "2026-09-23 重绑：合入 0.4.1 T966（live 市场按 StrategyRoster 装配：策略族经既有 GoalModel/做市商接缝接入运行时，清单标识与锚随 artifact 落盘）。改动只在带族标识的清单装配代理上生效，未标注的 bench/H2/T215 代理路径不变。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）；H2 冻结摘要未变，无需重绑。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "attested_source_tree_sha256": "4c9ed9ab007838edbe27b356ea5415faadae84585cbe4c03ff8475ffa8f4fa80",
+    "reason": "2026-09-23 重绑：合入 0.4.1 T970（实时性能门与事务构成测量，内核新增只读尾部的 committed_records_tail）与 live 市场推进循环改用尾部读取。两者都不改变事件流：50 代理 × 60 逻辑秒实测，改动前后事件流哈希相同（每秒墙钟中位 0.067s → 0.032s，且不再随记录数增长）。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）；H2 冻结摘要未变，无需重绑。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
     "rebound_at": "2026-09-23",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "accc426643da20ec790ace2470aef3301a4ad6fa47ffb46d852e8f4491b58363"
+    "source_tree_sha256": "4c9ed9ab007838edbe27b356ea5415faadae84585cbe4c03ff8475ffa8f4fa80"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {
