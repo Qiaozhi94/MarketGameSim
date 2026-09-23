@@ -7,6 +7,16 @@ Implements the 0.1.2 pre-registered protocol
 This is the reporting/statistics layer (ADR-001's no-float rule is scoped to
 the domain kernel, not here) -- uses ``statistics.NormalDist`` for asymptotic
 normal-approximation significance tests, no scipy dependency.
+
+0.4.1 T971 (FR-505 / SC-502 / AC-505) extends this module with the stylized
+facts of spec §6 SC-502: facts 1-3 **reuse** the frozen protocol checks above
+(fat tails, return autocorrelation, ``|r|`` ACF) with only the lag-50
+extension added, and facts 4-5 (volume-volatility correlation, order-flow long
+memory) are new here because the 0.1.2 protocol does not cover them.  The
+family-wise correction and the ``>= 3`` pass count live in
+``metrics/market_quality.py`` (spec §6's caliber owner) and are *not*
+duplicated here; ``_FAMILY_A`` below belongs to KPI-005 and must not gain the
+new facts -- that would silently re-judge a frozen result (协议 §4).
 """
 
 from __future__ import annotations
@@ -17,6 +27,19 @@ from statistics import NormalDist
 
 from market_game_sim.experiment.stats import holm_bonferroni
 from market_game_sim.metrics.liquidation import LiquidationMetrics
+from market_game_sim.metrics.market_quality import (
+    FAT_TAILS,
+    NOT_APPLICABLE,
+    ORDER_FLOW_LONG_MEMORY,
+    ORDER_FLOW_MAX_LAG,
+    RETURN_AUTOCORRELATION,
+    VOLATILITY_CLUSTERING,
+    VOLATILITY_CLUSTERING_LAGS,
+    VOLUME_VOLATILITY_CORRELATION,
+    VOLUME_VOLATILITY_WINDOW,
+    StylizedFactResult,
+    combine_volatility_clustering,
+)
 from market_game_sim.metrics.sampling import ImpactSample, MarketSample
 
 _NORMAL = NormalDist()
@@ -485,3 +508,156 @@ def build_market_validation_matrix(
     return MarketValidationMatrix(
         items=all_items, fill_ratio=fill_ratio, fill_ratio_ok=fill_ratio_ok
     )
+
+
+# --------------------------------------------------------------------------- #
+# 0.4.1 T971 (FR-505 / SC-502 / AC-505): stylized facts 五项
+#
+# Facts 1-3 reuse the checks above unchanged; this section only adds the lag-50
+# extension (fact 3) and the two facts the 0.1.2 protocol does not cover.  The
+# verdicts produced here are *raw* -- family-A correction and the ">= 3 pass"
+# count belong to ``metrics/market_quality.py``.
+# --------------------------------------------------------------------------- #
+
+
+def _as_fact(item: ValidationItem) -> StylizedFactResult:
+    """Carry a protocol :class:`ValidationItem` over unchanged."""
+    return StylizedFactResult(item.verdict, item.statistic, item.p_value, dict(item.evidence))
+
+
+def abs_return_acf(returns: list[float], lag: int) -> tuple[float | None, float | None]:
+    """``|r|`` ACF at ``lag`` with its one-sided p value (协议 §3.3 caliber).
+
+    Same estimator, same asymptotic ``SE = 1/sqrt(n)`` and same one-sided test
+    as :func:`check_volatility_clustering`; only the lag is free, which is what
+    spec §6 #3 means by "按同一标准误与同一单侧检验延伸到 lag 50".  Returns
+    ``(None, None)`` when the sample cannot support the lag.
+    """
+    n = len(returns)
+    if n < MIN_SAMPLE_POINTS or lag <= 0 or lag >= n:
+        return None, None
+    r = acf([abs(v) for v in returns], lag)
+    return r, _one_sided_p(r / (1 / math.sqrt(n)))
+
+
+def check_volatility_clustering_lags(
+    returns: list[float], lags: tuple[int, ...] = VOLATILITY_CLUSTERING_LAGS
+) -> StylizedFactResult:
+    """Fact 3 (Q-505): ``|r|`` ACF significantly positive at **both** lags.
+
+    The intersection-union rule itself lives in
+    :func:`market_quality.combine_volatility_clustering` (spec §6 owns it);
+    this function only measures the two lags.
+    """
+    lag_low, lag_high = lags
+    acf_low, p_low = abs_return_acf(returns, lag_low)
+    acf_high, p_high = abs_return_acf(returns, lag_high)
+    return combine_volatility_clustering(acf_low, p_low, acf_high, p_high)
+
+
+def check_volume_volatility_correlation(
+    samples: list[MarketSample], window: int = VOLUME_VOLATILITY_WINDOW
+) -> StylizedFactResult:
+    """Fact 4 (spec §6 #4, new here): rolling realized volatility (MD-002,
+    ``W = 30``) against the volume of the same sample -- Pearson ``r`` with
+    ``t = r*sqrt(n-2)/sqrt(1-r^2)``, one-sided against ``H0: r <= 0``."""
+    n_total = len(samples)
+    if n_total < MIN_SAMPLE_POINTS:
+        return StylizedFactResult(NOT_APPLICABLE, None, None, {"n": n_total})
+    vols = _rolling_volatility(_aligned_log_returns(samples), window)
+    pairs = [
+        (vols[i], float(samples[i].volume_since_last))
+        for i in range(n_total)
+        if vols[i] is not None
+    ]
+    if len(pairs) < MIN_SAMPLE_POINTS // 2:
+        return StylizedFactResult(NOT_APPLICABLE, None, None, {"n_pairs": len(pairs)})
+    r = _pearson([p[0] for p in pairs], [p[1] for p in pairs])
+    n_pairs = len(pairs)
+    t = r * math.sqrt(n_pairs - 2) / math.sqrt(max(1e-12, 1 - r * r))
+    p = _one_sided_p(t)
+    verdict = "PASS" if (p < ALPHA and r > 0) else "FAIL"
+    return StylizedFactResult(verdict, r, p, {"corr": r, "n_pairs": n_pairs, "window": window})
+
+
+def check_order_flow_long_memory(
+    order_signs: list[int], max_lag: int = ORDER_FLOW_MAX_LAG
+) -> StylizedFactResult:
+    """Fact 5 (spec §6 #5, new here): the order-direction series (buy ``+1`` /
+    sell ``-1``) keeps a positive ACF over lags ``1..max_lag`` **and** its
+    ``ln(ACF) ~ ln(lag)`` OLS slope is significantly negative (power-law decay).
+
+    A non-positive ACF at any lag leaves the log-log regression undefined, so
+    the fact fails with no statistic rather than being fitted on the positive
+    lags only -- picking the lags would be a caliber the spec does not grant.
+    """
+    n = len(order_signs)
+    if n < MIN_SAMPLE_POINTS or max_lag <= 1 or max_lag >= n:
+        return StylizedFactResult(NOT_APPLICABLE, None, None, {"n": n, "max_lag": max_lag})
+    values = [float(s) for s in order_signs]
+    acfs = [acf(values, lag) for lag in range(1, max_lag + 1)]
+    non_positive = [lag for lag, a in enumerate(acfs, start=1) if a <= 0]
+    if non_positive:
+        return StylizedFactResult(
+            "FAIL",
+            None,
+            None,
+            {"first_non_positive_lag": non_positive[0], "n_non_positive": len(non_positive)},
+        )
+    xs = [math.log(lag) for lag in range(1, max_lag + 1)]
+    ys = [math.log(a) for a in acfs]
+    m = len(xs)
+    x_mean = sum(xs) / m
+    y_mean = sum(ys) / m
+    sxx = sum((x - x_mean) ** 2 for x in xs)
+    sxy = sum((x - x_mean) * (y - y_mean) for x, y in zip(xs, ys, strict=True))
+    slope = sxy / sxx
+    intercept = y_mean - slope * x_mean
+    sse = sum((y - (intercept + slope * x)) ** 2 for x, y in zip(xs, ys, strict=True))
+    se_slope = math.sqrt((sse / (m - 2)) / sxx)
+    # H0: slope >= 0 vs H1: slope < 0 -- the lower tail of the same normal
+    # approximation the protocol uses elsewhere.
+    t = slope / se_slope if se_slope > 0 else 0.0
+    p = _one_sided_p(-t)
+    verdict = "PASS" if (p < ALPHA and slope < 0) else "FAIL"
+    return StylizedFactResult(
+        verdict,
+        slope,
+        p,
+        {"slope": slope, "se_slope": se_slope, "max_lag": max_lag, "acf_lag1": acfs[0]},
+    )
+
+
+def build_stylized_facts(
+    market_samples: list[MarketSample],
+    order_signs: list[int],
+    window: int = VOLUME_VOLATILITY_WINDOW,
+    max_lag: int = ORDER_FLOW_MAX_LAG,
+) -> dict[str, StylizedFactResult]:
+    """The five SC-502 facts of one run, **before** family-A correction.
+
+    Feed the result straight into ``market_quality.build_report``; that module
+    owns the family instance {1, 3, 4, 5} and the ``>= 3`` count.  A 前值填充
+    ratio above 30% makes every price-based fact NOT_APPLICABLE (协议 §2) --
+    the same gate ``build_market_validation_matrix`` applies to KPI-005; the
+    order-flow fact reads no prices, so it is still measured.
+    """
+    fill_ratio = compute_fill_ratio(market_samples)
+    order_flow = check_order_flow_long_memory(order_signs, max_lag)
+    if fill_ratio > MAX_FILL_RATIO:
+        unusable = StylizedFactResult(NOT_APPLICABLE, None, None, {"fill_ratio": fill_ratio})
+        return {
+            FAT_TAILS: unusable,
+            RETURN_AUTOCORRELATION: unusable,
+            VOLATILITY_CLUSTERING: unusable,
+            VOLUME_VOLATILITY_CORRELATION: unusable,
+            ORDER_FLOW_LONG_MEMORY: order_flow,
+        }
+    returns = compute_log_returns(market_samples)
+    return {
+        FAT_TAILS: _as_fact(check_fat_tails(returns)),
+        RETURN_AUTOCORRELATION: _as_fact(check_return_autocorrelation(returns)),
+        VOLATILITY_CLUSTERING: check_volatility_clustering_lags(returns),
+        VOLUME_VOLATILITY_CORRELATION: check_volume_volatility_correlation(market_samples, window),
+        ORDER_FLOW_LONG_MEMORY: order_flow,
+    }
