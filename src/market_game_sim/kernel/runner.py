@@ -363,10 +363,30 @@ class EventKernel:
             if "agent_history" in pending_state:
                 # Replace with the observation's cumulative snapshot.  This
                 # remains correct for overlapping observations and avoids
-                # extending the same interval twice on a retry.
+                # extending the same interval twice on a retry.  (Legacy shape:
+                # kept so a caller staging a materialised history still works.)
                 world.setdefault("agent_bars", {})[pending_state["agent_id"]] = list(
                     pending_state["agent_history"]
                 )
+            elif "agent_history_base" in pending_state:
+                # 0.4.1 perf: same replace semantics, without the per-observation
+                # copy of the whole history.  Truncating to the base this
+                # observation saw and appending its own interval yields exactly
+                # the cumulative snapshot the old code materialised: a later
+                # overlapping observation carries a larger base, and a retry
+                # carries the same one, so neither double-extends.
+                history = world.setdefault("agent_bars", {}).setdefault(
+                    pending_state["agent_id"], []
+                )
+                del history[pending_state["agent_history_base"] :]
+                history.extend(pending_state["agent_history_extend"])
+            if "agent_bar_state" in pending_state:
+                # 0.4.1 perf: the running per-bar aggregate derived from the same
+                # history, committed with the same replace semantics so the two
+                # can never drift apart across overlapping observations/retries.
+                world.setdefault("agent_bar_state", {})[pending_state["agent_id"]] = pending_state[
+                    "agent_bar_state"
+                ]
 
         # 0.1.5 T206/T207: maintain the global public tape + the latest market
         # data boundary.  The kernel is the only place that knows each record's
