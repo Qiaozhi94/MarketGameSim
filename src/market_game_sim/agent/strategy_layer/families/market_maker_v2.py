@@ -50,6 +50,9 @@ FAMILY_ID = "market_maker_v2"
 #: Keyed-draw mechanisms; distinct from every existing mechanism (KR-004).
 MECHANISM_HALF_SPREAD = "strategy_mm_half_spread"
 MECHANISM_QUOTE_SIZE = "strategy_mm_quote_size"
+#: 0.4.1 T967: 每个代理的起始报价相位。没有它，同族代理的 decision_index 完全
+#: 同步（同一 observe_interval、同一起点），六个做市商会齐步报同一侧。
+MECHANISM_SIDE_PHASE = "strategy_mm_side_phase"
 
 
 @dataclass(frozen=True)
@@ -123,13 +126,26 @@ class MarketMakerV2(TraderStrategy):
         inv_ratio = max(Decimal(-1), min(Decimal(1), inv_ratio))
         return int(inv_ratio * self.inventory_skew_k_bp * half_spread / Decimal(10_000))
 
+    def side_phase(self, ctx: DrawContext) -> int:
+        """该代理的起始相位（0/1），逐代理抽取一次（KR-004 keyed draw）。"""
+        return int(blake2b_uniform(ctx.master_seed, ctx.agent_id, MECHANISM_SIDE_PHASE, 0, 0) * 2)
+
     def _side(self, inventory: int, ctx: DrawContext) -> str:
-        """Alternate by decision parity; an inventory cap overrides it."""
+        """Alternate by decision parity **offset by this agent's phase**.
+
+        0.4.1 T967 实测：只按 decision_index 奇偶交替时，同族代理的相位完全同步
+        ——415 个报价时刻里 415 次六个做市商全部报同一侧，盘口在代理观察时刻几乎
+        永远单边。而 ``order_intent_from_target`` 要求买卖两侧同时存在，于是任何
+        信号族即使算出了目标也下不出单，市场停在「只有锚单成交」的状态。相位逐
+        代理抽取后，任一时刻约一半报买、一半报卖，双边盘口才能持续存在。
+
+        库存上限仍然覆盖相位：抵住上限的代理只报回归的那一侧。
+        """
         if inventory >= self.max_inventory:
             return "SELL"
         if inventory <= -self.max_inventory:
             return "BUY"
-        return "BUY" if ctx.decision_index % 2 == 0 else "SELL"
+        return "BUY" if (ctx.decision_index + self.side_phase(ctx)) % 2 == 0 else "SELL"
 
     def decide(
         self,
@@ -174,5 +190,6 @@ __all__ = [
     "FAMILY_ID",
     "MECHANISM_HALF_SPREAD",
     "MECHANISM_QUOTE_SIZE",
+    "MECHANISM_SIDE_PHASE",
     "MarketMakerV2",
 ]

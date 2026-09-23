@@ -36,6 +36,7 @@ from market_game_sim.agent.strategy_layer.families import (
     build_native_families,
     register_native_families,
 )
+from market_game_sim.agent.strategy_layer.families._common import draw_context
 from market_game_sim.agent.strategy_layer.families.trend_following import TIME_SCALES
 from market_game_sim.agent.strategy_layer.protocol import (
     ACTION_NO_ACTION,
@@ -317,11 +318,45 @@ def test_sentiment_noise_fails_closed_without_a_draw_context(kwargs):
 # --------------------------------------------------------------------------- #
 
 
+def _draw_ctx(agent_id: str):
+    return draw_context(make_state(agent_id), "market_maker_v2")
+
+
+def test_market_maker_side_phase_is_drawn_per_agent():
+    """0.4.1 T967: 相位逐代理抽取，否则同族代理齐步报同一侧。
+
+    实测过的失效形态：只按 decision_index 奇偶交替时，同族代理的
+    ``decision_index`` 完全同步（同一 observe_interval、同一起点），415 个报价
+    时刻里 415 次六个做市商全部报同一侧，盘口在代理观察时刻几乎永远单边，
+    任何信号族都下不出单（``order_intent_from_target`` 要求两侧同时存在）。
+    """
+    family = MarketMakerV2()
+    info = make_info(InformationTier.I0)
+    agents = [f"market_maker_v2-{i}" for i in range(6)]
+    sides_at_zero = {
+        agent: family.decide(info, make_state(agent, decision_index=0), PREFS).order_intent.side
+        for agent in agents
+    }
+    assert set(sides_at_zero.values()) == {"BUY", "SELL"}, "同一时刻全族同侧：相位没有分散"
+
+    # 每个代理自身仍然交替——分散的是相位，不是「随机选边」。
+    for agent, side_at_zero in sides_at_zero.items():
+        side_at_one = family.decide(
+            info, make_state(agent, decision_index=1), PREFS
+        ).order_intent.side
+        assert side_at_one != side_at_zero, agent
+
+    # 相位是 keyed draw：同代理同种子必须复现。
+    again = family.decide(info, make_state(agents[0], decision_index=0), PREFS)
+    assert again.order_intent.side == sides_at_zero[agents[0]]
+
+
 def test_market_maker_quotes_a_limit_order_on_the_parity_side():
     family = MarketMakerV2()
     info = make_info(InformationTier.I0)
-    buy = family.decide(info, make_state("mm-1", decision_index=0), PREFS)
-    sell = family.decide(info, make_state("mm-1", decision_index=1), PREFS)
+    phase = family.side_phase(_draw_ctx("mm-1"))
+    buy = family.decide(info, make_state("mm-1", decision_index=0 + phase), PREFS)
+    sell = family.decide(info, make_state("mm-1", decision_index=1 + phase), PREFS)
     assert buy.action == ACTION_ORDER_INTENT
     assert buy.order_intent.side == "BUY"
     assert buy.order_intent.order_type == "LIMIT"

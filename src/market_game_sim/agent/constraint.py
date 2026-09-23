@@ -314,8 +314,12 @@ class MarginConstraint(InstitutionalConstraint):
         # Degenerate: the goal layer already resolved the case; propagate its
         # reason into the executable evidence (executable = desired or 0).
         if goal_action == "skip_decision" or goal_desired is None:
-            reason = goal_degenerate_reason or ConstraintReason.MARK_UNDEFINED
-            return ExecutableDecision(0, True, reason)
+            # 0.4.1 T967: 兜底成 MARK_UNDEFINED 会让记录说谎——策略族主动不动作
+            # （无信号 / 历史不足）时估值标记其实有定义。词汇表里没有对应的值，
+            # 而该字段本身可空（goal_contract_v2.json: nullable），所以如实留空，
+            # 由 internal_state.family_reason_code 记录族自己的原因。既有目标模型
+            # 的 skip 一律自带 MARK_UNDEFINED，记录逐字节不变。
+            return ExecutableDecision(0, True, goal_degenerate_reason)
         if goal_degenerate_reason is not None:
             # reduce_only (NON_POSITIVE_EQUITY) or emit_decision (EWMA_WARMUP):
             # desired is already 0; the degenerate condition binds.

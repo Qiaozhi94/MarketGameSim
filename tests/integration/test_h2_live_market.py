@@ -350,3 +350,40 @@ def test_advance_never_copies_the_whole_log(monkeypatch):
     # view() 需要全量记录是合理的（它要重建 K 线与盘口快照），不在禁令范围内。
     market.view()
     assert copies, "view() 未读取记录，说明这条守卫失去了对照"
+
+
+def test_quoting_family_covers_both_sides_at_every_instant():
+    """0.4.1 T967 根因守卫：同一报价时刻必须两侧都有报价。
+
+    实测的失效形态：相位同步时 415/415 个报价时刻全族同侧，盘口在代理观察时刻
+    几乎永远单边，而 ``order_intent_from_target`` 要求两侧同时存在——于是没有
+    任何信号族能下单，市场停在「只有锚单成交」的状态（12 笔成交、价格不动）。
+    """
+    market = LiveMarket(roster=DEFAULT_LIVE_ROSTER)
+    for _ in range(30):
+        market.advance()
+
+    per_instant: dict[int, set[str]] = {}
+    for record in market.kernel.committed_records:
+        if (
+            record.get("event_type") == "ORDER_ARRIVAL"
+            and record.get("action") == "SUBMIT"
+            and str(record["agent_id"]).startswith("market_maker_v2-")
+        ):
+            per_instant.setdefault(record["timestamp"], set()).add(record["side"])
+    assert per_instant, "做市商族没有报价"
+    single_sided = [ts for ts, sides in per_instant.items() if len(sides) < 2]
+    assert not single_sided, f"{len(single_sided)}/{len(per_instant)} 个报价时刻只有单侧"
+
+
+def test_signal_families_trade_once_the_book_is_two_sided():
+    """根因修复的正面判据：成交不再只来自冷启动锚，价格会动。"""
+    market = LiveMarket(roster=DEFAULT_LIVE_ROSTER)
+    for _ in range(30):
+        market.advance()
+    trades = [r for r in market.kernel.committed_records if r.get("event_type") == "TRADE_SETTLE"]
+    assert len(trades) > 50, f"只有 {len(trades)} 笔成交：市场仍然几乎不成交"
+    assert len({t["price_ticks"] for t in trades}) > 1, "所有成交同价：价格没有移动"
+    # 锚只在预热期发单；预热后仍有成交，说明是策略族在交易。
+    anchor_window_ns = 2_000_000_000
+    assert [t for t in trades if t["timestamp"] > anchor_window_ns], "预热期之后没有成交"

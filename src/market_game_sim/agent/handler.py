@@ -407,6 +407,11 @@ def _belief_intent_v2(
             str(evidence.constraint_reason) if evidence.constraint_reason is not None else None
         ),
     }
+    family_reason = goal_decision.updated_state.model_private_state.get("family_reason_code")
+    if family_reason is not None:
+        # 族主动不动作时 constraint_reason 为空（词汇表无对应值），由本键说明原因；
+        # 只有策略族代理会带这个键，既有记录逐字节不变。
+        internal_state["family_reason_code"] = family_reason
     if anchored:
         # Only anchored decisions carry the key, so unanchored runs keep their
         # AGENT_DECIDE records byte-identical.

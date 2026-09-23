@@ -21,7 +21,7 @@ only what its declared tier allows, here as everywhere else.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from market_game_sim.agent.goal import (
     AgentInternalStateV1,
@@ -50,6 +50,9 @@ from market_game_sim.agent.strategy_layer.protocol import (
     crop_information_set,
 )
 from market_game_sim.agent.strategy_layer.registry import get_strategy, register_strategy
+
+#: Where a family's own ``reason_code`` travels from the seam to the record.
+FAMILY_REASON_KEY = "family_reason_code"
 
 #: Families whose output is a target position -- they ride the GoalModel seam.
 TARGET_POSITION_FAMILIES: tuple[TraderStrategy, ...] = (
@@ -111,12 +114,23 @@ class StrategyGoalModel(GoalModel):
             )
         if decision.action == ACTION_NO_ACTION:
             # No signal is not "target zero": flattening on every quiet tick
-            # would manufacture order flow the family did not ask for.
+            # would manufacture order flow the family did not ask for.  The
+            # family's own reason travels in the private state so the decision
+            # record says *why* nothing happened (0.4.1 T967).
+            state = decision.updated_state
+            if decision.reason_code:
+                state = replace(
+                    state,
+                    model_private_state={
+                        **state.model_private_state,
+                        FAMILY_REASON_KEY: decision.reason_code,
+                    },
+                )
             return GoalDecision(
                 desired_position_units=None,
                 action="skip_decision",
                 degenerate_reason=None,
-                updated_state=decision.updated_state,
+                updated_state=state,
             )
         raise StrategyLayerError(
             "UNSUPPORTED_ACTION_FOR_SEAM",

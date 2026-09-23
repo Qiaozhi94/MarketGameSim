@@ -440,3 +440,74 @@ def test_roster_assembled_run_records_the_family() -> None:
     )
     families = {r["internal_state"]["strategy_family_id"] for r in _decisions(result)}
     assert families == {"inventory_market_maker", "goal_belief"}
+
+
+# --------------------------------------------------------------------------- #
+# 0.4.1 T967: 族主动不动作时，记录必须说实话
+# --------------------------------------------------------------------------- #
+
+
+def _family_run() -> RunResult:
+    """清单装配的真实运行：族自己决策，才会产出族原因码。"""
+    from market_game_sim.experiment.h2.live_market import DEFAULT_LIVE_ROSTER
+    from market_game_sim.experiment.roster import build_experiment_config
+
+    roster = parse_roster(DEFAULT_LIVE_ROSTER)
+    return run_one(build_experiment_config(roster, max_transactions=4000))
+
+
+def test_family_no_action_is_recorded_as_such_not_as_an_undefined_mark() -> None:
+    """跳过的决策不得被兜底标成 MARK_UNDEFINED。
+
+    实测的失效形态：策略族因「无信号 / 历史不足」返回 no_action 时，
+    ``constraint.apply`` 兜底把 constraint_reason 写成 MARK_UNDEFINED——而估值标记
+    当时是有定义的（信息集里 valuation_mark_half_ticks 非空）。审计记录因此在说谎：
+    看记录的人会去查空簿，真实原因却是族自己不想动。
+    """
+    skipped = [
+        record
+        for record in _decisions(_family_run())
+        if record["internal_state"].get("family_reason_code")
+    ]
+    assert skipped, "本次运行没有族主动不动作的决策，断言失去对象"
+    for record in skipped:
+        state = record["internal_state"]
+        assert state["constraint_reason"] is None, record["event_id"]
+        assert state["family_reason_code"] in {
+            "NO_SIGNAL",
+            "INSUFFICIENT_HISTORY",
+            "NO_BUDGET",
+            "NO_MARK",
+            "PRICE_OUT_OF_RANGE",
+        }, state["family_reason_code"]
+
+
+def test_goal_models_still_record_their_own_degenerate_reason() -> None:
+    """反面：既有目标模型的 skip 仍然带 MARK_UNDEFINED，记录逐字节不变。"""
+    from market_game_sim.agent.constraint import (
+        ConstraintAccountView,
+        ConstraintPolicy,
+        ConstraintReason,
+        MarginConstraint,
+    )
+
+    executable = MarginConstraint().apply(
+        goal_desired=None,
+        goal_action="skip_decision",
+        goal_degenerate_reason=ConstraintReason.MARK_UNDEFINED,
+        account=ConstraintAccountView(
+            wallet_units=1000, position_units=0, entry_notional_units=0, reserved_units=0
+        ),
+        active_orders=[],
+        policy=ConstraintPolicy(
+            leverage_tier=1,
+            initial_bp=10_000,
+            maint_bp=500,
+            max_order_qty=100,
+            fee_bps=5,
+            mult=1000,
+            risk_mark_ticks=10_000,
+        ),
+    )
+    assert executable.constraint_reason is ConstraintReason.MARK_UNDEFINED
+    assert executable.constraint_binding is True
