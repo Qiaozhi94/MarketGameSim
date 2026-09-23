@@ -19,18 +19,25 @@ Flakiness design (a timing test in a shared suite has to earn its place):
   case judges a real measurement against an impossible budget, so "does the
   gate actually fail when over budget" is answered deterministically rather
   than by racing the machine.
-* Measured headroom on the development machine is ~18x (median 0.027 s
+* Measured headroom on the development machine is ~13x (median 0.037 s
   against a 0.5 s budget, 30 agents), so ordinary hardware variation cannot
   produce a false red; a red here means the market genuinely slowed down.
 
-What this gate does **not** claim: that the market is economically alive.
-The T966 assembly currently trades almost exclusively during the cold-start
-anchor (measured trade/order = 0.0012 over 60 logical seconds, price still at
-the initial tick), so the wall clock below describes a market whose strategy
-families are not yet trading.  :func:`test_measurement_describes_a_live_market`
-holds the floor that keeps a fully dead market from passing silently, and the
-artifact carries ``trade_per_order`` so the idleness is visible to whoever
-reads the number rather than buried.
+Baseline history, because the number only means something with its market:
+the first measurement (median 0.027 s, trade/order 0.0012) was taken on an
+assembly that barely traded -- ``market_maker_v2`` quoted one side at a time
+and every maker moved in lockstep, so the book was single-sided at every
+observation and no signal family could place an order.  With the quoting
+phase dispersed per agent, the same 60 logical seconds settle 234 trades
+instead of 12 (trade/order 0.0211) and the median rises to 0.037 s.  Roughly
+17x the matching work for ~1.4x the wall clock: the clock gate was never the
+binding constraint, the dead market was.
+
+What this gate still does **not** claim: that the market is economically
+*healthy*.  Judging price discovery, spread and depth is T967's quality gate.
+:func:`test_measurement_describes_a_live_market` only holds a floor against a
+silently dead market, and the artifact carries ``trade_per_order`` so the
+trading intensity is visible to whoever reads the number rather than buried.
 """
 
 from __future__ import annotations
@@ -53,6 +60,13 @@ from market_game_sim.metrics.live_perf import (
     measure,
     verdict,
 )
+
+#: Liveness floor for the timed window below (20 s), where the current
+#: assembly settles 98 trades at trade-per-order 0.0229.  Trading here is
+#: deterministic -- keyed draws, no wall-clock input -- so the margin guards
+#: against a behaviour regression, not against timing noise.
+MIN_TRADES = 60
+MIN_TRADE_PER_ORDER = 0.005
 
 WARMUP_SECONDS = 5
 TIMED_SECONDS = 20
@@ -132,12 +146,15 @@ def test_budget_boundary_passes_at_equality_and_fails_just_under(report):
 def test_measurement_describes_a_live_market(report):
     """A market that never trades at all would pass the clock gate trivially.
 
-    This is the floor, not a liveness claim: the assembly currently trades
-    only during the cold-start anchor (see module docstring).  Raising this
-    floor belongs to T967's quality gate, which judges the market itself.
+    The floor sits well below the measured baseline (98 trades /
+    trade-per-order 0.0229 in this 20 s window) and well above the
+    pre-phase-fix assembly (0.0012): it catches a regression that
+    kills trading -- the single-sided-book deadlock this suite already lived
+    through -- without turning ordinary variation red.  Judging whether the
+    trading that happens is *good* remains T967's quality gate.
     """
-    assert report.mix.get("TRADE_SETTLE", 0) > 0
-    assert report.trade_per_order > 0
+    assert report.mix.get("TRADE_SETTLE", 0) >= MIN_TRADES
+    assert report.trade_per_order >= MIN_TRADE_PER_ORDER
     assert report.mix.get("ORDER_ARRIVAL", 0) > 0
 
 
