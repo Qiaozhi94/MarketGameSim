@@ -86,5 +86,14 @@ def compute_config_hash(config: ExperimentConfig) -> str:
     payload = asdict(config)
     if payload["bootstrap_anchor"] is None:
         del payload["bootstrap_anchor"]
+    # 0.4.1 T965: the strategy-layer labels on an AgentSpec are left out while
+    # unset, for the same reason as ``bootstrap_anchor`` above -- every
+    # pre-0.4.1 config (bench, H2, robustness) must keep the hash its frozen
+    # evidence records.  A roster-assembled spec carries them and hashes
+    # differently, which is correct: it *is* a different assembly.
+    for spec in payload.get("agent_specs", []):
+        for key in ("strategy_family_id", "info_tier"):
+            if spec.get(key) is None:
+                spec.pop(key, None)
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))
     return hashlib.blake2b(canonical.encode("utf-8"), digest_size=16).hexdigest()

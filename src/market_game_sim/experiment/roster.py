@@ -234,11 +234,21 @@ def _validate_goal_params(params: Mapping[str, Any], where: str) -> None:
     _int(params["ewma_half_life_trades"], f"{where}.ewma_half_life_trades", minimum=0)
 
 
+# 0.4.1 T965 (TR-501): the information tier each roster family declares, used
+# to label its agents' decision records.  The market maker quotes off the top
+# of book and its own inventory (I0); the goal families also read the public
+# trade tape and completed bars (I2).  T968/T969's families declare their own
+# tier when they join ``_FAMILIES``.
+_FAMILY_TIERS = {"inventory_market_maker": "I0", "goal_belief": "I2"}
+
+
 def _build_mm(agent_id: str, family: FamilyEntry) -> AgentSpec:
     p = family.params
     return AgentSpec(
         agent_id=agent_id,
         role="inventory_market_maker",
+        strategy_family_id=family.family_id,
+        info_tier=_FAMILY_TIERS[family.family_id],
         observe_interval_ns=family.observe_interval_ns,
         latency_ns=family.latency_ns,
         is_market_maker=True,
@@ -256,6 +266,8 @@ def _build_goal(agent_id: str, family: FamilyEntry) -> AgentSpec:
     return AgentSpec(
         agent_id=agent_id,
         role="belief_trader",
+        strategy_family_id=family.family_id,
+        info_tier=_FAMILY_TIERS[family.family_id],
         observe_interval_ns=family.observe_interval_ns,
         latency_ns=family.latency_ns,
         leverage_tier=p["leverage_tier"],

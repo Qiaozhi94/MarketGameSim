@@ -34,6 +34,15 @@ class AgentSpec:
     goal_model_id: str | None = None
     risk_appetite_x1000: int = 2000
     ewma_half_life_trades: int = 0
+    # 0.4.1 T965 (TR-501): which L2 strategy family assembled this agent and
+    # which information tier that family declared (``I0``—``I3``).  Both are
+    # labels for the causal chain -- they are written into
+    # ``AGENT_DECIDE.internal_state`` and change no decision.  ``None`` means
+    # "not assembled from a roster" (bench / H2 / legacy specs): the keys stay
+    # out of the record and out of ``compute_config_hash``, so every pre-0.4.1
+    # run keeps its events and its config hash byte-identical.
+    strategy_family_id: str | None = None
+    info_tier: str | None = None
 
 
 def initial_observe_events(agents: list[AgentSpec]) -> list[dict]:
