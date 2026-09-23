@@ -187,6 +187,8 @@ def _write_event_log(path: pathlib.Path, runtime: InteractiveRuntime, config_has
         fee_bps_cap=5,
         initial_price_ticks=runtime.adapter.initial_price_ticks,
         agent_initial_bp={"human": 10_000, "maker": 10_000},
+        # 交互沙盒不装配代理族，没有冷启动锚（§6.1 v5 要求显式声明）。
+        bootstrap_anchor={"source": "none"},
         run_mode="interactive",
     )
     events = runtime.adapter.records

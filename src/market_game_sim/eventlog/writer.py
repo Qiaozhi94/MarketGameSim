@@ -42,9 +42,10 @@ def build_run_header(
     fee_bps_cap: int,
     initial_price_ticks: int,
     agent_initial_bp: dict[str, int],
+    bootstrap_anchor: dict[str, Any],
     run_mode: str = "benchmark",
     information_set_mode: str = "full",
-    schema_version: int = 4,
+    schema_version: int = 5,
 ) -> dict[str, Any]:
     """Build a ``RUN_HEADER`` dict (§6.1).
 
@@ -61,6 +62,12 @@ def build_run_header(
     config does not match the actual run, making the log unreplayable via
     the public path.  Pass ``agent_initial_bp={}`` explicitly if no agent
     has a special initial margin bp.
+
+    ``bootstrap_anchor`` (v5, 0.4.1 FR-501/NFR-502) is the frozen cold-start
+    anchor declaration -- ``{"source": "none"}`` when the run has no anchor.
+    It is **required** for the same reason as the four above: ``config_hash``
+    proves only that *some* config differed, while a reader of the log must be
+    able to tell which anchor produced these decisions.
     """
     if not all(isinstance(x, str) for x in (tick_size, min_quantity, cash_unit)):
         raise TypeError("tick_size/min_quantity/cash_unit must be string decimals (§6.1)")
@@ -81,6 +88,7 @@ def build_run_header(
         "fee_bps_cap": fee_bps_cap,
         "initial_price_ticks": initial_price_ticks,
         "agent_initial_bp": dict(agent_initial_bp),
+        "bootstrap_anchor": dict(bootstrap_anchor),
     }
 
 

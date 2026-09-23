@@ -59,13 +59,14 @@ class TestRunHeaderFields:
             f = reg.get_field("RUN_HEADER", fname)
             assert f.hash_class == "HASH_EXCLUDE", f"RUN_HEADER.{fname} must be HASH_EXCLUDE"
 
-    def test_header_has_16_fields(self):
+    def test_header_has_17_fields(self):
         reg = get_registry()
-        assert len(reg.field_names("RUN_HEADER")) == 16
+        assert len(reg.field_names("RUN_HEADER")) == 17
 
     def test_build_run_header_rejects_float_tick_size(self):
         with pytest.raises(TypeError, match="string decimals"):
             build_run_header(
+                bootstrap_anchor={"source": "none"},
                 run_id="r",
                 code_version="v",
                 config_hash="h",

@@ -225,6 +225,7 @@ def _write_run_log(
         agent_initial_bp={
             s.agent_id: initial_margin_bp_for_tier(s.leverage_tier) for s in config.agent_specs
         },
+        bootstrap_anchor=result.bootstrap_anchor,
         run_mode="research",
     )
     max_txn = max(

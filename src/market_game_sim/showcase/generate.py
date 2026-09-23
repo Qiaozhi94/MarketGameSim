@@ -94,6 +94,7 @@ def _write_run_log(
         fee_bps_cap=max(config.maker_bps, config.taker_bps, 0),
         initial_price_ticks=config.initial_price_ticks,
         agent_initial_bp=_agent_initial_bp(config),
+        bootstrap_anchor=result.bootstrap_anchor,
         run_mode="benchmark",
     )
     trailer = _build_trailer(result)

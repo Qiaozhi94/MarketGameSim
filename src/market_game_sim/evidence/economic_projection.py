@@ -20,12 +20,23 @@ import hashlib
 import json
 from typing import Any
 
-PROJECTION_VERSION = 1
+PROJECTION_VERSION = 2
 
 EXCLUDED_EVENT_TYPES = frozenset({"MARKET_DATA_PUBLISH"})
-# Fields whose value is the identity or time of a MARKET_DATA_PUBLISH record.
+# Fields whose value is the identity or time of a MARKET_DATA_PUBLISH record,
+# plus ``schema_version``: the log FORMAT version is not an economic fact, and
+# it sits on every record, so a format bump (e.g. v4 -> v5 adding a RUN_HEADER
+# field) would otherwise make every frozen digest differ while not a single
+# order, fill or decision changed.  Excluding it cannot hide a behaviour
+# change: any such change still shows up in the other fields.
 EXCLUDED_FIELDS = frozenset(
-    {"market_data_event_id", "cursor_from_event_id", "cursor_to_event_id", "observed_at"}
+    {
+        "market_data_event_id",
+        "cursor_from_event_id",
+        "cursor_to_event_id",
+        "observed_at",
+        "schema_version",
+    }
 )
 # decision_evidence mirrors the observation cursor it consumed.
 EXCLUDED_NESTED = {"decision_evidence": frozenset({"cursor_from_event_id", "cursor_to_event_id"})}

@@ -285,6 +285,14 @@ ADR、提升 schema 版本号，并显式声明受影响的既有实验。
 `HASH_EXCLUDE`——它们承载的是 KPI-006 追溯链的环节标识与实现证据，不参与市场结果
 的确定性哈希（E-002 排除原则与既有因果外键一致）。
 
+**版本 5**（0.4.1 T963/T966，FR-501 / NFR-502）为 `RUN_HEADER` 增加 `bootstrap_anchor`
+——冷启动锚的冻结声明（无锚时为 `{"source": "none"}`）。锚决定了预热期内代理是否发出
+首笔委托，因此它是「同配置同种子可复现」的判定输入；`config_hash` 只能证明配置不同，
+读日志的人无法据此知道用的是哪个锚（与 v3 把回放关键配置写进头部同一理由，ADR-004）。
+`RUN_HEADER` 整条不参与 §7 摘要哈希，故 v5 的哈希输入与 v4 相同。**v4 日志不可通过公开
+回放路径回放**：读取器对不等于当前版本的 `schema_version` 抛 `LogError`（TI-5），
+与 v2 的处置一致。
+
 **首次正式运行之后，任何字段、class 或哈希字段集合的变更都必须提升版本号。**
 「首次正式运行」指第一次产出被 `docs/experiments/` 引用的事件日志。
 
@@ -994,7 +1002,7 @@ RUN_TRAILER         至多一条，文件最后一行
 | 字段 | 类型 | 可空 | 说明 |
 |---|---|---|---|
 | `record_kind` | 枚举 | 否 | 恒为 `"RUN_HEADER"` |
-| `schema_version` | 整数 | 否 | 事件日志格式版本，当前为 `4`（§2） |
+| `schema_version` | 整数 | 否 | 事件日志格式版本，当前为 `5`（§2） |
 | `run_id` | 字符串 | 否 | 本次运行的唯一标识 |
 | `code_version` | 字符串 | 否 | Git commit SHA，工作区不干净时追加 `-dirty` |
 | `config_hash` | 字符串 | 否 | 规范化配置的 `blake2b` 摘要（十六进制） |
@@ -1009,6 +1017,7 @@ RUN_TRAILER         至多一条，文件最后一行
 | `fee_bps_cap` | 整数 | 否 | 回放关键配置：手续费上限（`max(maker_bps, taker_bps, 0)`）。回放重建 `reserved_units` 时需要 |
 | `initial_price_ticks` | 整数 | 否 | 回放关键配置：初始价格（ticks）。回放重建 `reserved_units` 时作为无成交时的风险标记价 |
 | `agent_initial_bp` | 对象 | 否 | 回放关键配置：`agent_id -> initial_margin_bp` 映射。回放重建 `reserved_units` 时需要每个代理的初始保证金率 |
+| `bootstrap_anchor` | 对象 | 否 | 回放关键配置（v5）：冷启动锚的冻结声明，至少含 `source`（`none` \| `synthetic`）。无锚运行写 `{"source": "none"}`——缺失即 TI-5，不得省略 |
 
 三个单位字段用**字符串十进制**而非浮点，与配置解析同一理由（ADR-001 §2）：
 `0.01` 在 IEEE 754 下不可精确表示，写成浮点会使不同平台的 header 逐字节不同，

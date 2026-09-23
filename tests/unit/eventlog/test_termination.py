@@ -25,6 +25,7 @@ from market_game_sim.kernel.runner import EventKernel
 
 def _make_header(run_id: str = "r") -> dict:
     return build_run_header(
+        bootstrap_anchor={"source": "none"},
         run_id=run_id,
         code_version="test",
         config_hash="0" * 64,

@@ -37,7 +37,13 @@ class ReplayConfig:
 
     @classmethod
     def from_header(cls, header: dict[str, Any]) -> ReplayConfig:
-        required = ("mult", "fee_bps_cap", "initial_price_ticks", "agent_initial_bp")
+        required = (
+            "mult",
+            "fee_bps_cap",
+            "initial_price_ticks",
+            "agent_initial_bp",
+            "bootstrap_anchor",
+        )
         missing = [k for k in required if k not in header]
         if missing:
             raise LogError(f"TI-5: RUN_HEADER missing replay-critical fields: {missing}")
@@ -48,6 +54,9 @@ class ReplayConfig:
         ipt = header["initial_price_ticks"]
         if not isinstance(ipt, int) or isinstance(ipt, bool):
             raise LogError("TI-5: RUN_HEADER.initial_price_ticks must be int")
+        anchor = header["bootstrap_anchor"]
+        if not isinstance(anchor, dict) or not isinstance(anchor.get("source"), str):
+            raise LogError("TI-5: RUN_HEADER.bootstrap_anchor must be an object with a source")
         bp = header["agent_initial_bp"]
         if not isinstance(bp, dict):
             raise LogError("TI-5: RUN_HEADER.agent_initial_bp must be an object")
@@ -247,12 +256,13 @@ def _validate_trailer(
         )
 
 
-#: The only event log schema version this reader supports (ADR-004, v4).
-SUPPORTED_SCHEMA_VERSION = 4
+#: The only event log schema version this reader supports (ADR-004 v4; v5 adds
+#: RUN_HEADER.bootstrap_anchor, 0.4.1 NFR-502).
+SUPPORTED_SCHEMA_VERSION = 5
 
 
 def _validate_supported_schema_version(header: dict[str, Any]) -> None:
-    """Reject logs whose schema_version is not exactly the supported v4.
+    """Reject logs whose schema_version is not exactly the supported version.
 
     ADR-004 policy: v2/v3 logs are NOT replayable via the public path -- the
     RUN_HEADER replay-critical fields are a v3+ contract, and an older header

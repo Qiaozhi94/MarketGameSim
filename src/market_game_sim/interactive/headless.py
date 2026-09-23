@@ -156,6 +156,7 @@ def _write_event_log(
             for spec in config.agent_specs
         }
         | {HUMAN_AGENT_ID: 10_000},
+        bootstrap_anchor=result.bootstrap_anchor,
         run_mode="interactive",
     )
     max_transaction = max(

@@ -43,7 +43,8 @@ def _belief_spec() -> AgentSpec:
 def _write_log(path, result, config: ExperimentConfig) -> None:
     header = {
         "record_kind": "RUN_HEADER",
-        "schema_version": 4,
+        "bootstrap_anchor": {"source": "none"},
+        "schema_version": 5,
         "run_id": f"exp-s{result.seed}",
         "tick_size": "0.01",
         "min_quantity": "0.001",

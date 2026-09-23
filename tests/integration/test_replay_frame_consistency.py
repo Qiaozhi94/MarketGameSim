@@ -94,7 +94,8 @@ def _belief_spec() -> AgentSpec:
 def _write_log(path, result, config: ExperimentConfig) -> None:
     header = {
         "record_kind": "RUN_HEADER",
-        "schema_version": 4,
+        "bootstrap_anchor": {"source": "none"},
+        "schema_version": 5,
         "run_id": f"exp-s{result.seed}",
         "tick_size": "0.01",
         "min_quantity": "0.001",
@@ -397,6 +398,7 @@ def test_e1_closed_loop_through_build_run_header(tmp_path, monkeypatch):
 
     max_txn = max((e["transaction_seq"] for e in result.events), default=2)
     header = build_run_header(
+        bootstrap_anchor={"source": "none"},
         run_id=f"exp-s{result.seed}",
         code_version="test",
         config_hash="0" * 64,

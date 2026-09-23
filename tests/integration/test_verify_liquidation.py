@@ -105,8 +105,9 @@ def test_real_liquidation_log_passes_verify(tmp_path):
     records = kernel.committed_records
     header = {
         "record_kind": "RUN_HEADER",
+        "bootstrap_anchor": {"source": "none"},
         "run_id": "liq-verify",
-        "schema_version": 4,
+        "schema_version": 5,
     }
     trailer = {
         "record_kind": "RUN_TRAILER",
@@ -209,8 +210,9 @@ def test_real_liquidation_log_multi_account_same_batch_passes_verify(tmp_path):
 
     header = {
         "record_kind": "RUN_HEADER",
+        "bootstrap_anchor": {"source": "none"},
         "run_id": "liq-verify-batch",
-        "schema_version": 4,
+        "schema_version": 5,
     }
     trailer = {
         "record_kind": "RUN_TRAILER",

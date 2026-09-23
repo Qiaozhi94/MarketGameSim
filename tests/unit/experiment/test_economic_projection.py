@@ -64,6 +64,14 @@ def _with_extra_publish_and_moved_cursors() -> list[dict]:
     return log
 
 
+def test_format_version_is_not_an_economic_fact() -> None:
+    """A schema_version bump touches every record but changes nothing economic."""
+    bumped = copy.deepcopy(_log())
+    for record in bumped:
+        record["schema_version"] = 5
+    assert economic_digest(bumped) == economic_digest(_log())
+
+
 def test_publish_bookkeeping_alone_does_not_change_the_digest() -> None:
     assert economic_digest(_with_extra_publish_and_moved_cursors()) == economic_digest(_log())
     assert all(r["event_type"] != "MARKET_DATA_PUBLISH" for r in project(_log()))

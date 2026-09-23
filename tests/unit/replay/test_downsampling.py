@@ -144,6 +144,7 @@ def _write_minimal_v3_log(tmp_path, extra_events=()) -> str:
 
     header = {
         "record_kind": "RUN_HEADER",
+        "bootstrap_anchor": {"source": "none"},
         "schema_version": SUPPORTED_SCHEMA_VERSION,
         "run_id": "run-1",
         "tick_size": "0.01",

@@ -1,6 +1,6 @@
 {
   "$comment": "事件日志字段的规范真源（合同产物，随 docs/contracts/event-schema.md 一同评审）。此文件不是实现细节：registry.py 只负责加载它，不得内嵌第二份声明。放在包内而非 docs/ 是因为 wheel 只打包 src/market_game_sim，装包后须能由 importlib.resources 读取。",
-  "schema_version": 4,
+  "schema_version": 5,
   "meta": {
     "field_metadata_keys": [
       "value_type",
@@ -255,6 +255,13 @@
           "nullable": false,
           "required": "always",
           "hash": "HASH_EXCLUDE"
+        },
+        "bootstrap_anchor": {
+          "value_type": "object",
+          "nullable": false,
+          "required": "always",
+          "hash": "HASH_EXCLUDE",
+          "note": "v5 (0.4.1 FR-501/NFR-502): 冷启动锚的冻结声明，至少含 source；无锚写 {\"source\": \"none\"}"
         }
       }
     },

@@ -35,6 +35,7 @@ def registry() -> SchemaRegistry:
 def _make_fixture() -> dict:
     """Minimal fixture producing all 3 record kinds + both posting variants."""
     header = build_run_header(
+        bootstrap_anchor={"source": "none"},
         run_id="f2",
         code_version="v",
         config_hash="h",
@@ -50,7 +51,7 @@ def _make_fixture() -> dict:
     )
     trade_event = {
         "record_kind": "EVENT",
-        "schema_version": 4,
+        "schema_version": 5,
         "event_id": "e3_1",
         "run_id": "f2",
         "timestamp": 100,
@@ -114,7 +115,7 @@ def _make_fixture() -> dict:
     }
     margin_call_event = {
         "record_kind": "EVENT",
-        "schema_version": 4,
+        "schema_version": 5,
         "event_id": "e3_2",
         "run_id": "f2",
         "timestamp": 100,

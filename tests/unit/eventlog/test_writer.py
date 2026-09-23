@@ -26,6 +26,7 @@ from market_game_sim.kernel.runner import EventKernel
 
 def _make_header(run_id: str = "r") -> dict:
     return build_run_header(
+        bootstrap_anchor={"source": "none"},
         run_id=run_id,
         code_version="abc123",
         config_hash="0" * 64,
@@ -52,7 +53,8 @@ class TestRunHeader:
     def test_header_fields(self):
         h = _make_header()
         assert h["record_kind"] == "RUN_HEADER"
-        assert h["schema_version"] == 4
+        assert h["schema_version"] == 5
+        assert h["bootstrap_anchor"] == {"source": "none"}
         assert h["tick_size"] == "0.01"
         assert h["min_quantity"] == "0.001"
         assert h["cash_unit"] == "0.01"
@@ -67,6 +69,7 @@ class TestRunHeader:
     def test_header_rejects_float_units(self):
         with pytest.raises(TypeError):
             build_run_header(
+                bootstrap_anchor={"source": "none"},
                 run_id="r",
                 code_version="v",
                 config_hash="h",

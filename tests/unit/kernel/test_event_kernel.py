@@ -463,6 +463,7 @@ class TestFailStop:
         kernel.run(make_handler(book, fault_after_fill=1), {}, max_transactions=20)
 
         header = build_run_header(
+            bootstrap_anchor={"source": "none"},
             run_id="t204d-ti4",
             code_version="test",
             config_hash="0" * 64,
