@@ -207,7 +207,7 @@ def test_valid_roster_is_accepted() -> None:
         (lambda b: b["engine"].pop("mult"), "MISSING_FIELD"),
         (lambda b: b["families"][0]["params"].pop("quote_size"), "MISSING_FIELD"),
         (lambda b: b.__setitem__("schema_version", 2), "SCHEMA_VERSION_UNSUPPORTED"),
-        (lambda b: b["families"][0].__setitem__("family_id", "trend_following"), "UNKNOWN_FAMILY"),
+        (lambda b: b["families"][0].__setitem__("family_id", "no_such_family"), "UNKNOWN_FAMILY"),
         (lambda b: b["families"].append(copy.deepcopy(b["families"][0])), "DUPLICATE_FAMILY"),
         (lambda b: b["families"][0].__setitem__("count", 0), "INVALID_VALUE"),
         (lambda b: b["families"][0].__setitem__("count", True), "INVALID_VALUE"),

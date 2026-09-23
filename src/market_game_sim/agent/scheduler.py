@@ -42,6 +42,10 @@ class AgentSpec:
     # out of the record and out of ``compute_config_hash``, so every pre-0.4.1
     # run keeps its events and its config hash byte-identical.
     strategy_family_id: str | None = None
+    #: 0.4.1 T966: per-agent family parameters (e.g. a trend follower's
+    #: ``time_scale_index``), merged into ``model_private_state`` at decision
+    #: time.  Only roster-assembled specs carry it.
+    strategy_private: dict[str, int] | None = None
     info_tier: str | None = None
 
 

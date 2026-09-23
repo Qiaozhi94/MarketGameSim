@@ -62,7 +62,7 @@ updated: 2026-09-23
 - [x] T965 (`TR-501`, `NFR-502`, `AC-510`): 把策略族标识与信息集分级写入既有 `AGENT_DECIDE`
       记录的 `internal_state`，不新增事件类型；覆盖多族、多记录并存的批量因果链场景
       — verify: `tests/integration/test_strategy_layer_causality.py`
-- [ ] T966 (`FR-503`, `DR-501`, `AC-503`): 让 `live_market` 按 `StrategyRoster` 装配市场，
+- [x] T966 (`FR-503`, `DR-501`, `AC-503`): 让 `live_market` 按 `StrategyRoster` 装配市场，
       并验证同清单同种子价格序列逐点一致 — verify: `tests/integration/test_h2_live_market.py`
 - [ ] T967 `[成果门:H2-E1]` (`FR-501`, `FR-505`, `AC-501`, `AC-504`, `E6`): 生成可运行的纯 AI 市场与
       第一份 `MarketQualityReport`——冷启动后自发成交、双边盘口可用、六项指标**逐项如实判定**、

@@ -251,20 +251,29 @@ def test_untagged_specs_produce_no_strategy_keys(untagged_run: RunResult) -> Non
         assert "info_tier" not in record["internal_state"]
 
 
-def test_labels_change_nothing_but_the_labels(
+def test_labels_drive_behaviour_once_the_family_is_wired(
     tagged_run: RunResult, untagged_run: RunResult
 ) -> None:
-    """The same market, tagged and untagged, produces the same events."""
-    assert len(tagged_run.events) == len(untagged_run.events)
-    for tagged, plain in zip(tagged_run.events, untagged_run.events, strict=True):
-        stripped = dict(tagged)
-        if tagged["event_type"] == "AGENT_DECIDE":
-            stripped["internal_state"] = {
-                k: v
-                for k, v in tagged["internal_state"].items()
-                if k not in ("strategy_family_id", "info_tier")
-            }
-        assert stripped == plain
+    """0.4.1 T966 changed this contract, deliberately.
+
+    In T965 a label was pure metadata and a tagged run was byte-identical to an
+    untagged one.  T966 wires the roster's families into the runtime, so a spec
+    labelled with a **quoting** family now quotes by that family's rule instead
+    of the built-in one, and family agents carry the keyed-draw identity their
+    per-agent parameters are drawn from.  The run therefore differs -- which is
+    the point of naming a family at all.  What must still hold is that the
+    difference comes from the wired families, not from labelling as such:
+    untagged specs behave exactly as before (see
+    ``test_untagged_specs_produce_no_strategy_keys``).
+    """
+    assert len(tagged_run.events) != len(untagged_run.events)
+    quoting = {
+        record["agent_id"]
+        for record in tagged_run.events
+        if record["event_type"] == "ORDER_ARRIVAL"
+        and str(record["agent_id"]).startswith("market_maker_v2-")
+    }
+    assert quoting, "the quoting family placed no orders: the T966 seam is broken"
 
 
 def test_pre_0_4_1_configs_keep_their_config_hash() -> None:

@@ -6,7 +6,21 @@ ADR-007 不存在于 docs/decisions/；本文件原先引用的就是这个空�
 
 from __future__ import annotations
 
-from market_game_sim.experiment.h2.live_market import HUMAN_AGENT, LiveMarket
+import copy
+import json
+from collections import Counter
+
+import pytest
+
+from market_game_sim.agent.strategy_layer.families.trend_following import (
+    TIME_SCALES as TREND_TIME_SCALES,
+)
+from market_game_sim.experiment.h2.live_market import (
+    DEFAULT_LIVE_ROSTER,
+    HUMAN_AGENT,
+    LiveMarket,
+)
+from market_game_sim.experiment.roster import RosterError
 
 
 def test_ai_market_generates_trades_and_candles():
@@ -183,3 +197,127 @@ def test_module_entrypoint_serves_terminal_and_view():
         server.shutdown()
         server.server_close()
         thread.join(timeout=5)
+
+
+# --------------------------------------------------------------------------- #
+# 0.4.1 T966 (FR-503 / DR-501 / AC-503): 按 StrategyRoster 装配 live 市场
+# --------------------------------------------------------------------------- #
+
+
+def _roster(**overrides) -> dict:
+    return copy.deepcopy(DEFAULT_LIVE_ROSTER) | overrides
+
+
+def test_roster_assembles_every_declared_family_and_trades_without_injection():
+    market = LiveMarket(roster=DEFAULT_LIVE_ROSTER)
+    assert market.roster_id and market.roster_id.startswith("roster-")
+
+    families = Counter(spec.strategy_family_id for spec in market.config.agent_specs)
+    assert families == {
+        "market_maker_v2": 6,
+        "trend_following": 9,
+        "mean_reversion": 9,
+        "sentiment_noise": 6,
+    }
+    for _ in range(40):
+        market.advance()
+
+    view = market.view()
+    assert view["market"]["recent_trades"], "清单装配的市场零成交"
+    # ADR-011 方案 D 门：成交双方只能来自清单装配的代理或人类。
+    assembled = {spec.agent_id for spec in market.config.agent_specs} | {HUMAN_AGENT}
+    trades = [r for r in market.kernel.committed_records if r.get("event_type") == "TRADE_SETTLE"]
+    for trade in trades:
+        assert {trade["maker_agent_id"], trade["taker_agent_id"]} <= assembled
+
+    # 报价必须来自清单声明的做市商族本身（T966 接线），而且逐代理分散——
+    # 全员同价位正是 ADR-011 实测到的「中位档位 (1,1)」的成因。
+    quotes: dict[str, set[int]] = {}
+    for record in market.kernel.committed_records:
+        if record.get("event_type") == "ORDER_ARRIVAL" and str(
+            record.get("agent_id", "")
+        ).startswith("market_maker_v2-"):
+            quotes.setdefault(record["agent_id"], set()).add(record["price_ticks"])
+    assert len(quotes) >= 2, "做市商族没有报价：族接线断了"
+    assert len({frozenset(prices) for prices in quotes.values()}) > 1, "做市商族报价未分散"
+
+
+def test_trend_followers_are_spread_across_time_scales():
+    """多时间尺度是逐代理的：同族代理必须拿到不同的窗口，否则整族同步移动。"""
+    market = LiveMarket(roster=DEFAULT_LIVE_ROSTER)
+    indexes = [
+        spec.strategy_private["time_scale_index"]
+        for spec in market.config.agent_specs
+        if spec.strategy_family_id == "trend_following"
+    ]
+    assert len(set(indexes)) == len(TREND_TIME_SCALES) > 1
+    # 其他族不需要这个参数，不应被塞进私有状态。
+    assert all(
+        spec.strategy_private is None
+        for spec in market.config.agent_specs
+        if spec.strategy_family_id != "trend_following"
+    )
+
+
+def test_same_roster_and_seed_reproduce_the_price_series_pointwise():
+    a = LiveMarket(roster=DEFAULT_LIVE_ROSTER)
+    b = LiveMarket(roster=DEFAULT_LIVE_ROSTER)
+    for _ in range(25):
+        a.advance()
+        b.advance()
+    assert a.roster_id == b.roster_id
+    assert a.price_series == b.price_series
+
+    other = LiveMarket(roster=_roster(seed=DEFAULT_LIVE_ROSTER["seed"] + 1))
+    for _ in range(25):
+        other.advance()
+    assert other.roster_id != a.roster_id
+
+    # 换种子必须改变市场行为。比较的是**委托流**而不是价格序列：在这个长度的
+    # 窗口里成交几乎全来自冷启动锚（按族内奇偶确定，与种子无关），价格还没开始
+    # 移动，两条价格序列会恰好相同——价格发现是否成立由 T967/T973 的质量报告
+    # 实测判定，不在本测试的断言范围内。
+    def _order_flow(market: LiveMarket) -> list[tuple]:
+        return [
+            (r["agent_id"], r.get("side"), r.get("price_ticks"))
+            for r in market.kernel.committed_records
+            if r.get("event_type") == "ORDER_ARRIVAL"
+        ]
+
+    assert _order_flow(other) != _order_flow(a)
+
+
+def test_roster_id_and_anchor_travel_with_the_metrics_artifact(tmp_path):
+    market = LiveMarket(roster=DEFAULT_LIVE_ROSTER)
+    for _ in range(5):
+        market.advance()
+    payload = json.loads(market.export_metrics(tmp_path / "m.json").read_text(encoding="utf-8"))
+    assert payload["strategy_roster_id"] == market.roster_id
+    assert payload["bootstrap_anchor"]["source"] == "synthetic"
+
+    plain = LiveMarket(seed=7)
+    plain_payload = json.loads(
+        plain.export_metrics(tmp_path / "plain.json").read_text(encoding="utf-8")
+    )
+    assert plain_payload["strategy_roster_id"] is None
+    assert plain_payload["bootstrap_anchor"] is None
+
+
+def test_roster_decisions_carry_family_labels_across_families():
+    market = LiveMarket(roster=DEFAULT_LIVE_ROSTER)
+    for _ in range(20):
+        market.advance()
+    labelled = {
+        record["internal_state"].get("strategy_family_id")
+        for record in market.kernel.committed_records
+        if record.get("event_type") == "AGENT_DECIDE"
+    }
+    assert {"trend_following", "mean_reversion", "sentiment_noise"} <= labelled
+
+
+def test_unknown_family_fails_closed_at_assembly():
+    bad = _roster()
+    bad["families"][0] = bad["families"][0] | {"family_id": "no_such_family"}
+    with pytest.raises(RosterError) as exc:
+        LiveMarket(roster=bad)
+    assert exc.value.code == "UNKNOWN_FAMILY"

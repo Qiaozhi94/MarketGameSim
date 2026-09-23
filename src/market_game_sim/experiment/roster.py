@@ -39,6 +39,10 @@ from market_game_sim.agent.anchor import (
 )
 from market_game_sim.agent.goal import get_goal_model
 from market_game_sim.agent.scheduler import AgentSpec
+from market_game_sim.agent.strategy_layer import bridge as _strategy_bridge  # noqa: F401
+from market_game_sim.agent.strategy_layer.families.trend_following import (
+    TIME_SCALES as TREND_TIME_SCALES,
+)
 from market_game_sim.experiment.config import ExperimentConfig
 from market_game_sim.ledger.account import initial_margin_bp_for_tier
 
@@ -239,7 +243,28 @@ def _validate_goal_params(params: Mapping[str, Any], where: str) -> None:
 # of book and its own inventory (I0); the goal families also read the public
 # trade tape and completed bars (I2).  T968/T969's families declare their own
 # tier when they join ``_FAMILIES``.
-_FAMILY_TIERS = {"inventory_market_maker": "I0", "goal_belief": "I2"}
+_FAMILY_TIERS = {
+    "inventory_market_maker": "I0",
+    "goal_belief": "I2",
+    "trend_following": "I2",
+    "mean_reversion": "I1",
+    "sentiment_noise": "I0",
+    "market_maker_v2": "I0",
+}
+
+#: 0.4.1 T966: the native families' agent-level parameters.  The family's own
+#: constants (horizons, thresholds, quote dispersion) are frozen in the family
+#: itself -- a roster picks who trades and how much, not how the family thinks.
+_TRADER_PARAMS = frozenset(
+    {
+        "leverage_tier",
+        "risk_appetite_x1000",
+        "aggressiveness_bp",
+        "max_order_qty",
+        "ewma_half_life_trades",
+    }
+)
+_MM_V2_PARAMS = frozenset({"leverage_tier"})
 
 
 def _build_mm(agent_id: str, family: FamilyEntry) -> AgentSpec:
@@ -280,11 +305,75 @@ def _build_goal(agent_id: str, family: FamilyEntry) -> AgentSpec:
     )
 
 
+def _validate_trader_params(params: Mapping[str, Any], where: str) -> None:
+    _require_keys(params, _TRADER_PARAMS, where)
+    _int(params["leverage_tier"], f"{where}.leverage_tier", minimum=1)
+    _int(params["risk_appetite_x1000"], f"{where}.risk_appetite_x1000", minimum=1)
+    _int(params["aggressiveness_bp"], f"{where}.aggressiveness_bp", minimum=0)
+    _int(params["max_order_qty"], f"{where}.max_order_qty", minimum=1)
+    # 锚只在预热期生效，半衰期为 0 的代理永远不会被锚到（anchor.resolve_for_agents
+    # 会 fail closed）；这里要求 >= 1，让「声明了锚却永不生效」在装配期就暴露。
+    _int(params["ewma_half_life_trades"], f"{where}.ewma_half_life_trades", minimum=1)
+
+
+def _validate_mm_v2_params(params: Mapping[str, Any], where: str) -> None:
+    _require_keys(params, _MM_V2_PARAMS, where)
+    _int(params["leverage_tier"], f"{where}.leverage_tier", minimum=1)
+
+
+def _build_native_trader(agent_id: str, family: FamilyEntry, ordinal: int) -> AgentSpec:
+    """A target-position family's agent: it rides the GoalModel seam (T966 bridge)."""
+    p = family.params
+    private: dict[str, int] | None = None
+    if family.family_id == "trend_following":
+        # 多时间尺度是逐代理的：按族内序号铺开，同一族的代理才会彼此分歧。
+        private = {"time_scale_index": ordinal % len(TREND_TIME_SCALES)}
+    return AgentSpec(
+        agent_id=agent_id,
+        role="belief_trader",
+        strategy_family_id=family.family_id,
+        info_tier=_FAMILY_TIERS[family.family_id],
+        strategy_private=private,
+        observe_interval_ns=family.observe_interval_ns,
+        latency_ns=family.latency_ns,
+        leverage_tier=p["leverage_tier"],
+        initial_bp=initial_margin_bp_for_tier(p["leverage_tier"]),
+        goal_model_id=family.family_id,
+        risk_appetite_x1000=p["risk_appetite_x1000"],
+        aggressiveness_bp=p["aggressiveness_bp"],
+        max_order_qty=p["max_order_qty"],
+        # 预热期由锚驱动（spec Q-501 的退出判据：样本数 >= 2 × 半衰期）；预热
+        # 结束时公开成交流也够这些族形成信号，一个判据覆盖两种冷启动。
+        ewma_half_life_trades=p["ewma_half_life_trades"],
+    )
+
+
+def _build_mm_v2(agent_id: str, family: FamilyEntry, ordinal: int) -> AgentSpec:
+    """The v2 quoting family: same market-maker branch, family-owned quote rule."""
+    p = family.params
+    return AgentSpec(
+        agent_id=agent_id,
+        role="inventory_market_maker",
+        strategy_family_id=family.family_id,
+        info_tier=_FAMILY_TIERS[family.family_id],
+        observe_interval_ns=family.observe_interval_ns,
+        latency_ns=family.latency_ns,
+        is_market_maker=True,
+        leverage_tier=p["leverage_tier"],
+        initial_bp=initial_margin_bp_for_tier(p["leverage_tier"]),
+    )
+
+
 _FAMILIES: dict[
-    str, tuple[Callable[[Mapping[str, Any], str], None], Callable[[str, FamilyEntry], AgentSpec]]
+    str,
+    tuple[Callable[[Mapping[str, Any], str], None], Callable[[str, FamilyEntry, int], AgentSpec]],
 ] = {
-    "inventory_market_maker": (_validate_mm_params, _build_mm),
-    "goal_belief": (_validate_goal_params, _build_goal),
+    "inventory_market_maker": (_validate_mm_params, lambda a, f, _i: _build_mm(a, f)),
+    "goal_belief": (_validate_goal_params, lambda a, f, _i: _build_goal(a, f)),
+    "trend_following": (_validate_trader_params, _build_native_trader),
+    "mean_reversion": (_validate_trader_params, _build_native_trader),
+    "sentiment_noise": (_validate_trader_params, _build_native_trader),
+    "market_maker_v2": (_validate_mm_v2_params, _build_mm_v2),
 }
 
 
@@ -405,7 +494,7 @@ def build_agent_specs(roster: StrategyRoster) -> list[AgentSpec]:
     specs: list[AgentSpec] = []
     for family in roster.families:
         _, build = _FAMILIES[family.family_id]
-        specs.extend(build(f"{family.family_id}-{i}", family) for i in range(family.count))
+        specs.extend(build(f"{family.family_id}-{i}", family, i) for i in range(family.count))
     return specs
 
 

@@ -92,7 +92,7 @@ def compute_config_hash(config: ExperimentConfig) -> str:
     # evidence records.  A roster-assembled spec carries them and hashes
     # differently, which is correct: it *is* a different assembly.
     for spec in payload.get("agent_specs", []):
-        for key in ("strategy_family_id", "info_tier"):
+        for key in ("strategy_family_id", "info_tier", "strategy_private"):
             if spec.get(key) is None:
                 spec.pop(key, None)
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"))

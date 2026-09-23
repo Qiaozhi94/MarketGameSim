@@ -39,6 +39,7 @@ from market_game_sim.agent.goal import (
 from market_game_sim.agent.observation import Bar, InformationSet
 from market_game_sim.agent.scheduler import AgentSpec
 from market_game_sim.agent.strategy import (
+    OrderIntent,
     TargetFn,
     market_maker_intents,
     order_intent_from_signal,
@@ -181,6 +182,44 @@ def _market_maker_intents(
     )
 
 
+def _ORDER_INTENT_FAMILY_IDS() -> frozenset[str]:  # noqa: N802
+    from market_game_sim.agent.strategy_layer.bridge import ORDER_INTENT_FAMILY_IDS
+
+    return ORDER_INTENT_FAMILY_IDS
+
+
+def _family_quote_intents(
+    spec: AgentSpec,
+    iset: dict,
+    decision_index: int,
+    master_seed: int,
+) -> list[OrderIntent]:
+    """Quotes from the spec's strategy family (0.4.1 T966, FR-503)."""
+    from market_game_sim.agent.strategy_layer.bridge import family_quote_intents
+
+    state = AgentInternalStateV1(
+        schema_version=1,
+        last_seen_market_event_id="",
+        ewma_value_units=None,
+        ewma_sample_count=0,
+        model_private_state={
+            "master_seed": master_seed,
+            "agent_id": spec.agent_id,
+            "decision_index": decision_index,
+            **(spec.strategy_private or {}),
+        },
+    )
+    return family_quote_intents(
+        family_id=spec.strategy_family_id or "",
+        agent_id=spec.agent_id,
+        iset=iset,
+        decision_index=decision_index,
+        state=state,
+        preferences=AgentPreferences(risk_appetite_x1000=spec.risk_appetite_x1000),
+        leverage_tier=spec.leverage_tier,
+    )
+
+
 def _legacy_evidence(
     path_id: str,
     decision_index: int,
@@ -230,6 +269,7 @@ def _belief_intent_v2(
     ewma_count: int = 0,
     public_trades: tuple = (),
     completed_bars: tuple = (),
+    master_seed: int = 42,
     bootstrap_anchor: object | None = None,
 ) -> tuple[dict | None, dict, DecisionEvidenceV1]:
     """v2 goal + constraint pipeline (代理策略 §5.2, ADR-003).
@@ -273,12 +313,24 @@ def _belief_intent_v2(
         book_top=book,
         own_account=own,
     )
+    private_state: dict[str, object] = {"signal_bp": signal_bp}
+    if spec.strategy_family_id is not None:
+        # 0.4.1 T966: strategy families draw per-agent parameters keyed by
+        # (master_seed, agent_id, decision_index) (KR-004).  Only roster-
+        # assembled agents carry the identity, so every pre-roster decision
+        # record stays byte-identical.
+        private_state |= {
+            "master_seed": master_seed,
+            "agent_id": spec.agent_id,
+            "decision_index": decision_index,
+            **(spec.strategy_private or {}),
+        }
     state = AgentInternalStateV1(
         schema_version=1,
         last_seen_market_event_id=cursor_from_event_id,
         ewma_value_units=ewma_value,
         ewma_sample_count=ewma_count,
-        model_private_state={"signal_bp": signal_bp},
+        model_private_state=private_state,
     )
     prefs = AgentPreferences(risk_appetite_x1000=spec.risk_appetite_x1000)
     goal_decision = model.decide(info_v2, state, prefs)
@@ -628,9 +680,17 @@ def handle_agent_decide(
     )
 
     if spec.is_market_maker:
-        intents = _market_maker_intents(
-            spec, iset, decision_index, maint_bp=world.get("maint_bp", 500)
-        )
+        if spec.strategy_family_id in _ORDER_INTENT_FAMILY_IDS():
+            # 0.4.1 T966: a roster-named quoting family replaces the built-in
+            # quote rule, but keeps this branch's path: its intents become the
+            # same ORDER_ARRIVAL events and face the same admission and risk.
+            intents = _family_quote_intents(
+                spec, iset, decision_index, world.get("experiment_seed", 42)
+            )
+        else:
+            intents = _market_maker_intents(
+                spec, iset, decision_index, maint_bp=world.get("maint_bp", 500)
+            )
         internal_state = {
             "inventory_units": iset["position_units"],
             "margin_ratio_bp": iset.get("margin_ratio_bp"),
@@ -711,6 +771,7 @@ def handle_agent_decide(
                 public_trades=public_trades,
                 completed_bars=completed_bars,
                 bootstrap_anchor=world.get("bootstrap_anchor"),
+                master_seed=world.get("experiment_seed", 42),
             )
             intents = [intent] if intent else []
         else:

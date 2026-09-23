@@ -16,13 +16,20 @@ import dataclasses
 import json
 import queue
 import threading
+from collections.abc import Mapping
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
 
+from market_game_sim.agent.anchor import resolve_for_agents
 from market_game_sim.book.orderbook import Book
 from market_game_sim.experiment.h2 import runner as h2_runner
+from market_game_sim.experiment.roster import (
+    StrategyRoster,
+    build_experiment_config,
+    parse_roster,
+)
 from market_game_sim.experiment.runner import _compute_initial_bp, _dispatch_agents
 from market_game_sim.kernel.abort import KernelAbort
 from market_game_sim.ledger.account import Account, margin_ratio_bp, risk_equity
@@ -33,6 +40,78 @@ TERMINAL_HTML = (Path(__file__).resolve().parent / "owner_terminal.html").read_t
 )
 
 HUMAN_AGENT = "owner"
+
+#: 0.4.1 T966 (FR-503): the default assembly of the pure AI market -- a quoting
+#: family plus three signal families, so price formation comes from strategy
+#: heterogeneity rather than from one template sampled many times
+#: (ADR-011 §决策 3).  The anchor breaks the cold-start deadlock (spec Q-501).
+DEFAULT_LIVE_ROSTER: dict[str, Any] = {
+    "schema_version": 1,
+    "seed": 7,
+    "engine": {
+        "initial_price_ticks": 10_000,
+        "mult": 1000,
+        "maker_bps": -1,
+        "taker_bps": 5,
+        "maint_bp": 500,
+        "target_bp": 1000,
+        "liquidation_latency_ns": 1_000_000,
+    },
+    "bootstrap_anchor": {
+        "source": "synthetic",
+        "quantity_units": 1,
+        "direction": "family_parity",
+        "pricing": "best_opposite_else_initial_limit",
+    },
+    "families": [
+        {
+            "family_id": "market_maker_v2",
+            "count": 6,
+            "observe_interval_ns": 100_000_000,
+            "latency_ns": 5_000_000,
+            "params": {"leverage_tier": 1},
+        },
+        {
+            "family_id": "trend_following",
+            "count": 9,
+            "observe_interval_ns": 1_000_000_000,
+            "latency_ns": 50_000_000,
+            "params": {
+                "leverage_tier": 5,
+                "risk_appetite_x1000": 2000,
+                "aggressiveness_bp": 8_000,
+                "max_order_qty": 10_000,
+                "ewma_half_life_trades": 5,
+            },
+        },
+        {
+            "family_id": "mean_reversion",
+            "count": 9,
+            "observe_interval_ns": 1_000_000_000,
+            "latency_ns": 50_000_000,
+            "params": {
+                "leverage_tier": 5,
+                "risk_appetite_x1000": 2000,
+                "aggressiveness_bp": 8_000,
+                "max_order_qty": 10_000,
+                "ewma_half_life_trades": 5,
+            },
+        },
+        {
+            "family_id": "sentiment_noise",
+            "count": 6,
+            "observe_interval_ns": 1_000_000_000,
+            "latency_ns": 50_000_000,
+            "params": {
+                "leverage_tier": 3,
+                "risk_appetite_x1000": 1500,
+                "aggressiveness_bp": 10_000,
+                "max_order_qty": 5_000,
+                "ewma_half_life_trades": 5,
+            },
+        },
+    ],
+}
 PRICE_PERIODS = (
     60_000_000_000,
     300_000_000_000,
@@ -67,14 +146,32 @@ class LiveMarket:
         arm: str = "linear",
         session_id: str = "live-market-1",
         initial_price_ticks: int = 10_000,
+        roster: StrategyRoster | Mapping[str, Any] | None = None,
     ) -> None:
         self.session_id = session_id
         self.seed = seed
         self.initial_price_ticks = initial_price_ticks
-        base_config = h2_runner.build_config(seed, arm)
-        self.config = dataclasses.replace(
-            base_config, agent_specs=_tuned_specs(base_config.agent_specs)
-        )
+        # 0.4.1 T966: a roster assembles the market (families, counts, time
+        # scales, anchor, engine); ``roster=None`` keeps the 0.3.1 two-agent
+        # configuration so the existing owner-terminal path is unaffected.
+        self.roster: StrategyRoster | None = None
+        self.roster_id: str | None = None
+        if roster is not None:
+            self.roster = roster if isinstance(roster, StrategyRoster) else parse_roster(roster)
+            self.roster_id = self.roster.roster_id
+            self.seed = seed = self.roster.seed
+            self.initial_price_ticks = initial_price_ticks = self.roster.engine[
+                "initial_price_ticks"
+            ]
+            # max_transactions is a batch budget here, not a stopping rule: the
+            # live market advances forever, so the assembled config only lends
+            # its engine block and agents.
+            self.config = build_experiment_config(self.roster, max_transactions=1)
+        else:
+            base_config = h2_runner.build_config(seed, arm)
+            self.config = dataclasses.replace(
+                base_config, agent_specs=_tuned_specs(base_config.agent_specs)
+            )
         self.logical_ns = 0
         self._tx_budget = 0
         self._seq = 0
@@ -136,6 +233,11 @@ class LiveMarket:
             "model_family": self.config.model_family,
             "behavior_mapping": None,
         }
+        if self.config.bootstrap_anchor is not None:
+            # 与 run_one 同口径：锚按族内奇偶解析到每个代理（spec Q-501 / T963）。
+            self.world["bootstrap_anchor"] = resolve_for_agents(
+                self.config.bootstrap_anchor, self.config.agent_specs
+            )
         for spec in self.config.agent_specs:
             self.kernel.enqueue(
                 {
@@ -408,6 +510,10 @@ class LiveMarket:
             "schema_version": 1,
             "session_id": self.session_id,
             "seed": self.seed,
+            # DR-501: the assembly travels with the artifact, so a report can be
+            # traced back to who was in the market.
+            "strategy_roster_id": self.roster_id,
+            "bootstrap_anchor": dict(self.roster.bootstrap_anchor) if self.roster else None,
             "max_drawdown": round(self._max_drawdown, 6),
             "price_series": self.price_series,
             "stability_events": self.stability_events,

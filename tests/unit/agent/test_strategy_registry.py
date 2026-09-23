@@ -120,9 +120,20 @@ def test_unregistered_family_fails_closed_with_stable_code():
     assert exc.value.code == "UNKNOWN_STRATEGY_FAMILY"
 
 
-def test_default_registry_has_no_families_and_fails_closed():
-    # Native families arrive with T968/T969; until then any lookup fails closed.
-    assert strategy_layer.default_registry().family_ids() == ()
+def test_native_families_are_registered_and_unknown_ids_fail_closed():
+    """0.4.1 T966: importing the bridge registers the four native families.
+
+    ``goal_belief`` is deliberately absent: it is a roster family that rides the
+    goal-model registry, not a ``TraderStrategy``.
+    """
+    from market_game_sim.agent.strategy_layer import bridge  # noqa: F401
+
+    assert strategy_layer.default_registry().family_ids() == (
+        "market_maker_v2",
+        "mean_reversion",
+        "sentiment_noise",
+        "trend_following",
+    )
     with pytest.raises(StrategyLayerError) as exc:
         get_strategy("goal_belief")
     assert exc.value.code == "UNKNOWN_STRATEGY_FAMILY"
