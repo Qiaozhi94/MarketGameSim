@@ -580,6 +580,130 @@ def _completed_bars_with_zero_fill(
     return out
 
 
+def _fill_fields(fill) -> tuple[int, int, int]:
+    """``(timestamp, price_ticks, quantity_units)`` from a dict or a dataclass.
+
+    Mirrors the dual-shape reads :func:`_completed_bars_with_zero_fill` does,
+    so the incremental path below accepts exactly the same inputs.
+    """
+    if isinstance(fill, dict):
+        return (
+            fill.get("timestamp", 0),
+            fill.get("price_ticks", 0),
+            fill.get("quantity_units", 0),
+        )
+    return (fill.timestamp, fill.price_ticks, fill.quantity_units)
+
+
+def _extend_bar_state(prior_state: dict | None, fills, bar_ns: int) -> dict:
+    """Fold ``fills`` into a per-agent bar aggregate (0.4.1 perf).
+
+    Why this exists: :func:`_completed_bars_with_zero_fill` re-aggregated the
+    agent's *entire* cumulative trade history on every observation, so the cost
+    of one observation grew with the number of trades the agent had ever seen
+    -- 30 agents observing once per logical second turned that into the
+    dominant term of the live market's wall clock (profile: 76% of cumtime,
+    tottime 0.155s -> 6.114s across one run).  Folding each interval's new
+    fills into a running per-bar aggregate makes one observation O(new fills)
+    instead of O(all fills).
+
+    Equivalence with the full rebuild, bar by bar: ``open`` is the first price
+    appended to that bar and never changes afterwards; ``close`` is the last;
+    ``high``/``low``/``volume``/``trade_count`` are order-independent folds.
+    The fold order here is the cumulative-history order (prior history first,
+    then this interval), which is the order the rebuild iterated, so the two
+    agree element for element -- :func:`test_incremental_bar_state_matches_full_rebuild`
+    holds that equivalence against the rebuild itself.
+
+    The returned state is a fresh object: the aggregate is staged on the
+    pending decision and only applied when that transaction commits, exactly
+    like ``agent_history``, so an aborted observation cannot leave a mutated
+    aggregate behind (R018-C002).
+    """
+    bars: dict[int, dict[str, int]] = dict((prior_state or {}).get("bars", {}))
+    first_bar = (prior_state or {}).get("first_bar")
+    for fill in fills:
+        ts_val, price, qty = _fill_fields(fill)
+        k = ts_val // bar_ns
+        agg = bars.get(k)
+        if agg is None:
+            bars[k] = {
+                "open": price,
+                "high": price,
+                "low": price,
+                "close": price,
+                "volume": qty,
+                "trade_count": 1,
+            }
+            if first_bar is None or k < first_bar:
+                first_bar = k
+        else:
+            bars[k] = {
+                "open": agg["open"],
+                "high": max(agg["high"], price),
+                "low": min(agg["low"], price),
+                "close": price,
+                "volume": agg["volume"] + qty,
+                "trade_count": agg["trade_count"] + 1,
+            }
+    return {"first_bar": first_bar, "bars": bars}
+
+
+def _bar_state_from_history(history, bar_ns: int) -> dict:
+    """Rebuild the aggregate from a full history (one-off).
+
+    Needed whenever the aggregate is absent but the history is not: legacy
+    worlds, tests that seed ``world["agent_bars"]`` directly, and the first
+    observation after this change ships.  Returning an empty aggregate in that
+    case would silently drop every bar the agent had already seen, so the
+    rebuild is the fail-safe direction.
+    """
+    return _extend_bar_state(None, history, bar_ns)
+
+
+def _completed_bars_from_state(state: dict, bar_ns: int, up_to_ts: int) -> list[CompletedBar]:
+    """Render the completed-bar sequence from the aggregate.
+
+    Same contract as :func:`_completed_bars_with_zero_fill`: bars strictly
+    before the observation's own (in-progress) bar, empty bars padded with the
+    previous close and volume 0 (代理策略 §3.1).  Cost is O(bars), not
+    O(trades) -- the sequence length is inherent to the contract, the trade
+    count no longer is.
+    """
+    first_bar = state.get("first_bar")
+    if first_bar is None:
+        return []
+    last_completed = up_to_ts // bar_ns - 1
+    if last_completed < first_bar:
+        return []
+    bars = state["bars"]
+    out: list[CompletedBar] = []
+    prev_close: int | None = None
+    for k in range(first_bar, last_completed + 1):
+        agg = bars.get(k)
+        if agg is not None:
+            bar = CompletedBar(
+                open=agg["open"],
+                high=agg["high"],
+                low=agg["low"],
+                close=agg["close"],
+                volume=agg["volume"],
+                trade_count=agg["trade_count"],
+            )
+            prev_close = bar.close
+        else:
+            bar = CompletedBar(
+                open=prev_close or 0,
+                high=prev_close or 0,
+                low=prev_close or 0,
+                close=prev_close or 0,
+                volume=0,
+                trade_count=0,
+            )
+        out.append(bar)
+    return out
+
+
 def _cancel_stale_orders(
     spec: AgentSpec,
     world: dict,
@@ -918,12 +1042,42 @@ def handle_agent_observe(
         interval_fills,
         spec.ewma_half_life_trades,
     )
-    prior_history = (
-        list(queued_state.get("agent_history", ()))
+    # 0.4.1 perf, half 1 of 2: the agent's accumulated history is no longer
+    # *copied* per observation.  ``prior_history + [...]`` materialised a fresh
+    # list of every trade the agent had ever seen, on every observation, for
+    # every agent -- 30 agents x ~2000 fills per logical second by the end of a
+    # 600s run, plus the kernel's own defensive copy of the same list.  The
+    # history stays exactly the same list of fill dicts in the same place
+    # (``world["agent_bars"][agent_id]``); only the snapshot mechanism changes:
+    # the committed list is append-only and each observation carries the length
+    # that *it* observed, so the kernel can reproduce the previous
+    # replace-the-snapshot semantics by truncating to that length before
+    # extending.  Overlapping observations and retries therefore behave exactly
+    # as before (R018-C002), without an O(history) copy per observation.
+    committed_history = world.get("agent_bars", {}).get(agent_id, ())
+    prior_history_len = (
+        queued_state.get("agent_history_len", 0)
         if queued_state is not None
-        else list(world.get("agent_bars", {}).get(agent_id, ()))
+        else len(committed_history)
     )
-    cumulative_history = prior_history + [dict(fill) for fill in interval_fills]
+    # 0.4.1 perf, half 2 of 2: carry a running per-bar aggregate so the
+    # completed-bar sequence costs O(this interval) instead of O(every trade the
+    # agent has ever seen).  It follows the same state chain as the history
+    # (queued observation first, else the committed world) and the same
+    # transaction scoping, so the two can never disagree; when the aggregate is
+    # missing but the history is not, it is rebuilt from that history rather
+    # than started empty -- the fail-safe direction for legacy worlds and for
+    # tests that seed ``agent_bars`` directly.
+    prior_bar_state = (
+        queued_state.get("agent_bar_state")
+        if queued_state is not None
+        else world.get("agent_bar_state", {}).get(agent_id)
+    )
+    if prior_bar_state is None and prior_history_len:
+        prior_bar_state = _bar_state_from_history(
+            list(committed_history)[:prior_history_len], bar_ns=60_000_000_000
+        )
+    bar_state = _extend_bar_state(prior_bar_state, interval_fills, bar_ns=60_000_000_000)
     prior_decision_index = (
         queued_state["decision_index"]
         if queued_state is not None
@@ -944,7 +1098,18 @@ def handle_agent_observe(
         # accumulated world["agent_bars"] history with them.  public_trades
         # stays the incremental interval (代理策略 §1: 上次观察以来的增量),
         # while completed bars aggregate the accumulated history.
-        "agent_history": cumulative_history,
+        # 0.4.1 perf: the snapshot is (base length, this interval's fills)
+        # instead of a materialised cumulative list.  The kernel truncates the
+        # committed history to ``agent_history_base`` and appends
+        # ``agent_history_extend``, which reproduces the previous "replace with
+        # this observation's cumulative snapshot" exactly.
+        "agent_history_base": prior_history_len,
+        "agent_history_extend": [dict(fill) for fill in interval_fills],
+        "agent_history_len": prior_history_len + len(interval_fills),
+        # Committed with the same replace semantics as the history above -- both
+        # are snapshots of this observation, not increments applied to world
+        # state, so an aborted observation leaves neither behind.
+        "agent_bar_state": bar_state,
     }
     # R018-C007: the observation's lower cursor boundary is carried on the
     # event (not a world write) so legacy decisions can tag their evidence
@@ -981,8 +1146,8 @@ def handle_agent_observe(
         # handle_agent_decide via world["agent_bars"]), NOT from this slice.
         "_observed_public_trades": [dict(t) for t in interval_fills],
         "_observed_completed_bars": list(
-            _completed_bars_with_zero_fill(
-                cumulative_history,
+            _completed_bars_from_state(
+                bar_state,
                 bar_ns=60_000_000_000,
                 up_to_ts=event["timestamp"],
             )
