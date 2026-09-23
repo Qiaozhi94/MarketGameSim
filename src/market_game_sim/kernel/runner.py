@@ -88,6 +88,31 @@ class EventKernel:
         return [dict(r) for r in self._committed_records]
 
     @property
+    def committed_record_count(self) -> int:
+        """How many records are committed, without copying any of them."""
+        return len(self._committed_records)
+
+    def committed_records_tail(self, count: int) -> list[dict]:
+        """The newest ``count`` committed records (tail-only defensive copy).
+
+        ``committed_records`` copies *every* record on every access.  A driver
+        that only needs the newest few -- the live market reads the last 64
+        each inner iteration to advance its logical clock -- therefore pays
+        O(total) per read and O(total^2) over a run.  0.4.1 T970 measured that
+        on the 50-agent assembly: the same constant per-second workload took
+        0.030s of wall clock at logical second 1 and 1.645s at logical second
+        60, with 61% of total runtime inside this copy.  Reading the tail
+        instead holds it flat (0.205s -> 0.146s median, 0.687s -> 0.343s max
+        over 60 logical seconds) while committing a byte-identical event
+        stream.  Same defensive-copy guarantee, bounded cost.
+        """
+        if type(count) is not int or count < 0:
+            raise ValueError("count must be a non-negative int")
+        if count == 0:
+            return []
+        return [dict(r) for r in self._committed_records[-count:]]
+
+    @property
     def last_committed_transaction_seq(self) -> int | None:
         return self._last_committed_transaction_seq
 
