@@ -78,9 +78,12 @@ updated: 2026-09-24
       `tests/unit/agent/test_native_strategy_families.py`
 - [x] T969 (`FR-503`, `AC-503`): 实现情绪噪声族与改良做市商族（报价参数分散，消除全员同价位
       导致的单档盘口）— verify: `tests/unit/agent/test_native_strategy_families.py`
-- [ ] T970 (`NFR-501`, `AC-509`): 把目标装配压到墙钟 ≤0.5 秒/逻辑秒；先测量事务构成再优化
+- [x] T970 (`NFR-501`, `AC-509`): 把目标装配压到墙钟 ≤0.5 秒/逻辑秒；先测量事务构成再优化
       （实测撤挂事务占绝大多数），断言失败即红而非警告 — verify:
-      `tests/performance/test_live_market_realtime.py`
+      `tests/performance/test_live_market_realtime.py`（32 项全绿）。
+      达标数字与三条限定见实验报告
+      [`§9`](../../../experiments/0.4.1-market-quality-baseline.md)：末段中位 0.1152
+      （门限 0.5，余量约 4.3 倍），分母为**真实逻辑秒**而非 `advance()` 次数
 - [x] T971 (`FR-505`, `SC-502`, `AC-505`): 按 spec §6 SC-502 表实现 stylized facts 五项度量——
       前三项**复用** `metrics/validation.py` 的既有检验（厚尾用超额峰度 z 检验、收益自相关、
       `|r|` ACF），只新增 lag 50 延伸与协议未覆盖的两项，不新建第二套口径或第二份校正算法；
@@ -90,13 +93,18 @@ updated: 2026-09-24
       （出现→记录触发条件与频次；未出现→产出如实的「不存在」结论）。两条路径都要有断言，
       阈值取自冻结常量；**不得为制造「出现」而调阈值或注入冲击** — verify:
       `tests/integration/test_endogenous_instability.py`
-- [ ] T973 `[成果门:H2-E2]` (`SC-501`, `SC-502`, `SC-503`, `AC-505`, `AC-506`, `AC-509`): 生成异质策略族
+- [ ] T973 `[成果门:H2-E2]` `[判定 UNQUALIFIED·非未执行]` (`SC-501`, `SC-502`, `SC-503`, `AC-505`, `AC-506`, `AC-509`): 生成异质策略族
       市场的跨种子质量报告集合——市场质量六项达标、stylized facts 达到 SC-502 条数、实时性能达标，
       并产出 SC-503 的**内生不稳定事件存在性判定报告**（出现→记录触发条件与频次；未出现→产出
       「该市场结构在冻结参数下不产生离散崩盘事件」的结论）。**「出现」不是本门的通过条件**：
       把「必须出现崩盘」写进收口前提，压力会精确落在调阈值上，而这正是 SC-503、§5 不变量与
       ADR-005 共同禁止的动作。证据标签为 `engineering-demonstration` — verify:
       `tests/integration/test_endogenous_instability.py`
+      **状态（2026-09-24）**：已执行，判定 **UNQUALIFIED**，故保持未勾——未勾在此表示
+      「跑过但没达标」，不表示「没做」。三种子交错未通过（见实验报告
+      [`§7`](../../../experiments/0.4.1-market-quality-baseline.md)）；其后查明更根本的
+      原因是市场在统计窗口打开前就停止成交（[`§8`](../../../experiments/0.4.1-market-quality-baseline.md)），
+      一次根因修复（T1001）未足以翻面。**不得为勾选本条而调门限或口径。**
 
 ### Phase 3：量化交易者族（不依赖 alphamill）与运行入口
 
@@ -142,7 +150,10 @@ updated: 2026-09-24
       `notional = |仓位| × mark × MULT`，而 v0.1 冻结的 `risk_budget_linear_v1` 用
       `max_position = max_notional // mark`（少一个 MULT）。后果是每个族永远顶在保证金
       闸口上、`k_x1000` 与 `risk_appetite_x1000` 实际不影响行为。属冻结契约口径，
-      需 owner 裁决后单独修（先例：ADR-012 / ADR-015）
+      需 owner 裁决后单独修（先例：ADR-012 / ADR-015）；修它会改变行为，T215/H2 冻结
+      证据须重绑重盖。**同时是外生价格锚的前置条件**——更一般的前置是「锚的强度参数必须
+      被证明 binding」，本条只是达成它的一种方式（见
+      [`exogenous-price-anchor-options.md §6`](../../../research/exogenous-price-anchor-options.md)）
       — verify: 实验报告 [`§8.5`](../../../experiments/0.4.1-market-quality-baseline.md)
 - [ ] T1003 `[状态门]`: 回写 spec 验收证据、版本索引与状态；必须是本文件最后一项 — verify:
       `python tools/validate_spec_lifecycle.py`
