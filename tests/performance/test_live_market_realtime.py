@@ -19,8 +19,8 @@ Flakiness design (a timing test in a shared suite has to earn its place):
   case judges a real measurement against an impossible budget, so "does the
   gate actually fail when over budget" is answered deterministically rather
   than by racing the machine.
-* Measured headroom on the development machine is ~13x (median 0.037 s
-  against a 0.5 s budget, 30 agents), so ordinary hardware variation cannot
+* Measured headroom on the development machine is ~12x (median 0.042 s
+  against a 0.5 s budget, 36 agents), so ordinary hardware variation cannot
   produce a false red; a red here means the market genuinely slowed down.
 
 Baseline history, because the number only means something with its market:
@@ -29,9 +29,12 @@ assembly that barely traded -- ``market_maker_v2`` quoted one side at a time
 and every maker moved in lockstep, so the book was single-sided at every
 observation and no signal family could place an order.  With the quoting
 phase dispersed per agent, the same 60 logical seconds settle 234 trades
-instead of 12 (trade/order 0.0211) and the median rises to 0.037 s.  Roughly
+instead of 12 (trade/order 0.0211) and the median rose to 0.037 s.  Roughly
 17x the matching work for ~1.4x the wall clock: the clock gate was never the
-binding constraint, the dead market was.
+binding constraint, the dead market was.  T973 then took the assembly to 12
+market makers (SC-501 needs 5 book levels and 6 makers only reached 2), which
+is the 36-agent baseline measured above: 300 trades per 60 logical seconds,
+median 0.042 s.
 
 What this gate still does **not** claim: that the market is economically
 *healthy*.  Judging price discovery, spread and depth is T967's quality gate.
@@ -62,7 +65,7 @@ from market_game_sim.metrics.live_perf import (
 )
 
 #: Liveness floor for the timed window below (20 s), where the current
-#: assembly settles 98 trades at trade-per-order 0.0229.  Trading here is
+#: assembly settles 128 trades at trade-per-order 0.0135.  Trading here is
 #: deterministic -- keyed draws, no wall-clock input -- so the margin guards
 #: against a behaviour regression, not against timing noise.
 MIN_TRADES = 60
@@ -149,8 +152,8 @@ def test_budget_boundary_passes_at_equality_and_fails_just_under(report):
 def test_measurement_describes_a_live_market(report):
     """A market that never trades at all would pass the clock gate trivially.
 
-    The floor sits well below the measured baseline (98 trades /
-    trade-per-order 0.0229 in this 20 s window) and well above the
+    The floor sits well below the measured baseline (128 trades /
+    trade-per-order 0.0135 in this 20 s window) and well above the
     pre-phase-fix assembly (0.0012): it catches a regression that
     kills trading -- the single-sided-book deadlock this suite already lived
     through -- without turning ordinary variation red.  Judging whether the
