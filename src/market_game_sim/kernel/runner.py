@@ -283,6 +283,82 @@ class EventKernel:
         else:
             self._terminate_completed()
 
+    def _apply_pending_agent_state(self, pending_state: dict, world: dict) -> None:
+        """Commit one observation's staged agent state into ``world``.
+
+        Extracted from :meth:`_run_transaction` so the commit semantics that
+        matter -- replace-not-append, retry idempotence, and which history
+        shape a world keeps -- can be asserted directly instead of only
+        through a full market run.
+        """
+        cursors = world.setdefault("agent_cursors", {})
+        ewma = world.setdefault("agent_ewma", {})
+        cursors[pending_state["agent_id"]] = pending_state["cursor"]
+        ewma[pending_state["agent_id"]] = {
+            "value": pending_state["ewma_value"],
+            "count": pending_state["ewma_count"],
+        }
+        if "decision_index" in pending_state:
+            di = world.setdefault("agent_decision_index", {})
+            di[pending_state["agent_id"]] = pending_state["decision_index"]
+        if "cursor_from" in pending_state:
+            cf = world.setdefault("agent_cursor_from", {})
+            cf[pending_state["agent_id"]] = pending_state["cursor_from"]
+        if "agent_history" in pending_state:
+            # Replace with the observation's cumulative snapshot.  This
+            # remains correct for overlapping observations and avoids
+            # extending the same interval twice on a retry.  (Legacy shape:
+            # kept so a caller staging a materialised history still works.)
+            world.setdefault("agent_bars", {})[pending_state["agent_id"]] = list(
+                pending_state["agent_history"]
+            )
+        elif "agent_history_base" in pending_state:
+            # 0.4.1 perf: same replace semantics, without the per-observation
+            # copy of the whole history.  Truncating to the base this
+            # observation saw and appending its own interval yields exactly
+            # the cumulative snapshot the old code materialised: a later
+            # overlapping observation carries a larger base, and a retry
+            # carries the same one, so neither double-extends.
+            bars = world.setdefault("agent_bars", {})
+            agent_id = pending_state["agent_id"]
+            previous = bars.get(agent_id)
+            base = pending_state["agent_history_base"]
+            if isinstance(previous, list) or "agent_history_cursor_to" not in pending_state:
+                # Legacy shape: a world (or a test) seeded the materialised
+                # list, so keep writing that shape -- switching mid-run
+                # would strand the fills already stored there.
+                history = bars.setdefault(agent_id, [])
+                del history[base:]
+                history.extend(pending_state["agent_history_extend"])
+            else:
+                # 0.4.1 perf (4th growth point): store (count, cursor range)
+                # instead of the agent's private copy of every fill it ever
+                # consumed.  Same replace semantics: the count is the base
+                # this observation saw plus its own interval, so an
+                # overlapping observation (larger base) and a retry (same
+                # base) land exactly where the truncate-and-extend did.
+                # ``cursor_from`` is the range's left edge, kept from the
+                # existing record unless this observation resets the
+                # history (base 0), so the stored range always spans every
+                # fill counted.
+                previous_from = previous.get("cursor_from") if previous else None
+                bars[agent_id] = {
+                    "count": pending_state["agent_history_len"],
+                    "cursor_from": (
+                        previous_from
+                        if base and previous_from is not None
+                        else pending_state["agent_history_cursor_from"]
+                    ),
+                    "cursor_to": pending_state["agent_history_cursor_to"],
+                }
+        if "agent_bar_state" in pending_state:
+            # 0.4.1 perf: the running per-bar aggregate derived from the same
+            # history, committed with the same replace semantics so the two
+            # can never drift apart across overlapping observations/retries.
+            world.setdefault("agent_bar_state", {})[pending_state["agent_id"]] = pending_state[
+                "agent_bar_state"
+            ]
+
     def _run_transaction(
         self,
         event: dict,
@@ -347,46 +423,7 @@ class EventKernel:
         # at the previous committed boundary and a fresh retry re-consumes the
         # same interval.
         if pending_state:
-            cursors = world.setdefault("agent_cursors", {})
-            ewma = world.setdefault("agent_ewma", {})
-            cursors[pending_state["agent_id"]] = pending_state["cursor"]
-            ewma[pending_state["agent_id"]] = {
-                "value": pending_state["ewma_value"],
-                "count": pending_state["ewma_count"],
-            }
-            if "decision_index" in pending_state:
-                di = world.setdefault("agent_decision_index", {})
-                di[pending_state["agent_id"]] = pending_state["decision_index"]
-            if "cursor_from" in pending_state:
-                cf = world.setdefault("agent_cursor_from", {})
-                cf[pending_state["agent_id"]] = pending_state["cursor_from"]
-            if "agent_history" in pending_state:
-                # Replace with the observation's cumulative snapshot.  This
-                # remains correct for overlapping observations and avoids
-                # extending the same interval twice on a retry.  (Legacy shape:
-                # kept so a caller staging a materialised history still works.)
-                world.setdefault("agent_bars", {})[pending_state["agent_id"]] = list(
-                    pending_state["agent_history"]
-                )
-            elif "agent_history_base" in pending_state:
-                # 0.4.1 perf: same replace semantics, without the per-observation
-                # copy of the whole history.  Truncating to the base this
-                # observation saw and appending its own interval yields exactly
-                # the cumulative snapshot the old code materialised: a later
-                # overlapping observation carries a larger base, and a retry
-                # carries the same one, so neither double-extends.
-                history = world.setdefault("agent_bars", {}).setdefault(
-                    pending_state["agent_id"], []
-                )
-                del history[pending_state["agent_history_base"] :]
-                history.extend(pending_state["agent_history_extend"])
-            if "agent_bar_state" in pending_state:
-                # 0.4.1 perf: the running per-bar aggregate derived from the same
-                # history, committed with the same replace semantics so the two
-                # can never drift apart across overlapping observations/retries.
-                world.setdefault("agent_bar_state", {})[pending_state["agent_id"]] = pending_state[
-                    "agent_bar_state"
-                ]
+            self._apply_pending_agent_state(pending_state, world)
 
         # 0.1.5 T206/T207: maintain the global public tape + the latest market
         # data boundary.  The kernel is the only place that knows each record's
