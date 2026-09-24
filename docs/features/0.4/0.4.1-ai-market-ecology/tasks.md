@@ -79,7 +79,7 @@ updated: 2026-09-24
 - [x] T969 (`FR-503`, `AC-503`): 实现情绪噪声族与改良做市商族（报价参数分散，消除全员同价位
       导致的单档盘口）— verify: `tests/unit/agent/test_native_strategy_families.py`
 - [x] T970 (`NFR-501`, `AC-509`): 把目标装配压到墙钟 ≤0.5 秒/逻辑秒；先测量事务构成再优化
-      （实测撤挂事务占绝大多数），断言失败即红而非警告 — verify:
+      （事务构成实测见实验报告 §11.2——**「撤挂占绝大多数」这一原始观察已失效**，干净树构成是委托 28.9% / 行情 23.2% / 观察 16.7% / 决策 16.7% / 撤单 14.1%），断言失败即红而非警告 — verify:
       `tests/performance/test_live_market_realtime.py`（32 项全绿）。
       达标数字与三条限定见实验报告
       [`§9`](../../../experiments/0.4.1-market-quality-baseline.md)：末段中位 0.1152
