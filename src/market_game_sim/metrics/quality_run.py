@@ -182,17 +182,32 @@ def measure_quality(
 # --------------------------------------------------------------------------- #
 
 
-def _order_signs(events: Sequence[Mapping[str, Any]], start_ns: int) -> list[int]:
-    return [
-        1 if e.get("side") == "BUY" else -1
-        for e in sorted(
-            events, key=lambda e: (int(e.get("timestamp", 0)), e.get("transaction_seq", 0))
+def _taker_signs(events: Sequence[Mapping[str, Any]], start_ns: int) -> list[int]:
+    """主动成交方向序列（spec §6 SC-502 #5，owner 2026-09-24 修订口径）。
+
+    原口径是「全部委托的方向」，实测测不到它要问的东西：做市商占全部委托 95.9%，
+    且按决策奇偶机械交替买卖，序列在构造上反持续——测的是报价机制而非交易者行为。
+    方向由成交记录 TAKER 分录的 ``position_delta_units`` 符号判定：taker 仓位增加即
+    买方主动。没有 TAKER 分录的成交（不应出现）跳过而不猜测方向。
+    """
+    signs: list[int] = []
+    for event in sorted(
+        events, key=lambda e: (int(e.get("timestamp", 0)), e.get("transaction_seq", 0))
+    ):
+        if event.get("event_type") != "TRADE_SETTLE":
+            continue
+        if int(event.get("timestamp", 0)) < start_ns:
+            continue
+        taker = next(
+            (p for p in event.get("postings") or [] if p.get("role") == "TAKER"),
+            None,
         )
-        if e.get("event_type") == "ORDER_ARRIVAL"
-        and e.get("action") == "SUBMIT"
-        and e.get("side") in ("BUY", "SELL")
-        and int(e.get("timestamp", 0)) >= start_ns
-    ]
+        if taker is None:
+            continue
+        delta = int(taker.get("position_delta_units", 0))
+        if delta:
+            signs.append(1 if delta > 0 else -1)
+    return signs
 
 
 def measure_stylized_facts(
@@ -211,7 +226,7 @@ def measure_stylized_facts(
         VOLATILITY_CLUSTERING: validation.check_volatility_clustering_lags(returns),
         VOLUME_VOLATILITY_CORRELATION: validation.check_volume_volatility_correlation(samples),
         ORDER_FLOW_LONG_MEMORY: validation.check_order_flow_long_memory(
-            _order_signs(events, window_start)
+            _taker_signs(events, window_start)
         ),
     }
 

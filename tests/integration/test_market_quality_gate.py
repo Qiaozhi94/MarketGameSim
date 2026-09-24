@@ -189,3 +189,63 @@ def test_step_rate_uses_the_logical_span_not_the_step_count():
     """advance 每步推进的逻辑时间不固定；单位必须是「每逻辑秒」而不是「每步」。"""
     two_seconds_per_step = [(2.0, 0.4), (4.0, 0.4)]
     assert quality_run._tail_median(two_seconds_per_step) == pytest.approx(0.2)
+
+
+# --------------------------------------------------------------------------- #
+# SC-502 #5 口径（owner 2026-09-24 修订）：主动成交方向，不是全部委托方向
+# --------------------------------------------------------------------------- #
+
+
+def _fill(ts: int, taker_delta: int) -> dict:
+    return {
+        "event_type": "TRADE_SETTLE",
+        "timestamp": ts,
+        "transaction_seq": ts,
+        "price_ticks": 10_000,
+        "postings": [
+            {"role": "MAKER", "agent_id": "m", "position_delta_units": -taker_delta},
+            {"role": "TAKER", "agent_id": "t", "position_delta_units": taker_delta},
+        ],
+    }
+
+
+def test_order_flow_sign_comes_from_the_taker_side_of_a_fill():
+    events = [_fill(1, 5), _fill(2, -3), _fill(3, 2)]
+    assert quality_run._taker_signs(events, 0) == [1, -1, 1]
+
+
+def test_quotes_no_longer_enter_the_order_flow_series():
+    """修订前的失效形态：做市商占委托 95.9% 且机械交替，序列测的是报价机制。"""
+    events = [
+        {
+            "event_type": "ORDER_ARRIVAL",
+            "timestamp": 1,
+            "transaction_seq": 1,
+            "action": "SUBMIT",
+            "agent_id": "market_maker_v2-0",
+            "side": "BUY",
+        },
+        {
+            "event_type": "ORDER_ARRIVAL",
+            "timestamp": 2,
+            "transaction_seq": 2,
+            "action": "SUBMIT",
+            "agent_id": "market_maker_v2-0",
+            "side": "SELL",
+        },
+        _fill(3, 1),
+    ]
+    assert quality_run._taker_signs(events, 0) == [1]
+
+
+def test_order_flow_series_respects_the_window_and_skips_undetermined_fills():
+    events = [_fill(1, 1), _fill(5, -1)]
+    assert quality_run._taker_signs(events, 3) == [-1]
+    no_taker = {
+        "event_type": "TRADE_SETTLE",
+        "timestamp": 9,
+        "transaction_seq": 9,
+        "postings": [{"role": "MAKER", "agent_id": "m", "position_delta_units": 1}],
+    }
+    zero_delta = _fill(10, 0)
+    assert quality_run._taker_signs([no_taker, zero_delta], 0) == []
