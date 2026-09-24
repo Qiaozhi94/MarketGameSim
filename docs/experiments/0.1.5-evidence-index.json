@@ -1,7 +1,7 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "958754c7627a48ce85b287452783491a195dacb3ff2b5996f2095be5935b9696",
-    "reason": "2026-09-24 重绑（当日第二次）：0.4.1 第二次生态修复——DEFAULT_LIVE_ROSTER 里 mean_reversion 的观察间隔 10 秒改为 1 秒，与 trend_following 对齐（T1004）。源码改动只有该常量与其注释，装配清单不在 T215 的运行路径上。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）。如实记录一点：该证明启动后本文件的注释被改过一行（实验报告节号 §8.7 -> §10），即证明所跑的树与本次盖章的树相差一行注释；已逐行核对该差异仅为注释，不改变行为。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "attested_source_tree_sha256": "2b9bd78410f303b336f063feef800a9ff79d849746b06df116712e465aae9391",
+    "reason": "2026-09-24 重绑（当日第三次）：0.4.1 门禁口径修订与诊断工具。两处源码改动：(1) metrics/validation.py 为 stylized facts 特征 3（波动聚集）增加前置有效性条件——收益几乎全部同号时判 NOT_APPLICABLE 而非 PASS/FAIL（ADR-016，owner 2026-09-24 裁决；依据是 |r| 为 r 的仿射函数时 ACF 不变、该检验在定义上退化为特征 2）；(2) 并行会话新增 metrics/binding_diagnosis.py（扰动后逐位比对的只读诊断工具，不参与任何生产路径）。两者均不触碰撮合、账本、保证金与 T215 的决策路径。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）。本轮证明所跑的源码树与本次盖章的树哈希逐位相同（2b9bd784…），证明期间源码树冻结，两个会话均未改动 src/ 与 tests/。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
     "rebound_at": "2026-09-24",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "958754c7627a48ce85b287452783491a195dacb3ff2b5996f2095be5935b9696"
+    "source_tree_sha256": "2b9bd78410f303b336f063feef800a9ff79d849746b06df116712e465aae9391"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {

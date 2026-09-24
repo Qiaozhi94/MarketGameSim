@@ -400,3 +400,71 @@ def test_kpi005_family_a_is_untouched_by_this_milestone():
 def test_thresholds_come_from_the_frozen_table(name, expected):
     """The measures read spec §6's constants; a test never sets its own."""
     assert mq.frozen_thresholds()["stylized_facts"][name] == expected
+
+
+# --------------------------------------------------------------------------- #
+# Fact 3 的前置有效性条件（spec §6，owner 2026-09-24 裁决）
+# --------------------------------------------------------------------------- #
+
+
+def _monotone_returns(n: int = N, seed: int = 5) -> list[float]:
+    """单调上涨：每个收益都为正——实测过的退化形态（实验报告 §16）。"""
+    rng = random.Random(seed)
+    return [abs(rng.gauss(0.0, 0.01)) + 1e-4 for _ in range(n)]
+
+
+def test_volatility_clustering_is_not_applicable_when_returns_are_single_signed():
+    """反面：收益全同号时本检验退化为 Fact 2，必须判不适用而非 PASS/FAIL。
+
+    这是数学恒等：|r| 此时是 r 的仿射函数，而 ACF 对仿射变换不变。实测中这条
+    退化让一个单调暴涨 7 倍、最终停止成交的市场把波动聚集判成了 PASS。
+    """
+    fact = check_volatility_clustering_lags(_monotone_returns())
+    assert fact.raw_verdict == mq.NOT_APPLICABLE
+    assert fact.evidence["reason_code"] == "SINGLE_SIGNED_RETURNS"
+    assert fact.evidence["dominant_share"] == 1.0
+
+
+def test_volatility_clustering_still_judges_a_two_sided_market():
+    """正面：收益双向时前置条件不拦截，PASS/FAIL 照常给出。"""
+    fact = check_volatility_clustering_lags(_clustered_returns())
+    assert fact.raw_verdict == mq.PASS
+    assert fact.evidence["acf_lag1"] > 0
+
+
+def test_all_zero_returns_are_degenerate_too():
+    """全零收益没有可检验的变化，同样判不适用。"""
+    fact = check_volatility_clustering_lags([0.0] * N)
+    assert fact.raw_verdict == mq.NOT_APPLICABLE
+    assert fact.evidence["nonzero"] == 0
+
+
+def test_the_threshold_is_a_share_not_an_all_or_nothing_rule():
+    """94% 同号仍然判定，96% 同号判不适用——阈值是 95%，两侧都要断言。"""
+    base = _clustered_returns()
+    n = len(base)
+
+    def with_share(share: float) -> list[float]:
+        flip = int(n * (1 - share))
+        return [abs(v) if i >= flip else -abs(v) for i, v in enumerate(base)]
+
+    assert check_volatility_clustering_lags(with_share(0.94)).raw_verdict != mq.NOT_APPLICABLE
+    assert check_volatility_clustering_lags(with_share(0.96)).raw_verdict == mq.NOT_APPLICABLE
+
+
+def test_not_applicable_does_not_shrink_the_sc_502_denominator():
+    """必须钉死：SC-502 仍是「五项中至少 3 项」，不得变成「三项中至少 3 项」。
+
+    否则本前置条件会从「让自己更难过门」翻转成「让自己更好过门」——那正是
+    「发现指标不利于是改判定规则」的形态。
+    """
+    facts = {
+        "fat_tails": mq.StylizedFactResult(mq.PASS, 1.0, 0.001),
+        "return_autocorrelation": mq.StylizedFactResult(mq.PASS, 1.0, 0.001),
+        "volatility_clustering": mq.StylizedFactResult(mq.NOT_APPLICABLE, None, None),
+        "volume_volatility_correlation": mq.StylizedFactResult(mq.NOT_APPLICABLE, None, None),
+        "order_flow_long_memory": mq.StylizedFactResult(mq.NOT_APPLICABLE, None, None),
+    }
+    verdicts, _failed = mq._derive(0, {k: None for k in mq.QUALITY_THRESHOLDS}, facts)
+    # 2 项通过、3 项不适用：若分母被缩小成「2/2」，这里会变成 PASS。
+    assert verdicts[mq.SC_502] == mq.FAIL

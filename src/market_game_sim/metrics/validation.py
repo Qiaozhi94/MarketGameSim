@@ -540,6 +540,36 @@ def abs_return_acf(returns: list[float], lag: int) -> tuple[float | None, float 
     return r, _one_sided_p(r / (1 / math.sqrt(n)))
 
 
+#: Fact 3 的前置有效性条件（spec §6，owner 2026-09-24 裁决）：同号收益占比上限。
+SINGLE_SIGN_MAX_SHARE = 0.95
+#: 前置条件不成立时的稳定原因码。
+SINGLE_SIGNED_RETURNS = "SINGLE_SIGNED_RETURNS"
+
+
+def single_signed_returns(returns: list[float]) -> tuple[bool, dict[str, float | int]]:
+    """收益是否（几乎）全部同号——Fact 3 的适用前提是否被违反。
+
+    **这是数学恒等，不是经验调整**：收益全部同号时 ``|r|`` 是 ``r`` 的仿射函数，
+    而 ACF 对仿射变换不变，于是 Fact 3 在定义上退化为 Fact 2（收益自相关），两者不再
+    独立。实测证据：0.4.1 非锚定基线同一次运行中两者的 ACF lag1 **逐位相同**
+    （``0.9761001725558393``，实验报告 §16.1）——一条单调上升的价格路径让每个逐秒收益
+    都为正，`|r| ≡ r`。
+
+    零收益不破坏这个恒等（``|0| = 0``），因此只按**非零**收益计数；全为零同样判退化
+    （没有可供检验的变化）。
+    """
+    pos = sum(1 for v in returns if v > 0)
+    neg = sum(1 for v in returns if v < 0)
+    nonzero = pos + neg
+    evidence: dict[str, float | int] = {"positive": pos, "negative": neg, "nonzero": nonzero}
+    if nonzero == 0:
+        evidence["dominant_share"] = 1.0
+        return True, evidence
+    share = max(pos, neg) / nonzero
+    evidence["dominant_share"] = share
+    return share >= SINGLE_SIGN_MAX_SHARE, evidence
+
+
 def check_volatility_clustering_lags(
     returns: list[float], lags: tuple[int, ...] = VOLATILITY_CLUSTERING_LAGS
 ) -> StylizedFactResult:
@@ -548,7 +578,19 @@ def check_volatility_clustering_lags(
     The intersection-union rule itself lives in
     :func:`market_quality.combine_volatility_clustering` (spec §6 owns it);
     this function only measures the two lags.
+
+    **前置有效性条件（spec §6，owner 2026-09-24 裁决）**：收益几乎全部同号时本检验
+    退化为 Fact 2，故判 ``NOT_APPLICABLE`` 而非 PASS/FAIL，理由码
+    ``SINGLE_SIGNED_RETURNS``（见 :func:`single_signed_returns`）。
+
+    该判定**不缩小 SC-502 的分母**：SC-502 仍是「五项中至少 3 项」，``NOT_APPLICABLE``
+    只是不计为通过——否则本条会从「让自己更难过门」翻转成「让自己更好过门」。
     """
+    degenerate, evidence = single_signed_returns(returns)
+    if degenerate:
+        return StylizedFactResult(
+            NOT_APPLICABLE, None, None, {**evidence, "reason_code": SINGLE_SIGNED_RETURNS}
+        )
     lag_low, lag_high = lags
     acf_low, p_low = abs_return_acf(returns, lag_low)
     acf_high, p_high = abs_return_acf(returns, lag_high)
