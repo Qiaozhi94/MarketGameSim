@@ -109,11 +109,35 @@ class MarketMakerV2(TraderStrategy):
     # Per-agent dispersion (drawn once per agent: decision_index fixed 0)
     # ----------------------------------------------------------------- #
 
-    def half_spread_ticks(self, ctx: DrawContext) -> int:
-        span = 2 * self.half_spread_dispersion_ticks + 1
+    def quote_params(self, state: AgentInternalStateV1) -> tuple[int, int]:
+        """(base, dispersion)：装配清单可覆盖，缺省用族的冻结默认值。
+
+        0.4.1 T973：价位分散决定盘口能有多少个不同价位——实测 6 → 18 个做市商只把
+        中位档位从 2 抬到 4（次线性），因为报价全挤在同一条 ±dispersion 的窄带里。
+        因此分散必须是**装配参数**而不是族内常量（DR-501「各族参数」）。
+        覆盖值在装配期由 roster 校验（fail closed）；这里再查一次同样的不变量，
+        因为 state 是运行期输入，不能假设它一定来自 roster。
+        """
+        bag = state.model_private_state
+        base = bag.get("mm_base_half_spread_ticks", self.base_half_spread_ticks)
+        dispersion = bag.get("mm_half_spread_dispersion_ticks", self.half_spread_dispersion_ticks)
+        if type(base) is not int or base < 1:
+            raise StrategyLayerError(
+                "INVALID_FAMILY_PARAMS", f"{FAMILY_ID}: base_half_spread_ticks must be an int >= 1"
+            )
+        if type(dispersion) is not int or not 0 <= dispersion < base:
+            raise StrategyLayerError(
+                "INVALID_FAMILY_PARAMS",
+                f"{FAMILY_ID}: half_spread_dispersion_ticks must be in [0, {base})",
+            )
+        return base, dispersion
+
+    def half_spread_ticks(self, ctx: DrawContext, state: AgentInternalStateV1) -> int:
+        base, dispersion = self.quote_params(state)
+        span = 2 * dispersion + 1
         u = blake2b_uniform(ctx.master_seed, ctx.agent_id, MECHANISM_HALF_SPREAD, 0, 0)
-        offset = int(u * span) - self.half_spread_dispersion_ticks
-        return self.base_half_spread_ticks + offset
+        offset = int(u * span) - dispersion
+        return base + offset
 
     def quote_size(self, ctx: DrawContext) -> int:
         span = 2 * self.quote_size_dispersion + 1
@@ -157,7 +181,7 @@ class MarketMakerV2(TraderStrategy):
         mark = mark_ticks(info)
         if mark is None:
             return self._no_action(state, REASON_NO_MARK)
-        half_spread = self.half_spread_ticks(ctx)
+        half_spread = self.half_spread_ticks(ctx, state)
         skew = self._skew_ticks(info.own_account.position_units, half_spread)
         side = self._side(info.own_account.position_units, ctx)
         price = mark - half_spread - skew if side == "BUY" else mark + half_spread - skew

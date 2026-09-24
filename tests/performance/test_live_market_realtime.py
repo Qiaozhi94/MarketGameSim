@@ -71,12 +71,15 @@ MIN_TRADE_PER_ORDER = 0.005
 WARMUP_SECONDS = 5
 TIMED_SECONDS = 20
 
-#: DEFAULT_LIVE_ROSTER: 6 market_maker_v2 + 9 trend + 9 mean-reversion + 6 noise.
-EXPECTED_AGENTS = 30
+#: DEFAULT_LIVE_ROSTER: 12 market_maker_v2 + 9 trend + 9 mean-reversion + 6 noise.
+#: 0.4.1 T973 把做市商从 6 加到 12（并把报价分散从 ±3 放宽到 ±7）——6 个做市商的
+#: 中位档位只有 2，达不到 SC-501 的 5 档门限。装配变了，本文件的期望值随之更新：
+#: 这里钉住的是「性能门测的就是主装配」，不是某个具体数字。
+EXPECTED_AGENTS = 36
 
 #: The assembly list T982 records beside the wall clock, in roster order.
 EXPECTED_FAMILIES = (
-    ("market_maker_v2", 6),
+    ("market_maker_v2", 12),
     ("trend_following", 9),
     ("mean_reversion", 9),
     ("sentiment_noise", 6),

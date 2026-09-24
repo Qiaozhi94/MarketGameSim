@@ -66,10 +66,18 @@ DEFAULT_LIVE_ROSTER: dict[str, Any] = {
     "families": [
         {
             "family_id": "market_maker_v2",
-            "count": 6,
+            # T973 实测：6 个做市商、分散 ±3 时中位档位只有 2（门限 5）——报价全挤在
+            # 同一条窄价带里，加数量是次线性的（6→18 只把档位从 2 抬到 4）。12 个 + 分散
+            # ±7 达到 5.0，价差 2.92bp 仍远低于 20bp 门限。
+            "count": 12,
             "observe_interval_ns": 100_000_000,
             "latency_ns": 5_000_000,
-            "params": {"leverage_tier": 1},
+            "params": {
+                "leverage_tier": 1,
+                # 族默认值；装配清单可调，用于加深盘口（T973 探测）。
+                "base_half_spread_ticks": 8,
+                "half_spread_dispersion_ticks": 7,
+            },
         },
         {
             "family_id": "trend_following",
@@ -87,7 +95,11 @@ DEFAULT_LIVE_ROSTER: dict[str, Any] = {
         {
             "family_id": "mean_reversion",
             "count": 9,
-            "observe_interval_ns": 1_000_000_000,
+            # T973 实测：该族要 20 笔成交的窗口，而信息集给的是「上次游标以来的新增
+            # 成交」——1 秒间隔下每次只看到中位 3 笔，永远 INSUFFICIENT_HISTORY。
+            # 10 秒间隔下看到中位 27 笔，委托从 9 笔增到 153 笔。这是让该族在它本来
+            # 该有的尺度上看市场，不是为了让指标达标而调参。
+            "observe_interval_ns": 10_000_000_000,
             "latency_ns": 50_000_000,
             "params": {
                 "leverage_tier": 5,

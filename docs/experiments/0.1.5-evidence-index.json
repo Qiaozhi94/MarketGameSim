@@ -1,7 +1,7 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "33e1cc35959e1d6005c04694430f14219faaf78cfee1932007732a8a4280fb81",
-    "reason": "2026-09-23 重绑：合入 0.4.1 T972（metrics/instability.py，内生不稳定事件存在性判定，纯新增模块）与第二处增长开销的修复（agent/tape.py::tape_interval 改二分定位区间端点，metrics/live_perf.py 按秒记录事件数）。tape 修复在 T215 运行路径上，但只改区间定位方式、不改区间内容：按 ADR-015 以经济等价证明为据，当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）；另有独立佐证：同装配 2200 逻辑秒的市场质量十一项指标在修复前后逐个相同，仅墙钟从 0.549 降至 0.434。H2 冻结摘要未变，无需重绑。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "attested_source_tree_sha256": "f5f9a484e5b889ab829fbe05e852f8fd9fbb6ee7264482a99e0be2f433a46d6f",
+    "reason": "2026-09-24 重绑：合入 0.4.1 第三处增长开销修复（每代理增量 K 线 + 历史快照共享追加，agent/handler.py）与 T973 的装配改动（做市商报价分散外提为 roster 参数、质量测量按 AC-509 新口径取末段中位）。前者在 T215 运行路径上：按 ADR-015 以经济等价证明为据，当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）；H2 冻结摘要未变，无需重绑。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
     "rebound_at": "2026-09-23",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "33e1cc35959e1d6005c04694430f14219faaf78cfee1932007732a8a4280fb81"
+    "source_tree_sha256": "f5f9a484e5b889ab829fbe05e852f8fd9fbb6ee7264482a99e0be2f433a46d6f"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {

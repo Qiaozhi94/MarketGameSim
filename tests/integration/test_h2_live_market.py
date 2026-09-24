@@ -214,7 +214,7 @@ def test_roster_assembles_every_declared_family_and_trades_without_injection():
 
     families = Counter(spec.strategy_family_id for spec in market.config.agent_specs)
     assert families == {
-        "market_maker_v2": 6,
+        "market_maker_v2": 12,
         "trend_following": 9,
         "mean_reversion": 9,
         "sentiment_noise": 6,
@@ -251,12 +251,19 @@ def test_trend_followers_are_spread_across_time_scales():
         if spec.strategy_family_id == "trend_following"
     ]
     assert len(set(indexes)) == len(TREND_TIME_SCALES) > 1
-    # 其他族不需要这个参数，不应被塞进私有状态。
-    assert all(
-        spec.strategy_private is None
-        for spec in market.config.agent_specs
-        if spec.strategy_family_id != "trend_following"
-    )
+    # 时间尺度只属于趋势族；做市商族的私有状态只带它自己的报价参数（T973）。
+    for spec in market.config.agent_specs:
+        if spec.strategy_family_id == "trend_following":
+            continue
+        private = spec.strategy_private or {}
+        assert "time_scale_index" not in private, spec.agent_id
+        if spec.strategy_family_id == "market_maker_v2":
+            assert set(private) == {
+                "mm_base_half_spread_ticks",
+                "mm_half_spread_dispersion_ticks",
+            }
+        else:
+            assert private == {}
 
 
 def test_same_roster_and_seed_reproduce_the_price_series_pointwise():

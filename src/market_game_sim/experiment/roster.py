@@ -264,7 +264,9 @@ _TRADER_PARAMS = frozenset(
         "ewma_half_life_trades",
     }
 )
-_MM_V2_PARAMS = frozenset({"leverage_tier"})
+_MM_V2_PARAMS = frozenset(
+    {"leverage_tier", "base_half_spread_ticks", "half_spread_dispersion_ticks"}
+)
 
 
 def _build_mm(agent_id: str, family: FamilyEntry) -> AgentSpec:
@@ -319,6 +321,18 @@ def _validate_trader_params(params: Mapping[str, Any], where: str) -> None:
 def _validate_mm_v2_params(params: Mapping[str, Any], where: str) -> None:
     _require_keys(params, _MM_V2_PARAMS, where)
     _int(params["leverage_tier"], f"{where}.leverage_tier", minimum=1)
+    base = _int(params["base_half_spread_ticks"], f"{where}.base_half_spread_ticks", minimum=1)
+    dispersion = _int(
+        params["half_spread_dispersion_ticks"],
+        f"{where}.half_spread_dispersion_ticks",
+        minimum=0,
+    )
+    if dispersion >= base:
+        # 分散 >= 基准会让半价差可能为 0 或负；装配期就拒绝，不留到运行期。
+        raise RosterError(
+            "INVALID_VALUE",
+            f"{where}.half_spread_dispersion_ticks 必须 < base_half_spread_ticks（{base}）",
+        )
 
 
 def _build_native_trader(agent_id: str, family: FamilyEntry, ordinal: int) -> AgentSpec:
@@ -352,6 +366,11 @@ def _build_mm_v2(agent_id: str, family: FamilyEntry, ordinal: int) -> AgentSpec:
     """The v2 quoting family: same market-maker branch, family-owned quote rule."""
     p = family.params
     return AgentSpec(
+        strategy_private={
+            # 装配清单覆盖族的报价分散（T973）；族内默认值不变。
+            "mm_base_half_spread_ticks": p["base_half_spread_ticks"],
+            "mm_half_spread_dispersion_ticks": p["half_spread_dispersion_ticks"],
+        },
         agent_id=agent_id,
         role="inventory_market_maker",
         strategy_family_id=family.family_id,

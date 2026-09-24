@@ -156,3 +156,36 @@ def test_effective_spread_excludes_fills_without_a_two_sided_quote():
     assert excluded == 1
     assert len(spreads) == 1
     assert spreads[0] == pytest.approx(2 * abs(2 * 101 - 200) / 200 * 10_000)
+
+
+# --------------------------------------------------------------------------- #
+# AC-509 口径（owner 2026-09-24）：末段中位，不是全窗平均也不是逐秒峰值
+# --------------------------------------------------------------------------- #
+
+
+def test_tail_median_ignores_a_single_spike_but_catches_sustained_growth():
+    """两种失效形态各一条：一次抖动不该判死，持续增长必须判死。"""
+    steady = [(float(i + 1), 0.1) for i in range(100)]
+    spiked = list(steady)
+    spiked[50] = (51.0, 9.0)  # 一次 GC 抖动
+    growing = [(float(i + 1), 0.02 + 0.008 * i) for i in range(100)]  # 单位成本单调上升
+
+    assert quality_run._tail_median(steady) == pytest.approx(0.1)
+    # 抖动落在窗口中部，末段中位不受影响；若口径是逐秒峰值，这条会被误判为超限。
+    assert quality_run._tail_median(spiked) == pytest.approx(0.1)
+    # 增长的运行末段远高于全窗平均：若口径是平均，这条会被放过。
+    tail = quality_run._tail_median(growing)
+    mean = sum(step for _, step in growing) / len(growing)
+    assert tail > mean * 1.5
+    assert tail > 0.5 > mean
+
+
+def test_tail_median_degrades_to_the_whole_run_when_samples_are_few():
+    assert quality_run._tail_median([(1.0, 0.2)]) == pytest.approx(0.2)
+    assert quality_run._tail_median([]) is None
+
+
+def test_step_rate_uses_the_logical_span_not_the_step_count():
+    """advance 每步推进的逻辑时间不固定；单位必须是「每逻辑秒」而不是「每步」。"""
+    two_seconds_per_step = [(2.0, 0.4), (4.0, 0.4)]
+    assert quality_run._tail_median(two_seconds_per_step) == pytest.approx(0.2)

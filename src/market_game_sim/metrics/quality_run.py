@@ -221,6 +221,25 @@ def measure_stylized_facts(
 # --------------------------------------------------------------------------- #
 
 
+def _span(per_second: list[tuple[float, float]], index: int) -> float:
+    """第 ``index`` 步覆盖的逻辑秒数（advance 每步推进的逻辑时间不一定是 1 秒）。"""
+    prev = per_second[index - 1][0] if index else 0.0
+    return max(per_second[index][0] - prev, 1e-9)
+
+
+def _tail_median(per_second: list[tuple[float, float]], fraction: float = 0.25) -> float | None:
+    """末段（默认最后 25%）每逻辑秒墙钟的中位数。
+
+    AC-509 的判定口径：既不是全窗平均（会掩盖增长），也不是逐秒峰值（会被抖动
+    误伤）。样本不足以切出末段时退化为全体中位，并且这一点在诊断里可见。
+    """
+    if not per_second:
+        return None
+    rates = [step / _span(per_second, i) for i, (_, step) in enumerate(per_second)]
+    cut = max(1, int(len(rates) * fraction))
+    return round(statistics.median(rates[-cut:]), 6)
+
+
 def run_market_quality(
     *,
     roster: Mapping[str, Any] | None = None,
@@ -238,17 +257,25 @@ def run_market_quality(
     market = LiveMarket(roster=body)
     target_ns = logical_seconds * NS_PER_SECOND
     wall = 0.0
+    per_second: list[tuple[float, float]] = []  # (logical_seconds_at_end, wall_of_this_step)
     while market.logical_ns < target_ns:
         started = time.perf_counter()
         market.advance()
-        wall += time.perf_counter() - started
+        step = time.perf_counter() - started
+        wall += step
+        per_second.append((market.logical_ns / NS_PER_SECOND, step))
         if market.dead:
             break
     events = market.kernel.committed_records
     start = window_start_ns(events)
+    # AC-509 口径（owner 2026-09-24 裁决）：末段中位，不是全窗平均也不是逐秒峰值。
+    # 平均会掩盖「单位成本随运行增长」——一个要持续运行的市场，衰减比平均值致命；
+    # 逐秒峰值又会被一次 GC 抖动误伤。末段中位正好区分这两件事。
+    tail_wall = _tail_median(per_second)
     end = int(market.logical_ns)
     quality = (
         measure_quality(events, window_start=start, window_end=end, wall_seconds=wall)
+        | {"wall_seconds_per_logical_second": tail_wall}
         if start is not None
         else dict.fromkeys(
             (
@@ -287,6 +314,21 @@ def run_market_quality(
     _spreads, excluded = _effective_spreads_bp(events, start or 0)
     diagnostics = {
         "evidence_class": "engineering-demonstration",
+        "wall_seconds_per_logical_second_window_mean": (
+            round(wall / (end / NS_PER_SECOND), 6) if end else None
+        ),
+        "wall_seconds_per_logical_second_tail_median": tail_wall,
+        "wall_seconds_per_logical_second_peak": (
+            round(
+                max(
+                    (step / _span(per_second, i) for i, (_, step) in enumerate(per_second)),
+                    default=0.0,
+                ),
+                6,
+            )
+            if per_second
+            else None
+        ),
         "boundary": "工程演示，不进 evidence index，不建立研究声明（spec NFR-503）",
         "wall_seconds": round(wall, 3),
         "excluded_fills_without_two_sided_quote": excluded,
