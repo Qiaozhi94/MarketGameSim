@@ -30,6 +30,27 @@ LOGICAL_SECONDS = 40
 BAR_NS = 60_000_000_000
 
 
+def _stored_fills(world, agent_id):
+    """The agent's stored history as fills, whichever shape holds it.
+
+    0.4.1 perf (4th growth point) made the committed shape compact
+    ``{"count", "cursor_from", "cursor_to"}`` and derives the fills from the
+    shared public tape.  These tests assert on the history's *content* and
+    *size*, both of which must survive that change, so they read through the
+    same accessor the production code uses instead of assuming a list.
+    """
+    return H._history_fills(
+        world.get("agent_bars", {}).get(agent_id),
+        world,
+        H._history_count(world.get("agent_bars", {}).get(agent_id)),
+    )
+
+
+def _stored_total(world):
+    """Total fills recorded across all agents, in either shape."""
+    return sum(H._history_count(h) for h in world.get("agent_bars", {}).values())
+
+
 def _legacy_extend(prior_state, fills, bar_ns):
     """Pre-0.4.1 shape: keep the whole history, aggregate nothing up front."""
     history = list((prior_state or {}).get("_history", ()))
@@ -136,16 +157,23 @@ def test_history_snapshot_content_matches_the_copied_snapshot(monkeypatch):
     market = LiveMarket(roster=parse_roster(DEFAULT_LIVE_ROSTER))
     for _ in range(LOGICAL_SECONDS):
         market.advance()
-    new_bars = {a: list(h) for a, h in market.world.get("agent_bars", {}).items()}
+    new_bars = {a: _stored_fills(market.world, a) for a in market.world.get("agent_bars", {})}
 
     monkeypatch.setattr(EventKernel, "enqueue", _materialising_enqueue(EventKernel.enqueue))
     legacy_market = LiveMarket(roster=parse_roster(DEFAULT_LIVE_ROSTER))
     for _ in range(LOGICAL_SECONDS):
         legacy_market.advance()
-    legacy_bars = {a: list(h) for a, h in legacy_market.world.get("agent_bars", {}).items()}
+    legacy_bars = {
+        a: _stored_fills(legacy_market.world, a) for a in legacy_market.world.get("agent_bars", {})
+    }
 
     assert new_bars and legacy_bars
     assert sum(len(h) for h in new_bars.values()) > 0
+    # 0.4.1 perf (4th growth point): the compact record stores a cursor range
+    # rather than the fills, so this compares what the range *derives* against
+    # the fills the legacy path materialised -- the claim is that no agent
+    # loses or gains a single trade from its history, not that the container
+    # is the same object shape.
     assert new_bars == legacy_bars
 
 
@@ -178,7 +206,7 @@ def test_advance_never_rebuilds_bars_from_the_whole_history(monkeypatch):
     )
     # The run has to be a real one, or "never called" proves nothing.
     assert trades > 0
-    assert sum(len(h) for h in market.world.get("agent_bars", {}).values()) > 0
+    assert _stored_total(market.world) > 0
     assert calls == 0
 
 
@@ -205,7 +233,7 @@ def test_per_observation_fill_reads_do_not_scale_with_history(monkeypatch):
         reads.clear()
         market.advance()
         per_second.append(len(reads))
-        stored.append(sum(len(h) for h in market.world.get("agent_bars", {}).values()))
+        stored.append(_stored_total(market.world))
 
     half = LOGICAL_SECONDS // 2
     assert stored[-1] > stored[half] > 0, "history must actually grow, or this proves nothing"
@@ -245,7 +273,7 @@ def test_pending_snapshot_carries_an_interval_not_a_cumulative_history(monkeypat
 
     staged = [p for p in seen if "agent_history_base" in p or "agent_history" in p]
     assert staged, "no observation staged a history snapshot -- the run proves nothing"
-    stored = sum(len(h) for h in market.world.get("agent_bars", {}).values())
+    stored = _stored_total(market.world)
     assert stored > 0
     assert all("agent_history" not in p for p in staged)
     # Each snapshot carries its own interval only; the biggest one must stay far

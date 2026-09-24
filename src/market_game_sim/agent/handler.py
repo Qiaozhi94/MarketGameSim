@@ -649,6 +649,75 @@ def _extend_bar_state(prior_state: dict | None, fills, bar_ns: int) -> dict:
     return {"first_bar": first_bar, "bars": bars}
 
 
+def _history_count(entry) -> int:
+    """How many fills the agent's stored history holds, in either shape.
+
+    0.4.1 perf (4th growth point): ``world["agent_bars"][agent_id]`` used to be
+    the agent's own list of every public fill it had ever consumed -- 36 agents
+    each holding a private copy of the whole tape (measured: 78768 fill dicts
+    across the roster after 500 logical seconds, i.e. 36x the 2196-fill tape).
+    Nothing read those dicts except a length and a one-off aggregate rebuild,
+    so the committed shape is now the compact
+    ``{"count", "cursor_from", "cursor_to"}`` record and the fills are derived
+    from the shared public tape on the rare occasion they are needed.  The list
+    shape is still accepted on read: legacy worlds and tests seed it directly.
+    """
+    if entry is None:
+        return 0
+    if isinstance(entry, dict):
+        return int(entry.get("count", 0))
+    return len(entry)
+
+
+def _history_fills(entry, world: dict, count: int) -> list:
+    """The agent's stored history as fills, in either shape.
+
+    For the compact record the fills are re-derived from the shared public tape
+    over the cursor range the agent actually consumed.  That is the same list
+    the old shape stored: an agent's history is exactly the concatenation of
+    its consumed intervals, and those are contiguous (each observation's
+    ``cursor_from`` is the previous observation's ``cursor_to``), so the range
+    ``(first cursor_from, last cursor_to]`` reproduces it element for element.
+    Fills on the tape are never mutated in place, so deriving later is the same
+    as having copied then.
+    """
+    if entry is None:
+        return []
+    if isinstance(entry, dict):
+        derived = tape_interval(
+            world.get("public_tape", []),
+            entry.get("cursor_from", "e1_0"),
+            entry.get("cursor_to", "e1_0"),
+        )
+        return list(derived)[:count]
+    return list(entry)[:count]
+
+
+def _observed_own_trades(event: dict, world: dict, agent_id: str) -> list[dict] | None:
+    """The agent's own trade history as of its observation.
+
+    0.4.1 perf (4th growth point): the observation used to stage
+    ``deepcopy(world["trade_history"][agent_id])`` -- every trade the agent had
+    ever settled, deep-copied on every observation.  With ~136 observations per
+    logical second and an active market maker holding 744 of its own trades by
+    second 500, that copy was the dominant remaining term (profile: deepcopy
+    2.3M calls in a late 20s window against 456k in an early one).
+
+    ``world["trade_history"]`` is append-only -- :func:`_record_trade_history`
+    only appends, nothing truncates or mutates an entry, and the kernel buffers
+    records rather than rolling world writes back -- so the prefix of length
+    ``n`` *is* the snapshot taken when the observation ran.  Legacy events that
+    carry a materialised list keep working unchanged.
+    """
+    legacy = event.get("_observed_trade_history")
+    if legacy is not None:
+        return legacy
+    length = event.get("_observed_trade_history_len")
+    if length is None:
+        return None
+    return world.get("trade_history", {}).get(agent_id, [])[:length]
+
+
 def _bar_state_from_history(history, bar_ns: int) -> dict:
     """Rebuild the aggregate from a full history (one-off).
 
@@ -845,7 +914,7 @@ def handle_agent_decide(
             iset,
             world,
             decision_index,
-            observed_trade_history=event.get("_observed_trade_history"),
+            observed_trade_history=_observed_own_trades(event, world, agent_id),
         )
         if spec.goal_model_id is not None:
             # R018-C007 (Round 5): cursor_to must be the OBSERVATION's own
@@ -1054,11 +1123,11 @@ def handle_agent_observe(
     # replace-the-snapshot semantics by truncating to that length before
     # extending.  Overlapping observations and retries therefore behave exactly
     # as before (R018-C002), without an O(history) copy per observation.
-    committed_history = world.get("agent_bars", {}).get(agent_id, ())
+    committed_history = world.get("agent_bars", {}).get(agent_id)
     prior_history_len = (
         queued_state.get("agent_history_len", 0)
         if queued_state is not None
-        else len(committed_history)
+        else _history_count(committed_history)
     )
     # 0.4.1 perf, half 2 of 2: carry a running per-bar aggregate so the
     # completed-bar sequence costs O(this interval) instead of O(every trade the
@@ -1075,7 +1144,8 @@ def handle_agent_observe(
     )
     if prior_bar_state is None and prior_history_len:
         prior_bar_state = _bar_state_from_history(
-            list(committed_history)[:prior_history_len], bar_ns=60_000_000_000
+            _history_fills(committed_history, world, prior_history_len),
+            bar_ns=60_000_000_000,
         )
     bar_state = _extend_bar_state(prior_bar_state, interval_fills, bar_ns=60_000_000_000)
     prior_decision_index = (
@@ -1106,6 +1176,12 @@ def handle_agent_observe(
         "agent_history_base": prior_history_len,
         "agent_history_extend": [dict(fill) for fill in interval_fills],
         "agent_history_len": prior_history_len + len(interval_fills),
+        # 0.4.1 perf (4th growth point): the cursor range this observation
+        # consumed.  The kernel records (count, cursor_from, cursor_to) instead
+        # of the fills themselves; the range is what makes the fills derivable
+        # from the shared tape later, so no agent keeps a private copy of it.
+        "agent_history_cursor_from": cursor_from,
+        "agent_history_cursor_to": cursor_to,
         # Committed with the same replace semantics as the history above -- both
         # are snapshots of this observation, not increments applied to world
         # state, so an aborted observation leaves neither behind.
@@ -1153,7 +1229,11 @@ def handle_agent_observe(
             )
         ),
         "_observed_information_set": deepcopy(iset),
-        "_observed_trade_history": deepcopy(world.get("trade_history", {}).get(agent_id, [])),
+        # 0.4.1 perf (4th growth point): snapshot the agent's own trade history
+        # by LENGTH, not by deep copy -- see :func:`_observed_own_trades` for
+        # why the prefix is the same snapshot.  The deep copy was O(trades the
+        # agent has ever settled) on every observation.
+        "_observed_trade_history_len": len(world.get("trade_history", {}).get(agent_id, ())),
         "_observed_ewma_value": new_value,
         "_observed_ewma_count": new_count,
         "_observed_cursor_from": cursor_from,

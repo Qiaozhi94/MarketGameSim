@@ -11,6 +11,7 @@ Covers (AC-002 / AC-005 / FR-022 / FR-025):
 
 from __future__ import annotations
 
+from market_game_sim.agent import handler as H
 from market_game_sim.agent.handler import handle_agent_decide, handle_agent_observe
 from market_game_sim.agent.scheduler import AgentSpec
 from market_game_sim.agent.tape import (
@@ -562,7 +563,15 @@ def test_decide_failure_aborts_and_no_interval_is_lost_to_retry():
     retry.run(_dispatch, world, max_transactions=4)
     assert retry.terminated == "COMPLETED"
     assert world["agent_cursors"]["agent-0"] == "e5_0"
-    assert len(world["agent_bars"]["agent-0"]) == 1
+    # 0.4.1 perf (4th growth point): the committed history is the compact
+    # ``{"count", "cursor_from", "cursor_to"}`` record, so the count is read
+    # through the accessor rather than by ``len`` of the container.  Both the
+    # count and what the stored cursor range derives are asserted: a wrong
+    # count, a wrong range, or a silent revert to storing raw fills each break
+    # one of the two.
+    stored = world["agent_bars"]["agent-0"]
+    assert H._history_count(stored) == 1
+    assert len(H._history_fills(stored, world, H._history_count(stored))) == 1
     assert world["agent_decision_index"]["agent-0"] == 1
     assert sum(e["event_type"] == "AGENT_DECIDE" for e in retry.committed_records) == 1
 
