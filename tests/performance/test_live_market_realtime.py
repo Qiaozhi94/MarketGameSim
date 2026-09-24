@@ -129,6 +129,48 @@ def test_live_assembly_meets_the_real_time_budget(report):
     )
 
 
+def test_verdict_divides_by_logical_time_not_by_advance_calls():
+    """AC-509 的分母是逻辑秒，不是 advance 次数。
+
+    `LiveMarket.advance()` 目标是 +1 逻辑秒，但收尾把逻辑时钟拉到最新事件时间戳，
+    事件跑在前面时会超调——实测平均 1.54 秒/步。按调用次数归一会把「墙钟/逻辑秒」
+    系统性报高 1.5 倍；方向上保守，但口径错了就无法与质量报告对账。
+    """
+    overshooting = PerfReport(
+        agent_count=1,
+        logical_seconds=4,
+        warmup_seconds=0,
+        wall_seconds=(0.6, 0.6, 0.6, 0.6),
+        logical_spans=(2.0, 2.0, 2.0, 2.0),
+        mix={},
+        total_records=0,
+    )
+    assert overshooting.wall_per_logical_second == (0.3, 0.3, 0.3, 0.3)
+    assert overshooting.tail_median_wall == pytest.approx(0.3)
+    assert overshooting.logical_seconds_elapsed == pytest.approx(8.0)
+    assert verdict(overshooting, budget_seconds=0.5) == (PASS, [])
+
+    no_clock = PerfReport(
+        agent_count=1,
+        logical_seconds=4,
+        warmup_seconds=0,
+        wall_seconds=(0.6, 0.6, 0.6, 0.6),
+        mix={},
+        total_records=0,
+    )
+    assert no_clock.tail_median_wall == pytest.approx(0.6)
+    assert verdict(no_clock, budget_seconds=0.5) == (FAIL, [VERDICT_BUDGET])
+
+
+def test_measurement_records_real_logical_time(report):
+    """实测装配下 advance 次数与逻辑秒不是 1:1，记录必须把两者都留下。"""
+    assert len(report.logical_spans) == len(report.wall_seconds)
+    assert report.logical_seconds_elapsed > report.logical_seconds
+    payload = report.to_dict()
+    assert payload["advance_calls"] == TIMED_SECONDS
+    assert payload["logical_seconds_elapsed"] > payload["advance_calls"]
+
+
 def test_verdict_reads_the_tail_not_the_whole_window():
     """AC-509 口径：末段中位。全窗中位会把「越跑越慢」判成通过。
 

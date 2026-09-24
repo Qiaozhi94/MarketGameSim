@@ -101,12 +101,37 @@ class PerfReport:
     #: defect class already found once in ``_newest_timestamp``).  Dividing the
     #: two separates the cases.
     events_per_second: tuple[int, ...] = ()
+    #: 每步实际推进的逻辑秒数。`LiveMarket.advance()` 目标是 +1 秒，但收尾会把
+    #: 逻辑时钟拉到最新事件时间戳，事件跑在前面时会**超调**（实测平均 1.54 秒/步）。
+    #: AC-509 的分母是逻辑秒，不是 advance 次数，所以判定必须按这个跨度归一——
+    #: 与 `metrics/quality_run.py::_tail_median` 的 `_span` 处理同源。
+    #: 空元组或 NaN 表示市场没有逻辑时钟，此时退化为「一步一秒」。
+    logical_spans: tuple[float, ...] = ()
     roster_id: str | None = None
     #: AC-509/T982: the assembly the number was measured on, family by family.
     #: ``None`` means the market exposed no roster -- never an empty dict, so a
     #: report cannot silently claim "measured on nothing" as a valid assembly.
     roster_families: tuple[tuple[str, int], ...] | None = None
     environment: dict[str, Any] = field(default_factory=environment)
+
+    @property
+    def wall_per_logical_second(self) -> tuple[float, ...]:
+        """逐步的「墙钟秒 / 逻辑秒」——AC-509 判定读的就是这个序列。"""
+        if len(self.logical_spans) != len(self.wall_seconds):
+            return self.wall_seconds
+        rates: list[float] = []
+        for wall, span in zip(self.wall_seconds, self.logical_spans, strict=True):
+            usable = span if span == span and span > 0 else 1.0
+            rates.append(wall / usable)
+        return tuple(rates)
+
+    @property
+    def logical_seconds_elapsed(self) -> float:
+        """本次测量实际覆盖的逻辑秒数（≠ advance 次数）。"""
+        if not self.logical_spans:
+            return float(self.logical_seconds)
+        total = sum(v for v in self.logical_spans if v == v)
+        return total or float(self.logical_seconds)
 
     @property
     def tail_median_wall(self) -> float:
@@ -118,8 +143,9 @@ class PerfReport:
         判据，否则同一次运行会出现「性能门绿、质量报告红」而无人知道该信哪个。
         样本不足以切出末段时退化为全体中位。
         """
-        cut = max(1, int(len(self.wall_seconds) * TAIL_FRACTION))
-        return statistics.median(self.wall_seconds[-cut:])
+        rates = self.wall_per_logical_second
+        cut = max(1, int(len(rates) * TAIL_FRACTION))
+        return statistics.median(rates[-cut:])
 
     @property
     def median_wall(self) -> float:
@@ -168,6 +194,8 @@ class PerfReport:
             "warmup_seconds": self.warmup_seconds,
             "wall_seconds": [round(v, 6) for v in self.wall_seconds],
             "tail_median_wall_seconds": round(self.tail_median_wall, 6),
+            "logical_seconds_elapsed": round(self.logical_seconds_elapsed, 6),
+            "advance_calls": self.logical_seconds,
             "median_wall_seconds": round(self.median_wall, 6),
             "mean_wall_seconds": round(statistics.fmean(self.wall_seconds), 6),
             "max_wall_seconds": round(self.max_wall, 6),
@@ -205,7 +233,9 @@ def measure(
 
     walls: list[float] = []
     events: list[int] = []
+    spans: list[float] = []
     before = market.kernel.committed_record_count
+    clock_before = _logical_seconds_now(market)
     for _ in range(logical_seconds):
         started = time.perf_counter()
         market.advance()
@@ -213,6 +243,9 @@ def measure(
         after = market.kernel.committed_record_count
         events.append(after - before)
         before = after
+        clock_after = _logical_seconds_now(market)
+        spans.append(max(clock_after - clock_before, 0.0))
+        clock_before = clock_after
 
     kernel = market.kernel
     mix = Counter(r.get("event_type") for r in kernel.committed_records)
@@ -223,12 +256,21 @@ def measure(
         logical_seconds=logical_seconds,
         warmup_seconds=warmup_seconds,
         wall_seconds=tuple(walls),
+        logical_spans=tuple(spans),
         events_per_second=tuple(events),
         mix={str(k): int(v) for k, v in mix.items() if k is not None},
         total_records=kernel.committed_record_count,
         roster_id=getattr(market, "roster_id", None),
         roster_families=_roster_families(market),
     )
+
+
+def _logical_seconds_now(market: object) -> float:
+    """市场当前的逻辑时钟（秒）。没有逻辑时钟的市场按「一步一秒」处理。"""
+    logical_ns = getattr(market, "logical_ns", None)
+    if logical_ns is None:
+        return float("nan")
+    return int(logical_ns) / 1e9
 
 
 def _roster_families(market: object) -> tuple[tuple[str, int], ...] | None:
