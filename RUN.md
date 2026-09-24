@@ -17,6 +17,27 @@
 .venv/bin/python tools/verify.py
 ```
 
+## 0.4.1 持续 AI 市场（纯 AI 生态）
+
+按 `StrategyRoster` 装配的纯 AI 市场，冷启动锚打破预热死锁，四个策略族 + 量化族。
+
+```bash
+# 启动持续运行的 live 市场（loopback）
+.venv/bin/python -m market_game_sim.experiment.h2.live_market --seed 7 --port 8792
+
+# 市场质量报告（六项质量 + 五项 stylized facts，未通过项在第一屏可见）
+.venv/bin/python -m market_game_sim.metrics.quality_run --seconds 2200
+
+# 量化交易者族运行 artifact（固定信号序列，不依赖 alphamill 运行时）
+.venv/bin/python -m market_game_sim.experiment.quant_family_run --seconds 300
+```
+
+三者的产出一律是 `engineering-demonstration`：不进任何 evidence index，不建立研究
+声明。量化族 artifact 另带单向边界声明（沙盘结果不得用作策略有效性证据、不回流
+alphamill 证据链，ADR-011 §决策 5），落盘前自检，缺声明或出现绩效字段即失败。
+
+实测记录见 [`docs/experiments/0.4.1-market-quality-baseline.md`](docs/experiments/0.4.1-market-quality-baseline.md)。
+
 ## 已归档入口（随 ADR-010 归档，机械保留但当前不执行）
 
 下列入口属于已归档的 **N-of-1 采集轨**（6 训练 + 24 正式场景）。归档是
@@ -41,7 +62,5 @@ owner 证据导出（会话对象方法，归档采集流程使用）：`OwnerWe
 
 ## 待接入入口
 
-- **持续 AI 市场（`experiment/h2/live_market.py`）**：已有可用 CLI（模块 `main()`），
-  但启动命令与市场质量报告命令尚未写入本文件，当前只能靠读源码启动。由
-  [`0.4.1 T978`](docs/features/0.4/0.4.1-ai-market-ecology/tasks.md)（成果门 `H2-E3`）
-  正式接入；若该任务因范围调整被移出，本条目须另立载体，不得随 Phase 一起消失。
+- ~~**持续 AI 市场（`experiment/h2/live_market.py`）**：启动命令与市场质量报告命令
+  尚未写入本文件~~ → **已接入**（0.4.1 T978，成果门 `H2-E3`）：见上「0.4.1 持续 AI 市场」。

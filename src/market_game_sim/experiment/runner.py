@@ -10,7 +10,7 @@ import dataclasses
 from dataclasses import dataclass, field
 
 from market_game_sim.agent.anchor import anchor_header, resolve_for_agents
-from market_game_sim.agent.handler import handle_agent_decide, handle_agent_observe
+from market_game_sim.agent.handler import handle_agent_decide, handle_agent_observe, strategy_tags
 from market_game_sim.agent.mapping import get_mapping
 from market_game_sim.agent.scheduler import AgentSpec
 from market_game_sim.agent.strategy import target_position
@@ -440,9 +440,15 @@ def _handle_external_decide(event: dict, world: dict, kernel: EventKernel, sourc
     闭集内的 ``ENDOGENOUS_AGENT``（所有者是运行内的内生代理人），人类窗口的
     审计边界记录在会话工件里（design.md "等价可审计边界"），不新增事件类型。
 
-    源回调返回 ``{"kind": "NO_ACTION"}`` 或
-    ``{"kind": "MARKET", "side": "BUY"|"SELL", "quantity_units": int,
-    "intent_id": str}``。
+    源回调返回下列之一：
+
+    * ``{"kind": "NO_ACTION", "reason_code": str | None}``
+    * ``{"kind": "MARKET", "side", "quantity_units", "intent_id"}``
+    * ``{"kind": "LIMIT", "side", "quantity_units", "price_ticks", "intent_id"}``（0.4.1 T975）
+
+    任何一种都可以附 ``"signal": {"source_id", "signal_version"}``——量化族的决策
+    必须能追溯到信号来源与版本（TR-501）。未知 ``kind`` 按 IR-502 降级为不动作并
+    记 ``EXTERNAL_DECISION_INVALID``，**不抛异常**：外部源的故障不得阻塞内核。
     """
     decision = source_fn(event, world)
     agent_id = event["agent_id"]
@@ -452,14 +458,17 @@ def _handle_external_decide(event: dict, world: dict, kernel: EventKernel, sourc
     account = world["accounts"][agent_id]
     window_index = event.get("_decision_index", 0)
 
+    reason_code = decision.get("reason_code")
     if decision["kind"] == "NO_ACTION":
         intents: list[dict] = []
         signed_qty = 0
-    elif decision["kind"] == "MARKET":
+    elif decision["kind"] in ("MARKET", "LIMIT"):
         signed_qty = decision["quantity_units"] * (1 if decision["side"] == "BUY" else -1)
         intents = [decision]
     else:
-        raise ValueError(f"未知外部决策类型 {decision['kind']!r}")
+        # IR-502：非法决策降级为不动作并留稳定原因码，不抛异常阻塞内核。
+        intents, signed_qty = [], 0
+        reason_code = "EXTERNAL_DECISION_INVALID"
 
     for order_seq, intent in enumerate(intents):
         kernel.enqueue(
@@ -470,8 +479,8 @@ def _handle_external_decide(event: dict, world: dict, kernel: EventKernel, sourc
                 "order_id": f"o-{agent_id}-{decision_event_id}-{order_seq}",
                 "action": "SUBMIT",
                 "side": intent["side"],
-                "order_type": "MARKET",
-                "price_ticks": None,
+                "order_type": intent["kind"],
+                "price_ticks": intent.get("price_ticks"),
                 "quantity_units": intent["quantity_units"],
                 "intent_id": intent["intent_id"],
                 "decision_event_id": decision_event_id,
@@ -484,18 +493,28 @@ def _handle_external_decide(event: dict, world: dict, kernel: EventKernel, sourc
             "intent_id": intent["intent_id"],
             "action": "SUBMIT",
             "side": intent["side"],
-            "order_type": "MARKET",
-            "price_ticks": None,
+            "order_type": intent["kind"],
+            "price_ticks": intent.get("price_ticks"),
             "quantity_units": intent["quantity_units"],
         }
         for intent in intents
     ]
     event["accepted"] = True
     event["reject_reason"] = None
-    event["internal_state"] = {
+    internal_state: dict[str, object] = {
         "decision_source": "external_owner_window",
         "window_index": window_index,
     }
+    # 0.4.1 T975/T976：信号来源与版本进决策记录（TR-501），降级原因码同样留痕——
+    # 只有用到外部信号通道的决策才带这些键，所有者轨记录逐字节不变。
+    signal = decision.get("signal")
+    if signal is not None:
+        internal_state["signal_source_id"] = signal.get("source_id")
+        internal_state["signal_version"] = signal.get("signal_version")
+    if reason_code is not None:
+        internal_state["external_reason_code"] = reason_code
+    internal_state.update(strategy_tags(spec))
+    event["internal_state"] = internal_state
     event["decision_evidence"] = {
         "schema_version": 1,
         "goal_model_id": "owner_manual_v1",

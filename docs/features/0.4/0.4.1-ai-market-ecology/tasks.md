@@ -11,7 +11,7 @@ topics:
   - stylized-facts
 doc_kind: tasks
 created: 2026-09-19
-updated: 2026-09-23
+updated: 2026-09-24
 ---
 
 # 0.4.1：AI 市场生态 - 任务
@@ -103,16 +103,16 @@ updated: 2026-09-23
 - [x] T974 (`FR-504`, `AC-508`): 实现 Alpha101 公式筛查器——含 `rank`/`IndNeutralize`/`cap` 的
       公式在装配时拒绝并给出稳定原因码，纯时序子集通过；正反用例都要有 — verify:
       `tests/unit/agent/test_alpha_formula_screen.py`
-- [ ] T975 (`FR-504`, `IR-502`, `AC-507`): 扩展外部信号注入接口——支持 LIMIT 意图、非阻塞推进与
+- [x] T975 (`FR-504`, `IR-502`, `AC-507`): 扩展外部信号注入接口——支持 LIMIT 意图、非阻塞推进与
       `signal_version`；信号缺失/超时/非法时降级为 `NO_ACTION` 并写稳定原因码，既有 owner 轨
       阻塞式用法保持可用 — verify: `tests/integration/test_external_signal_family.py`
-- [ ] T976 (`FR-504`, `TR-501`, `SC-504`, `AC-507`): 量化交易者族的委托走既有撮合/账本/风控路径，
+- [x] T976 (`FR-504`, `TR-501`, `SC-504`, `AC-507`): 量化交易者族的委托走既有撮合/账本/风控路径，
       因果链可回溯到族标识与信号版本 — verify: `tests/integration/test_external_signal_family.py`
-- [ ] T977 (`NFR-503`, `AC-508`): 为量化族 artifact 写入单向边界声明（不得用作策略有效性证据、
+- [x] T977 (`NFR-503`, `AC-508`): 为量化族 artifact 写入单向边界声明（不得用作策略有效性证据、
       不回流 alphamill 证据链），并断言其不进入任何 evidence index；本 Phase 用固定信号序列
       验收，**不依赖 alphamill 运行时**（其 M3 未开工，当前无可消费产出）— verify:
       `tests/integration/test_external_signal_family.py`
-- [ ] T978 `[成果门:H2-E3]` (`SC-504`, `AC-507`, `AC-508`): 生成量化交易者族的可消费运行 artifact，
+- [x] T978 `[成果门:H2-E3]` (`SC-504`, `AC-507`, `AC-508`): 生成量化交易者族的可消费运行 artifact，
       并把纯 AI 市场的启动入口与质量报告命令写入 `RUN.md`；证据标签为
       `engineering-demonstration` — verify: `tests/integration/test_external_signal_family.py`
 

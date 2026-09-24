@@ -1,7 +1,7 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "2a31f3f31df1c2ec8d79411a8e3344818b3ca8599ee1f7faa8ed2ad39e5ad01a",
-    "reason": "2026-09-24 重绑：SC-502 #5 口径修订（全部委托方向 → 主动成交方向，owner 2026-09-24 裁决）与性能门判据统一到 AC-509 末段中位。改动集中在 0.4.1 的度量与测试路径（metrics/quality_run.py、metrics/live_perf.py、tests/performance），不触碰 T215 运行路径的决策与撮合。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）；H2 冻结摘要未变，无需重绑。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "attested_source_tree_sha256": "52d1aae705edf8efe9e9be13a08da3d1c64a6983f6498cd385321d1d1525dda8",
+    "reason": "2026-09-24 重绑：合入 0.4.1 Phase 3（T975—T978）——外部信号注入接口 agent/strategy_layer/external.py 与量化族运行 quant_family_run.py（均为纯新增模块），以及 experiment/runner.py 外部决策路径扩展（支持 LIMIT 意图、信号版本与降级原因码）。runner 改动只在 world['external_decision_sources'] 缝隙上，T215 运行路径不使用该缝隙。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）；H2 冻结摘要未变，无需重绑。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
     "rebound_at": "2026-09-23",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "2a31f3f31df1c2ec8d79411a8e3344818b3ca8599ee1f7faa8ed2ad39e5ad01a"
+    "source_tree_sha256": "52d1aae705edf8efe9e9be13a08da3d1c64a6983f6498cd385321d1d1525dda8"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {
