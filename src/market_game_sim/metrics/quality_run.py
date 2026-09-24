@@ -56,11 +56,26 @@ NS_PER_MINUTE = 60 * NS_PER_SECOND
 # --------------------------------------------------------------------------- #
 
 
-def window_start_ns(events: Sequence[Mapping[str, Any]]) -> int | None:
-    """最后一个代理退出冷启动的时刻；仍有代理未退出时返回 ``None``。
+#: 指标字典 §2 的 burn-in 边界：`burn_in_bars × bar_ns` = 61 × 60 逻辑秒。
+BURN_IN_NS = 61 * 60 * NS_PER_SECOND
 
-    锚只在预热期生效，所以「带锚的决策」等价于「该代理仍在预热」。某个代理的
-    **最后一条**决策仍带锚，说明它到运行结束都没退出——此时窗口不成立。
+
+def window_start_ns(
+    events: Sequence[Mapping[str, Any]], *, burn_in_ns: int = BURN_IN_NS
+) -> int | None:
+    """窗口起点 = max(最后一个代理退出冷启动, burn-in 边界)；不成立时 ``None``。
+
+    两者保护的不是同一件事（spec Q-501，owner 2026-09-24 裁决）：
+
+    * **冷启动退出**防锚产生的半人工成交进入统计。锚只在预热期生效，所以「带锚的
+      决策」等价于「该代理仍在预热」；某个代理的**最后一条**决策仍带锚，说明它到
+      运行结束都没退出，窗口不成立；
+    * **burn-in**防在代理尚未进入稳态时就测量。0.4.1 首轮实现漏了这一半，于是在
+      「趋势族按构造还没上场」的窗口上给出了 stylized facts 判定——那不是我们声称
+      要描述的那个市场。
+
+    ``burn_in_ns`` 可注入是为了让测试用短窗口驱动，不是给运行期调松的旋钮：默认值
+    就是指标字典的冻结值。
     """
     last_anchored: dict[str, int] = {}
     last_decision: dict[str, int] = {}
@@ -72,12 +87,19 @@ def window_start_ns(events: Sequence[Mapping[str, Any]]) -> int | None:
         last_decision[agent_id] = timestamp
         if "bootstrap_anchor" in (event.get("internal_state") or {}):
             last_anchored[agent_id] = timestamp
-    if not last_anchored:
-        return 0  # 无锚运行：整段都可统计
-    for agent_id, anchored_at in last_anchored.items():
-        if last_decision.get(agent_id, -1) <= anchored_at:
-            return None  # 该代理到最后仍在预热
-    return max(last_anchored.values())
+    anchor_exit = 0  # 无锚运行：冷启动这一半不设限
+    if last_anchored:
+        for agent_id, anchored_at in last_anchored.items():
+            if last_decision.get(agent_id, -1) <= anchored_at:
+                return None  # 该代理到最后仍在预热
+        anchor_exit = max(last_anchored.values())
+    start = max(anchor_exit, burn_in_ns)
+    end = max((int(e.get("timestamp", 0)) for e in events), default=0)
+    if start >= end:
+        # 运行长度不足以越过 burn-in：窗口内没有任何合格采样点，判定应为「不适用」
+        # 而不是拿无效样本给出 PASS/FAIL（spec Q-501）。
+        return None
+    return start
 
 
 # --------------------------------------------------------------------------- #
@@ -260,8 +282,11 @@ def run_market_quality(
     roster: Mapping[str, Any] | None = None,
     logical_seconds: int = 600,
     run_id: str | None = None,
+    burn_in_ns: int = BURN_IN_NS,
 ) -> tuple[MarketQualityReport, dict[str, Any]]:
     """跑一个按 roster 装配的纯 AI 市场，返回（报告, 诊断）。
+
+    ``burn_in_ns`` 只为测试注入短窗口存在，默认是指标字典的冻结值；生产路径不传它。
 
     诊断不进报告 schema，但会随 artifact 落盘：它记录被排除的成交笔数、各族的委托
     与成交构成——「哪一族在交易」是判断异质性是否成立的前提，报告本身只给指标。
@@ -282,7 +307,7 @@ def run_market_quality(
         if market.dead:
             break
     events = market.kernel.committed_records
-    start = window_start_ns(events)
+    start = window_start_ns(events, burn_in_ns=burn_in_ns)
     # AC-509 口径（owner 2026-09-24 裁决）：末段中位，不是全窗平均也不是逐秒峰值。
     # 平均会掩盖「单位成本随运行增长」——一个要持续运行的市场，衰减比平均值致命；
     # 逐秒峰值又会被一次 GC 抖动误伤。末段中位正好区分这两件事。

@@ -32,7 +32,11 @@ LOGICAL_SECONDS = 180
 
 @pytest.fixture(scope="module")
 def measured():
-    report, diagnostics = quality_run.run_market_quality(logical_seconds=LOGICAL_SECONDS)
+    # burn-in 注入短值：本组断言的是报告的诚实性（逐项判定、未通过项可见），
+    # 不是市场是否达标；用冻结的 3660 秒会让每条断言都要跑一小时。
+    report, diagnostics = quality_run.run_market_quality(
+        logical_seconds=LOGICAL_SECONDS, burn_in_ns=5 * quality_run.NS_PER_SECOND
+    )
     return report, diagnostics
 
 
@@ -105,16 +109,16 @@ def test_window_does_not_open_while_an_agent_is_still_warming_up():
             "internal_state": {"bootstrap_anchor": "synthetic"},
         },
     ]
-    assert quality_run.window_start_ns(events) is None
+    assert quality_run.window_start_ns(events, burn_in_ns=0) is None
 
     # b 也退出后，窗口起点是最后一个退出者的时刻。
     events.append(
         {"event_type": "AGENT_DECIDE", "agent_id": "b", "timestamp": 40, "internal_state": {}}
     )
-    assert quality_run.window_start_ns(events) == 30
+    assert quality_run.window_start_ns(events, burn_in_ns=0) == 30
 
-    # 无锚运行：整段可统计。
-    assert quality_run.window_start_ns(events[1:2]) == 0
+    # 无锚运行：冷启动这一半不设限（burn-in 仍另行把关）。
+    assert quality_run.window_start_ns(events[1:2], burn_in_ns=0) == 0
 
 
 def test_an_unopened_window_makes_the_whole_report_not_applicable():
@@ -249,3 +253,44 @@ def test_order_flow_series_respects_the_window_and_skips_undetermined_fills():
     }
     zero_delta = _fill(10, 0)
     assert quality_run._taker_signs([no_taker, zero_delta], 0) == []
+
+
+# --------------------------------------------------------------------------- #
+# 窗口起点 = max(冷启动退出, burn-in)（owner 2026-09-24 裁决，spec Q-501）
+# --------------------------------------------------------------------------- #
+
+
+def _decide(agent: str, ts: int, anchored: bool) -> dict:
+    return {
+        "event_type": "AGENT_DECIDE",
+        "agent_id": agent,
+        "timestamp": ts,
+        "internal_state": {"bootstrap_anchor": "synthetic"} if anchored else {},
+    }
+
+
+def test_window_start_takes_the_later_of_anchor_exit_and_burn_in():
+    """两者保护的不是同一件事，取较晚者才能同时堵住两个洞。"""
+    # 冷启动退出晚于 burn-in：取冷启动退出
+    late_anchor = [_decide("a", 900, True), _decide("a", 1000, False), _decide("a", 2000, False)]
+    assert quality_run.window_start_ns(late_anchor, burn_in_ns=100) == 900
+    # burn-in 晚于冷启动退出：取 burn-in
+    assert quality_run.window_start_ns(late_anchor, burn_in_ns=1500) == 1500
+
+
+def test_a_run_too_short_to_clear_burn_in_is_not_applicable():
+    """0.4.1 首轮的实际失效形态：2200 秒的运行越不过 3660 秒的 burn-in。
+
+    此时窗口内没有任何合格采样点，判定必须是「不适用」——拿无效样本给出 PASS/FAIL
+    是更糟的结果，因为它看起来像一个结论。
+    """
+    events = [_decide("a", 10, True), _decide("a", 20, False)]
+    assert quality_run.window_start_ns(events, burn_in_ns=quality_run.BURN_IN_NS) is None
+    # 边界：起点必须严格早于运行末尾才算成立
+    assert quality_run.window_start_ns(events, burn_in_ns=20) is None
+    assert quality_run.window_start_ns(events, burn_in_ns=19) == 19
+
+
+def test_default_burn_in_is_the_frozen_dictionary_value():
+    """默认值就是指标字典 §2 的冻结值；注入参数只为测试驱动短窗口。"""
+    assert quality_run.BURN_IN_NS == 61 * 60 * quality_run.NS_PER_SECOND
