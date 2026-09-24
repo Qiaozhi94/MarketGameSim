@@ -58,6 +58,7 @@ from market_game_sim.metrics.live_perf import (
     PASS,
     VERDICT_BUDGET,
     LivePerfError,
+    PerfReport,
     environment,
     export,
     measure,
@@ -65,7 +66,9 @@ from market_game_sim.metrics.live_perf import (
 )
 
 #: Liveness floor for the timed window below (20 s), where the current
-#: assembly settles 128 trades at trade-per-order 0.0135.  Trading here is
+#: assembly settles 128 trades at trade-per-order 0.0135 (the ratio fell from
+#: 0.0229 when T973 doubled the market makers -- more quotes in the
+#: denominator, not a worse market).  Trading here is
 #: deterministic -- keyed draws, no wall-clock input -- so the margin guards
 #: against a behaviour regression, not against timing noise.
 MIN_TRADES = 60
@@ -126,6 +129,53 @@ def test_live_assembly_meets_the_real_time_budget(report):
     )
 
 
+def test_verdict_reads_the_tail_not_the_whole_window():
+    """AC-509 口径：末段中位。全窗中位会把「越跑越慢」判成通过。
+
+    这条用的是合成序列，不是实测——判据本身必须能脱离机器速度被验证。同一条
+    序列下全窗中位 0.10 < 0.5 而末段中位 0.90 > 0.5：如果判据取全窗，一次末段
+    衰减的运行会在性能门判绿、在质量报告判红，仓库里同一命题就有了两个答案。
+    """
+    growing = PerfReport(
+        agent_count=1,
+        logical_seconds=8,
+        warmup_seconds=0,
+        wall_seconds=(0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.9, 0.9),
+        mix={},
+        total_records=0,
+    )
+    assert growing.median_wall == pytest.approx(0.1)
+    assert growing.tail_median_wall == pytest.approx(0.9)
+    assert verdict(growing, budget_seconds=0.5) == (FAIL, [VERDICT_BUDGET])
+
+    flat = PerfReport(
+        agent_count=1,
+        logical_seconds=8,
+        warmup_seconds=0,
+        wall_seconds=(0.1,) * 8,
+        mix={},
+        total_records=0,
+    )
+    assert verdict(flat, budget_seconds=0.5) == (PASS, [])
+
+
+def test_tail_median_matches_the_quality_report_caliber():
+    """与 metrics/quality_run.py::_tail_median 同一口径，不得各算各的。"""
+    from market_game_sim.metrics.quality_run import _tail_median
+
+    walls = (0.10, 0.12, 0.14, 0.16, 0.30, 0.32, 0.34, 0.36)
+    report = PerfReport(
+        agent_count=1,
+        logical_seconds=len(walls),
+        warmup_seconds=0,
+        wall_seconds=walls,
+        mix={},
+        total_records=0,
+    )
+    per_second = [(float(i + 1), w) for i, w in enumerate(walls)]
+    assert report.tail_median_wall == pytest.approx(_tail_median(per_second))
+
+
 def test_gate_fails_when_the_budget_is_exceeded(report):
     """Negative side: an over-budget measurement is reported as FAIL.
 
@@ -139,9 +189,10 @@ def test_gate_fails_when_the_budget_is_exceeded(report):
 
 
 def test_budget_boundary_passes_at_equality_and_fails_just_under(report):
-    median = report.median_wall
-    assert verdict(report, budget_seconds=median)[0] == PASS
-    assert verdict(report, budget_seconds=median * 0.99)[0] == FAIL
+    """边界判定读的必须是 AC-509 口径（末段中位），不是全窗中位。"""
+    tail = report.tail_median_wall
+    assert verdict(report, budget_seconds=tail)[0] == PASS
+    assert verdict(report, budget_seconds=tail * 0.99)[0] == FAIL
 
 
 # --------------------------------------------------------------------------- #

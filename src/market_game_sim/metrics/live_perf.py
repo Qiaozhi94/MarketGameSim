@@ -51,6 +51,9 @@ FAIL = "FAIL"
 
 VERDICT_BUDGET = "wall_clock_budget"
 
+#: AC-509: the verdict reads the last quarter of the timed seconds.
+TAIL_FRACTION = 0.25
+
 
 class LivePerfError(ValueError):
     """Measurement rejected; ``code`` is stable and safe to assert on."""
@@ -106,6 +109,19 @@ class PerfReport:
     environment: dict[str, Any] = field(default_factory=environment)
 
     @property
+    def tail_median_wall(self) -> float:
+        """AC-509 的判定口径：末段（最后 25%）逐秒墙钟的中位数。
+
+        不是全窗中位/平均（会掩盖「单位成本随运行增长」这件事，而这个仓库已经
+        连查出三处这类缺陷），也不是逐秒峰值（会被 GC 抖动误伤）。与
+        ``metrics/quality_run.py::_tail_median`` 同一口径——同一命题只能有一个
+        判据，否则同一次运行会出现「性能门绿、质量报告红」而无人知道该信哪个。
+        样本不足以切出末段时退化为全体中位。
+        """
+        cut = max(1, int(len(self.wall_seconds) * TAIL_FRACTION))
+        return statistics.median(self.wall_seconds[-cut:])
+
+    @property
     def median_wall(self) -> float:
         return statistics.median(self.wall_seconds)
 
@@ -151,7 +167,9 @@ class PerfReport:
             "logical_seconds": self.logical_seconds,
             "warmup_seconds": self.warmup_seconds,
             "wall_seconds": [round(v, 6) for v in self.wall_seconds],
+            "tail_median_wall_seconds": round(self.tail_median_wall, 6),
             "median_wall_seconds": round(self.median_wall, 6),
+            "mean_wall_seconds": round(statistics.fmean(self.wall_seconds), 6),
             "max_wall_seconds": round(self.max_wall, 6),
             "events_per_second": list(self.events_per_second),
             "wall_per_event_seconds": [
@@ -238,7 +256,7 @@ def verdict(
     if budget_seconds <= 0:
         raise LivePerfError("INVALID_BUDGET", "budget_seconds must be positive")
     failed: list[str] = []
-    if report.median_wall > budget_seconds:
+    if report.tail_median_wall > budget_seconds:
         failed.append(VERDICT_BUDGET)
     return (FAIL if failed else PASS, failed)
 
@@ -288,7 +306,10 @@ def main(argv: list[str] | None = None) -> int:
     out = export(report, args.out)
     status, failed = verdict(report)
     print(f"roster={report.roster_id} agents={report.agent_count}")
-    print(f"median={report.median_wall:.3f}s max={report.max_wall:.3f}s")
+    print(
+        f"tail_median={report.tail_median_wall:.3f}s "
+        f"median={report.median_wall:.3f}s max={report.max_wall:.3f}s"
+    )
     print(f"trade/order={report.trade_per_order:.5f} records={report.total_records}")
     for et in MIX_EVENT_TYPES:
         print(f"  {et:18s} {report.mix.get(et, 0):8d}  {100 * report.share(et):5.1f}%")
