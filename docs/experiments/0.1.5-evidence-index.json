@@ -1,7 +1,7 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "796549bffd8c342e36f3cb602a5e38386363fdcb8c1d72f8ff2e51d1dd71d42b",
-    "reason": "2026-09-24 重绑：0.4.1 生态修复——均值回归族的价格参照从增量公开成交带改为最近 12 根 K 线收盘均值（信息层 I1 → I2），另含并行会话的观察路径性能修复（agent_bars 改紧凑游标）与 AC-509 性能门分母口径修正（advance 次数 → 真实逻辑秒）。改动限于 0.4.1 新增的策略族层、装配层与性能度量，不触碰撮合、账本与 T215 的决策路径。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "attested_source_tree_sha256": "958754c7627a48ce85b287452783491a195dacb3ff2b5996f2095be5935b9696",
+    "reason": "2026-09-24 重绑（当日第二次）：0.4.1 第二次生态修复——DEFAULT_LIVE_ROSTER 里 mean_reversion 的观察间隔 10 秒改为 1 秒，与 trend_following 对齐（T1004）。源码改动只有该常量与其注释，装配清单不在 T215 的运行路径上。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）。如实记录一点：该证明启动后本文件的注释被改过一行（实验报告节号 §8.7 -> §10），即证明所跑的树与本次盖章的树相差一行注释；已逐行核对该差异仅为注释，不改变行为。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
     "rebound_at": "2026-09-24",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "796549bffd8c342e36f3cb602a5e38386363fdcb8c1d72f8ff2e51d1dd71d42b"
+    "source_tree_sha256": "958754c7627a48ce85b287452783491a195dacb3ff2b5996f2095be5935b9696"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {

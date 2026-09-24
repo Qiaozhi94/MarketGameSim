@@ -394,3 +394,49 @@ def test_signal_families_trade_once_the_book_is_two_sided():
     # 锚只在预热期发单；预热后仍有成交，说明是策略族在交易。
     anchor_window_ns = 2_000_000_000
     assert [t for t in trades if t["timestamp"] > anchor_window_ns], "预热期之后没有成交"
+
+
+def test_stabiliser_acts_at_least_as_often_as_the_destabiliser():
+    """装配不变量：逆势族的行动频率不得低于顺势族（2026-09-24）。
+
+    `mean_reversion` 的观察间隔曾是 `trend_following` 的 10 倍——同样 9 个代理，
+    顺势方每秒出手、逆势方每 10 秒才出手一次。那个 10 秒原本是为补偿另一个缺陷
+    （该族当时要在一个观察间隔内凑满 20 笔成交）而设的，缺陷修掉后补偿过期，
+    留下的只是一处压制唯一逆势方的不对称。
+
+    实测（种子 7，4200 逻辑秒，仅改本字段）：3600 秒价格 58155 -> 25391、
+    累计成交 14651 -> 25019、4200 秒本段成交 +490 -> +1077。
+
+    把它锁成不变量而不是只改数值：这类「为绕开 A 而调 B」的补偿一旦失去出处，
+    下一个人没有理由不把它调回去。
+    """
+    intervals = {
+        entry["family_id"]: entry["observe_interval_ns"]
+        for entry in DEFAULT_LIVE_ROSTER["families"]
+    }
+    assert intervals["mean_reversion"] <= intervals["trend_following"], (
+        f"逆势族每 {intervals['mean_reversion'] / 1e9:g} 秒出手一次，顺势族每 "
+        f"{intervals['trend_following'] / 1e9:g} 秒——唯一的稳定力在频率上被压制"
+    )
+
+
+def test_mean_reversion_gets_a_signal_at_the_aligned_interval():
+    """对齐后该族必须真的能出信号——否则只是把它换了一种方式压制掉。
+
+    这是上一条的另一半：把间隔调回 1 秒本身可能重新触发当初那个
+    INSUFFICIENT_HISTORY 问题；参照改成 K 线后不该再发生，此处断言它没发生。
+    """
+    market = LiveMarket(roster=DEFAULT_LIVE_ROSTER)
+    for _ in range(400):
+        market.advance()
+    mr_agents = {
+        spec.agent_id
+        for spec in market.config.agent_specs
+        if spec.strategy_family_id == "mean_reversion"
+    }
+    orders = [
+        r
+        for r in market.kernel.committed_records
+        if r.get("event_type") == "ORDER_ARRIVAL" and r.get("agent_id") in mr_agents
+    ]
+    assert orders, "对齐间隔后逆势族一笔委托都没有：稳定力仍然缺席"

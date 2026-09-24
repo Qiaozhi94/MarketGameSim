@@ -98,6 +98,19 @@ def test_derived_history_matches_the_fills_the_agent_consumed():
 
     Recorded from the observations themselves: each one's interval is what the
     agent consumed, so their concatenation is the history the old shape stored.
+
+    **Staged vs committed (2026-09-24).**  ``recording`` books an observation at
+    ``enqueue`` time, i.e. when it is *staged*; ``world["agent_bars"]`` only ever
+    holds *committed* state.  An agent whose newest observation is still in
+    flight when the drive stops therefore has one more interval in ``consumed``
+    than in the world, and comparing the two would be comparing two different
+    points in time -- not a defect in the compact record.  Those agents are
+    skipped here and asserted to be exactly the ones with a pending state, so
+    the exclusion cannot quietly grow to cover a real mismatch.
+
+    This surfaced when ``mean_reversion``'s observe interval was aligned to 1 s
+    (T1004): at 10 s almost every observation had committed by the time the
+    drive stopped, at 1 s six agents always have one in flight.
     """
     consumed: dict[str, list] = {}
     real_enqueue = EventKernel.enqueue
@@ -119,7 +132,12 @@ def test_derived_history_matches_the_fills_the_agent_consumed():
     world = market.world
     assert consumed, "no observation staged a history -- the run proves nothing"
     checked = 0
+    skipped = set()
     for agent_id, expected in consumed.items():
+        if market.kernel.latest_pending_agent_state(agent_id) is not None:
+            # Newest observation staged but not committed -- see the docstring.
+            skipped.add(agent_id)
+            continue
         entry = world["agent_bars"].get(agent_id)
         derived = H._history_fills(entry, world, H._history_count(entry))
         assert H._history_count(entry) == len(expected), agent_id
@@ -127,6 +145,17 @@ def test_derived_history_matches_the_fills_the_agent_consumed():
         checked += 1
     assert checked > 0
     assert max(len(v) for v in consumed.values()) > 0
+
+    # The skip must stay honest: for an agent with an observation in flight the
+    # committed history has to be a *prefix* of what was staged -- same fills,
+    # same order, just short by the uncommitted tail.  A real divergence in the
+    # compact record would break this even though the count check was skipped.
+    for agent_id in skipped:
+        expected = consumed[agent_id]
+        entry = world["agent_bars"].get(agent_id)
+        count = H._history_count(entry)
+        assert count < len(expected), f"{agent_id}: 有在途观察却没有短于暂存期望"
+        assert H._history_fills(entry, world, count) == expected[:count], agent_id
 
 
 def test_derivation_is_wrong_when_the_cursor_range_is_wrong():
