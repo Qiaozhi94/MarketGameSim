@@ -11,6 +11,7 @@
 | 全局模块边界与技术不变量 | [`docs/market-game-sim-architecture.md`](market-game-sim-architecture.md) |
 | **owner 研究问题与 owner-facing 设计第一判据** | [`docs/research/owner-research-question.md`](research/owner-research-question.md) |
 | 指标、研究方法与解释边界 | [`docs/research/`](research/methodology.md)（methodology、metrics-dictionary） |
+| 外生价格锚的候选形态与取舍（**草稿，待裁决**，非决策） | [`docs/research/exogenous-price-anchor-options.md`](research/exogenous-price-anchor-options.md) |
 | 跨 Feature 实现合同 | [`docs/contracts/`](contracts/matching.md) |
 | 长期架构决策（ADR） | [`docs/decisions/`](decisions/000-template.md) |
 | Feature/里程碑行为与状态 | 对应 `spec.md`（见 [`docs/features/README.md`](features/README.md)） |

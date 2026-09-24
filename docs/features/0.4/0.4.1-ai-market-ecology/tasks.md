@@ -118,19 +118,33 @@ updated: 2026-09-24
 
 ## 3. 验证与验收任务
 
-- [ ] T979 (`AC-501`, `AC-502`, `AC-503`): 运行冷启动锚、注册表 fail closed 与装配复现的正反测试
+- [x] T979 (`AC-501`, `AC-502`, `AC-503`): 运行冷启动锚、注册表 fail closed 与装配复现的正反测试
       — verify: `tests/unit/agent/test_bootstrap_anchor.py`、
       `tests/unit/agent/test_strategy_registry.py`
-- [ ] T980 (`AC-504`, `AC-505`, `AC-506`): 运行市场质量六项、stylized facts 五项与内生不稳定事件的
+- [x] T980 (`AC-504`, `AC-505`, `AC-506`): 运行市场质量六项、stylized facts 五项与内生不稳定事件的
       门禁测试，覆盖达标与未达标两种装配 — verify:
       `tests/integration/test_market_quality_gate.py`
-- [ ] T981 (`AC-507`, `AC-508`, `AC-510`): 运行外部信号族的因果链、降级、边界声明与多族批量场景
+- [x] T981 (`AC-507`, `AC-508`, `AC-510`): 运行外部信号族的因果链、降级、边界声明与多族批量场景
       测试 — verify: `tests/integration/test_strategy_layer_causality.py`
 - [x] T982 (`AC-509`): 运行实时性能断言，并记录目标环境（OS/Python/装配清单）— verify:
       `tests/performance/test_live_market_realtime.py`
-- [ ] T983 (`AC-501`—`AC-510`): 运行项目统一质量门，并确认 0.3.1 配对轨与 H2 双代理路径无回归
+- [x] T983 (`AC-501`—`AC-510`): 运行项目统一质量门，并确认 0.3.1 配对轨与 H2 双代理路径无回归
       — verify: `python tools/verify.py`；既有回归门：`tests/integration/test_h2_live_market.py`
-- [ ] T984 `[状态门]`: 回写 spec 验收证据、版本索引与状态；必须是本文件最后一项 — verify:
+- [x] T1001 (`E3`/`E4` 阻塞项，2026-09-24): 定位并修复「市场在 burn-in 边界前停止成交」
+      — 根因是均值回归族的参照窗口比趋势族短一个数量级（增量成交带 vs 最长 60 根 K 线），
+      平滑上涨下唯一的稳定力自动退场；参照改为 12 根 K 线收盘均值（I1 → I2）。
+      修复后市场首次越过 burn-in 边界（3600 秒本段成交 0 → 2447，总成交 8761 → 15141），
+      **但价格仍单调涨 6.7 倍、卖侧最终清空，E3/E4 仍未达成**（机制见实验报告 §8.4）
+      — verify: `tests/unit/agent/test_native_strategy_families.py`（含平滑上涨必须被对抗、
+      无成交带也能决策、窗口长度不变量三项；变异验证：窗口缩到 3 根红 2 项、参照改回
+      成交带红 6 项）；实验报告 [`§8`](../../../experiments/0.4.1-market-quality-baseline.md)
+- [ ] T1002 `[已知缺陷·不在本里程碑修]`: 策略层与账本的名义口径不一致——账本用
+      `notional = |仓位| × mark × MULT`，而 v0.1 冻结的 `risk_budget_linear_v1` 用
+      `max_position = max_notional // mark`（少一个 MULT）。后果是每个族永远顶在保证金
+      闸口上、`k_x1000` 与 `risk_appetite_x1000` 实际不影响行为。属冻结契约口径，
+      需 owner 裁决后单独修（先例：ADR-012 / ADR-015）
+      — verify: 实验报告 [`§8.5`](../../../experiments/0.4.1-market-quality-baseline.md)
+- [ ] T1003 `[状态门]`: 回写 spec 验收证据、版本索引与状态；必须是本文件最后一项 — verify:
       `python tools/validate_spec_lifecycle.py`
 
 ## 4. 依赖与并行关系
@@ -154,7 +168,7 @@ updated: 2026-09-24
   `internal_state` 写入路径，须串行；市场先真，再接外部策略，否则量化族的行为无法与
   内生行为区分。
 - `T979 [P]`、`T980 [P]`、`T981 [P]`、`T982 [P]` 可并行：四组验收不共享运行状态。
-- `T979, T980, T981, T982 -> T983 -> T984`。
+- `T979, T980, T981, T982 -> T983 -> T1001, T1002 -> T1003`。
 
 ## 5. 明确后移
 

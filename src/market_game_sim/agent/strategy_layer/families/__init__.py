@@ -8,7 +8,7 @@ disagreement between them, not from any one of them being right (ADR-011
 family_id            tier   what it does
 ===================  =====  =========================================
 ``trend_following``  I2     fast/slow MA crossover, per-agent horizon
-``mean_reversion``   I1     fades deviations from the tape mean
+``mean_reversion``   I2     fades deviations from the bar-window mean
 ``sentiment_noise``  I0     keyed-random mood, uninformed flow
 ``market_maker_v2``  I0     inventory quotes, per-agent dispersion
 ===================  =====  =========================================

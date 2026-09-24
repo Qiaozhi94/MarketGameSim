@@ -213,20 +213,20 @@ def test_trend_following_rejects_invalid_params():
 # --------------------------------------------------------------------------- #
 
 
-def test_mean_reversion_fades_a_price_above_the_window_mean():
+def test_mean_reversion_fades_a_close_above_the_window_mean():
     family = MeanReversion()
-    prices = tuple([100] * 19 + [130])
-    info = make_info(InformationTier.I1, trade_prices=prices)
+    closes = tuple([100] * 11 + [130])
+    info = make_info(InformationTier.I2, bar_closes=closes)
     decision = family.decide(info, make_state(), PREFS)
     assert decision.action == ACTION_TARGET_POSITION
     assert decision.target_position_units < 0
     assert decision.family_id == "mean_reversion"
 
 
-def test_mean_reversion_buys_a_price_below_the_window_mean():
+def test_mean_reversion_buys_a_close_below_the_window_mean():
     family = MeanReversion()
-    prices = tuple([100] * 19 + [70])
-    info = make_info(InformationTier.I1, trade_prices=prices)
+    closes = tuple([100] * 11 + [70])
+    info = make_info(InformationTier.I2, bar_closes=closes)
     decision = family.decide(info, make_state(), PREFS)
     assert decision.action == ACTION_TARGET_POSITION
     assert decision.target_position_units > 0
@@ -234,8 +234,8 @@ def test_mean_reversion_buys_a_price_below_the_window_mean():
 
 def test_mean_reversion_stays_out_inside_the_band():
     family = MeanReversion(entry_threshold_bp=300)
-    prices = tuple([100] * 19 + [101])
-    info = make_info(InformationTier.I1, trade_prices=prices)
+    closes = tuple([100] * 11 + [101])
+    info = make_info(InformationTier.I2, bar_closes=closes)
     decision = family.decide(info, make_state(), PREFS)
     assert decision.action == ACTION_NO_ACTION
     assert decision.reason_code == "NO_SIGNAL"
@@ -243,17 +243,60 @@ def test_mean_reversion_stays_out_inside_the_band():
 
 def test_mean_reversion_needs_a_full_window():
     family = MeanReversion()
-    info = make_info(InformationTier.I1, trade_prices=(100, 130))
+    info = make_info(InformationTier.I2, bar_closes=(100, 130))
     decision = family.decide(info, make_state(), PREFS)
     assert decision.action == ACTION_NO_ACTION
     assert decision.reason_code == "INSUFFICIENT_HISTORY"
 
 
+def test_mean_reversion_fades_a_smooth_rally_no_local_view_can_see():
+    """The failure this family's reference was changed for (2026-09-24).
+
+    Each bar is 50bp above the previous one -- *below* ``entry_threshold_bp``
+    -- while the last close sits far above the 12-bar mean.  A reference that
+    only sees the newest slice of the tape reads every instant as "no
+    deviation" and withdraws; on the default roster that let price ratchet
+    10000 -> 71481 ticks until the ask side emptied and the market stopped
+    trading at ~3300 logical seconds.  The stabiliser must lean against a trend
+    that is smooth at every single step.
+    """
+    closes = tuple(10_000 + 20 * i for i in range(12))
+    steps_bp = [(closes[i + 1] - closes[i]) * 10_000 // closes[i] for i in range(len(closes) - 1)]
+    assert max(steps_bp) < MeanReversion().entry_threshold_bp, "每步涨幅必须在阈值之下"
+    info = make_info(InformationTier.I2, bar_closes=closes)
+    decision = MeanReversion().decide(info, make_state(), PREFS)
+    assert decision.action == ACTION_TARGET_POSITION
+    assert decision.target_position_units < 0, "平滑上涨必须被逆向对抗，否则市场没有锚"
+
+
+def test_mean_reversion_acts_without_any_tape_of_its_own():
+    """Locks the reference *source*: bars, not the incremental tape slice.
+
+    ``info.public_trades`` is the interval since this agent's cursor, so a
+    tape-based reference has no memory across observations.  Reverting to it
+    turns this case back into ``INSUFFICIENT_HISTORY``.
+    """
+    info = make_info(InformationTier.I2, bar_closes=(100,) * 11 + (130,), trade_prices=())
+    decision = MeanReversion().decide(info, make_state(), PREFS)
+    assert decision.action == ACTION_TARGET_POSITION
+    assert decision.info_tier is InformationTier.I2
+
+
+def test_mean_reversion_memory_is_not_shorter_than_the_fastest_trend_horizon():
+    """The rule the window follows, asserted so a later shortening goes red.
+
+    A stabiliser with a shorter memory than the fastest destabiliser is
+    structurally blind to trends that family trades on -- which is exactly how
+    the market lost its only counterparty.
+    """
+    assert MeanReversion().window_bars >= TIME_SCALES[0][1]
+
+
 def test_mean_reversion_rejects_invalid_params():
     with pytest.raises(StrategyLayerError) as excinfo:
-        MeanReversion(window_trades=1)
+        MeanReversion(window_bars=1)
     assert excinfo.value.code == "INVALID_FAMILY_PARAMS"
-    assert MeanReversion(window_trades=2).window_trades == 2
+    assert MeanReversion(window_bars=2).window_bars == 2
 
 
 # --------------------------------------------------------------------------- #
@@ -472,7 +515,7 @@ def test_every_family_declares_the_tier_it_reads():
     tiers = {s.family_id: s.info_tier for s in build_native_families()}
     assert tiers == {
         "trend_following": InformationTier.I2,
-        "mean_reversion": InformationTier.I1,
+        "mean_reversion": InformationTier.I2,
         "sentiment_noise": InformationTier.I0,
         "market_maker_v2": InformationTier.I0,
     }
@@ -483,9 +526,12 @@ def test_four_families_decide_side_by_side_without_cross_talk():
     registry = register_native_families(StrategyRegistry())
     closes = rising_closes()
     prices = tuple([100] * 19 + [130])
+    # Both informed families read bars now, so they must disagree on *one*
+    # state: a rally whose last close overshoots its own window mean.
+    spike_closes = closes[:-1] + (closes[-1] * 3,)
     infos = {
         "trend_following": make_info(InformationTier.I2, bar_closes=closes, trade_prices=prices),
-        "mean_reversion": make_info(InformationTier.I1, trade_prices=prices),
+        "mean_reversion": make_info(InformationTier.I2, bar_closes=spike_closes),
         "sentiment_noise": make_info(InformationTier.I0),
         "market_maker_v2": make_info(InformationTier.I0),
     }

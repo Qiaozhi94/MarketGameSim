@@ -247,7 +247,11 @@ _FAMILY_TIERS = {
     "inventory_market_maker": "I0",
     "goal_belief": "I2",
     "trend_following": "I2",
-    "mean_reversion": "I1",
+    # 0.4.1 2026-09-24: I1 -> I2.  The tape slice an agent sees is the
+    # incremental interval since its cursor, which gave the only stabilising
+    # family a memory of seconds against trend_following's minutes; see
+    # families/mean_reversion.py for the measured failure that forced this.
+    "mean_reversion": "I2",
     "sentiment_noise": "I0",
     "market_maker_v2": "I0",
 }

@@ -1,8 +1,8 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "fdd4b888df9b313cc2c5ab59a490df6801a4a4b1ed84dd0f8cf25403d6c3f6e1",
-    "reason": "2026-09-24 重绑：0.4.1 统计窗口口径修订（owner 裁决）——窗口起点改为 max(最后一个代理退出冷启动, 指标字典 §2 的 burn-in 边界 3660 逻辑秒)，改动限于 metrics/quality_run.py 的窗口计算，不触碰撮合、账本与决策路径。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）；H2 冻结摘要未变，无需重绑。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
-    "rebound_at": "2026-09-23",
+    "attested_source_tree_sha256": "796549bffd8c342e36f3cb602a5e38386363fdcb8c1d72f8ff2e51d1dd71d42b",
+    "reason": "2026-09-24 重绑：0.4.1 生态修复——均值回归族的价格参照从增量公开成交带改为最近 12 根 K 线收盘均值（信息层 I1 → I2），另含并行会话的观察路径性能修复（agent_bars 改紧凑游标）与 AC-509 性能门分母口径修正（advance 次数 → 真实逻辑秒）。改动限于 0.4.1 新增的策略族层、装配层与性能度量，不触碰撮合、账本与 T215 的决策路径。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "rebound_at": "2026-09-24",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
     "t215_source_tree_sha256": "81984fdc6f39f535cc1763a7f4da15a9be8e15b0e15261b9248c0550d01b64a8"
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "fdd4b888df9b313cc2c5ab59a490df6801a4a4b1ed84dd0f8cf25403d6c3f6e1"
+    "source_tree_sha256": "796549bffd8c342e36f3cb602a5e38386363fdcb8c1d72f8ff2e51d1dd71d42b"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {
