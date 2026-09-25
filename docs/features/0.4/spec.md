@@ -19,6 +19,7 @@ updated: 2026-09-20
 alphamill 单向边界）、[`ADR-010`](../../decisions/010-market-ecology-research-pivot.md)（研究方向）<br>
 **研究北极星**：[`../../research/owner-research-question.md`](../../research/owner-research-question.md)<br>
 **里程碑**：[`0.4.1`](0.4.1-ai-market-ecology/spec.md)（L2 交易者策略层与市场真实性判据）、
+[`0.4.3`](0.4.3-exogenous-price-anchor/spec.md)（外生价格锚，2026-09-25 立项，承接 0.4.1 移出的 E3/E4 达标判据）、
 [`0.4.2`](0.4.2-human-perturbation/spec.md)（人类扰动实验 H2-F：同种子对照下的稳定性效应量）
 
 ## 问题与目标
@@ -60,6 +61,8 @@ v0.1 已证明合成市场在 `SPONTANEOUS` 族下可以自发交易并支撑正
 - **US-503**：把外部量化策略接进沙盘；正文见 [`0.4.1 spec §2`](0.4.1-ai-market-ecology/spec.md#2-用户场景)。
 - **US-601**：自由进出市场并留下可分析的记录；正文见 [`0.4.2 spec §2`](0.4.2-human-perturbation/spec.md#2-用户场景)。
 - **US-602**：比较有没有人类时的市场稳定性；正文见 [`0.4.2 spec §2`](0.4.2-human-perturbation/spec.md#2-用户场景)。
+- **US-701**：看到一个不会跑飞的市场；正文见 [`0.4.3 spec §2`](0.4.3-exogenous-price-anchor/spec.md#2-用户场景)。
+- **US-702**：知道统计性质是市场产生的还是锚给的；正文见 [`0.4.3 spec §2`](0.4.3-exogenous-price-anchor/spec.md#2-用户场景)。
 
 ## 功能需求
 
@@ -72,6 +75,9 @@ v0.1 已证明合成市场在 `SPONTANEOUS` 族下可以自发交易并支撑正
 - **FR-602**：同种子对照运行（无人类基线 vs 有人类）；正文见 [`0.4.2 spec §4`](0.4.2-human-perturbation/spec.md#4-需求)。
 - **FR-603**：稳定性效应量报告；正文见 [`0.4.2 spec §4`](0.4.2-human-perturbation/spec.md#4-需求)。
 - **FR-604**：扰动即数据，不判对错、不做画像；正文见 [`0.4.2 spec §4`](0.4.2-human-perturbation/spec.md#4-需求)。
+- **FR-701**：外生价值过程 `v_t`，参数冻结进运行头且自身不具备聚集与厚尾；正文见 [`0.4.3 spec §4`](0.4.3-exogenous-price-anchor/spec.md#4-需求)。
+- **FR-702**：价值投资者族，目标仓位随价格对 `v_t` 的偏离单调增大；正文见 [`0.4.3 spec §4`](0.4.3-exogenous-price-anchor/spec.md#4-需求)。
+- **FR-703**：每次 stylized facts 判定附带「关闭价值族」的同种子归因对照；正文见 [`0.4.3 spec §4`](0.4.3-exogenous-price-anchor/spec.md#4-需求)。
 
 ## 数据、事件与接口需求
 
@@ -92,6 +98,8 @@ v0.1 已证明合成市场在 `SPONTANEOUS` 族下可以自发交易并支撑正
 - **NFR-503**：沙盘产出不进入证据索引也不回流 alphamill；正文见 [`0.4.1 spec §4`](0.4.1-ai-market-ecology/spec.md#4-需求)。
 - **NFR-601**：人类在场不改变 L1 语义与 AI 侧确定性；正文见 [`0.4.2 spec §4`](0.4.2-human-perturbation/spec.md#4-需求)。
 - **NFR-602**：owner 会话产物不含身份信息且不进入既有证据索引；正文见 [`0.4.2 spec §4`](0.4.2-human-perturbation/spec.md#4-需求)。
+- **NFR-701**：锚的强度参数须可证明 binding 且沿目标维度单调；正文见 [`0.4.3 spec §4`](0.4.3-exogenous-price-anchor/spec.md#4-需求)。
+- **NFR-702**：同装配同种子逐点可复现，`v_t` 参数进运行头；正文见 [`0.4.3 spec §4`](0.4.3-exogenous-price-anchor/spec.md#4-需求)。
 
 ## 成功与退出
 
@@ -103,6 +111,10 @@ v0.1 已证明合成市场在 `SPONTANEOUS` 族下可以自发交易并支撑正
 - **SC-602**：同种子两臂可配对且基线逐点可复现；正文见 [`0.4.2 spec §6`](0.4.2-human-perturbation/spec.md#6-成功与验收)。
 - **SC-603**：结论以效应量形态给出（分布移动 + 区间 + 失效边界）；正文见 [`0.4.2 spec §6`](0.4.2-human-perturbation/spec.md#6-成功与验收)。
 - **SC-604**：不产出对错判定、行为画像与身份信息；正文见 [`0.4.2 spec §6`](0.4.2-human-perturbation/spec.md#6-成功与验收)。
+- **SC-701**：市场质量六项达标（判据引自 0.4.1 SC-501，未改口径）；正文见 [`0.4.3 spec §6`](0.4.3-exogenous-price-anchor/spec.md#6-成功与验收)。
+- **SC-702**：stylized facts 达 SC-502 条数（含 ADR-016 前置有效性条件）；正文见 [`0.4.3 spec §6`](0.4.3-exogenous-price-anchor/spec.md#6-成功与验收)。
+- **SC-703**：`v_t` 自身不具备聚集与厚尾，归因对照随报告落盘；正文见 [`0.4.3 spec §6`](0.4.3-exogenous-price-anchor/spec.md#6-成功与验收)。
+- **SC-704**：锚的强度参数经诊断确认 binding 且单调；正文见 [`0.4.3 spec §6`](0.4.3-exogenous-price-anchor/spec.md#6-成功与验收)。
 
 版本级需求归属与退出条件由 [`traceability.json`](traceability.json) 唯一拥有。
 

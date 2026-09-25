@@ -1,5 +1,5 @@
 {
-  "$comment": "v0.4 需求追踪真源；0.4.1 承担 L2 交易者策略层与市场真实性判据（ADR-011），0.4.2 承担人类扰动实验 H2-F（北极星研究问题 #1）。",
+  "$comment": "v0.4 需求追踪真源；0.4.1 承担 L2 交易者策略层与市场真实性判据（ADR-011），0.4.2 承担人类扰动实验 H2-F（北极星研究问题 #1），0.4.3 承担外生价格锚（2026-09-25 立项，承接 0.4.1 移出的 E3/E4 达标判据）。",
   "matrix_version": 1,
   "statuses": [
     "owned",
@@ -8,38 +8,54 @@
   ],
   "milestones": {
     "0.4.1": "docs/features/0.4/0.4.1-ai-market-ecology",
-    "0.4.2": "docs/features/0.4/0.4.2-human-perturbation"
+    "0.4.2": "docs/features/0.4/0.4.2-human-perturbation",
+    "0.4.3": "docs/features/0.4/0.4.3-exogenous-price-anchor"
   },
   "requirements": {
-    "US-501": {
+    "DR-501": {
       "status": "owned",
       "owners": [
         {
           "milestone": "0.4.1",
           "exits": [
+            "E1",
             "E3"
           ]
         }
       ]
     },
-    "US-502": {
+    "DR-502": {
       "status": "owned",
       "owners": [
         {
           "milestone": "0.4.1",
           "exits": [
+            "E1",
+            "E3",
+            "E4"
+          ]
+        }
+      ]
+    },
+    "DR-601": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E1",
             "E3"
           ]
         }
       ]
     },
-    "US-503": {
+    "DR-602": {
       "status": "owned",
       "owners": [
         {
-          "milestone": "0.4.1",
+          "milestone": "0.4.2",
           "exits": [
-            "E5"
+            "E4"
           ]
         }
       ]
@@ -105,39 +121,80 @@
         }
       ]
     },
-    "DR-501": {
+    "FR-601": {
       "status": "owned",
       "owners": [
         {
-          "milestone": "0.4.1",
+          "milestone": "0.4.2",
           "exits": [
-            "E1",
+            "E1"
+          ]
+        }
+      ]
+    },
+    "FR-602": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E2",
             "E3"
           ]
         }
       ]
     },
-    "DR-502": {
+    "FR-603": {
       "status": "owned",
       "owners": [
         {
-          "milestone": "0.4.1",
+          "milestone": "0.4.2",
           "exits": [
-            "E1",
-            "E3",
             "E4"
           ]
         }
       ]
     },
-    "TR-501": {
+    "FR-604": {
       "status": "owned",
       "owners": [
         {
-          "milestone": "0.4.1",
+          "milestone": "0.4.2",
           "exits": [
-            "E3",
-            "E5"
+            "E1"
+          ]
+        }
+      ]
+    },
+    "FR-701": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.3",
+          "exits": [
+            "E3"
+          ]
+        }
+      ]
+    },
+    "FR-702": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.3",
+          "exits": [
+            "E1"
+          ]
+        }
+      ]
+    },
+    "FR-703": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.3",
+          "exits": [
+            "E4"
           ]
         }
       ]
@@ -161,6 +218,18 @@
           "milestone": "0.4.1",
           "exits": [
             "E5"
+          ]
+        }
+      ]
+    },
+    "IR-601": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E2",
+            "E3"
           ]
         }
       ]
@@ -195,6 +264,51 @@
           "milestone": "0.4.1",
           "exits": [
             "E5"
+          ]
+        }
+      ]
+    },
+    "NFR-601": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E2"
+          ]
+        }
+      ]
+    },
+    "NFR-602": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E1",
+            "E4"
+          ]
+        }
+      ]
+    },
+    "NFR-701": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.3",
+          "exits": [
+            "E1"
+          ]
+        }
+      ]
+    },
+    "NFR-702": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.3",
+          "exits": [
+            "E3"
           ]
         }
       ]
@@ -244,143 +358,6 @@
         }
       ]
     },
-    "US-601": {
-      "status": "owned",
-      "owners": [
-        {
-          "milestone": "0.4.2",
-          "exits": [
-            "E1"
-          ]
-        }
-      ]
-    },
-    "US-602": {
-      "status": "owned",
-      "owners": [
-        {
-          "milestone": "0.4.2",
-          "exits": [
-            "E3",
-            "E4"
-          ]
-        }
-      ]
-    },
-    "FR-601": {
-      "status": "owned",
-      "owners": [
-        {
-          "milestone": "0.4.2",
-          "exits": [
-            "E1"
-          ]
-        }
-      ]
-    },
-    "FR-602": {
-      "status": "owned",
-      "owners": [
-        {
-          "milestone": "0.4.2",
-          "exits": [
-            "E2",
-            "E3"
-          ]
-        }
-      ]
-    },
-    "FR-603": {
-      "status": "owned",
-      "owners": [
-        {
-          "milestone": "0.4.2",
-          "exits": [
-            "E4"
-          ]
-        }
-      ]
-    },
-    "FR-604": {
-      "status": "owned",
-      "owners": [
-        {
-          "milestone": "0.4.2",
-          "exits": [
-            "E1"
-          ]
-        }
-      ]
-    },
-    "DR-601": {
-      "status": "owned",
-      "owners": [
-        {
-          "milestone": "0.4.2",
-          "exits": [
-            "E1",
-            "E3"
-          ]
-        }
-      ]
-    },
-    "DR-602": {
-      "status": "owned",
-      "owners": [
-        {
-          "milestone": "0.4.2",
-          "exits": [
-            "E4"
-          ]
-        }
-      ]
-    },
-    "TR-601": {
-      "status": "owned",
-      "owners": [
-        {
-          "milestone": "0.4.2",
-          "exits": [
-            "E2"
-          ]
-        }
-      ]
-    },
-    "IR-601": {
-      "status": "owned",
-      "owners": [
-        {
-          "milestone": "0.4.2",
-          "exits": [
-            "E2",
-            "E3"
-          ]
-        }
-      ]
-    },
-    "NFR-601": {
-      "status": "owned",
-      "owners": [
-        {
-          "milestone": "0.4.2",
-          "exits": [
-            "E2"
-          ]
-        }
-      ]
-    },
-    "NFR-602": {
-      "status": "owned",
-      "owners": [
-        {
-          "milestone": "0.4.2",
-          "exits": [
-            "E1",
-            "E4"
-          ]
-        }
-      ]
-    },
     "SC-601": {
       "status": "owned",
       "owners": [
@@ -422,6 +399,151 @@
           "milestone": "0.4.2",
           "exits": [
             "E1"
+          ]
+        }
+      ]
+    },
+    "SC-701": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.3",
+          "exits": [
+            "E1"
+          ]
+        }
+      ]
+    },
+    "SC-702": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.3",
+          "exits": [
+            "E2"
+          ]
+        }
+      ]
+    },
+    "SC-703": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.3",
+          "exits": [
+            "E4"
+          ]
+        }
+      ]
+    },
+    "SC-704": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.3",
+          "exits": [
+            "E1"
+          ]
+        }
+      ]
+    },
+    "TR-501": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E3",
+            "E5"
+          ]
+        }
+      ]
+    },
+    "TR-601": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E2"
+          ]
+        }
+      ]
+    },
+    "US-501": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E3"
+          ]
+        }
+      ]
+    },
+    "US-502": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E3"
+          ]
+        }
+      ]
+    },
+    "US-503": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.1",
+          "exits": [
+            "E5"
+          ]
+        }
+      ]
+    },
+    "US-601": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E1"
+          ]
+        }
+      ]
+    },
+    "US-602": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E3",
+            "E4"
+          ]
+        }
+      ]
+    },
+    "US-701": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.3",
+          "exits": [
+            "E1"
+          ]
+        }
+      ]
+    },
+    "US-702": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.3",
+          "exits": [
+            "E4"
           ]
         }
       ]
