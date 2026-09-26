@@ -517,7 +517,7 @@ H2 同样按可独立复核的成果切分；工程投入不包含项目所有�
 | **H2-D Web 交易终端** | 16–24 小时 | 真实终端形态：可见价格、多周期 K 线、市价/限价下单 | **H2-D1** 本地页面可完成价格/K 线核对、合法委托/拒单/撤单（已交付）；**H2-D2**（6 训练 + 24 正式采集场景）随 ADR-010 **整体归档**，裁决与处置见 [`releases/0.3.md`](features/releases/0.3.md)——是范围裁决，不是未达标，也不伪造勾选 | `experiment-preview` |
 | **H2-E 持续 AI 市场生态**（v0.4 / `0.4.1`） | 见下方工程投入修订 | **H2-E1** 纯 AI 市场 + 第一份市场质量报告（六项逐项如实判定，不要求全部达标）；**H2-E2** 异质策略族跨种子质量报告集合 + 内生不稳定事件的**存在性判定报告**；**H2-E3** 量化交易者族运行 artifact + `RUN.md` 运行入口 | 逐门见 [`0.4.1 tasks`](features/0.4/0.4.1-ai-market-ecology/tasks.md) 的 T967/T973/T978 | `engineering-demonstration` |
 | **H2-F 人类扰动实验**（v0.4 / `0.4.2`） | 立项后估算 | **H2-F1** 可重放的自由会话 artifact + 无人类基线运行记录；**H2-F2** 同种子配对运行 + 稳定性效应量报告（分布移动 + 区间 + 失效边界） | 逐门见 [`0.4.2 tasks`](features/0.4/0.4.2-human-perturbation/tasks.md) 的 T990/T994 | `experiment-preview` |
-| **H2-E 外生价格锚**（v0.4 / [`0.4.3`](features/0.4/0.4.3-exogenous-price-anchor/spec.md)） | 立项后估算 | **H2-E4** 装配含价值族、价格不再单调发散的可运行市场 + 其运行头；**H2-E5** 跨种子质量报告集合——0.4.1 移出的市场质量六项与 stylized facts 在**原口径下**的达标判定，附「关闭价值族」的同种子归因对照 | 逐门见 [`0.4.3 tasks`](features/0.4/0.4.3-exogenous-price-anchor/tasks.md) 的 T1106/T1109 | `engineering-demonstration` |
+| **H2-E 外生价格锚**（v0.4 / [`0.4.3`](features/0.4/0.4.3-exogenous-price-anchor/spec.md)） | 立项后估算 | **H2-E4** 装配含价值族、价格不再单调发散的可运行市场 + 其运行头；**H2-E5** 跨种子质量报告集合——0.4.1 移出的市场质量六项与 stylized facts 在**原口径下**的达标判定，附「关闭价值族」的同种子归因对照 | 逐门见 [`0.4.3 tasks`](features/0.4/0.4.3-exogenous-price-anchor/tasks.md) 的 T1107/T1110 | `engineering-demonstration` |
 
 主研究交付顺序为：
 `R1 → R2 → R3 → R4 → R5（v0.1 收口）→ H1-A → H1-B → H1-C → H2-A → H2-B → H2-C`。
