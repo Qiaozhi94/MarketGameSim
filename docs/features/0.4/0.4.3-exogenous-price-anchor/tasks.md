@@ -35,9 +35,13 @@ updated: 2026-09-26
       **本条不是锚的强度挂载点**（§18.5 已证明强度不挂在任何容量约束上），而是让价值族的
       容量参数不被静默改写的前提
       — verify: [`0.4.1 实验报告 §18—§19`](../../../experiments/0.4.1-market-quality-baseline.md)
-- [ ] T1101 `[阻塞·须先修订]`: **修订 [`ADR-011`](../../../decisions/011-market-engine-trader-layering.md)
-      §决策 2**（明文禁止外生价值过程）。不得绕开：用注入路径实现等价机制等于规避
-      一条明写的决策（[锚选型材料 §5](../../../research/exogenous-price-anchor-options.md)）
+- [ ] T1101 `[阻塞·待 owner 裁决]`: 采纳
+      [`ADR-017`](../../../decisions/017-allow-constant-exogenous-price-reference.md)
+      （有限修订 ADR-011 §决策 2，2026-09-26 起草，状态 Proposed）——**允许恒定或确定性
+      外生参照，仍禁止随机价值过程**。窄修订的理由是保全研究问题 #2：恒定参照不会移动、
+      不能制造任何价格动态，故崩盘仍是市场自己的行为；随机 `v_t` 则会让任何崩盘都可归因
+      于它的路径。不得绕开：用 I3 注入路径实现等价机制等于规避一条明写的决策
+      （[锚选型材料 §5](../../../research/exogenous-price-anchor-options.md)）
       — verify: `python tools/validate_spec_lifecycle.py`
 - [ ] T1102 (`Q-701`, `Q-702`): 冻结 `v_t` 的形态、参数与信息层归属；常数形态已被
       0.4.1 §14 实测排除（价格钉死、异质性塌陷）— verify: `tests/unit/metrics/`

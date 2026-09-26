@@ -1,7 +1,7 @@
 # 外生价格锚：候选形态与取舍（草稿，待 owner 裁决）
 
 状态：**草稿**，2026-09-24。不是决策，不构成任何实现承诺。
-**相关裁决已作出**：门禁前置有效性条件、常数锚不采纳、T1002 处置顺序见 [`ADR-016`](../decisions/016-stylized-fact-validity-preconditions.md)；本文件的形态选型（价值过程 vs 外部信号）仍待裁决。
+**相关裁决已作出**：门禁前置有效性条件、常数锚不采纳、T1002 处置顺序见 [`ADR-016`](../decisions/016-stylized-fact-validity-preconditions.md)；本文件的形态选型已由 [`ADR-017`](../decisions/017-allow-constant-exogenous-price-reference.md) 收窄——形态 3（外部信号）不采纳，形态 1 仅限恒定或确定性参照，随机价值过程仍禁止。
 触发来源：0.4.1 的 E3/E4 被「市场在统计窗口打开前停止成交」阻塞，根因是装配里
 **没有任何一方的供给随价格上涨而增加**（[实验报告 §8](../experiments/0.4.1-market-quality-baseline.md)）。
 
