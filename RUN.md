@@ -38,6 +38,25 @@ alphamill 证据链，ADR-011 §决策 5），落盘前自检，缺声明或出�
 
 实测记录见 [`docs/experiments/0.4.1-market-quality-baseline.md`](docs/experiments/0.4.1-market-quality-baseline.md)。
 
+## 0.4.3 锚定市场（含价值投资者族）
+
+```bash
+# 按装配清单启动 live 市场（清单文件名即 roster_id，内容不再哈希到该 id 即拒绝启动）
+.venv/bin/python -m market_game_sim.experiment.h2.live_market --port 8793 \
+    --roster-file docs/experiments/0.4.3-rosters/roster-2425a8200ca1a1e748a34a7e9d8b99ba.json
+
+# 锚强度旋钮的全窗口单调性测量（T1107，约 30 分钟，--jobs 控制并行，注意内存）
+.venv/bin/python -m market_game_sim.metrics.anchor_strength --jobs 3 --out /tmp/anchor-strength.json
+
+# 成果门 H2-E4：同一清单全窗口跑两次并判定（T1108，约 17 分钟）
+.venv/bin/python -m market_game_sim.metrics.anchored_market \
+    --roster-file docs/experiments/0.4.3-rosters/roster-2425a8200ca1a1e748a34a7e9d8b99ba.json \
+    --out /tmp/anchored-market.json
+```
+
+同样是 `engineering-demonstration`。实测记录见
+[`docs/experiments/0.4.3-anchored-market.md`](docs/experiments/0.4.3-anchored-market.md)。
+
 ## 已归档入口（随 ADR-010 归档，机械保留但当前不执行）
 
 下列入口属于已归档的 **N-of-1 采集轨**（6 训练 + 24 正式场景）。归档是

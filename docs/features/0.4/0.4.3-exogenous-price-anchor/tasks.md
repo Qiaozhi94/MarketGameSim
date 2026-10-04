@@ -108,9 +108,13 @@ updated: 2026-10-04
       T1109 网格须在该段加密（[实验报告 §2](../../../experiments/0.4.3-anchored-market.md)）
       — verify: `tests/integration/test_anchor_strength.py`（读入库产物
       `docs/experiments/0.4.3-anchor-strength.json`，由 `python -m market_game_sim.metrics.anchor_strength` 生成）
-- [ ] T1108 `[成果门:H2-E4]` (`US-701`, `NFR-702`, `AC-707`): 产出装配含价值族的可运行
+- [x] T1108 `[成果门:H2-E4]` (`US-701`, `NFR-702`, `AC-707`): 产出装配含价值族的可运行
       市场与其 roster 清单：运行满 5700 逻辑秒价格不单调发散、窗口末仍有成交，同 roster
-      同种子重跑价格序列逐点一致；证据标签 `engineering-demonstration`
+      同种子重跑价格序列逐点一致；证据标签 `engineering-demonstration`。
+      **结果（2026-10-04）**：PASS——装配 `roster-2425a8…`（count 6、sensitivity 1000，T1107 共享点，
+      非推荐配置），价格 10003—10034、9 跌 10 涨、末段 1249 笔、两次运行摘要逐位相同；产物
+      `docs/experiments/0.4.3-anchored-market.json`，live 市场 CLI 新增 `--roster-file` 可直接打开该装配。
+      保留：0.31% 的价格区间即钉死形态（[实验报告 §3](../../../experiments/0.4.3-anchored-market.md)）
       — verify: `tests/integration/test_anchored_market.py`
 
 ### Phase 2：扫描与判定
