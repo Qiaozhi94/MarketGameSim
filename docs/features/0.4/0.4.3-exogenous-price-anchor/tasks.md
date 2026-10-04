@@ -97,9 +97,10 @@ updated: 2026-10-04
       — verify: `tests/unit/agent/test_value_family.py`
 - [ ] T1107 (`NFR-701`, `SC-704`, `AC-702`): 强度参数的 **binding**（复用 0.4.1 的
       `metrics/binding_diagnosis.py`）与**单调性**（新建：多档强度 × 全窗口 × 价格倍数，
-      实测方式参照 0.4.1 §17.2 表）各一条实测断言，`count` 与 `sensitivity_x1000` 分别覆盖；
-      任一不满足即 fail closed。**须在 `T1100` 落地后执行**——修正前的仓位上限口径会改变
-      哪个约束 binding
+      实测方式参照 0.4.1 §17.2 表）实测断言：`sensitivity_x1000` 做 binding 与单调性，
+      `count` 只做单调性（其 binding 构造上恒真）；任一不满足即 fail closed，换响应函数
+      形式重做，最多两种（第二种实测前预注册），两种都失败按 spec §5 以 `UNQUALIFIED` 收口。
+      **须在 `T1100` 落地后执行**——修正前的仓位上限口径会改变哪个约束 binding
       — verify: `tests/integration/test_anchor_strength.py`
 - [ ] T1108 `[成果门:H2-E4]` (`US-701`, `NFR-702`, `AC-707`): 产出装配含价值族的可运行
       市场与其 roster 清单：运行满 5700 逻辑秒价格不单调发散、窗口末仍有成交，同 roster
@@ -109,15 +110,15 @@ updated: 2026-10-04
 ### Phase 2：扫描与判定
 
 - [ ] T1109 (`SC-704`, `AC-708`): **预注册**强度网格（`count` × `sensitivity_x1000` 的取值
-      清单）、种子集合与 spec `SC-704` 的三条扫描判据，写入单一文件并**先于任何扫描运行
-      提交**；扫描入口只读该文件，文件缺失或内容哈希与扫描记录不一致时 fail closed
+      清单）、种子集合与 spec `SC-704` 的两条扫描筛选判据（含分段口径），写入
+      单一文件并**先于任何扫描运行提交**；扫描入口只读该文件，文件缺失或内容哈希与扫描记录不一致时 fail closed
       — verify: `tests/unit/metrics/test_anchor_scan_preregistration.py`
 - [ ] T1110 (`SC-701`, `SC-702`, `AC-705`): 质量报告顶部新增锚过强诊断字段（各族主动成交
-      占比、`trend_following` 主动成交笔数、窗口价格区间、下跌分段数），**不改变**
-      SC-701/SC-702 的判定（ADR-016 裁决 B）
+      占比、`trend_following` 主动成交笔数——即 0.4.1 §15 的第三条判据、窗口价格区间、
+      下跌分段数），**不改变** SC-701/SC-702 的判定（ADR-016 裁决 B）
       — verify: `tests/integration/test_anchor_heterogeneity_diagnostics.py`
 - [ ] T1111 `[成果门:H2-E5]` (`SC-701`, `SC-702`, `AC-704`): 按预注册文件扫完整个网格；
-      通过三条扫描判据的配置做 SC-701/SC-702 的跨种子完整测量；产出跨种子质量报告集合与
+      通过两条扫描筛选判据的配置做 SC-701/SC-702 的跨种子完整测量；产出跨种子质量报告集合与
       终点判定——`QUALIFIED`（存在达标配置）或 `UNQUALIFIED`（逐格未通过报告）。
       **不得调门限、不得在扫描后改网格**；证据标签 `engineering-demonstration`
       — verify: `tests/integration/test_anchored_quality_gate.py`
