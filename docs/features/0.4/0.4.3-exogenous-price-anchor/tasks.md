@@ -97,13 +97,17 @@ updated: 2026-10-04
       （`sensitivity_x1000 ∈ [1, 1000000]`）；目标仓位方向与偏离相反、幅度随偏离单调不减、
       以族层仓位上限封顶；走既有撮合/账本/风控路径
       — verify: `tests/unit/agent/test_value_family.py`
-- [ ] T1107 (`NFR-701`, `SC-704`, `AC-702`): 强度参数的 **binding**（复用 0.4.1 的
+- [x] T1107 (`NFR-701`, `SC-704`, `AC-702`): 强度参数的 **binding**（复用 0.4.1 的
       `metrics/binding_diagnosis.py`）与**单调性**（新建：多档强度 × 全窗口 × 价格倍数，
       实测方式参照 0.4.1 §17.2 表）实测断言：`sensitivity_x1000` 做 binding 与单调性，
       `count` 只做单调性（其 binding 构造上恒真）；任一不满足即 fail closed，换响应函数
       形式重做，最多两种（第二种实测前预注册），两种都失败按 spec §5 以 `UNQUALIFIED` 收口。
-      **须在 `T1100` 落地后执行**——修正前的仓位上限口径会改变哪个约束 binding
-      — verify: `tests/integration/test_anchor_strength.py`
+      **须在 `T1100` 落地后执行**——修正前的仓位上限口径会改变哪个约束 binding。
+      **结果（2026-10-04）**：两个旋钮均 MONOTONE、`sensitivity` 12 秒内 BINDING，首种响应函数
+      形式通过；但 `sensitivity` 100 与 1000 之间是悬崖（≤100 只延缓发散，≥1000 钉在 ±0.6%），
+      T1109 网格须在该段加密（[实验报告 §2](../../../experiments/0.4.3-anchored-market.md)）
+      — verify: `tests/integration/test_anchor_strength.py`（读入库产物
+      `docs/experiments/0.4.3-anchor-strength.json`，由 `python -m market_game_sim.metrics.anchor_strength` 生成）
 - [ ] T1108 `[成果门:H2-E4]` (`US-701`, `NFR-702`, `AC-707`): 产出装配含价值族的可运行
       市场与其 roster 清单：运行满 5700 逻辑秒价格不单调发散、窗口末仍有成交，同 roster
       同种子重跑价格序列逐点一致；证据标签 `engineering-demonstration`
