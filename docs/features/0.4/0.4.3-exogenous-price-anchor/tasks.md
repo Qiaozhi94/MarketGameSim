@@ -126,14 +126,18 @@ updated: 2026-10-04
       筛选只用种子 7、达标须种子 7/8/9 全部同时过 SC-501 与 SC-502；文件 sha256 由测试钉住
       （[实验报告 §4](../../../experiments/0.4.3-anchored-market.md)）
       — verify: `tests/unit/metrics/test_anchor_scan_preregistration.py`
-- [ ] T1110 (`SC-701`, `SC-702`, `AC-705`): 质量报告顶部新增锚过强诊断字段（各族主动成交
+- [x] T1110 (`SC-701`, `SC-702`, `AC-705`): 质量报告顶部新增锚过强诊断字段（各族主动成交
       占比、`trend_following` 主动成交笔数——即 0.4.1 §15 的第三条判据、窗口价格区间、
-      下跌分段数），**不改变** SC-701/SC-702 的判定（ADR-016 裁决 B）
+      下跌分段数），**不改变** SC-701/SC-702 的判定（ADR-016 裁决 B）。**已落地（2026-10-04）**：
+      `metrics/anchor_diagnostics.py::config_report` 诊断块居首、判定只取自质量报告
       — verify: `tests/integration/test_anchor_heterogeneity_diagnostics.py`
-- [ ] T1111 `[成果门:H2-E5]` (`SC-701`, `SC-702`, `AC-704`): 按预注册文件扫完整个网格；
+- [x] T1111 `[成果门:H2-E5]` (`SC-701`, `SC-702`, `AC-704`): 按预注册文件扫完整个网格；
       通过两条扫描筛选判据的配置做 SC-701/SC-702 的跨种子完整测量；产出跨种子质量报告集合与
       终点判定——`QUALIFIED`（存在达标配置）或 `UNQUALIFIED`（逐格未通过报告）。
-      **不得调门限、不得在扫描后改网格**；证据标签 `engineering-demonstration`
+      **不得调门限、不得在扫描后改网格**；证据标签 `engineering-demonstration`。
+      **结果（2026-10-05）：`UNQUALIFIED`**——15 格全部扫完，6 格通过筛选，三个种子上 SC-501 全部通过
+      （18/18），SC-502 最多 3/5 且只出现一次（`count 6 / sensitivity 150` 的种子 9）；产物
+      `docs/experiments/0.4.3-scan-report.json`（[实验报告 §5](../../../experiments/0.4.3-anchored-market.md)）
       — verify: `tests/integration/test_anchored_quality_gate.py`
 
 ## 3. 验证与验收任务
