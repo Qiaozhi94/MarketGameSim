@@ -61,6 +61,12 @@ fraction    = min(1000, sensitivity_x1000 × |dev_bp| / 100) / 1000
 target      = −sign(dev_bp) × trunc(fraction × max_position_units)
 ```
 
+`fraction`（敞口）对 `|dev_bp|` 单调；`target` 的**单位数**在 `v_t` 之下全程单调，在 `v_t` 之上
+于 `fraction` 饱和后按 1/价格回落——因为 `max_position_units` 以当前 mark 折算，价格越高
+同样的名义上限换得越少单位。名义敞口在饱和后保持在上限，不是缺陷；它意味着饱和后**按单位
+计的供给不再随价格增加**，强度更多要靠 `count` 提供。这一点由 T1107 的单调性实测检验，
+测试 `test_units_peak_at_saturation_on_the_rich_side` 钉住该形态，改动它须是一次决定。
+
 ## 3. 数据模型与 Migration
 
 - **roster**：新增族条目 `value_investor`（`count`、`observe_interval_ns`、`latency_ns`、

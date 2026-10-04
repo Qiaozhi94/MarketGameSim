@@ -87,13 +87,13 @@ updated: 2026-10-04
 
 ### Phase 1：锚定市场
 
-- [ ] T1105 (`FR-701`, `IR-701`, `AC-701`, `AC-706`): 价值族装配时派生
+- [x] T1105 (`FR-701`, `IR-701`, `AC-701`, `AC-706`): 价值族装配时派生
       `v_t = engine.initial_price_ticks` 并写入该族代理的 `strategy_private`；断言 `v_t`
       收益在整个窗口恒为 0（正反两侧：恒定通过、任一时刻取值变化即失败）；断言其他族代理
       的私有参数与所有分级信息集不含 `v_t`、`PROTOCOL_VERSION` 仍为 1、人类终端载荷不含
       `v_t`（正反两侧）
       — verify: `tests/unit/agent/test_value_reference.py`
-- [ ] T1106 (`FR-702`, `AC-702`): 实现 `value_investor` 族与其 roster 参数校验
+- [x] T1106 (`FR-702`, `AC-702`): 实现 `value_investor` 族与其 roster 参数校验
       （`sensitivity_x1000 ∈ [1, 1000000]`）；目标仓位方向与偏离相反、幅度随偏离单调不减、
       以族层仓位上限封顶；走既有撮合/账本/风控路径
       — verify: `tests/unit/agent/test_value_family.py`
