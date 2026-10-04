@@ -121,7 +121,7 @@ def test_unregistered_family_fails_closed_with_stable_code():
 
 
 def test_native_families_are_registered_and_unknown_ids_fail_closed():
-    """0.4.1 T966: importing the bridge registers the four native families.
+    """0.4.1 T966: importing the bridge registers the native families (0.4.3 adds a fifth).
 
     ``goal_belief`` is deliberately absent: it is a roster family that rides the
     goal-model registry, not a ``TraderStrategy``.
@@ -133,6 +133,7 @@ def test_native_families_are_registered_and_unknown_ids_fail_closed():
         "mean_reversion",
         "sentiment_noise",
         "trend_following",
+        "value_investor",
     )
     with pytest.raises(StrategyLayerError) as exc:
         get_strategy("goal_belief")

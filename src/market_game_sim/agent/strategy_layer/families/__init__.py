@@ -13,6 +13,10 @@ family_id            tier   what it does
 ``market_maker_v2``  I0     inventory quotes, per-agent dispersion
 ===================  =====  =========================================
 
+0.4.3 adds ``value_investor`` (I0): it leans against the deviation from a
+constant reference price (ADR-017).  It is not in :data:`NATIVE_FAMILY_IDS` --
+that tuple is the 0.4.1 set the default roster and its tests are built on.
+
 Registration is explicit (:func:`register_native_families`), not an import
 side effect: importing a module must not mutate the process-wide registry, or
 test isolation and assembly-time fail-closed checks both become
@@ -29,6 +33,7 @@ from market_game_sim.agent.strategy_layer.families.trend_following import (
     TIME_SCALES,
     TrendFollowing,
 )
+from market_game_sim.agent.strategy_layer.families.value_investor import ValueInvestor
 from market_game_sim.agent.strategy_layer.protocol import TraderStrategy
 from market_game_sim.agent.strategy_layer.registry import StrategyRegistry, default_registry
 
@@ -61,6 +66,7 @@ __all__ = [
     "MeanReversion",
     "SentimentNoise",
     "TrendFollowing",
+    "ValueInvestor",
     "build_native_families",
     "register_native_families",
 ]

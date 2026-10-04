@@ -5,11 +5,11 @@ quoting.  This module is the join, and it deliberately adds **no** new path
 into L1:
 
 * families that return a **target position** (`trend_following`,
-  `mean_reversion`, `sentiment_noise`) are wrapped as :class:`GoalModel`s and
-  registered under their ``family_id``.  A roster entry then just sets
-  ``goal_model_id=<family_id>`` and the whole existing v2 pipeline applies
-  unchanged -- cold-start anchor, constraint layer, margin feasibility,
-  decision evidence, causal chain;
+  `mean_reversion`, `sentiment_noise`, and 0.4.3's `value_investor`) are
+  wrapped as :class:`GoalModel`s and registered under their ``family_id``.
+  A roster entry then just sets ``goal_model_id=<family_id>`` and the whole
+  existing v2 pipeline applies unchanged -- cold-start anchor, constraint
+  layer, margin feasibility, decision evidence, causal chain;
 * families that return an **order intent** (`market_maker_v2`) are converted to
   the ``OrderIntent`` objects the market-maker branch already emits, so their
   quotes travel the same admission, ledger and risk path as every other order
@@ -40,6 +40,7 @@ from market_game_sim.agent.strategy_layer.families.market_maker_v2 import Market
 from market_game_sim.agent.strategy_layer.families.mean_reversion import MeanReversion
 from market_game_sim.agent.strategy_layer.families.sentiment_noise import SentimentNoise
 from market_game_sim.agent.strategy_layer.families.trend_following import TrendFollowing
+from market_game_sim.agent.strategy_layer.families.value_investor import ValueInvestor
 from market_game_sim.agent.strategy_layer.protocol import (
     ACTION_NO_ACTION,
     ACTION_ORDER_INTENT,
@@ -59,6 +60,7 @@ TARGET_POSITION_FAMILIES: tuple[TraderStrategy, ...] = (
     TrendFollowing(),
     MeanReversion(),
     SentimentNoise(),
+    ValueInvestor(),
 )
 #: Families whose output is an order intent -- they ride the quoting seam.
 ORDER_INTENT_FAMILIES: tuple[TraderStrategy, ...] = (MarketMakerV2(),)

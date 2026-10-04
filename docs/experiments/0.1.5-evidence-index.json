@@ -1,7 +1,7 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "17ef14835c4b56ab6af0a1723b35214cbda179f6c139e4d6db440f49bb532476",
-    "reason": "2026-10-04 重绑：0.4.3 前置 T1100/T1104。三处源码改动：(1) agent/strategy_layer/families/_common.py 的 max_position_units 补上漏除的 MULT（名义价值 = 仓位 × mark × MULT，原公式让策略层按约 2000 倍杠杆要仓位，而 risk_appetite_x1000 契约只到 20 倍），并加量级哨兵——隐含杠杆超 100 倍即 IMPLAUSIBLE_LEVERAGE fail closed；(2) experiment/roster.py 装配期断言 engine.mult 与族层 MULT 一致，否则 MULT_MISMATCH；(3) metrics/binding_diagnosis.py 一处文档串。改动限于 0.4.1 新增的策略族层与装配层，不触碰撮合、账本与 T215 的决策路径（T215 走 goal_belief / agent/goal.py，其同一缺陷是 v0.1 冻结契约，登记为已知缺陷不修，0.4.3 T1101）。该修正改变了 0.4.1 无锚 live 市场的行为（0.4.1 报告 §21），但 0.4.1 产物不进任何 evidence index（NFR-503）。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "attested_source_tree_sha256": "4497676008e9b7537c51c5f1b150aad22264b6e96e8ad599bf418f9d6320d08d",
+    "reason": "2026-10-04 重绑（当日第二次）：0.4.3 T1105/T1106 价值投资者族。源码改动：新增 agent/strategy_layer/families/value_investor.py（恒定参照 v_t 的价值族，ADR-017）；bridge.py 将其登记为目标仓位族；families/__init__.py 导出；experiment/roster.py 新增 value_investor 族条目与参数校验（sensitivity_x1000 ∈ [1, 1000000]），族构造函数增加 engine 参数以便从 engine.initial_price_ticks 派生 v_t 写入该族代理的 strategy_private（IR-701）。改动限于 0.4.x 新增的策略族层与装配层，不触碰撮合、账本与 T215 的决策路径；不含价值族的既有 roster 与配置哈希不变。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
     "rebound_at": "2026-10-04",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "17ef14835c4b56ab6af0a1723b35214cbda179f6c139e4d6db440f49bb532476"
+    "source_tree_sha256": "4497676008e9b7537c51c5f1b150aad22264b6e96e8ad599bf418f9d6320d08d"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {

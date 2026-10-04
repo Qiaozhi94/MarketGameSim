@@ -44,6 +44,12 @@ from market_game_sim.agent.strategy_layer.families._common import DEFAULT_MULT a
 from market_game_sim.agent.strategy_layer.families.trend_following import (
     TIME_SCALES as TREND_TIME_SCALES,
 )
+from market_game_sim.agent.strategy_layer.families.value_investor import (
+    SENSITIVITY_KEY,
+    SENSITIVITY_MAX,
+    SENSITIVITY_MIN,
+    VALUE_REFERENCE_KEY,
+)
 from market_game_sim.experiment.config import ExperimentConfig
 from market_game_sim.ledger.account import initial_margin_bp_for_tier
 
@@ -255,6 +261,9 @@ _FAMILY_TIERS = {
     "mean_reversion": "I2",
     "sentiment_noise": "I0",
     "market_maker_v2": "I0",
+    # 0.4.3: the value reference does not come through any tier (IR-701); the
+    # family only needs the book top for its mark and its own account.
+    "value_investor": "I0",
 }
 
 #: 0.4.1 T966: the native families' agent-level parameters.  The family's own
@@ -269,6 +278,8 @@ _TRADER_PARAMS = frozenset(
         "ewma_half_life_trades",
     }
 )
+#: 0.4.3 FR-702: the value family is a trader plus its strength knob.
+_VALUE_PARAMS = _TRADER_PARAMS | {"sensitivity_x1000"}
 _MM_V2_PARAMS = frozenset(
     {"leverage_tier", "base_half_spread_ticks", "half_spread_dispersion_ticks"}
 )
@@ -323,6 +334,16 @@ def _validate_trader_params(params: Mapping[str, Any], where: str) -> None:
     _int(params["ewma_half_life_trades"], f"{where}.ewma_half_life_trades", minimum=1)
 
 
+def _validate_value_params(params: Mapping[str, Any], where: str) -> None:
+    _require_keys(params, _VALUE_PARAMS, where)
+    _validate_trader_params({k: v for k, v in params.items() if k in _TRADER_PARAMS}, where)
+    value = _int(params["sensitivity_x1000"], f"{where}.sensitivity_x1000", minimum=SENSITIVITY_MIN)
+    if value > SENSITIVITY_MAX:
+        raise RosterError(
+            "INVALID_VALUE", f"{where}.sensitivity_x1000 必须 <= {SENSITIVITY_MAX}，得到 {value}"
+        )
+
+
 def _validate_mm_v2_params(params: Mapping[str, Any], where: str) -> None:
     _require_keys(params, _MM_V2_PARAMS, where)
     _int(params["leverage_tier"], f"{where}.leverage_tier", minimum=1)
@@ -340,13 +361,22 @@ def _validate_mm_v2_params(params: Mapping[str, Any], where: str) -> None:
         )
 
 
-def _build_native_trader(agent_id: str, family: FamilyEntry, ordinal: int) -> AgentSpec:
+def _build_native_trader(
+    agent_id: str, family: FamilyEntry, ordinal: int, engine: Mapping[str, int]
+) -> AgentSpec:
     """A target-position family's agent: it rides the GoalModel seam (T966 bridge)."""
     p = family.params
     private: dict[str, int] | None = None
     if family.family_id == "trend_following":
         # 多时间尺度是逐代理的：按族内序号铺开，同一族的代理才会彼此分歧。
         private = {"time_scale_index": ordinal % len(TREND_TIME_SCALES)}
+    elif family.family_id == "value_investor":
+        # 0.4.3 IR-701：v_t 派生自 engine.initial_price_ticks，只写进本族代理的私有参数，
+        # 不进任何分级信息集。强度旋钮随同一通道下发（族的常量不在装配清单里调）。
+        private = {
+            VALUE_REFERENCE_KEY: engine["initial_price_ticks"],
+            SENSITIVITY_KEY: p["sensitivity_x1000"],
+        }
     return AgentSpec(
         agent_id=agent_id,
         role="belief_trader",
@@ -367,7 +397,9 @@ def _build_native_trader(agent_id: str, family: FamilyEntry, ordinal: int) -> Ag
     )
 
 
-def _build_mm_v2(agent_id: str, family: FamilyEntry, ordinal: int) -> AgentSpec:
+def _build_mm_v2(
+    agent_id: str, family: FamilyEntry, ordinal: int, engine: Mapping[str, int]
+) -> AgentSpec:
     """The v2 quoting family: same market-maker branch, family-owned quote rule."""
     p = family.params
     return AgentSpec(
@@ -389,18 +421,24 @@ def _build_mm_v2(agent_id: str, family: FamilyEntry, ordinal: int) -> AgentSpec:
 
 
 #: Families whose position ceiling goes through ``families._common.max_position_units``.
-_MULT_SIZED_FAMILIES = frozenset({"trend_following", "mean_reversion", "sentiment_noise"})
+_MULT_SIZED_FAMILIES = frozenset(
+    {"trend_following", "mean_reversion", "sentiment_noise", "value_investor"}
+)
 
 _FAMILIES: dict[
     str,
-    tuple[Callable[[Mapping[str, Any], str], None], Callable[[str, FamilyEntry, int], AgentSpec]],
+    tuple[
+        Callable[[Mapping[str, Any], str], None],
+        Callable[[str, FamilyEntry, int, Mapping[str, int]], AgentSpec],
+    ],
 ] = {
-    "inventory_market_maker": (_validate_mm_params, lambda a, f, _i: _build_mm(a, f)),
-    "goal_belief": (_validate_goal_params, lambda a, f, _i: _build_goal(a, f)),
+    "inventory_market_maker": (_validate_mm_params, lambda a, f, _i, _e: _build_mm(a, f)),
+    "goal_belief": (_validate_goal_params, lambda a, f, _i, _e: _build_goal(a, f)),
     "trend_following": (_validate_trader_params, _build_native_trader),
     "mean_reversion": (_validate_trader_params, _build_native_trader),
     "sentiment_noise": (_validate_trader_params, _build_native_trader),
     "market_maker_v2": (_validate_mm_v2_params, _build_mm_v2),
+    "value_investor": (_validate_value_params, _build_native_trader),
 }
 
 
@@ -530,7 +568,9 @@ def build_agent_specs(roster: StrategyRoster) -> list[AgentSpec]:
     specs: list[AgentSpec] = []
     for family in roster.families:
         _, build = _FAMILIES[family.family_id]
-        specs.extend(build(f"{family.family_id}-{i}", family, i) for i in range(family.count))
+        specs.extend(
+            build(f"{family.family_id}-{i}", family, i, roster.engine) for i in range(family.count)
+        )
     return specs
 
 
