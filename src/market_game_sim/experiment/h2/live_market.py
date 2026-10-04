@@ -28,6 +28,7 @@ from market_game_sim.experiment.h2 import runner as h2_runner
 from market_game_sim.experiment.roster import (
     StrategyRoster,
     build_experiment_config,
+    load_roster,
     parse_roster,
 )
 from market_game_sim.experiment.runner import _compute_initial_bp, _dispatch_agents
@@ -612,6 +613,18 @@ def create_live_server(
     return ThreadingHTTPServer((host, port), Handler)
 
 
+def build_market(seed: int, roster_file: str | None = None) -> LiveMarket:
+    """The CLI's market: the 0.3.1 configuration, or the one a saved roster assembles.
+
+    0.4.3 T1108: a roster file is loaded through :func:`load_roster`, so a file
+    whose content no longer hashes to its name is refused instead of run.
+    """
+    if roster_file is None:
+        return LiveMarket(seed=seed)
+    path = Path(roster_file)
+    return LiveMarket(roster=load_roster(path.parent, path.stem))
+
+
 def main(argv: list[str] | None = None) -> int:
     import argparse
     import time as _time
@@ -622,12 +635,17 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--tick-seconds", type=float, default=1.0, help="每个逻辑秒的墙钟时长（1:1 实时）"
     )
+    parser.add_argument(
+        "--roster-file",
+        help="按装配清单启动（<roster_id>.json，内容须仍哈希到该 id）；给出时 --seed 由清单决定",
+    )
     args = parser.parse_args(argv)
 
-    market = LiveMarket(seed=args.seed)
+    market = build_market(args.seed, args.roster_file)
     market._epoch_ms = int(_time.time() * 1000)
     server = create_live_server(market, port=args.port)
-    print(f"live AI market: http://127.0.0.1:{args.port} (seed={args.seed})")
+    label = f"roster={market.roster_id}" if market.roster_id else f"seed={args.seed}"
+    print(f"live AI market: http://127.0.0.1:{args.port} ({label})")
 
     stop = threading.Event()
 

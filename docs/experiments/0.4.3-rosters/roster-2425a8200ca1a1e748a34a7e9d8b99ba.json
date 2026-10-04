@@ -1,0 +1,87 @@
+{
+  "bootstrap_anchor": {
+    "direction": "family_parity",
+    "pricing": "best_opposite_else_initial_limit",
+    "quantity_units": 1,
+    "source": "synthetic"
+  },
+  "engine": {
+    "initial_price_ticks": 10000,
+    "liquidation_latency_ns": 1000000,
+    "maint_bp": 500,
+    "maker_bps": -1,
+    "mult": 1000,
+    "taker_bps": 5,
+    "target_bp": 1000
+  },
+  "engine_config_digest": "3ae13a56f9f62bee9ec0b6e69ac07ffa",
+  "families": [
+    {
+      "count": 12,
+      "family_id": "market_maker_v2",
+      "latency_ns": 5000000,
+      "observe_interval_ns": 100000000,
+      "params": {
+        "base_half_spread_ticks": 8,
+        "half_spread_dispersion_ticks": 7,
+        "leverage_tier": 1
+      }
+    },
+    {
+      "count": 9,
+      "family_id": "trend_following",
+      "latency_ns": 50000000,
+      "observe_interval_ns": 1000000000,
+      "params": {
+        "aggressiveness_bp": 8000,
+        "ewma_half_life_trades": 5,
+        "leverage_tier": 5,
+        "max_order_qty": 10000,
+        "risk_appetite_x1000": 2000
+      }
+    },
+    {
+      "count": 9,
+      "family_id": "mean_reversion",
+      "latency_ns": 50000000,
+      "observe_interval_ns": 1000000000,
+      "params": {
+        "aggressiveness_bp": 8000,
+        "ewma_half_life_trades": 5,
+        "leverage_tier": 5,
+        "max_order_qty": 10000,
+        "risk_appetite_x1000": 2000
+      }
+    },
+    {
+      "count": 6,
+      "family_id": "sentiment_noise",
+      "latency_ns": 50000000,
+      "observe_interval_ns": 1000000000,
+      "params": {
+        "aggressiveness_bp": 10000,
+        "ewma_half_life_trades": 5,
+        "leverage_tier": 3,
+        "max_order_qty": 5000,
+        "risk_appetite_x1000": 1500
+      }
+    },
+    {
+      "count": 6,
+      "family_id": "value_investor",
+      "latency_ns": 1000000,
+      "observe_interval_ns": 1000000000,
+      "params": {
+        "aggressiveness_bp": 8000,
+        "ewma_half_life_trades": 5,
+        "leverage_tier": 5,
+        "max_order_qty": 10000,
+        "risk_appetite_x1000": 2000,
+        "sensitivity_x1000": 1000
+      }
+    }
+  ],
+  "roster_id": "roster-2425a8200ca1a1e748a34a7e9d8b99ba",
+  "schema_version": 1,
+  "seed": 7
+}

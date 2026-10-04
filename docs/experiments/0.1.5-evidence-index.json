@@ -1,7 +1,7 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "31c3df05fc5fbcfe5d513cad258dc61353d9eb6f842a07c2d5c88b3edc457bf5",
-    "reason": "2026-10-04 重绑（当日第三次）：0.4.3 T1107 锚强度诊断。源码改动：新增 metrics/anchor_strength.py（价值族两个强度旋钮的全窗口单调性测量、判定与导出工具）；metrics/binding_diagnosis.py 新增 value_sensitivity_perturbation 与 anchored_market_factory。均为度量/诊断工具，不触碰撮合、账本、策略族与 T215 的决策路径。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "attested_source_tree_sha256": "2f2c41f21dea1c7a73bdb1e341a7a56f362b645d5bb1a1233167441bc3654b54",
+    "reason": "2026-10-04 重绑（当日第四次）：0.4.3 T1108 成果门 H2-E4。源码改动：新增 metrics/anchored_market.py（锚定市场全窗口双跑、四条载体判据与产物校验工具）；experiment/h2/live_market.py 新增 build_market 与 CLI 参数 --roster-file（按装配清单启动，清单内容须仍哈希到文件名），不给该参数时行为不变。不触碰撮合、账本、策略族与 T215 的决策路径。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
     "rebound_at": "2026-10-04",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "31c3df05fc5fbcfe5d513cad258dc61353d9eb6f842a07c2d5c88b3edc457bf5"
+    "source_tree_sha256": "2f2c41f21dea1c7a73bdb1e341a7a56f362b645d5bb1a1233167441bc3654b54"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {
