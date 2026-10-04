@@ -1,0 +1,134 @@
+{
+ "schema_version": 1,
+ "milestone": "0.4.3",
+ "task": "T1109",
+ "registered_at": "2026-10-04",
+ "decided_by": "owner 2026-10-04（网格大小、达标口径、筛选种子三项，均为当日 AskUserQuestion 裁决）",
+ "rule": "本文件先于任何扫描运行提交；扫描入口只读本文件并记录其 sha256，扫描开始后不得修改网格与判据（spec SC-704、§5 不变量）。",
+ "base_roster_id": "roster-ef5a1ecc238caa9324ad4be216cc2ffc",
+ "base_roster_note": "DEFAULT_LIVE_ROSTER（T1100 之后的代码，seed 7）；各种子运行只替换 roster.seed",
+ "value_family_params": {
+  "leverage_tier": 5,
+  "risk_appetite_x1000": 2000,
+  "aggressiveness_bp": 8000,
+  "max_order_qty": 10000,
+  "ewma_half_life_trades": 5
+ },
+ "value_family_params_note": "照抄默认装配的趋势族/均值回归族，与 T1107 相同；强度只由 count 与 sensitivity_x1000 表达",
+ "response_function": {
+  "id": "linear_saturating_v1",
+  "definition": "fraction_x1000 = min(1000, sensitivity_x1000 * |dev_bp| // 100); target = -sign(dev) * fraction * max_position_units / 1000",
+  "source": "design §2 / families/value_investor.py",
+  "attempt": 1
+ },
+ "window_seconds": 5700,
+ "segment_seconds": 300,
+ "grid": {
+  "count": [
+   1,
+   2,
+   6
+  ],
+  "sensitivity_x1000": [
+   150,
+   200,
+   300,
+   500,
+   700
+  ],
+  "points": [
+   {
+    "count": 1,
+    "sensitivity_x1000": 150
+   },
+   {
+    "count": 1,
+    "sensitivity_x1000": 200
+   },
+   {
+    "count": 1,
+    "sensitivity_x1000": 300
+   },
+   {
+    "count": 1,
+    "sensitivity_x1000": 500
+   },
+   {
+    "count": 1,
+    "sensitivity_x1000": 700
+   },
+   {
+    "count": 2,
+    "sensitivity_x1000": 150
+   },
+   {
+    "count": 2,
+    "sensitivity_x1000": 200
+   },
+   {
+    "count": 2,
+    "sensitivity_x1000": 300
+   },
+   {
+    "count": 2,
+    "sensitivity_x1000": 500
+   },
+   {
+    "count": 2,
+    "sensitivity_x1000": 700
+   },
+   {
+    "count": 6,
+    "sensitivity_x1000": 150
+   },
+   {
+    "count": 6,
+    "sensitivity_x1000": 200
+   },
+   {
+    "count": 6,
+    "sensitivity_x1000": 300
+   },
+   {
+    "count": 6,
+    "sensitivity_x1000": 500
+   },
+   {
+    "count": 6,
+    "sensitivity_x1000": 700
+   }
+  ],
+  "rationale": "T1107 实测 sensitivity ≤100 发散、≥1000 钉死（count=6），count=2 在 1000 也钉死；故加密 150—700 并加入 count=1。扫完不得加格（spec §5 不变量）。"
+ },
+ "screening": {
+  "seeds": [
+   7
+  ],
+  "criteria": {
+   "price_multiple_max": 1.5,
+   "down_segment_ratio_min": [
+    4,
+    13
+   ]
+  },
+  "segment_convention": "从逻辑秒 0 起每 300 秒一段，5700 秒共 19 段；段末取最新成交价，第一段起点为 v_t；「下跌」= 段末价 < 段初价；段内无成交沿用上一价，计入分母、不计下跌。① 只设上界（沿用 0.4.1 §15）。",
+  "diagnostic_only": [
+   "trend_following 主动成交笔数（0.4.1 §15 第三条，owner 2026-10-04 降为诊断，ADR-016 裁决 B）"
+  ]
+ },
+ "full_measurement": {
+  "seeds": [
+   7,
+   8,
+   9
+  ],
+  "entry": "market_game_sim.metrics.quality_run.run_market_quality(roster=…, logical_seconds=5700)",
+  "sc_501": "0.4.1 spec §6 SC-501 六项，门限与口径一字不改",
+  "sc_502": "0.4.1 spec §6 SC-502 五项至少 3 项，含 ADR-016 前置有效性条件，口径一字不改"
+ },
+ "qualification": {
+  "rule": "all_seeds_pass_sc501_and_sc502",
+  "definition": "某配置达标 ⇔ 种子 7、8、9 每一个都同时满足 SC-501 六项与 SC-502 ≥3/5（与 0.4.1 T973 的逐种子判法一致）",
+  "terminal": "网格内存在达标配置 → QUALIFIED；网格扫完无达标配置 → UNQUALIFIED（逐格报告），不得调门限、不得加格"
+ }
+}
