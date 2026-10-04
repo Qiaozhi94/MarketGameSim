@@ -3,8 +3,8 @@ kind: milestone
 id: 0.4.3
 parent: v0.4-market-ecology
 version: "0.4"
-status: ready-for-development
-status_evidence: 2026-10-04 需求设计专项文档检视（docs/reviews/0.4.md 循环 30）收敛，Q/DQ 全部关闭，AC-701—AC-708 均有 strict-xfail 测试锚点；owner 同日裁决 ADR-017（收窄采纳）、Q-701/Q-702 与检视提出的 6 项设计取舍；2026-09-25 立项——承接 0.4.1 移出的 E3/E4 达标判据；0.4.1 实验报告 §13—§17 证明该达标在 0.4.1 声明的范围内不可达成（唯一通过配置使用了 0.4.1 §3 禁止的机制）
+status: in-progress
+status_evidence: 2026-10-04 开发启动——前置 T1100/T1101/T1104 落地（量纲修正 + 量级哨兵 + 冻结契约缺陷的 strict xfail），T1100 全窗口实测证伪「行为不变」并经 owner 裁决照修（0.4.1 报告 §21）；此前 2026-10-04 需求设计专项文档检视（docs/reviews/0.4.md 循环 30）收敛，Q/DQ 全部关闭，AC-701—AC-708 均有 strict-xfail 测试锚点；owner 同日裁决 ADR-017（收窄采纳）、Q-701/Q-702 与检视提出的 6 项设计取舍；2026-09-25 立项——承接 0.4.1 移出的 E3/E4 达标判据；0.4.1 实验报告 §13—§17 证明该达标在 0.4.1 声明的范围内不可达成（唯一通过配置使用了 0.4.1 §3 禁止的机制）
 research_claim_status: not-applicable
 research_claim_required: false
 evidence_class: engineering-demonstration
@@ -236,8 +236,10 @@ CALIBRATED  -> UNQUALIFIED  预注册网格扫完无达标配置：如实产出�
 ## 7. 测试、依赖与决策
 
 - **前置依赖**：原 T1002 已按影响面拆分（0.4.1 报告 §20）——
-  `T1100` 修 `families/_common.py` 那份（0.4.1 新代码，不进 evidence index，行为实测不变，
-  **代价接近零**，本里程碑内完成）；`T1101` 是 `agent/goal.py` 里 v0.1 冻结契约的两份拷贝
+  `T1100` 修 `families/_common.py` 那份（0.4.1 新代码，不进 evidence index，本里程碑内完成）。
+  **它改变了无锚基线的行为**：全窗口实测修正后市场约 2000 秒停摆（原约 2700 秒），原因是
+  均值回归族作为唯一稳定力失去了 2000 倍的虚高容量（0.4.1 报告 §21）；owner 2026-10-04
+  裁决照修、如实记录、不调族参数恢复旧行为。本里程碑的一切测量都在修正后的代码上进行；`T1101` 是 `agent/goal.py` 里 v0.1 冻结契约的两份拷贝
   （`RiskBudgetLinearV1` 与 `RiskBudgetThresholdV1`，改它们需全量重跑 T215），
   **登记为已知缺陷、本里程碑不修、不阻塞本里程碑**，以 `xfail(strict=True)` 测试显式标记。
 - **已修订**：[`ADR-011`](../../../decisions/011-market-engine-trader-layering.md)

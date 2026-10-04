@@ -9,7 +9,7 @@
 |---|---|---|
 | [`0.4.1-ai-market-ecology/`](0.4.1-ai-market-ecology/spec.md) | done | L2 交易者策略层、冷启动锚与市场真实性判据 |
 | [`0.4.2-human-perturbation/`](0.4.2-human-perturbation/spec.md) | draft | 人类扰动实验 H2-F：会话 artifact 冻结、同种子对照与稳定性效应量 |
-| [`0.4.3-exogenous-price-anchor/`](0.4.3-exogenous-price-anchor/spec.md) | ready-for-development | 外生价格锚 H2-E4/E5：恒定参照 + 价值投资者族，承接 0.4.1 移出的 E3/E4 达标判定 |
+| [`0.4.3-exogenous-price-anchor/`](0.4.3-exogenous-price-anchor/spec.md) | in-progress | 外生价格锚 H2-E4/E5：恒定参照 + 价值投资者族，承接 0.4.1 移出的 E3/E4 达标判定 |
 
 ## 边界
 
