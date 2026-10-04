@@ -119,9 +119,12 @@ updated: 2026-10-04
 
 ### Phase 2：扫描与判定
 
-- [ ] T1109 (`SC-704`, `AC-708`): **预注册**强度网格（`count` × `sensitivity_x1000` 的取值
+- [x] T1109 (`SC-704`, `AC-708`): **预注册**强度网格（`count` × `sensitivity_x1000` 的取值
       清单）、种子集合与 spec `SC-704` 的两条扫描筛选判据（含分段口径），写入
       单一文件并**先于任何扫描运行提交**；扫描入口只读该文件，文件缺失或内容哈希与扫描记录不一致时 fail closed
+      **已登记（2026-10-04，owner 裁决）**：15 格（count {1,2,6} × sensitivity {150,200,300,500,700}）、
+      筛选只用种子 7、达标须种子 7/8/9 全部同时过 SC-501 与 SC-502；文件 sha256 由测试钉住
+      （[实验报告 §4](../../../experiments/0.4.3-anchored-market.md)）
       — verify: `tests/unit/metrics/test_anchor_scan_preregistration.py`
 - [ ] T1110 (`SC-701`, `SC-702`, `AC-705`): 质量报告顶部新增锚过强诊断字段（各族主动成交
       占比、`trend_following` 主动成交笔数——即 0.4.1 §15 的第三条判据、窗口价格区间、
