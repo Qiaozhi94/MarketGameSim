@@ -7,13 +7,15 @@
 
 | 里程碑 | 状态（见 spec frontmatter） | 目标 |
 |---|---|---|
-| [`0.4.1-ai-market-ecology/`](0.4.1-ai-market-ecology/spec.md) | in-progress | L2 交易者策略层、冷启动锚与市场真实性判据 |
+| [`0.4.1-ai-market-ecology/`](0.4.1-ai-market-ecology/spec.md) | done | L2 交易者策略层、冷启动锚与市场真实性判据 |
 | [`0.4.2-human-perturbation/`](0.4.2-human-perturbation/spec.md) | draft | 人类扰动实验 H2-F：会话 artifact 冻结、同种子对照与稳定性效应量 |
+| [`0.4.3-exogenous-price-anchor/`](0.4.3-exogenous-price-anchor/spec.md) | draft | 外生价格锚 H2-E4/E5：恒定参照 + 价值投资者族，承接 0.4.1 移出的 E3/E4 达标判定 |
 
 ## 边界
 
 - 本版本交付市场载体与对照基线，**不建立研究声明**（`engineering-demonstration`）。
-- 不引入外生基本面与价值投资者族；不做多标的合约池。
+- 不引入外生基本面与随机/时变价值过程；例外是 ADR-017 许可的恒定外生参照与价值投资者族
+  （0.4.3）。不做多标的合约池。
 - L1 交易引擎的既有合同不可改；L2 只能通过分级信息集与意图输出影响市场。
 - 沙盘结果单向：永不进入 alphamill 证据链，也不构成任何策略有效性的证据。
 - owner 的人类扰动实验（研究问题 #1）由 `0.4.2` 承接：`0.4.1` 交付对照基线与市场载体，
