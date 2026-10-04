@@ -70,7 +70,7 @@ target      = −sign(dev_bp) × trunc(fraction × max_position_units)
   `config.py` 既有规则进入哈希；不含价值族的既有配置哈希不变。
 - **质量报告**：新增锚过强诊断块与终点判定字段（`QUALIFIED` / `UNQUALIFIED` / 未完成），
   缺省时既有报告结构不变。
-- **预注册文件**：强度网格、种子集合与三条扫描判据，单文件、先提交后扫描；扫描记录写入
+- **预注册文件**：强度网格、种子集合与两条扫描筛选判据（含分段口径，spec `SC-704`），单文件、先提交后扫描；扫描记录写入
   其内容哈希（`AC-708`）。
 
 ## 4. 接口、Contract 与 Event
@@ -95,7 +95,7 @@ target      = −sign(dev_bp) × trunc(fraction × max_position_units)
   聚集翻 FAIL、趋势族主动成交仅 4 笔。以诊断字段在报告顶部如实呈现；**判定只由
   SC-701/SC-702 决定**，不另设异质性否决（ADR-016 裁决 B）。
 - **强度参数名存实亡**：按 ADR-016 §4.1 的两种形态（不 binding / binding 但不单调）
-  分别有断言，命中即 fail closed，须更换 §2 的响应函数形式。
+  分别有断言，命中即 fail closed，须更换 §2 的响应函数形式（最多两种，见 §9 残余风险 2）。
 - **合约乘数不一致**：`engine.mult != DEFAULT_MULT` 时装配 fail closed（T1100）。
 - **量级哨兵**：族层仓位上限隐含杠杆超 100 倍即 fail closed（T1104）。
 - **预注册被绕过**：扫描入口在预注册文件缺失或哈希不符时 fail closed（`AC-708`）。
@@ -105,7 +105,7 @@ target      = −sign(dev_bp) × trunc(fraction × max_position_units)
 | AC | 验证路径 |
 |---|---|
 | AC-701 | `v_t` 派生值与恒定性正反断言（`tests/unit/agent/test_value_reference.py`） |
-| AC-702 | 价值族单调性单元测试 + `count`/`sensitivity_x1000` 的 binding 与单调性实测 + 量级哨兵正反与变异验证 |
+| AC-702 | 价值族单调性单元测试 + `sensitivity_x1000` 的 binding 与单调性、`count` 的单调性实测 + 量级哨兵正反与变异验证 |
 | AC-704 | 达标与未达标两条终点的门禁测试（`tests/integration/test_anchored_quality_gate.py`） |
 | AC-705 | 锚过强诊断字段存在且不改判定的正反测试 |
 | AC-706 | `v_t` 只在价值族私有参数中、协议版本不变、人类载荷不含的正反测试 |
@@ -121,7 +121,8 @@ target      = −sign(dev_bp) × trunc(fraction × max_position_units)
   预注册，未找到即按 `UNQUALIFIED` 收口，不得事后加格或改判据。
 - **残余风险 2**（2026-10-04 更新）：强度挂载点已由 spec Q-703 定为价值族的响应函数，
   不挂任何容量约束。剩余风险是该响应函数在实测中被证明不 binding 或不单调——按
-  ADR-016 §4.1 fail closed，须换响应函数形式，不得保留名存实亡的参数。
+  ADR-016 §4.1 fail closed，须换响应函数形式，不得保留名存实亡的参数；最多两种形式，
+  第二种实测前预注册，两种都失败即 `UNQUALIFIED`（spec §5）。
 - **残余风险 3**：`T1100` 修正后仓位上限收紧约 1000 倍，`max_order_qty` 与保证金闸口
   未必仍截断在更前面；全窗口行为不变断言（T1100）失败时须停下报告，不得改判据迁就。
 
