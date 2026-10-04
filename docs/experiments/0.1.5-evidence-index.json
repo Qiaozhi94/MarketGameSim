@@ -1,7 +1,7 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "f45d7605d42221017302137b159d3b611fc04414662b4768acf7a6750d88d66f",
-    "reason": "2026-10-04 重绑（当日第五次）：0.4.3 T1109 扫描预注册。源码改动：新增 metrics/anchor_scan.py（预注册文件载入与校验、扫描开始时记录其 sha256、文件缺失或哈希不符即 fail closed、SC-704 筛选判据与逐种子达标规则）。纯度量工具，不触碰撮合、账本、策略族与 T215 的决策路径。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "attested_source_tree_sha256": "3cd1ee1e6226aa1725effa2456d5f1e0e0fa3390161272d638816bb016f67789",
+    "reason": "2026-10-04 重绑（当日第六次）：0.4.3 T1110/T1111 工具。源码改动：metrics/quality_run.py 的 run_market_quality 新增可选参数 segment_seconds（给出时诊断另带分段末价格与窗口成交价区间，不给时报告与诊断不变）；新增 metrics/anchor_diagnostics.py（锚过强诊断块，只呈现不判定）；metrics/anchor_scan.py 新增按预注册的可续跑扫描、筛选与逐种子达标汇总、扫描报告载入时重建校验。均为度量工具，不触碰撮合、账本、策略族与 T215 的决策路径。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
     "rebound_at": "2026-10-04",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "f45d7605d42221017302137b159d3b611fc04414662b4768acf7a6750d88d66f"
+    "source_tree_sha256": "3cd1ee1e6226aa1725effa2456d5f1e0e0fa3390161272d638816bb016f67789"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {

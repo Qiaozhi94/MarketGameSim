@@ -283,10 +283,15 @@ def run_market_quality(
     logical_seconds: int = 600,
     run_id: str | None = None,
     burn_in_ns: int = BURN_IN_NS,
+    segment_seconds: int | None = None,
 ) -> tuple[MarketQualityReport, dict[str, Any]]:
     """跑一个按 roster 装配的纯 AI 市场，返回（报告, 诊断）。
 
     ``burn_in_ns`` 只为测试注入短窗口存在，默认是指标字典的冻结值；生产路径不传它。
+
+    ``segment_seconds``（0.4.3 T1110）给出时，诊断另带分段末价格与测量窗口内的成交价区间，
+    供锚过强诊断与扫描筛选使用；不给时诊断与报告逐字节不变。两者都不进报告 schema，
+    不参与 SC-501/SC-502 的判定。
 
     诊断不进报告 schema，但会随 artifact 落盘：它记录被排除的成交笔数、各族的委托
     与成交构成——「哪一族在交易」是判断异质性是否成立的前提，报告本身只给指标。
@@ -375,7 +380,46 @@ def run_market_quality(
         "takers_by_family": _by_family(events, market, "TRADE_SETTLE"),
         "submits_by_family": _by_family(events, market, "ORDER_ARRIVAL"),
     }
+    if segment_seconds is not None:
+        diagnostics |= _price_path(
+            events,
+            initial_price_ticks=int(market.initial_price_ticks),
+            segment_ns=segment_seconds * NS_PER_SECOND,
+            end_ns=end,
+            window_start_ns=start,
+        )
     return report, diagnostics
+
+
+def _price_path(
+    events, *, initial_price_ticks: int, segment_ns: int, end_ns: int, window_start_ns: int | None
+) -> dict[str, Any]:
+    """Segment-end prices and the in-window trade price range (0.4.3 T1110).
+
+    A segment-end price is the last trade at or before the segment boundary; a
+    segment without trades carries the previous price (spec SC-704 分段口径).
+    """
+    if segment_ns <= 0:
+        raise ValueError("segment_seconds must be positive")
+    trades = sorted(
+        (int(e["timestamp"]), int(e["price_ticks"]))
+        for e in events
+        if e.get("event_type") == "TRADE_SETTLE"
+    )
+    prices: list[int] = []
+    last = initial_price_ticks
+    index = 0
+    for boundary in range(segment_ns, end_ns + 1, segment_ns):
+        while index < len(trades) and trades[index][0] <= boundary:
+            last = trades[index][1]
+            index += 1
+        prices.append(last)
+    in_window = [p for t, p in trades if window_start_ns is not None and t >= window_start_ns]
+    return {
+        "segment_seconds": segment_ns // NS_PER_SECOND,
+        "segment_prices": prices,
+        "window_trade_price_range": [min(in_window), max(in_window)] if in_window else None,
+    }
 
 
 def _by_family(events, market, kind: str) -> dict[str, int]:
