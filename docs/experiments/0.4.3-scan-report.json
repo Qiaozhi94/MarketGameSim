@@ -1,0 +1,2613 @@
+{
+ "schema_version": 1,
+ "evidence_class": "engineering-demonstration",
+ "gate": "H2-E5",
+ "preregistration_sha256": "1c3862b78aed57379a2981859e14a70b1d6cf1ddbb1f310b3cc3ce37fc0c7ac5",
+ "complete": true,
+ "terminal": "UNQUALIFIED",
+ "qualified_configs": [],
+ "configs": [
+  {
+   "count": 1,
+   "sensitivity_x1000": 150,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.028492,
+     "mean_reversion": 0.374386,
+     "sentiment_noise": 0.475351,
+     "trend_following": 0.12021,
+     "value_investor": 0.00156
+    },
+    "trend_following_takers": 2080,
+    "window_trade_price_range": null,
+    "window_trade_price_range_pct": null,
+    "down_segments": 3,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "FAIL",
+    "down_segments": 3,
+    "segments": 19,
+    "down_segment_ratio": "FAIL",
+    "passes_screening": "FAIL"
+   },
+   "seeds": {
+    "7": {
+     "count": 1,
+     "sensitivity_x1000": 150,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.028492,
+       "mean_reversion": 0.374386,
+       "sentiment_noise": 0.475351,
+       "trend_following": 0.12021,
+       "value_investor": 0.00156
+      },
+      "trend_following_takers": 2080,
+      "window_trade_price_range": null,
+      "window_trade_price_range_pct": null,
+      "down_segments": 3,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "FAIL",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_501_all_quality",
+      "sc_502_min_stylized",
+      "quality.trades_per_minute",
+      "quality.two_sided_book_uptime",
+      "quality.median_book_levels_per_side",
+      "quality.median_effective_spread_bp",
+      "quality.fill_to_order_ratio",
+      "stylized_facts.fat_tails",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 0.0,
+      "two_sided_book_uptime": 0.0,
+      "median_book_levels_per_side": 0.0,
+      "median_effective_spread_bp": null,
+      "fill_to_order_ratio": 0.0,
+      "wall_seconds_per_logical_second": 0.089976
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "PASS",
+      "volatility_clustering": "NOT_APPLICABLE",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "NOT_APPLICABLE"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-58573e52d2306bbf1dc9a935def4a86f",
+     "segment_prices": [
+      10046,
+      10071,
+      10614,
+      10589,
+      10539,
+      11886,
+      11836,
+      14962,
+      18815,
+      21822,
+      21822,
+      21822,
+      21822,
+      21822,
+      21822,
+      21822,
+      21822,
+      21822,
+      21822
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 493,
+      "mean_reversion": 6478,
+      "sentiment_noise": 8225,
+      "trend_following": 2080,
+      "value_investor": 27
+     }
+    }
+   },
+   "qualifies": false
+  },
+  {
+   "count": 1,
+   "sensitivity_x1000": 200,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.027871,
+     "mean_reversion": 0.375304,
+     "sentiment_noise": 0.474389,
+     "trend_following": 0.120871,
+     "value_investor": 0.001564
+    },
+    "trend_following_takers": 2086,
+    "window_trade_price_range": null,
+    "window_trade_price_range_pct": null,
+    "down_segments": 3,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "FAIL",
+    "down_segments": 3,
+    "segments": 19,
+    "down_segment_ratio": "FAIL",
+    "passes_screening": "FAIL"
+   },
+   "seeds": {
+    "7": {
+     "count": 1,
+     "sensitivity_x1000": 200,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.027871,
+       "mean_reversion": 0.375304,
+       "sentiment_noise": 0.474389,
+       "trend_following": 0.120871,
+       "value_investor": 0.001564
+      },
+      "trend_following_takers": 2086,
+      "window_trade_price_range": null,
+      "window_trade_price_range_pct": null,
+      "down_segments": 3,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "FAIL",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_501_all_quality",
+      "sc_502_min_stylized",
+      "quality.trades_per_minute",
+      "quality.two_sided_book_uptime",
+      "quality.median_book_levels_per_side",
+      "quality.median_effective_spread_bp",
+      "quality.fill_to_order_ratio",
+      "stylized_facts.fat_tails",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 0.0,
+      "two_sided_book_uptime": 0.0,
+      "median_book_levels_per_side": 0.0,
+      "median_effective_spread_bp": null,
+      "fill_to_order_ratio": 0.0,
+      "wall_seconds_per_logical_second": 0.089932
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "PASS",
+      "volatility_clustering": "NOT_APPLICABLE",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "NOT_APPLICABLE"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-6763e89588aa5f56b2dc661aa2eb2114",
+     "segment_prices": [
+      10034,
+      10061,
+      10606,
+      10565,
+      10515,
+      11862,
+      11812,
+      14975,
+      18697,
+      21692,
+      21692,
+      21692,
+      21692,
+      21692,
+      21692,
+      21692,
+      21692,
+      21692,
+      21692
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 481,
+      "mean_reversion": 6477,
+      "sentiment_noise": 8187,
+      "trend_following": 2086,
+      "value_investor": 27
+     }
+    }
+   },
+   "qualifies": false
+  },
+  {
+   "count": 1,
+   "sensitivity_x1000": 300,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.029584,
+     "mean_reversion": 0.378741,
+     "sentiment_noise": 0.471864,
+     "trend_following": 0.118278,
+     "value_investor": 0.001533
+    },
+    "trend_following_takers": 2083,
+    "window_trade_price_range": null,
+    "window_trade_price_range_pct": null,
+    "down_segments": 3,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "FAIL",
+    "down_segments": 3,
+    "segments": 19,
+    "down_segment_ratio": "FAIL",
+    "passes_screening": "FAIL"
+   },
+   "seeds": {
+    "7": {
+     "count": 1,
+     "sensitivity_x1000": 300,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.029584,
+       "mean_reversion": 0.378741,
+       "sentiment_noise": 0.471864,
+       "trend_following": 0.118278,
+       "value_investor": 0.001533
+      },
+      "trend_following_takers": 2083,
+      "window_trade_price_range": null,
+      "window_trade_price_range_pct": null,
+      "down_segments": 3,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "FAIL",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_501_all_quality",
+      "sc_502_min_stylized",
+      "quality.trades_per_minute",
+      "quality.two_sided_book_uptime",
+      "quality.median_book_levels_per_side",
+      "quality.median_effective_spread_bp",
+      "quality.fill_to_order_ratio",
+      "stylized_facts.fat_tails",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 0.0,
+      "two_sided_book_uptime": 0.0,
+      "median_book_levels_per_side": 0.0,
+      "median_effective_spread_bp": null,
+      "fill_to_order_ratio": 0.0,
+      "wall_seconds_per_logical_second": 0.093537
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "PASS",
+      "volatility_clustering": "NOT_APPLICABLE",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "NOT_APPLICABLE"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-5bf666d5510c905851d915944a8b054b",
+     "segment_prices": [
+      10028,
+      10043,
+      10577,
+      10536,
+      10486,
+      11833,
+      11783,
+      13045,
+      18483,
+      21748,
+      21769,
+      21769,
+      21769,
+      21769,
+      21769,
+      21769,
+      21769,
+      21769,
+      21769
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 521,
+      "mean_reversion": 6670,
+      "sentiment_noise": 8310,
+      "trend_following": 2083,
+      "value_investor": 27
+     }
+    }
+   },
+   "qualifies": false
+  },
+  {
+   "count": 1,
+   "sensitivity_x1000": 500,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.030748,
+     "mean_reversion": 0.381563,
+     "sentiment_noise": 0.473412,
+     "trend_following": 0.11276,
+     "value_investor": 0.001518
+    },
+    "trend_following_takers": 2006,
+    "window_trade_price_range": null,
+    "window_trade_price_range_pct": null,
+    "down_segments": 5,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "FAIL",
+    "down_segments": 5,
+    "segments": 19,
+    "down_segment_ratio": "FAIL",
+    "passes_screening": "FAIL"
+   },
+   "seeds": {
+    "7": {
+     "count": 1,
+     "sensitivity_x1000": 500,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.030748,
+       "mean_reversion": 0.381563,
+       "sentiment_noise": 0.473412,
+       "trend_following": 0.11276,
+       "value_investor": 0.001518
+      },
+      "trend_following_takers": 2006,
+      "window_trade_price_range": null,
+      "window_trade_price_range_pct": null,
+      "down_segments": 5,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "FAIL",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_501_all_quality",
+      "sc_502_min_stylized",
+      "quality.trades_per_minute",
+      "quality.two_sided_book_uptime",
+      "quality.median_book_levels_per_side",
+      "quality.median_effective_spread_bp",
+      "quality.fill_to_order_ratio",
+      "stylized_facts.fat_tails",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 0.0,
+      "two_sided_book_uptime": 0.0,
+      "median_book_levels_per_side": 0.0,
+      "median_effective_spread_bp": null,
+      "fill_to_order_ratio": 0.0,
+      "wall_seconds_per_logical_second": 0.091222
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "PASS",
+      "volatility_clustering": "NOT_APPLICABLE",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "NOT_APPLICABLE"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-ab6ea444e1219d64a821c1494c3c5d01",
+     "segment_prices": [
+      10031,
+      10025,
+      9771,
+      11103,
+      11052,
+      11011,
+      10935,
+      11531,
+      18016,
+      20758,
+      21936,
+      21936,
+      21936,
+      21936,
+      21936,
+      21936,
+      21936,
+      21936,
+      21936
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 547,
+      "mean_reversion": 6788,
+      "sentiment_noise": 8422,
+      "trend_following": 2006,
+      "value_investor": 27
+     }
+    }
+   },
+   "qualifies": false
+  },
+  {
+   "count": 1,
+   "sensitivity_x1000": 700,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.03381,
+     "mean_reversion": 0.381585,
+     "sentiment_noise": 0.495083,
+     "trend_following": 0.088087,
+     "value_investor": 0.001435
+    },
+    "trend_following_takers": 1657,
+    "window_trade_price_range": null,
+    "window_trade_price_range_pct": null,
+    "down_segments": 5,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "FAIL",
+    "down_segments": 5,
+    "segments": 19,
+    "down_segment_ratio": "FAIL",
+    "passes_screening": "FAIL"
+   },
+   "seeds": {
+    "7": {
+     "count": 1,
+     "sensitivity_x1000": 700,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.03381,
+       "mean_reversion": 0.381585,
+       "sentiment_noise": 0.495083,
+       "trend_following": 0.088087,
+       "value_investor": 0.001435
+      },
+      "trend_following_takers": 1657,
+      "window_trade_price_range": null,
+      "window_trade_price_range_pct": null,
+      "down_segments": 5,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "FAIL",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_501_all_quality",
+      "sc_502_min_stylized",
+      "quality.trades_per_minute",
+      "quality.two_sided_book_uptime",
+      "quality.median_book_levels_per_side",
+      "quality.median_effective_spread_bp",
+      "quality.fill_to_order_ratio",
+      "stylized_facts.fat_tails",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 0.0,
+      "two_sided_book_uptime": 0.0,
+      "median_book_levels_per_side": 0.0,
+      "median_effective_spread_bp": null,
+      "fill_to_order_ratio": 0.0,
+      "wall_seconds_per_logical_second": 0.090184
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "PASS",
+      "volatility_clustering": "NOT_APPLICABLE",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "NOT_APPLICABLE"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-8af4f475184bed64f6045c5d3ae06db6",
+     "segment_prices": [
+      10024,
+      10020,
+      10015,
+      10050,
+      9908,
+      11291,
+      11241,
+      11173,
+      11277,
+      17747,
+      19599,
+      22311,
+      22311,
+      22311,
+      22311,
+      22311,
+      22311,
+      22311,
+      22311
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 636,
+      "mean_reversion": 7178,
+      "sentiment_noise": 9313,
+      "trend_following": 1657,
+      "value_investor": 27
+     }
+    }
+   },
+   "qualifies": false
+  },
+  {
+   "count": 2,
+   "sensitivity_x1000": 150,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.040815,
+     "mean_reversion": 0.318248,
+     "sentiment_noise": 0.497155,
+     "trend_following": 0.133307,
+     "value_investor": 0.010473
+    },
+    "trend_following_takers": 3093,
+    "window_trade_price_range": [
+     14389,
+     22648
+    ],
+    "window_trade_price_range_pct": 82.59,
+    "down_segments": 3,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "FAIL",
+    "down_segments": 3,
+    "segments": 19,
+    "down_segment_ratio": "FAIL",
+    "passes_screening": "FAIL"
+   },
+   "seeds": {
+    "7": {
+     "count": 2,
+     "sensitivity_x1000": 150,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.040815,
+       "mean_reversion": 0.318248,
+       "sentiment_noise": 0.497155,
+       "trend_following": 0.133307,
+       "value_investor": 0.010473
+      },
+      "trend_following_takers": 3093,
+      "window_trade_price_range": [
+       14389,
+       22648
+      ],
+      "window_trade_price_range_pct": 82.59,
+      "down_segments": 3,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "FAIL",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_501_all_quality",
+      "sc_502_min_stylized",
+      "quality.two_sided_book_uptime",
+      "quality.median_book_levels_per_side",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 85.14725339344342,
+      "two_sided_book_uptime": 0.31994120529152376,
+      "median_book_levels_per_side": 0.0,
+      "median_effective_spread_bp": 2.5227043390514634,
+      "fill_to_order_ratio": 0.011311041936000438,
+      "wall_seconds_per_logical_second": 0.109076
+     },
+     "stylized_facts": {
+      "fat_tails": "PASS",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "NOT_APPLICABLE",
+      "volume_volatility_correlation": "PASS",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-a3f495c31f7a03d9cfc9f5aa663fc655",
+     "segment_prices": [
+      10018,
+      10031,
+      10055,
+      10076,
+      10073,
+      10088,
+      11238,
+      11185,
+      11135,
+      11311,
+      12682,
+      12704,
+      18483,
+      20787,
+      22648,
+      22648,
+      22648,
+      22648,
+      22648
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 947,
+      "mean_reversion": 7384,
+      "sentiment_noise": 11535,
+      "trend_following": 3093,
+      "value_investor": 243
+     }
+    }
+   },
+   "qualifies": false
+  },
+  {
+   "count": 2,
+   "sensitivity_x1000": 200,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.03523,
+     "mean_reversion": 0.331693,
+     "sentiment_noise": 0.451922,
+     "trend_following": 0.175577,
+     "value_investor": 0.005579
+    },
+    "trend_following_takers": 3997,
+    "window_trade_price_range": null,
+    "window_trade_price_range_pct": null,
+    "down_segments": 4,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "FAIL",
+    "down_segments": 4,
+    "segments": 19,
+    "down_segment_ratio": "FAIL",
+    "passes_screening": "FAIL"
+   },
+   "seeds": {
+    "7": {
+     "count": 2,
+     "sensitivity_x1000": 200,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.03523,
+       "mean_reversion": 0.331693,
+       "sentiment_noise": 0.451922,
+       "trend_following": 0.175577,
+       "value_investor": 0.005579
+      },
+      "trend_following_takers": 3997,
+      "window_trade_price_range": null,
+      "window_trade_price_range_pct": null,
+      "down_segments": 4,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "FAIL",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_501_all_quality",
+      "sc_502_min_stylized",
+      "quality.trades_per_minute",
+      "quality.two_sided_book_uptime",
+      "quality.median_book_levels_per_side",
+      "quality.median_effective_spread_bp",
+      "quality.fill_to_order_ratio",
+      "stylized_facts.fat_tails",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 0.0,
+      "two_sided_book_uptime": 0.0,
+      "median_book_levels_per_side": 0.0,
+      "median_effective_spread_bp": null,
+      "fill_to_order_ratio": 0.0,
+      "wall_seconds_per_logical_second": 0.104925
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "PASS",
+      "volatility_clustering": "NOT_APPLICABLE",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "NOT_APPLICABLE"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-307854f01c4bffda606e0585bc05155d",
+     "segment_prices": [
+      10015,
+      10037,
+      10565,
+      10540,
+      10490,
+      11837,
+      11787,
+      11911,
+      14543,
+      13012,
+      18897,
+      22694,
+      22694,
+      22694,
+      22694,
+      22694,
+      22694,
+      22694,
+      22694
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 802,
+      "mean_reversion": 7551,
+      "sentiment_noise": 10288,
+      "trend_following": 3997,
+      "value_investor": 127
+     }
+    }
+   },
+   "qualifies": false
+  },
+  {
+   "count": 2,
+   "sensitivity_x1000": 300,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.038707,
+     "mean_reversion": 0.325543,
+     "sentiment_noise": 0.485468,
+     "trend_following": 0.140732,
+     "value_investor": 0.00955
+    },
+    "trend_following_takers": 3065,
+    "window_trade_price_range": [
+     23051,
+     28443
+    ],
+    "window_trade_price_range_pct": 53.92,
+    "down_segments": 4,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "FAIL",
+    "down_segments": 4,
+    "segments": 19,
+    "down_segment_ratio": "FAIL",
+    "passes_screening": "FAIL"
+   },
+   "seeds": {
+    "7": {
+     "count": 2,
+     "sensitivity_x1000": 300,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.038707,
+       "mean_reversion": 0.325543,
+       "sentiment_noise": 0.485468,
+       "trend_following": 0.140732,
+       "value_investor": 0.00955
+      },
+      "trend_following_takers": 3065,
+      "window_trade_price_range": [
+       23051,
+       28443
+      ],
+      "window_trade_price_range_pct": 53.92,
+      "down_segments": 4,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "FAIL",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_501_all_quality",
+      "sc_502_min_stylized",
+      "quality.trades_per_minute",
+      "quality.two_sided_book_uptime",
+      "quality.median_book_levels_per_side",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 16.98834133437837,
+      "two_sided_book_uptime": 0.12047012732615084,
+      "median_book_levels_per_side": 0.0,
+      "median_effective_spread_bp": 1.9069049026525047,
+      "fill_to_order_ratio": 0.0023206513883758653,
+      "wall_seconds_per_logical_second": 0.10635
+     },
+     "stylized_facts": {
+      "fat_tails": "PASS",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "NOT_APPLICABLE",
+      "volume_volatility_correlation": "PASS",
+      "order_flow_long_memory": "NOT_APPLICABLE"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-9d8207c20e43d12a5636f9316d11e67c",
+     "segment_prices": [
+      10008,
+      10014,
+      10040,
+      10025,
+      10037,
+      10883,
+      10849,
+      10781,
+      10733,
+      11994,
+      14861,
+      21060,
+      28327,
+      28443,
+      28443,
+      28443,
+      28443,
+      28443,
+      28443
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 843,
+      "mean_reversion": 7090,
+      "sentiment_noise": 10573,
+      "trend_following": 3065,
+      "value_investor": 208
+     }
+    }
+   },
+   "qualifies": false
+  },
+  {
+   "count": 2,
+   "sensitivity_x1000": 500,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.038764,
+     "mean_reversion": 0.32623,
+     "sentiment_noise": 0.484775,
+     "trend_following": 0.140908,
+     "value_investor": 0.009323
+    },
+    "trend_following_takers": 3068,
+    "window_trade_price_range": [
+     23044,
+     28266
+    ],
+    "window_trade_price_range_pct": 52.22,
+    "down_segments": 4,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "FAIL",
+    "down_segments": 4,
+    "segments": 19,
+    "down_segment_ratio": "FAIL",
+    "passes_screening": "FAIL"
+   },
+   "seeds": {
+    "7": {
+     "count": 2,
+     "sensitivity_x1000": 500,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.038764,
+       "mean_reversion": 0.32623,
+       "sentiment_noise": 0.484775,
+       "trend_following": 0.140908,
+       "value_investor": 0.009323
+      },
+      "trend_following_takers": 3068,
+      "window_trade_price_range": [
+       23044,
+       28266
+      ],
+      "window_trade_price_range_pct": 52.22,
+      "down_segments": 4,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "FAIL",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_501_all_quality",
+      "sc_502_min_stylized",
+      "quality.trades_per_minute",
+      "quality.two_sided_book_uptime",
+      "quality.median_book_levels_per_side",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 16.929558146370137,
+      "two_sided_book_uptime": 0.12047012732615084,
+      "median_book_levels_per_side": 0.0,
+      "median_effective_spread_bp": 1.9169206586539382,
+      "fill_to_order_ratio": 0.0023126307379138945,
+      "wall_seconds_per_logical_second": 0.111854
+     },
+     "stylized_facts": {
+      "fat_tails": "PASS",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "NOT_APPLICABLE",
+      "volume_volatility_correlation": "PASS",
+      "order_flow_long_memory": "NOT_APPLICABLE"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-3420ddd17fec8d78c70e2bfa4698dcc0",
+     "segment_prices": [
+      10006,
+      10011,
+      10032,
+      10036,
+      10022,
+      10864,
+      10830,
+      10762,
+      10714,
+      12000,
+      14876,
+      21053,
+      28150,
+      28266,
+      28266,
+      28266,
+      28266,
+      28266,
+      28266
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 844,
+      "mean_reversion": 7103,
+      "sentiment_noise": 10555,
+      "trend_following": 3068,
+      "value_investor": 203
+     }
+    }
+   },
+   "qualifies": false
+  },
+  {
+   "count": 2,
+   "sensitivity_x1000": 700,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.120238,
+     "mean_reversion": 0.000301,
+     "sentiment_noise": 0.848529,
+     "trend_following": 0.000241,
+     "value_investor": 0.030691
+    },
+    "trend_following_takers": 4,
+    "window_trade_price_range": [
+     10027,
+     10099
+    ],
+    "window_trade_price_range_pct": 0.72,
+    "down_segments": 7,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "PASS",
+    "down_segments": 7,
+    "segments": 19,
+    "down_segment_ratio": "PASS",
+    "passes_screening": "PASS"
+   },
+   "seeds": {
+    "7": {
+     "count": 2,
+     "sensitivity_x1000": 700,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.120238,
+       "mean_reversion": 0.000301,
+       "sentiment_noise": 0.848529,
+       "trend_following": 0.000241,
+       "value_investor": 0.030691
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       10027,
+       10099
+      ],
+      "window_trade_price_range_pct": 0.72,
+      "down_segments": 7,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.fat_tails",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 172.562469377756,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 2.9887920298879203,
+      "fill_to_order_ratio": 0.022785674914019984,
+      "wall_seconds_per_logical_second": 0.08467
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-48bed539b73eb81cdb8f03cb9a02d4f6",
+     "segment_prices": [
+      10023,
+      10010,
+      10029,
+      10009,
+      10016,
+      10042,
+      10031,
+      10040,
+      10049,
+      10035,
+      10048,
+      10054,
+      10061,
+      10055,
+      10055,
+      10062,
+      10046,
+      10068,
+      10064
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 1998,
+      "mean_reversion": 5,
+      "sentiment_noise": 14100,
+      "trend_following": 4,
+      "value_investor": 510
+     }
+    },
+    "8": {
+     "count": 2,
+     "sensitivity_x1000": 700,
+     "seed": 8,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.244276,
+       "mean_reversion": 0.000245,
+       "sentiment_noise": 0.733268,
+       "trend_following": 0.000196,
+       "value_investor": 0.022015
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       10024,
+       10058
+      ],
+      "window_trade_price_range_pct": 0.34,
+      "down_segments": 5,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.fat_tails",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 213.90767421346663,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 0.9968598913422718,
+      "fill_to_order_ratio": 0.0282535244087149,
+      "wall_seconds_per_logical_second": 0.086408
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-17e01eb959d90212ab87c967e0ce203e",
+     "segment_prices": [
+      9999,
+      10003,
+      10017,
+      10006,
+      10017,
+      10020,
+      10020,
+      10030,
+      10031,
+      10031,
+      10032,
+      10033,
+      10039,
+      10035,
+      10042,
+      10047,
+      10043,
+      10042,
+      10048
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 4982,
+      "mean_reversion": 5,
+      "sentiment_noise": 14955,
+      "trend_following": 4,
+      "value_investor": 449
+     }
+    },
+    "9": {
+     "count": 2,
+     "sensitivity_x1000": 700,
+     "seed": 9,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.06433,
+       "mean_reversion": 0.000314,
+       "sentiment_noise": 0.903443,
+       "trend_following": 0.000251,
+       "value_investor": 0.031662
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       9940,
+       9969
+      ],
+      "window_trade_price_range_pct": 0.29,
+      "down_segments": 14,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 166.23307905992328,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 1.0050756319413037,
+      "fill_to_order_ratio": 0.02195289541415467,
+      "wall_seconds_per_logical_second": 0.076182
+     },
+     "stylized_facts": {
+      "fat_tails": "PASS",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-2d286c325f88aa517448a4b053194161",
+     "segment_prices": [
+      9999,
+      9991,
+      9989,
+      9985,
+      9983,
+      9981,
+      9981,
+      9968,
+      9976,
+      9969,
+      9962,
+      9966,
+      9959,
+      9965,
+      9958,
+      9955,
+      9952,
+      9957,
+      9955
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 1024,
+      "mean_reversion": 5,
+      "sentiment_noise": 14381,
+      "trend_following": 4,
+      "value_investor": 504
+     }
+    }
+   },
+   "qualifies": false
+  },
+  {
+   "count": 6,
+   "sensitivity_x1000": 150,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.05911,
+     "mean_reversion": 0.199795,
+     "sentiment_noise": 0.467533,
+     "trend_following": 0.231286,
+     "value_investor": 0.042276
+    },
+    "trend_following_takers": 7227,
+    "window_trade_price_range": [
+     10033,
+     12804
+    ],
+    "window_trade_price_range_pct": 27.71,
+    "down_segments": 6,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "PASS",
+    "down_segments": 6,
+    "segments": 19,
+    "down_segment_ratio": "PASS",
+    "passes_screening": "PASS"
+   },
+   "seeds": {
+    "7": {
+     "count": 6,
+     "sensitivity_x1000": 150,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.05911,
+       "mean_reversion": 0.199795,
+       "sentiment_noise": 0.467533,
+       "trend_following": 0.231286,
+       "value_investor": 0.042276
+      },
+      "trend_following_takers": 7227,
+      "window_trade_price_range": [
+       10033,
+       12804
+      ],
+      "window_trade_price_range_pct": 27.71,
+      "down_segments": 6,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 567.8980891719746,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 3.4549773847073078,
+      "fill_to_order_ratio": 0.06613171570003491,
+      "wall_seconds_per_logical_second": 0.112191
+     },
+     "stylized_facts": {
+      "fat_tails": "PASS",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-e7c9bdeeb558c5b7ed849d73e0e33704",
+     "segment_prices": [
+      10006,
+      10014,
+      10032,
+      10040,
+      10043,
+      10052,
+      10040,
+      10063,
+      10049,
+      10059,
+      10061,
+      10081,
+      10570,
+      10480,
+      11750,
+      11480,
+      12297,
+      11959,
+      11620
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 1847,
+      "mean_reversion": 6243,
+      "sentiment_noise": 14609,
+      "trend_following": 7227,
+      "value_investor": 1321
+     }
+    },
+    "8": {
+     "count": 6,
+     "sensitivity_x1000": 150,
+     "seed": 8,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.257333,
+       "mean_reversion": 0.000228,
+       "sentiment_noise": 0.678801,
+       "trend_following": 0.000182,
+       "value_investor": 0.063455
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       10045,
+       10078
+      ],
+      "window_trade_price_range_pct": 0.33,
+      "down_segments": 4,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.fat_tails",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 227.21903931072677,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 0.9948763866089639,
+      "fill_to_order_ratio": 0.02911640911437432,
+      "wall_seconds_per_logical_second": 0.089026
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-573b7b5d3cf08e974cd4b7fb1fe231cd",
+     "segment_prices": [
+      10012,
+      10015,
+      10020,
+      10015,
+      10022,
+      10035,
+      10038,
+      10036,
+      10037,
+      10049,
+      10047,
+      10050,
+      10058,
+      10062,
+      10058,
+      10063,
+      10064,
+      10067,
+      10076
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 5641,
+      "mean_reversion": 5,
+      "sentiment_noise": 14880,
+      "trend_following": 4,
+      "value_investor": 1391
+     }
+    },
+    "9": {
+     "count": 6,
+     "sensitivity_x1000": 150,
+     "seed": 9,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.030964,
+       "mean_reversion": 0.019441,
+       "sentiment_noise": 0.787081,
+       "trend_following": 0.111798,
+       "value_investor": 0.050716
+      },
+      "trend_following_takers": 2513,
+      "window_trade_price_range": [
+       9376,
+       9945
+      ],
+      "window_trade_price_range_pct": 5.69,
+      "down_segments": 12,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "PASS",
+     "failed": [
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 320.2120830495269,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 1.0661549123087586,
+      "fill_to_order_ratio": 0.03772375859011306,
+      "wall_seconds_per_logical_second": 0.095327
+     },
+     "stylized_facts": {
+      "fat_tails": "PASS",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "PASS",
+      "volume_volatility_correlation": "PASS",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-d6f180c036134ab31631b2b843aa717e",
+     "segment_prices": [
+      9996,
+      9986,
+      9991,
+      9978,
+      9979,
+      9975,
+      9974,
+      9959,
+      9964,
+      9958,
+      9955,
+      9945,
+      9905,
+      9826,
+      9380,
+      9380,
+      9380,
+      9380,
+      9380
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 696,
+      "mean_reversion": 437,
+      "sentiment_noise": 17692,
+      "trend_following": 2513,
+      "value_investor": 1140
+     }
+    }
+   },
+   "qualifies": false
+  },
+  {
+   "count": 6,
+   "sensitivity_x1000": 200,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.07295,
+     "mean_reversion": 0.180469,
+     "sentiment_noise": 0.484136,
+     "trend_following": 0.212397,
+     "value_investor": 0.050048
+    },
+    "trend_following_takers": 6353,
+    "window_trade_price_range": [
+     10041,
+     10268
+    ],
+    "window_trade_price_range_pct": 2.27,
+    "down_segments": 6,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "PASS",
+    "down_segments": 6,
+    "segments": 19,
+    "down_segment_ratio": "PASS",
+    "passes_screening": "PASS"
+   },
+   "seeds": {
+    "7": {
+     "count": 6,
+     "sensitivity_x1000": 200,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.07295,
+       "mean_reversion": 0.180469,
+       "sentiment_noise": 0.484136,
+       "trend_following": 0.212397,
+       "value_investor": 0.050048
+      },
+      "trend_following_takers": 6353,
+      "window_trade_price_range": [
+       10041,
+       10268
+      ],
+      "window_trade_price_range_pct": 2.27,
+      "down_segments": 6,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.fat_tails",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 537.0298660366353,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 3.898635477582846,
+      "fill_to_order_ratio": 0.06480715789025372,
+      "wall_seconds_per_logical_second": 0.096789
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-55edbb7cd90a22873c6e7804a68d1ecd",
+     "segment_prices": [
+      10005,
+      10009,
+      10028,
+      10035,
+      10034,
+      10025,
+      10031,
+      10030,
+      10051,
+      10041,
+      10050,
+      10067,
+      10062,
+      10054,
+      10073,
+      10095,
+      10140,
+      10215,
+      10251
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 2182,
+      "mean_reversion": 5398,
+      "sentiment_noise": 14481,
+      "trend_following": 6353,
+      "value_investor": 1497
+     }
+    },
+    "8": {
+     "count": 6,
+     "sensitivity_x1000": 200,
+     "seed": 8,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.258936,
+       "mean_reversion": 0.00023,
+       "sentiment_noise": 0.6812,
+       "trend_following": 0.000184,
+       "value_investor": 0.059451
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       10033,
+       10060
+      ],
+      "window_trade_price_range_pct": 0.27,
+      "down_segments": 6,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.fat_tails",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 226.2126408623224,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 0.9961647656522389,
+      "fill_to_order_ratio": 0.028980976879244048,
+      "wall_seconds_per_logical_second": 0.093358
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-22f9b754fe8d97786ad3d8d1fe242eef",
+     "segment_prices": [
+      10010,
+      10005,
+      10019,
+      10021,
+      10017,
+      10017,
+      10021,
+      10028,
+      10027,
+      10038,
+      10037,
+      10042,
+      10037,
+      10048,
+      10043,
+      10048,
+      10048,
+      10054,
+      10058
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 5636,
+      "mean_reversion": 5,
+      "sentiment_noise": 14827,
+      "trend_following": 4,
+      "value_investor": 1294
+     }
+    },
+    "9": {
+     "count": 6,
+     "sensitivity_x1000": 200,
+     "seed": 9,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.054672,
+       "mean_reversion": 0.000287,
+       "sentiment_noise": 0.868546,
+       "trend_following": 0.00023,
+       "value_investor": 0.076265
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       9939,
+       9965
+      ],
+      "window_trade_price_range_pct": 0.26,
+      "down_segments": 13,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 179.31690199518724,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 1.0052777079668258,
+      "fill_to_order_ratio": 0.022984173410273902,
+      "wall_seconds_per_logical_second": 0.087124
+     },
+     "stylized_facts": {
+      "fat_tails": "PASS",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-8f753ff330b88b612f6fd3a49eb6aa13",
+     "segment_prices": [
+      9998,
+      9989,
+      9994,
+      9983,
+      9984,
+      9985,
+      9981,
+      9967,
+      9973,
+      9968,
+      9966,
+      9960,
+      9956,
+      9952,
+      9949,
+      9949,
+      9952,
+      9951,
+      9949
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 952,
+      "mean_reversion": 5,
+      "sentiment_noise": 15124,
+      "trend_following": 4,
+      "value_investor": 1328
+     }
+    }
+   },
+   "qualifies": false
+  },
+  {
+   "count": 6,
+   "sensitivity_x1000": 300,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.134129,
+     "mean_reversion": 0.000282,
+     "sentiment_noise": 0.788276,
+     "trend_following": 0.000225,
+     "value_investor": 0.077088
+    },
+    "trend_following_takers": 4,
+    "window_trade_price_range": [
+     10025,
+     10066
+    ],
+    "window_trade_price_range_pct": 0.41,
+    "down_segments": 7,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "PASS",
+    "down_segments": 7,
+    "segments": 19,
+    "down_segment_ratio": "PASS",
+    "passes_screening": "PASS"
+   },
+   "seeds": {
+    "7": {
+     "count": 6,
+     "sensitivity_x1000": 300,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.134129,
+       "mean_reversion": 0.000282,
+       "sentiment_noise": 0.788276,
+       "trend_following": 0.000225,
+       "value_investor": 0.077088
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       10025,
+       10066
+      ],
+      "window_trade_price_range_pct": 0.41,
+      "down_segments": 7,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.fat_tails",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 181.6880697970787,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 2.9890898221491553,
+      "fill_to_order_ratio": 0.023255113640641114,
+      "wall_seconds_per_logical_second": 0.084545
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-7efb2a5e6ec763783697c0b0e9b19006",
+     "segment_prices": [
+      10004,
+      10009,
+      10024,
+      10030,
+      10033,
+      10015,
+      10023,
+      10020,
+      10035,
+      10028,
+      10036,
+      10054,
+      10056,
+      10045,
+      10032,
+      10048,
+      10050,
+      10045,
+      10043
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 2382,
+      "mean_reversion": 5,
+      "sentiment_noise": 13999,
+      "trend_following": 4,
+      "value_investor": 1369
+     }
+    },
+    "8": {
+     "count": 6,
+     "sensitivity_x1000": 300,
+     "seed": 8,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.261509,
+       "mean_reversion": 0.000232,
+       "sentiment_noise": 0.681548,
+       "trend_following": 0.000186,
+       "value_investor": 0.056525
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       10022,
+       10043
+      ],
+      "window_trade_price_range_pct": 0.21,
+      "down_segments": 7,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.fat_tails",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 223.3121499723163,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 0.9974564859607999,
+      "fill_to_order_ratio": 0.028607260278615734,
+      "wall_seconds_per_logical_second": 0.090218
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-f41ebc3bac05844fec872d12642bad08",
+     "segment_prices": [
+      9999,
+      10004,
+      10008,
+      10017,
+      10012,
+      10011,
+      10014,
+      10018,
+      10027,
+      10029,
+      10027,
+      10025,
+      10034,
+      10030,
+      10031,
+      10034,
+      10041,
+      10038,
+      10041
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 5635,
+      "mean_reversion": 5,
+      "sentiment_noise": 14686,
+      "trend_following": 4,
+      "value_investor": 1218
+     }
+    },
+    "9": {
+     "count": 6,
+     "sensitivity_x1000": 300,
+     "seed": 9,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.055248,
+       "mean_reversion": 0.000291,
+       "sentiment_noise": 0.872911,
+       "trend_following": 0.000233,
+       "value_investor": 0.071316
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       9956,
+       9977
+      ],
+      "window_trade_price_range_pct": 0.21,
+      "down_segments": 14,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 176.1783439490446,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 1.003562647398264,
+      "fill_to_order_ratio": 0.022578457597106583,
+      "wall_seconds_per_logical_second": 0.082429
+     },
+     "stylized_facts": {
+      "fat_tails": "PASS",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-b03f34d881ce21aae33595e3de187318",
+     "segment_prices": [
+      9996,
+      9991,
+      9993,
+      9990,
+      9988,
+      9990,
+      9977,
+      9975,
+      9981,
+      9979,
+      9970,
+      9968,
+      9975,
+      9974,
+      9963,
+      9971,
+      9969,
+      9967,
+      9966
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 949,
+      "mean_reversion": 5,
+      "sentiment_noise": 14994,
+      "trend_following": 4,
+      "value_investor": 1225
+     }
+    }
+   },
+   "qualifies": false
+  },
+  {
+   "count": 6,
+   "sensitivity_x1000": 500,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.134763,
+     "mean_reversion": 0.000283,
+     "sentiment_noise": 0.790072,
+     "trend_following": 0.000226,
+     "value_investor": 0.074655
+    },
+    "trend_following_takers": 4,
+    "window_trade_price_range": [
+     10013,
+     10050
+    ],
+    "window_trade_price_range_pct": 0.37,
+    "down_segments": 9,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "PASS",
+    "down_segments": 9,
+    "segments": 19,
+    "down_segment_ratio": "PASS",
+    "passes_screening": "PASS"
+   },
+   "seeds": {
+    "7": {
+     "count": 6,
+     "sensitivity_x1000": 500,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.134763,
+       "mean_reversion": 0.000283,
+       "sentiment_noise": 0.790072,
+       "trend_following": 0.000226,
+       "value_investor": 0.074655
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       10013,
+       10050
+      ],
+      "window_trade_price_range_pct": 0.37,
+      "down_segments": 9,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.fat_tails",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 178.02853907578884,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 2.9938625817075,
+      "fill_to_order_ratio": 0.022786392160848663,
+      "wall_seconds_per_logical_second": 0.084559
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-c92efc826d0786b4c20909ccbfbc3607",
+     "segment_prices": [
+      10004,
+      10011,
+      10028,
+      10026,
+      10023,
+      10033,
+      10018,
+      10012,
+      10030,
+      10018,
+      10022,
+      10042,
+      10032,
+      10022,
+      10040,
+      10021,
+      10023,
+      10025,
+      10024
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 2381,
+      "mean_reversion": 5,
+      "sentiment_noise": 13959,
+      "trend_following": 4,
+      "value_investor": 1319
+     }
+    },
+    "8": {
+     "count": 6,
+     "sensitivity_x1000": 500,
+     "seed": 8,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.263934,
+       "mean_reversion": 0.000235,
+       "sentiment_noise": 0.680612,
+       "trend_following": 0.000188,
+       "value_investor": 0.055031
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       10011,
+       10030
+      ],
+      "window_trade_price_range_pct": 0.19,
+      "down_segments": 6,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.fat_tails",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 221.4554917884151,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 0.998552099455789,
+      "fill_to_order_ratio": 0.02836844702434541,
+      "wall_seconds_per_logical_second": 0.087022
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-d0fbba8ef5271e316edcf3601ba38b37",
+     "segment_prices": [
+      9998,
+      10001,
+      10003,
+      10005,
+      10008,
+      10006,
+      10009,
+      10011,
+      10012,
+      10021,
+      10022,
+      10016,
+      10024,
+      10019,
+      10019,
+      10027,
+      10019,
+      10021,
+      10020
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 5621,
+      "mean_reversion": 5,
+      "sentiment_noise": 14495,
+      "trend_following": 4,
+      "value_investor": 1172
+     }
+    },
+    "9": {
+     "count": 6,
+     "sensitivity_x1000": 500,
+     "seed": 9,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.056086,
+       "mean_reversion": 0.000295,
+       "sentiment_noise": 0.875044,
+       "trend_following": 0.000236,
+       "value_investor": 0.06834
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       9970,
+       9988
+      ],
+      "window_trade_price_range_pct": 0.18,
+      "down_segments": 12,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 174.53978862370218,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 1.0022550739163119,
+      "fill_to_order_ratio": 0.022363856211366127,
+      "wall_seconds_per_logical_second": 0.081927
+     },
+     "stylized_facts": {
+      "fat_tails": "PASS",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-07c9a6aa529a1be836f12da15ca95f27",
+     "segment_prices": [
+      9999,
+      9993,
+      9998,
+      9993,
+      9992,
+      9985,
+      9993,
+      9982,
+      9989,
+      9987,
+      9977,
+      9979,
+      9986,
+      9977,
+      9975,
+      9982,
+      9981,
+      9981,
+      9980
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 952,
+      "mean_reversion": 5,
+      "sentiment_noise": 14853,
+      "trend_following": 4,
+      "value_investor": 1160
+     }
+    }
+   },
+   "qualifies": false
+  },
+  {
+   "count": 6,
+   "sensitivity_x1000": 700,
+   "anchor_diagnostics": {
+    "taker_share_by_family": {
+     "market_maker_v2": 0.136322,
+     "mean_reversion": 0.000286,
+     "sentiment_noise": 0.790919,
+     "trend_following": 0.000228,
+     "value_investor": 0.072244
+    },
+    "trend_following_takers": 4,
+    "window_trade_price_range": [
+     10007,
+     10043
+    ],
+    "window_trade_price_range_pct": 0.36,
+    "down_segments": 8,
+    "segments": 19,
+    "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+   },
+   "screening": {
+    "price_multiple_below_max": "PASS",
+    "down_segments": 8,
+    "segments": 19,
+    "down_segment_ratio": "PASS",
+    "passes_screening": "PASS"
+   },
+   "seeds": {
+    "7": {
+     "count": 6,
+     "sensitivity_x1000": 700,
+     "seed": 7,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.136322,
+       "mean_reversion": 0.000286,
+       "sentiment_noise": 0.790919,
+       "trend_following": 0.000228,
+       "value_investor": 0.072244
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       10007,
+       10043
+      ],
+      "window_trade_price_range_pct": 0.36,
+      "down_segments": 8,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.fat_tails",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 178.58823529411765,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 2.9956562983673676,
+      "fill_to_order_ratio": 0.022858519617217677,
+      "wall_seconds_per_logical_second": 0.080523
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-b26fc53cd40012bdfb4d4d3e8cb39d26",
+     "segment_prices": [
+      10003,
+      10004,
+      10020,
+      10019,
+      10028,
+      10032,
+      10013,
+      10008,
+      10021,
+      10012,
+      10019,
+      10037,
+      10038,
+      10025,
+      10033,
+      10019,
+      10016,
+      10015,
+      10017
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 2387,
+      "mean_reversion": 5,
+      "sentiment_noise": 13849,
+      "trend_following": 4,
+      "value_investor": 1265
+     }
+    },
+    "8": {
+     "count": 6,
+     "sensitivity_x1000": 700,
+     "seed": 8,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.267038,
+       "mean_reversion": 0.000236,
+       "sentiment_noise": 0.68167,
+       "trend_following": 0.000189,
+       "value_investor": 0.050867
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       10008,
+       10024
+      ],
+      "window_trade_price_range_pct": 0.16,
+      "down_segments": 7,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.fat_tails",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 220.99582906519106,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 0.9989511013435892,
+      "fill_to_order_ratio": 0.028307750258969772,
+      "wall_seconds_per_logical_second": 0.091734
+     },
+     "stylized_facts": {
+      "fat_tails": "FAIL",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-d24b4c43943794b5beca362148bc7fce",
+     "segment_prices": [
+      10009,
+      10008,
+      10002,
+      10002,
+      10006,
+      10006,
+      10008,
+      10006,
+      10010,
+      10018,
+      10018,
+      10012,
+      10020,
+      10015,
+      10020,
+      10016,
+      10013,
+      10020,
+      10022
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 5654,
+      "mean_reversion": 5,
+      "sentiment_noise": 14433,
+      "trend_following": 4,
+      "value_investor": 1077
+     }
+    },
+    "9": {
+     "count": 6,
+     "sensitivity_x1000": 700,
+     "seed": 9,
+     "anchor_diagnostics": {
+      "taker_share_by_family": {
+       "market_maker_v2": 0.05594,
+       "mean_reversion": 0.000296,
+       "sentiment_noise": 0.879003,
+       "trend_following": 0.000237,
+       "value_investor": 0.064524
+      },
+      "trend_following_takers": 4,
+      "window_trade_price_range": [
+       9976,
+       9992
+      ],
+      "window_trade_price_range_pct": 0.16,
+      "down_segments": 8,
+      "segments": 19,
+      "note": "诊断字段，只呈现不判定（spec AC-705，ADR-016 裁决 B）"
+     },
+     "sc_501": "PASS",
+     "sc_502": "FAIL",
+     "failed": [
+      "sc_502_min_stylized",
+      "stylized_facts.return_autocorrelation",
+      "stylized_facts.volatility_clustering",
+      "stylized_facts.volume_volatility_correlation",
+      "stylized_facts.order_flow_long_memory"
+     ],
+     "quality": {
+      "trades_per_minute": 175.08206359316057,
+      "two_sided_book_uptime": 1.0,
+      "median_book_levels_per_side": 5.0,
+      "median_effective_spread_bp": 1.0018534288433603,
+      "fill_to_order_ratio": 0.022444642076543918,
+      "wall_seconds_per_logical_second": 0.086171
+     },
+     "stylized_facts": {
+      "fat_tails": "PASS",
+      "return_autocorrelation": "FAIL",
+      "volatility_clustering": "FAIL",
+      "volume_volatility_correlation": "FAIL",
+      "order_flow_long_memory": "FAIL"
+     },
+     "window_start_logical_ns": 3660000000000,
+     "roster_id": "roster-3bfb7864f7ef8e7a3e511b8fd34d93c2",
+     "segment_prices": [
+      10000,
+      9998,
+      10000,
+      9995,
+      9994,
+      9997,
+      9986,
+      9985,
+      9992,
+      9992,
+      9981,
+      9983,
+      9989,
+      9989,
+      9980,
+      9989,
+      9979,
+      9986,
+      9986
+     ],
+     "reference_ticks": 10000,
+     "takers_by_family": {
+      "market_maker_v2": 945,
+      "mean_reversion": 5,
+      "sentiment_noise": 14849,
+      "trend_following": 4,
+      "value_investor": 1090
+     }
+    }
+   },
+   "qualifies": false
+  }
+ ]
+}

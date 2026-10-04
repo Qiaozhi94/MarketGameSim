@@ -218,3 +218,45 @@ def test_a_resumed_scan_reuses_every_finished_run(prereg, sha, tmp_path, monkeyp
     report = SCAN.run_scan(cache_dir=tmp_path, jobs=1)
     assert report["terminal"] == QUALIFIED
     assert report["qualified_configs"] == [{"count": 6, "sensitivity_x1000": 500}]
+
+
+# --------------------------------------------------------------------------- #
+# The committed scan (2026-10-05, code f8ca7ce)
+# --------------------------------------------------------------------------- #
+
+
+@pytest.fixture(scope="module")
+def scan():
+    return load_scan_report()
+
+
+def test_the_scan_is_bound_to_the_pinned_preregistration(scan):
+    assert scan["preregistration_sha256"] == (
+        "1c3862b78aed57379a2981859e14a70b1d6cf1ddbb1f310b3cc3ce37fc0c7ac5"
+    )
+    assert scan["gate"] == "H2-E5"
+    assert scan["evidence_class"] == "engineering-demonstration"
+
+
+def test_the_whole_grid_was_screened(scan, prereg):
+    assert scan["complete"] is True
+    assert sorted((c["count"], c["sensitivity_x1000"]) for c in scan["configs"]) == sorted(
+        all_points(prereg)
+    )
+
+
+def test_every_survivor_was_measured_at_every_seed_and_nothing_else(scan):
+    for config in scan["configs"]:
+        seeds = {int(s) for s in config["seeds"]}
+        if config["screening"]["passes_screening"] == PASS:
+            assert seeds == {7, 8, 9}
+        else:
+            assert seeds == {7}
+
+
+def test_the_terminal_is_unqualified(scan):
+    """The registered grid holds no configuration that passes SC-501 and SC-502 at
+    seeds 7, 8 and 9 (0.4.3 实验报告 §5).  Recorded as found, not adjusted."""
+    assert scan["terminal"] == UNQUALIFIED
+    assert scan["qualified_configs"] == []
+    assert not any(c["qualifies"] for c in scan["configs"])
