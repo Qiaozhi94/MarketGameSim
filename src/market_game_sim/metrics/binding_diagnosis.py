@@ -469,8 +469,10 @@ def family_position_ceiling_perturbation(
 ) -> Perturbation:
     """Scale the family-level position ceiling (``max_position_units``).
 
-    ``factor=1000`` reproduces the "missing MULT" correction that was patched
-    in twice during 0.4.1 and came out bit-identical both times.
+    ``factor=1000`` undoes the 0.4.3 T1100 unit fix: the ceiling divides by
+    ``MULT`` now, so scaling it back up by 1000 restores the pre-fix ~2000x
+    request.  (During 0.4.1, before the fix, the same patch was the fix trial
+    and came out bit-identical over a short horizon.)
 
     ``family_id=None`` patches every family at once, which is how that
     correction was originally tried -- and why it is not the default here.  On

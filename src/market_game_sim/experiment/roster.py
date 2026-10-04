@@ -40,6 +40,7 @@ from market_game_sim.agent.anchor import (
 from market_game_sim.agent.goal import get_goal_model
 from market_game_sim.agent.scheduler import AgentSpec
 from market_game_sim.agent.strategy_layer import bridge as _strategy_bridge  # noqa: F401
+from market_game_sim.agent.strategy_layer.families._common import DEFAULT_MULT as FAMILY_MULT
 from market_game_sim.agent.strategy_layer.families.trend_following import (
     TIME_SCALES as TREND_TIME_SCALES,
 )
@@ -387,6 +388,9 @@ def _build_mm_v2(agent_id: str, family: FamilyEntry, ordinal: int) -> AgentSpec:
     )
 
 
+#: Families whose position ceiling goes through ``families._common.max_position_units``.
+_MULT_SIZED_FAMILIES = frozenset({"trend_following", "mean_reversion", "sentiment_noise"})
+
 _FAMILIES: dict[
     str,
     tuple[Callable[[Mapping[str, Any], str], None], Callable[[str, FamilyEntry, int], AgentSpec]],
@@ -471,6 +475,15 @@ def parse_roster(payload: Mapping[str, Any]) -> StrategyRoster:
                 latency_ns=_int(raw["latency_ns"], f"{where}.latency_ns", minimum=1),
                 params=_freeze(dict(raw["params"])),
             )
+        )
+    # 0.4.3 T1100：族层按 FAMILY_MULT 折算名义价值，引擎按 engine.mult 结算。两者不一致时
+    # 族层算出的仓位上限与账本口径差一个倍数，正是 T1002 那类单位错误，故装配期拒绝。
+    sizing_families = sorted(f.family_id for f in families if f.family_id in _MULT_SIZED_FAMILIES)
+    if sizing_families and engine["mult"] != FAMILY_MULT:
+        raise RosterError(
+            "MULT_MISMATCH",
+            f"engine.mult {engine['mult']} != family sizing MULT {FAMILY_MULT} "
+            f"(families {sizing_families})",
         )
     return StrategyRoster(
         seed=seed,

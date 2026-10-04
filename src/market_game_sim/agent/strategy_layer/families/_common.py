@@ -35,8 +35,19 @@ from market_game_sim.agent.strategy_layer.protocol import (
     TieredInformationSet,
 )
 
-#: Contract multiplier used by the existing goal layer (账户合同 §2.2).
+#: Contract multiplier used by the existing goal layer (账户合同 §2.2).  The
+#: families size against this value, so an assembly whose engine uses another
+#: ``mult`` is refused at roster parse time (0.4.3 T1100) rather than letting the
+#: two disagree silently.
 DEFAULT_MULT = 1000
+
+#: Magnitude sentinel (0.4.3 T1104 / NFR-701).  Real exchanges top out at
+#: roughly 100x leverage; a ceiling implying more than that is a unit error, not
+#: an aggressive parameter -- the sizing contract itself only reaches 20x
+#: (``risk_appetite_x1000`` <= 20000, ``k_x1000`` <= 1000).  The bound is an
+#: external fact, not a tuning knob: raising it needs evidence that real venues
+#: allow more, not a market that would pass a gate with it.
+MAX_PLAUSIBLE_LEVERAGE = 100
 
 # Reason codes carried by ``no_action`` decisions.  Stable and safe to assert
 # on; a new reason is a new constant, never a reworded string.
@@ -90,6 +101,25 @@ def mark_ticks(info: TieredInformationSet) -> int | None:
     return valuation_mark_ticks(info.book_top)
 
 
+def assert_plausible_leverage(position_units: int, mark: int, mult: int, equity: int) -> None:
+    """Fail closed when a position ceiling implies more than 100x leverage.
+
+    ``|position| * mark * MULT`` is the notional (账户合同 §2.2); compared against
+    equity it is the leverage the ceiling asks for.  Past
+    :data:`MAX_PLAUSIBLE_LEVERAGE` the arithmetic is wrong, so this raises
+    instead of handing the number to the ledger -- which would quietly clip it
+    and hide the bug, as it hid the missing ``MULT`` for two days (0.4.1 报告 §19.5).
+    """
+    if equity <= 0:
+        return
+    if abs(position_units) * mark * mult > MAX_PLAUSIBLE_LEVERAGE * equity:
+        raise StrategyLayerError(
+            "IMPLAUSIBLE_LEVERAGE",
+            f"position ceiling {position_units} at mark {mark} x MULT {mult} implies more "
+            f"than {MAX_PLAUSIBLE_LEVERAGE}x leverage on equity {equity}: a unit error",
+        )
+
+
 def max_position_units(
     info: TieredInformationSet,
     prefs: AgentPreferences,
@@ -100,16 +130,22 @@ def max_position_units(
 ) -> int:
     """Risk-budget position ceiling, scaled by the family's ``k_x1000``.
 
-    Mirrors ``risk_budget_linear_v1``: equity -> max notional -> max position,
-    then the family's own fraction.  Returns 0 when the budget is exhausted;
-    the caller turns that into ``no_action`` rather than a zero-size order.
+    equity -> max notional -> max position, then the family's own fraction.
+    Notional is ``position * mark * MULT``, so the position divides by both
+    (0.4.3 T1100).  ``risk_budget_linear_v1`` in ``agent/goal.py``, which this
+    was copied from, still divides by ``mark`` alone; that copy is frozen v0.1
+    contract and is registered as a known defect (0.4.3 T1101), not fixed here.
+    Returns 0 when the budget is exhausted; the caller turns that into
+    ``no_action`` rather than a zero-size order.
     """
     eq = equity_units(info.own_account, mark, mult)
     max_notional = eq * prefs.risk_appetite_x1000 // 1000
     if max_notional <= 0:
         return 0
-    max_position = max_notional // mark
-    return trunc_toward_zero(k_x1000 * max_position, 1000)
+    max_position = max_notional // (mark * mult)
+    ceiling = trunc_toward_zero(k_x1000 * max_position, 1000)
+    assert_plausible_leverage(ceiling, mark, mult, eq)
+    return ceiling
 
 
 def mean_int(values: tuple[int, ...]) -> int:
@@ -126,12 +162,14 @@ def deviation_bp(value: int, reference: int) -> int:
 
 __all__ = [
     "DEFAULT_MULT",
+    "MAX_PLAUSIBLE_LEVERAGE",
     "REASON_INSUFFICIENT_HISTORY",
     "REASON_NO_BUDGET",
     "REASON_NO_MARK",
     "REASON_NO_SIGNAL",
     "REASON_PRICE_OUT_OF_RANGE",
     "DrawContext",
+    "assert_plausible_leverage",
     "deviation_bp",
     "draw_context",
     "mark_ticks",

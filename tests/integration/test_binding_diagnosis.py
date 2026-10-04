@@ -5,8 +5,11 @@ The known answers come from the milestone itself:
 * ``trend_following`` / ``mean_reversion`` position ceiling -- **not binding**.
   ``max_position_units`` was patched twice (missing ``MULT``, then a cash
   basis) and both runs were bit-identical to the unpatched one.
-* the ledger margin gate -- **binding**.  Every decision clips against
-  ``MARGIN_LIMIT``.
+* the ledger margin gate -- **binding** in 0.4.1, **not binding** since 0.4.3
+  T1100.  It bound because the family ceiling asked for ~2000x leverage and
+  the gate clipped every such request; once the ceiling divides by ``MULT``
+  the request stays inside the declared leverage and never reaches the gate
+  at this horizon.  The flip is the fix working, not the gate breaking.
 
 The harness tests matter as much as the two known answers.  A tool that
 silently fails to install its patch reports "not binding" for everything and
@@ -97,14 +100,26 @@ def test_position_ceiling_does_not_bind_for_the_slow_families(build, baseline, f
     assert stream.digest == baseline.digest
 
 
-def test_margin_gate_binds(build, baseline):
-    """Known BINDING: granting the full new-open target moves the stream."""
+def test_margin_gate_no_longer_binds_once_the_ceiling_has_units(build, baseline):
+    """0.4.3 T1100: the margin gate stopped binding at this horizon -- by design.
+
+    Up to 0.4.1 this asserted BINDING: the family ceiling omitted ``MULT`` and
+    asked for ~2000x leverage, so the ledger clipped every new open and
+    relaxing the gate moved the stream.  With the units fixed the request stays
+    within the declared leverage and the gate is never reached, so relaxing it
+    changes nothing.  This doubles as an integration lock on T1100: put the
+    missing ``MULT`` back and the gate binds again, and this test goes red.
+
+    "Not binding" is only meaningful because the same harness sees movement
+    elsewhere -- ``test_noise_family_ceiling_binds_although_the_slow_families_do_not``
+    runs on the same baseline and must diverge.
+    """
     perturbation = margin_gate_perturbation()
     perturbation.verify_installed()
     with perturbation.install():
         stream = drive(build(), logical_seconds=SECONDS, warmup_seconds=WARMUP)
-    assert stream.first_divergence(baseline) is not None
-    assert stream.digest != baseline.digest
+    assert stream.first_divergence(baseline) is None
+    assert stream.digest == baseline.digest
 
 
 def test_noise_family_ceiling_binds_although_the_slow_families_do_not(build, baseline):
