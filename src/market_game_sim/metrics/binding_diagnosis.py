@@ -543,6 +543,69 @@ def max_order_qty_perturbation(factor: int = 1000) -> Perturbation:
     )
 
 
+def value_sensitivity_perturbation(factor: int = 10) -> Perturbation:
+    """Scale the value family's ``sensitivity_x1000`` (0.4.3 T1107 / NFR-701).
+
+    The knob lives in each value agent's ``strategy_private`` (spec IR-701), so
+    like ``max_order_qty`` it is applied through ``adjust`` on a freshly built
+    market, and only while installed.  ``count`` has no perturbation here: adding
+    or removing agents always changes the stream, so its "binding" carries no
+    information (spec AC-702); only its direction is measured
+    (:mod:`.anchor_strength`).
+    """
+    from market_game_sim.agent.strategy_layer.families.value_investor import (
+        SENSITIVITY_KEY,
+        SENSITIVITY_MAX,
+    )
+
+    state = {"active": False}
+
+    @contextlib.contextmanager
+    def install() -> Iterator[None]:
+        state["active"] = True
+        try:
+            yield
+        finally:
+            state["active"] = False
+
+    def adjust(market: Any) -> None:
+        if not state["active"]:
+            return
+        touched = 0
+        for spec in getattr(getattr(market, "config", None), "agent_specs", ()) or ():
+            private = spec.strategy_private or {}
+            if SENSITIVITY_KEY in private:
+                scaled = min(SENSITIVITY_MAX, int(private[SENSITIVITY_KEY]) * factor)
+                spec.strategy_private = {**private, SENSITIVITY_KEY: scaled}
+                touched += 1
+        if not touched:
+            # No value agent to perturb is a harness error, not "not binding".
+            raise BindingDiagnosisError(
+                "PERTURBATION_INERT", "value_sensitivity: the market has no value agents"
+            )
+
+    return Perturbation(
+        constraint_id="value_sensitivity",
+        description=f"value_investor sensitivity_x1000 × {factor}",
+        install=install,
+        probe=lambda: state["active"],
+        adjust=adjust,
+        factor=float(factor),
+    )
+
+
+def anchored_market_factory(count: int = 6, sensitivity_x1000: int = 1000) -> MarketFactory:
+    """A fresh ``LiveMarket`` on the default roster plus a value family (0.4.3)."""
+    from market_game_sim.experiment.h2.live_market import LiveMarket
+    from market_game_sim.experiment.roster import parse_roster
+    from market_game_sim.metrics.anchor_strength import anchored_roster
+
+    def build() -> DrivableMarket:
+        return LiveMarket(roster=parse_roster(anchored_roster(count, sensitivity_x1000)))
+
+    return build
+
+
 def margin_gate_perturbation() -> Perturbation:
     """Relax the ledger margin gate: grant the full requested new-open size.
 
@@ -633,6 +696,7 @@ __all__ = [
     "DrivableMarket",
     "EventStream",
     "Perturbation",
+    "anchored_market_factory",
     "default_market_factory",
     "default_perturbations",
     "diagnose",
@@ -643,6 +707,7 @@ __all__ = [
     "main",
     "margin_gate_perturbation",
     "max_order_qty_perturbation",
+    "value_sensitivity_perturbation",
 ]
 
 
