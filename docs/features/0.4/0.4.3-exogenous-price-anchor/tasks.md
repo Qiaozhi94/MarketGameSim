@@ -6,7 +6,7 @@ version: "0.4"
 doc_kind: tasks
 gate_version: 1
 created: 2026-09-25
-updated: 2026-09-26
+updated: 2026-10-04
 ---
 
 # 0.4.3：外生价格锚 - 任务
@@ -18,10 +18,13 @@ updated: 2026-09-26
 - 行为与验收真相源：[`spec.md`](spec.md)。技术方案与边界：[`design.md`](design.md)。
 - 每项任务只描述一个可验证动作，并引用合法的 US/需求/AC ID。
 - 每个 Phase 的最后一项任务是成果门；成果门必须产出可打开页面或可消费的 artifact。
-- **G1 研究问题前置检查**：本交付服务
-  [`owner-research-question`](../../../research/owner-research-question.md) 的研究问题 #2
-  「AI 市场自身的均衡与突变」——0.4.1 已证明当前市场会单调发散并停止成交，
-  没有一个价格有界的市场，均衡与突变都无从谈起。**待 owner 批准。**
+- **G1 研究问题前置检查**（owner 2026-10-04 批准）：本交付为
+  [`owner-research-question`](../../../research/owner-research-question.md) 的研究问题
+  **#1（人类扰动）与 #3（人机相互作用）提供载体**——二者都需要一个能活过测量窗口的
+  市场，[`0.4.2`](../0.4.2-human-perturbation/spec.md) 已立项等待它。本交付**不服务
+  研究问题 #2**：#2 已在无锚条件下得到回答（0.4.1 报告 §8：单调发散到 7.1 倍后停止
+  成交，零追保零强平），且按 [`ADR-017`](../../../decisions/017-allow-constant-exogenous-price-reference.md)
+  防污染条款，装锚后的任何运行不得被引用为 #2 的证据。
 - 判据、门限与口径全部引自 0.4.1 spec §6，**任务不得就地改门限**。
 - L1 合同不可改。
 
@@ -49,17 +52,19 @@ updated: 2026-09-26
       **它不阻塞本里程碑**——0.4.3 用的是 families 那份。等有独立理由（如 v0.5 重建证据链）
       再一并处理
       — verify: 实验报告 [`§20.3`](../../../experiments/0.4.1-market-quality-baseline.md)
-- [ ] T1102 `[阻塞·待 owner 裁决]`: 采纳
+- [x] T1102: 采纳
       [`ADR-017`](../../../decisions/017-allow-constant-exogenous-price-reference.md)
-      （有限修订 ADR-011 §决策 2，2026-09-26 起草，状态 Proposed）——**允许恒定或确定性
-      外生参照，仍禁止随机价值过程**。窄修订的理由是保全研究问题 #2：恒定参照不会移动、
-      不能制造任何价格动态，故崩盘仍是市场自己的行为；随机 `v_t` 则会让任何崩盘都可归因
-      于它的路径。不得绕开：用 I3 注入路径实现等价机制等于规避一条明写的决策
+      （有限修订 ADR-011 §决策 2）——**owner 2026-10-04 收窄采纳：只允许恒定外生参照**；
+      随机价值过程、确定性时变路径、逐代理价值分散仍禁止。收窄理由：ADR 自身的论证
+      「恒定参照不会移动，因此不能制造价格动态」只覆盖恒定形态。不得绕开：用 I3 注入
+      路径实现等价机制等于规避一条明写的决策
       （[锚选型材料 §5](../../../research/exogenous-price-anchor-options.md)）
       — verify: `python tools/validate_spec_lifecycle.py`
-- [ ] T1103 (`Q-701`, `Q-702`): 冻结 `v_t` 的形态、参数与信息层归属；纯恒定形态已被
-      0.4.1 §14 实测排除（价格钉死、异质性塌陷），随机过程被 ADR-017 排除，故候选只剩
-      「确定性非随机路径」— verify: `tests/unit/metrics/`
+- [x] T1103 (`Q-701`, `Q-702`): 冻结 `v_t` 的形态与信息层归属——**owner 2026-10-04
+      裁决**：形态为恒定值（初始价），强度改由价值族响应函数承载（§14 的钉死对应强度
+      无穷大，不是形态的后果）；可见性为正交字段 `value_reference`，不进 I0—I3，人类
+      终端不显示。结论唯一拥有者：spec §8 Q-701/Q-702
+      — verify: `python tools/validate_spec_lifecycle.py`
 - [ ] T1104 `[量级哨兵]` (`NFR-701`): 在族层仓位上限处加一条**量级哨兵**——计算出的上限
       若隐含杠杆超出现实可能范围（**100 倍**，取自现实交易所的最大杠杆量级，非拍定值）
       即 fail closed，因为那说明**单位错了而不是参数大**。
@@ -74,8 +79,10 @@ updated: 2026-09-26
 
 ### Phase 1：价值过程与价值族
 
-- [ ] T1105 (`FR-701`, `AC-701`): 实现 `v_t` 求值与运行头记录；同参数同种子逐点复现；
-      对 `v_t` 自身做 stylized facts 检验并断言**波动聚集与厚尾不通过**（正反两侧）
+- [ ] T1105 (`FR-701`, `AC-701`): 实现恒定 `v_t` 进运行头与正交字段 `value_reference`
+      （升 `PROTOCOL_VERSION`）；同装配同种子逐点复现；断言 `v_t` 收益在整个窗口恒为 0
+      （正反两侧：恒定通过、任一时刻取值变化即失败）；未声明该字段的族携带它即在裁剪处
+      拒绝（正反两侧）
       — verify: `tests/unit/metrics/test_value_process.py`
 - [ ] T1106 (`FR-702`, `AC-702`): 实现价值投资者族，目标仓位随 `(price − v_t)/v_t` 的
       绝对值单调增大；走既有撮合/账本/风控路径 — verify:
@@ -101,7 +108,7 @@ updated: 2026-09-26
 
 ## 3. 验证与验收任务
 
-- [ ] T1112 (`AC-701`, `AC-702`): 运行 `v_t` 复现、价值族单调性与强度前置的正反测试
+- [ ] T1112 (`AC-701`, `AC-702`): 运行 `v_t` 恒定与复现、价值族单调性与强度前置的正反测试
       — verify: `tests/unit/metrics/test_value_process.py`
 - [ ] T1113 (`AC-703`, `AC-705`): 运行归因对照与锚过强检出的测试
       — verify: `tests/integration/test_attribution_control.py`
