@@ -1,6 +1,6 @@
 # AI 对话归档索引
 
-> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 94
+> 由 `tools/build_retrospective.py` 从会话文件自动生成 · 会话总数: 99
 
 ## 工具统计
 
@@ -8,7 +8,7 @@
 |---|---|
 
 | OpenCode | 50 |
-| Claude Code | 14 |
+| Claude Code | 19 |
 | Codex CLI | 30 |
 
 ## 会话血缘树
@@ -77,6 +77,11 @@
 - **v0.3.2 设计文档检视问题修复** (`opencode` · 2026-09-13T14:14:03Z)
 - **ac49a835-fef9-48b3-ac2a-290c5fabfcd4** (`claude` · 2026-09-13T15:26:23Z)
 - **拉取最新代码** (`opencode` · 2026-09-14T14:08:42Z)
+- **ba14ea2b-96e5-46ca-91dd-3f167ddec312** (`claude` · 2026-09-19T14:14:15Z)
+- **bd3e40f2-8eab-4723-8b9f-adac5b4ba9b3** (`claude` · 2026-09-21T13:58:30Z)
+- **c7b1b668-ab03-42c6-833a-62322fa51426** (`claude` · 2026-09-21T14:21:59Z)
+- **945d40bf-625d-4f39-9474-6fa1e1292692** (`claude` · 2026-09-22T15:13:19Z)
+- **623160e7-e69a-4598-b079-e893a234b004** (`claude` · 2026-10-04T02:44:34Z)
 
 ## 原始会话清单
 
@@ -176,3 +181,8 @@
 | 2026-09-13T14:56:03Z | Codex CLI | rollout-2026-09-13T22-00-41-01a09b11-f86e-7790-b5f3-4e45e18ea801 | openai | `codex/rollout-2026-09-13T22-00-41-01a09b11-f86e-7790-b5f3-4e45e18ea801.md` |
 | 2026-09-13T15:26:23Z | Claude Code | ac49a835-fef9-48b3-ac2a-290c5fabfcd4 | claude-opus-5 | `claude/ac49a835-fef9-48b3-ac2a-290c5fabfcd4.md` |
 | 2026-09-14T14:08:42Z | OpenCode | 拉取最新代码 | deepseek-flash | `opencode/ses_f5fc05294ffet5LIKFdU7dpJIN.md` |
+| 2026-09-19T14:14:15Z | Claude Code | ba14ea2b-96e5-46ca-91dd-3f167ddec312 | claude-opus-5 | `claude/ba14ea2b-96e5-46ca-91dd-3f167ddec312.md` |
+| 2026-09-21T13:58:30Z | Claude Code | bd3e40f2-8eab-4723-8b9f-adac5b4ba9b3 | claude-opus-5 | `claude/bd3e40f2-8eab-4723-8b9f-adac5b4ba9b3.md` |
+| 2026-09-21T14:21:59Z | Claude Code | c7b1b668-ab03-42c6-833a-62322fa51426 | claude-opus-5 | `claude/c7b1b668-ab03-42c6-833a-62322fa51426.md` |
+| 2026-09-22T15:13:19Z | Claude Code | 945d40bf-625d-4f39-9474-6fa1e1292692 | claude-opus-5 | `claude/945d40bf-625d-4f39-9474-6fa1e1292692.md` |
+| 2026-10-04T02:44:34Z | Claude Code | 623160e7-e69a-4598-b079-e893a234b004 | claude-opus-5-5 | `claude/623160e7-e69a-4598-b079-e893a234b004.md` |

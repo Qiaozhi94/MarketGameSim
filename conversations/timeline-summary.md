@@ -238,3 +238,19 @@
 - `2026-09-13T16:28:11Z` **session-end** claude/ac49a835-fef9-48b3-ac2a-290c5fabfcd4
 - `2026-09-14T14:08:42Z` **session-start** opencode/拉取最新代码
 - `2026-09-14T14:09:27Z` **session-end** opencode/拉取最新代码
+- `2026-09-19T14:14:15Z` **session-start** claude/ba14ea2b-96e5-46ca-91dd-3f167ddec312
+- `2026-09-19T17:33:19Z` **session-end** claude/ba14ea2b-96e5-46ca-91dd-3f167ddec312
+- `2026-09-21T13:58:30Z` **session-start** claude/bd3e40f2-8eab-4723-8b9f-adac5b4ba9b3
+- `2026-09-21T14:21:59Z` **session-start** claude/c7b1b668-ab03-42c6-833a-62322fa51426
+- `2026-09-21T14:23:24Z` **session-end** claude/c7b1b668-ab03-42c6-833a-62322fa51426
+- `2026-09-21T15:05:01Z` **Skill** claude/bd3e40f2-8eab-4723-8b9f-adac5b4ba9b3: Skill({"skill": "review-convergence", "args": "0.4.1 需求设计三件套（spec/design/tasks）专项文档检视，目标产出就绪门记录（readiness gate），参照 docs/reviews/CURRENT-doc.md 格式"})
+- `2026-09-22T15:13:19Z` **session-start** claude/945d40bf-625d-4f39-9474-6fa1e1292692
+- `2026-09-22T16:14:35Z` **ToolSearch** claude/bd3e40f2-8eab-4723-8b9f-adac5b4ba9b3: ToolSearch({"query": "select:SendMessage", "max_results": 1})
+- `2026-09-22T16:15:34Z` **ToolSearch** claude/945d40bf-625d-4f39-9474-6fa1e1292692: ToolSearch({"query": "select:SendMessage", "max_results": 1})
+- `2026-09-23T04:58:10Z` **Agent** claude/945d40bf-625d-4f39-9474-6fa1e1292692: Agent({"description": "T968+T969 四个原生策略族", "subagent_type": "fork", "isolation": "worktree", "prompt": "你是 T968 + T969 这条线的执行者，独立 git worktree，两项一起做（它们共用同一个测试文件，拆开会冲突）。\n\n任务：按 docs/features/0.4/0.4.1-ai-market-ecology/tasks.md 的 T968、T969 条目，在 src/market_game_sim/agent/strategy_layer/families/ 下实现四个原生策略族（先读 spec.md 的 FR-503/AC-503 与 §6 门限，design.md §2，以及已合入的 strategy_layer/protocol.py、registry.py）。\n- T968：趋势跟随族（多时间尺度）、均值回归族。\n- T969：情绪噪声族、改良做市商族——报价参数要分散，消除全员同价位导致的单档盘口。\n要点：\n- 每个族按 `TraderStrategy
+- `2026-09-24T04:58:19Z` **ToolSearch** claude/bd3e40f2-8eab-4723-8b9f-adac5b4ba9b3: ToolSearch({"query": "select:SendMessage", "max_results": 1})
+- `2026-09-25T17:34:03Z` **session-end** claude/945d40bf-625d-4f39-9474-6fa1e1292692
+- `2026-09-26T08:18:59Z` **session-end** claude/bd3e40f2-8eab-4723-8b9f-adac5b4ba9b3
+- `2026-10-04T02:44:34Z` **session-start** claude/623160e7-e69a-4598-b079-e893a234b004
+- `2026-10-04T03:28:22Z` **Skill** claude/623160e7-e69a-4598-b079-e893a234b004: Skill({"skill": "review-convergence", "args": "0.4.3 需求设计专项文档检视：docs/features/0.4/0.4.3-exogenous-price-anchor/{spec,design,tasks}.md、docs/decisions/017-allow-constant-exogenous-price-reference.md，以及提交 b28018e 的全部改动（ADR-011/016 指针、0.4 版本 spec、锚选型材料）。目标：就绪门，判断能否流转 ready-for-development。"})
+- `2026-10-04T17:43:27Z` **session-end** claude/623160e7-e69a-4598-b079-e893a234b004
