@@ -7,7 +7,7 @@ research_claim_status: not-applicable
 research_claim_required: false
 evidence_class: engineering-demonstration
 created: 2026-09-20
-updated: 2026-10-04
+updated: 2026-10-15
 ---
 
 # Feature Specification: AI 市场生态与 L2 交易者策略层
@@ -19,7 +19,7 @@ updated: 2026-10-04
 alphamill 单向边界）、[`ADR-010`](../../decisions/010-market-ecology-research-pivot.md)（研究方向）<br>
 **研究北极星**：[`../../research/owner-research-question.md`](../../research/owner-research-question.md)<br>
 **里程碑**：[`0.4.1`](0.4.1-ai-market-ecology/spec.md)（L2 交易者策略层与市场真实性判据）、
-[`0.4.3`](0.4.3-exogenous-price-anchor/spec.md)（外生价格锚，2026-09-25 立项，承接 0.4.1 移出的 E3/E4 达标判据）、
+[`0.4.3`](0.4.3-exogenous-price-anchor/spec.md)（外生价格锚，2026-09-25 立项，承接 0.4.1 移出的 E3/E4 达标判据；2026-10-15 以 `UNQUALIFIED` 收口，该判据不再后移）、
 [`0.4.2`](0.4.2-human-perturbation/spec.md)（人类扰动实验 H2-F：同种子对照下的稳定性效应量）
 
 ## 问题与目标

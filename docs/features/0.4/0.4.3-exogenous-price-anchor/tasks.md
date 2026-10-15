@@ -6,7 +6,7 @@ version: "0.4"
 doc_kind: tasks
 gate_version: 1
 created: 2026-09-25
-updated: 2026-10-04
+updated: 2026-10-15
 ---
 
 # 0.4.3：外生价格锚 - 任务
@@ -142,20 +142,23 @@ updated: 2026-10-04
 
 ## 3. 验证与验收任务
 
-- [ ] T1112 (`AC-701`, `AC-702`, `AC-706`): 运行 `v_t` 恒定与可见性、价值族单调性、
-      强度前置与量级哨兵的正反测试
+- [x] T1112 (`AC-701`, `AC-702`, `AC-706`): 运行 `v_t` 恒定与可见性、价值族单调性、
+      强度前置与量级哨兵的正反测试。**结果（2026-10-15）**：76 passed
       — verify: `tests/unit/agent/test_value_reference.py`、
       `tests/unit/agent/test_value_family.py`、`tests/integration/test_anchor_strength.py`、
       `tests/unit/agent/test_leverage_tripwire.py`
-- [ ] T1113 (`AC-705`, `AC-708`): 运行锚过强诊断与预注册守卫的测试
+- [x] T1113 (`AC-705`, `AC-708`): 运行锚过强诊断与预注册守卫的测试。**结果（2026-10-15）**：27 passed
       — verify: `tests/integration/test_anchor_heterogeneity_diagnostics.py`、
       `tests/unit/metrics/test_anchor_scan_preregistration.py`
-- [ ] T1114 (`AC-704`, `AC-707`): 运行锚定市场与达标/未达标两条终点的门禁测试
+- [x] T1114 (`AC-704`, `AC-707`): 运行锚定市场与达标/未达标两条终点的门禁测试。**结果（2026-10-15）**：35 passed
       — verify: `tests/integration/test_anchored_market.py`、
       `tests/integration/test_anchored_quality_gate.py`
-- [ ] T1115 (`AC-701`—`AC-708`): 运行项目统一质量门，确认 0.4.1 与 0.3.1 路径无回归
+- [x] T1115 (`AC-701`—`AC-708`): 运行项目统一质量门，确认 0.4.1 与 0.3.1 路径无回归。
+      **结果（2026-10-15）**：`verify.py` 全绿，3424 passed、2 xfailed（均为 `T1101` 冻结契约缺陷的 strict xfail，按设计保留）
       — verify: `python tools/verify.py`
-- [ ] T1116 `[状态门]`: 回写 spec 验收证据、版本索引与状态；必须是本文件最后一项
+- [x] T1116 `[状态门]`: 回写 spec 验收证据、版本索引与状态；必须是本文件最后一项。
+      **结果（2026-10-15）**：AC-701—AC-708 勾选；E1/E2 按未达标分支、E3/E4 按达成分支收口；
+      status `in-progress -> done`；0.4 README 索引同步
       — verify: `python tools/validate_spec_lifecycle.py`
 
 ## 4. 依赖与并行关系
