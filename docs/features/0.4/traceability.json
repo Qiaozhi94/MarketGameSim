@@ -166,6 +166,17 @@
         }
       ]
     },
+    "FR-605": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E2"
+          ]
+        }
+      ]
+    },
     "FR-701": {
       "status": "owned",
       "owners": [
@@ -403,6 +414,17 @@
           "milestone": "0.4.2",
           "exits": [
             "E1"
+          ]
+        }
+      ]
+    },
+    "SC-605": {
+      "status": "owned",
+      "owners": [
+        {
+          "milestone": "0.4.2",
+          "exits": [
+            "E2"
           ]
         }
       ]

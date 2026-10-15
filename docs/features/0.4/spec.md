@@ -41,8 +41,9 @@ v0.1 已证明合成市场在 `SPONTANEOUS` 族下可以自发交易并支撑正
 **本版本不建立研究声明**：`evidence_class` 为 `engineering-demonstration`，
 `research_claim_required: false`。`0.4.1` 交付 owner 研究问题 #1/#3 所需的**对照基线**
 与市场载体；`0.4.2`（`experiment-preview`）承接北极星的**第一**研究问题「人类扰动」，
-交付会话 artifact 冻结格式、同种子对照与效应量报告，但同样不建立研究声明——是否升级为
-`formal-research` 由 [`0.4.2 Q-601`](0.4.2-human-perturbation/spec.md#8-待确认问题) 裁决。
+交付会话 artifact 冻结格式、同种子对照与效应量报告，但同样不建立研究声明——
+[`0.4.2 Q-601`](0.4.2-human-perturbation/spec.md#8-待确认问题) 已裁决（owner 2026-10-15）：
+分析单元为市场运行（种子），本版本维持 `experiment-preview`，升级 `formal-research` 须另立预注册。
 
 ## 非目标
 
@@ -77,6 +78,7 @@ v0.1 已证明合成市场在 `SPONTANEOUS` 族下可以自发交易并支撑正
 - **FR-602**：同种子对照运行（无人类基线 vs 有人类）；正文见 [`0.4.2 spec §4`](0.4.2-human-perturbation/spec.md#4-需求)。
 - **FR-603**：稳定性效应量报告；正文见 [`0.4.2 spec §4`](0.4.2-human-perturbation/spec.md#4-需求)。
 - **FR-604**：扰动即数据，不判对错、不做画像；正文见 [`0.4.2 spec §4`](0.4.2-human-perturbation/spec.md#4-需求)。
+- **FR-605**：人类扰动实验的载体（0.4.3 扫描格 count 6 / sensitivity 150，未达标、只作载体）与开放终端前的预热快进；正文见 [`0.4.2 spec §4`](0.4.2-human-perturbation/spec.md#4-需求)。
 - **FR-701**：恒定外生价值参照 `v_t ≡ engine.initial_price_ticks`（ADR-017），派生不另存、收益恒为 0；正文见 [`0.4.3 spec §4`](0.4.3-exogenous-price-anchor/spec.md#4-需求)。
 - **FR-702**：价值投资者族，目标仓位随价格对 `v_t` 的偏离单调增大，强度为 `count` × `sensitivity_x1000`；正文见 [`0.4.3 spec §4`](0.4.3-exogenous-price-anchor/spec.md#4-需求)。
 - **FR-703**：每次 stylized facts 判定附带「关闭价值族」的同种子归因对照；**已撤销**（owner 2026-10-04：`v_t` 恒定后无可归因对象，由 SC-703 构造性保证取代），见 [`0.4.3 spec §4`](0.4.3-exogenous-price-anchor/spec.md#4-需求)。
@@ -112,8 +114,9 @@ v0.1 已证明合成市场在 `SPONTANEOUS` 族下可以自发交易并支撑正
 - **SC-504**：量化交易者族可装配且可审计；正文见 [`0.4.1 spec §6`](0.4.1-ai-market-ecology/spec.md#6-成功与验收)。
 - **SC-601**：会话 artifact 格式在第一场之前冻结且可重放；正文见 [`0.4.2 spec §6`](0.4.2-human-perturbation/spec.md#6-成功与验收)。
 - **SC-602**：同种子两臂可配对且基线逐点可复现；正文见 [`0.4.2 spec §6`](0.4.2-human-perturbation/spec.md#6-成功与验收)。
-- **SC-603**：结论以效应量形态给出（分布移动 + 区间 + 失效边界）；正文见 [`0.4.2 spec §6`](0.4.2-human-perturbation/spec.md#6-成功与验收)。
+- **SC-603**：结论以效应量形态给出（四指标逐种子差值中位数 + 配对 bootstrap 区间 + 失效边界）；正文见 [`0.4.2 spec §6`](0.4.2-human-perturbation/spec.md#6-成功与验收)。
 - **SC-604**：不产出对错判定、行为画像与身份信息；正文见 [`0.4.2 spec §6`](0.4.2-human-perturbation/spec.md#6-成功与验收)。
+- **SC-605**：跨种子基线功效分析，N / 种子清单 / 最小可检出效应先于正式配对预注册；正文见 [`0.4.2 spec §6`](0.4.2-human-perturbation/spec.md#6-成功与验收)。
 - **SC-701**：市场质量六项的达标判定（判据引自 0.4.1 SC-501，未改口径；预注册网格扫完无达标配置亦为合法终点）；正文见 [`0.4.3 spec §6`](0.4.3-exogenous-price-anchor/spec.md#6-成功与验收)。
 - **SC-702**：stylized facts 达 SC-502 条数的判定（含 ADR-016 前置有效性条件；终点同 SC-701）；正文见 [`0.4.3 spec §6`](0.4.3-exogenous-price-anchor/spec.md#6-成功与验收)。
 - **SC-703**：`v_t` 收益恒为 0（构造上不具备聚集与厚尾）；正文见 [`0.4.3 spec §6`](0.4.3-exogenous-price-anchor/spec.md#6-成功与验收)。
