@@ -7,7 +7,7 @@ research_claim_status: not-applicable
 research_claim_required: false
 evidence_class: engineering-demonstration
 created: 2026-09-20
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 # Feature Specification: AI 市场生态与 L2 交易者策略层
@@ -40,7 +40,8 @@ v0.1 已证明合成市场在 `SPONTANEOUS` 族下可以自发交易并支撑正
 
 **本版本不建立研究声明**：`evidence_class` 为 `engineering-demonstration`，
 `research_claim_required: false`。`0.4.1` 交付 owner 研究问题 #1/#3 所需的**对照基线**
-与市场载体；`0.4.2`（`experiment-preview`）承接北极星的**第一**研究问题「人类扰动」，
+与 live 市场；人类扰动实验的载体取自 `0.4.3` 的扫描格（见
+[`0.4.2 FR-605`](0.4.2-human-perturbation/spec.md#4-需求)）；`0.4.2`（`experiment-preview`）承接北极星的**第一**研究问题「人类扰动」，
 交付会话 artifact 冻结格式、同种子对照与效应量报告，但同样不建立研究声明——
 [`0.4.2 Q-601`](0.4.2-human-perturbation/spec.md#8-待确认问题) 已裁决（owner 2026-10-15）：
 分析单元为市场运行（种子），本版本维持 `experiment-preview`，升级 `formal-research` 须另立预注册。
