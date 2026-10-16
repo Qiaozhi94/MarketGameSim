@@ -11,6 +11,7 @@ path 无法证明门真的会挡错误。
 
 from __future__ import annotations
 
+import ast
 import json
 import pathlib
 import re
@@ -756,26 +757,65 @@ def _block_has_existing_path(block: str, root: pathlib.Path) -> bool:
     return bool(paths) and all(path.is_file() for path in paths)
 
 
-_TEST_FUNCTION = re.compile(
-    r"(?P<decorators>(?:^[ \t]*@[^\n]*\n)*)^[ \t]*def (?P<name>test_\w+)\("
-    r".*?(?=^[ \t]*(?:@|def |class )|\Z)",
-    re.MULTILINE | re.DOTALL,
-)
+_SKIPPING_MARKS = frozenset({"xfail", "skip", "skipif"})
+
+
+def _marks_skipping(node: ast.AST) -> bool:
+    """装饰器或 ``pytestmark`` 表达式里是否出现 ``pytest.mark.xfail/skip/skipif``。
+
+    走 AST 而不是逐行正则：装饰器被 ``ruff format`` 折成多行、或写成模块级/类级
+    ``pytestmark`` 时，正则都看不见（循环 31 R3 d-done-gate-xfail-bypass）。
+    """
+    return any(
+        isinstance(sub, ast.Attribute) and sub.attr in _SKIPPING_MARKS for sub in ast.walk(node)
+    )
+
+
+def _pytestmark_skips(body: list[ast.stmt]) -> bool:
+    for stmt in body:
+        if isinstance(stmt, ast.Assign):
+            targets, value = stmt.targets, stmt.value
+        elif isinstance(stmt, ast.AnnAssign) and stmt.value is not None:
+            targets, value = [stmt.target], stmt.value
+        else:
+            continue
+        if any(isinstance(t, ast.Name) and t.id == "pytestmark" for t in targets) and (
+            _marks_skipping(value)
+        ):
+            return True
+    return False
 
 
 def _xfailed_tests_naming(path: pathlib.Path, ac: str) -> list[str]:
-    """文件里提到 ``ac`` 编号、却仍带 ``xfail`` 标记的测试函数名。
+    """文件里提到 ``ac`` 编号、却仍被 xfail/skip 标记（函数、类或模块级）的测试。
 
     strict-xfail 骨架无条件 ``pytest.fail``，实现落地后也不会 XPASS——strict 绊线
     在这里不起作用；`review`/`done` 时必须由门禁确认骨架已换成真实断言（循环 31
     d-done-gate-accepts-xfail-skeletons）。
     """
+    text = path.read_text(encoding="utf-8")
+    try:
+        tree = ast.parse(text)
+    except SyntaxError:
+        return []
     mention = re.compile(rf"\b{re.escape(ac)}(?!\d)")
-    return [
-        m.group("name")
-        for m in _TEST_FUNCTION.finditer(path.read_text(encoding="utf-8"))
-        if "xfail" in m.group("decorators") and mention.search(m.group(0))
-    ]
+    found: list[str] = []
+
+    def visit(body: list[ast.stmt], inherited: bool, prefix: str) -> None:
+        skipped = inherited or _pytestmark_skips(body)
+        for node in body:
+            if isinstance(node, ast.ClassDef):
+                marked = skipped or any(_marks_skipping(d) for d in node.decorator_list)
+                visit(node.body, marked, f"{prefix}{node.name}::")
+            elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) and (
+                node.name.startswith("test_")
+            ):
+                marked = skipped or any(_marks_skipping(d) for d in node.decorator_list)
+                if marked and mention.search(ast.get_source_segment(text, node) or ""):
+                    found.append(prefix + node.name)
+
+    visit(tree.body, False, "")
+    return found
 
 
 # 「本 spec 声明的需求必须有 AC 认领」规则的引入日；此前 created 的里程碑不追溯执法

@@ -1163,6 +1163,59 @@ def test_done_gate_ignores_xfail_tests_of_other_acs(sv, tmp_path):
     assert errors == []
 
 
+_SKELETON_BYPASSES = {
+    "multiline_decorator": (
+        "import pytest\n\n\n"
+        "@pytest.mark.xfail(\n"
+        "    strict=True,\n"
+        '    reason="T001 not implemented yet",\n'
+        ")\n"
+        "def test_feature():\n"
+        '    """AC-001：做到某事。"""\n'
+        '    pytest.fail("T001 pending")\n'
+    ),
+    "module_pytestmark": (
+        "import pytest\n\n"
+        'pytestmark = pytest.mark.xfail(strict=True, reason="T001 not implemented yet")\n\n\n'
+        "def test_feature():\n"
+        '    """AC-001：做到某事。"""\n'
+        '    pytest.fail("T001 pending")\n'
+    ),
+    "class_pytestmark": (
+        "import pytest\n\n\n"
+        "class TestFeature:\n"
+        '    pytestmark = [pytest.mark.xfail(strict=True, reason="T001")]\n\n'
+        "    def test_feature(self):\n"
+        '        """AC-001：做到某事。"""\n'
+        '        pytest.fail("T001 pending")\n'
+    ),
+    "skip_decorator": (
+        "import pytest\n\n\n"
+        '@pytest.mark.skip(reason="T001 not implemented yet")\n'
+        "def test_feature():\n"
+        '    """AC-001：做到某事。"""\n'
+        "    assert True\n"
+    ),
+}
+
+
+@pytest.mark.parametrize("variant", sorted(_SKELETON_BYPASSES))
+def test_done_gate_sees_through_skeleton_bypasses(sv, tmp_path, variant):
+    """循环 31 R3 d-done-gate-xfail-bypass：逐行正则看不见多行装饰器（ruff format 遇到长
+    reason 就会折行）、模块级/类级 pytestmark 与 skip，done 时这些骨架都必须被拦下。"""
+    (tmp_path / "tests/unit").mkdir(parents=True)
+    (tmp_path / "tests/unit/test_feature.py").write_text(
+        _SKELETON_BYPASSES[variant], encoding="utf-8"
+    )
+    spec = _spec_with_ac("- [x] **AC-001** (`FR-001`): 做到某事。")
+    tasks = (
+        "## 2. 实现任务\n\n- [x] **T001** (`AC-001`): 实施 — verify: `tests/unit/test_feature.py`\n"
+    )
+    errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "done")
+    assert any("test_feature" in e and "xfail" in e for e in errors), variant
+
+
 def test_historical_milestone_keeps_legacy_verify_path_rule(sv, tmp_path):
     spec = _spec_with_ac("- [ ] **AC-001** (`FR-001`): 历史验收。")
     tasks = "## 2. 实现任务\n\n- [ ] **T001** (`AC-001`): 历史门禁 — verify: `tools/verify.py`\n"
