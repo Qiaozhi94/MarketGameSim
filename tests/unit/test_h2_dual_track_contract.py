@@ -127,10 +127,11 @@ def _declared_test_paths() -> set[str]:
 def test_declared_verify_paths_all_exist():
     """骨架先行规则的真正执法点。
 
-    `spec_validation._check_ac_references` 只要求"**任一**覆盖任务的 verify 指向真实文件"，
+    `spec_validation._check_ac_references` 原先只要求"**任一**覆盖任务的 verify 指向真实文件"，
     所以一条 AC 被多个任务覆盖时，漏建其中某个文件门禁不会说话——实测删掉
-    tests/integration/test_h2_evidence_guard.py 后生命周期校验仍然通过。这条测试按
-    **每一条**声明路径逐个核对，补上那个粒度差。
+    tests/integration/test_h2_evidence_guard.py 后生命周期校验仍然通过。循环 31 起门禁要求
+    逐条点名 AC 的任务列出的路径**全部**存在，但只要有另一条任务满足就不报；这条测试按
+    **每一条**声明路径逐个核对，覆盖剩下的粒度差。
     """
     declared = _declared_test_paths()
     assert declared, "tasks.md 应至少声明一条 tests/ 路径"

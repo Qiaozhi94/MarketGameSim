@@ -1003,14 +1003,14 @@ def test_missing_test_path_blocks_only_after_draft(sv, tmp_path):
     sv._check_ac_references(
         spec, tasks, "", "", tmp_path, ready_errors, "m", "ready-for-development"
     )
-    assert any("真实存在的文件" in e for e in ready_errors)
+    assert any("全部真实存在" in e for e in ready_errors)
 
     (tmp_path / "tests" / "unit" / "not_yet").mkdir(parents=True)
     directory_errors: list[str] = []
     sv._check_ac_references(
         spec, tasks, "", "", tmp_path, directory_errors, "m", "ready-for-development"
     )
-    assert any("真实存在的文件" in e for e in directory_errors)
+    assert any("全部真实存在" in e for e in directory_errors)
 
     test_file = tmp_path / "tests" / "unit" / "not_yet" / "test_feature.py"
     test_file.write_text("", encoding="utf-8")
@@ -1033,7 +1033,7 @@ def test_non_test_path_does_not_satisfy_ac_path_gate(sv, tmp_path):
     tasks = "## 2. 实现任务\n\n- [ ] **T001** (`AC-001`): 实施 — verify: `tools/verify.py`\n"
     errors: list[str] = []
     sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "ready-for-development")
-    assert any("真实存在的文件" in e for e in errors)
+    assert any("全部真实存在" in e for e in errors)
 
 
 def test_real_test_file_satisfies_ac_path_gate(sv, tmp_path):
@@ -1048,6 +1048,59 @@ def test_real_test_file_satisfies_ac_path_gate(sv, tmp_path):
     errors: list[str] = []
     sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "ready-for-development")
     assert errors == []
+
+
+def _touch_test(root, rel: str) -> None:
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("", encoding="utf-8")
+
+
+def test_range_only_coverage_does_not_satisfy_ac_path_gate(sv, tmp_path):
+    """循环 31 d-aggregate-verify-masks-all-acs：汇总任务的区间引用不算测试覆盖。
+
+    0.4.2 的 T1136 写 `AC-601`—`AC-609` 并列出两个已存在的既有回归文件，就绪门对 9 条
+    AC 全部失明；区间两端的 AC 也不能因为「长得像逐条引用」而算作点名。
+    """
+    _touch_test(tmp_path, "tests/unit/test_existing.py")
+    spec = _spec_with_ac("- [ ] **AC-001** (`FR-001`): 一。\n- [ ] **AC-002** (`FR-001`): 二。")
+    tasks = (
+        "## 2. 实现任务\n\n"
+        "- [ ] **T001** (`AC-001`—`AC-002`): 统一质量门 — verify: `tests/unit/test_existing.py`\n"
+    )
+    errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "ready-for-development")
+    assert any("AC-001" in e and "逐条点名" in e for e in errors)
+    assert any("AC-002" in e and "逐条点名" in e for e in errors)
+
+    tasks += (
+        "- [ ] **T002** (`AC-001`, `AC-002`): 专属测试 — verify: `tests/unit/test_existing.py`\n"
+    )
+    named_errors: list[str] = []
+    sv._check_ac_references(
+        spec, tasks, "", "", tmp_path, named_errors, "m", "ready-for-development"
+    )
+    assert named_errors == []
+
+
+def test_one_missing_path_in_multi_path_verify_fails_ac_path_gate(sv, tmp_path):
+    """列多个文件的任务不能藏住缺失的那一条（循环 30 aggregate-verify-masks-missing-file）。"""
+    _touch_test(tmp_path, "tests/unit/test_a.py")
+    spec = _spec_with_ac("- [ ] **AC-001** (`FR-001`): 做到某事。")
+    tasks = (
+        "## 2. 实现任务\n\n"
+        "- [ ] **T001** (`AC-001`): 实施 — verify: `tests/unit/test_a.py`、`tests/unit/test_b.py`\n"
+    )
+    errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "ready-for-development")
+    assert any("AC-001" in e and "全部真实存在" in e for e in errors)
+
+    _touch_test(tmp_path, "tests/unit/test_b.py")
+    fixed_errors: list[str] = []
+    sv._check_ac_references(
+        spec, tasks, "", "", tmp_path, fixed_errors, "m", "ready-for-development"
+    )
+    assert fixed_errors == []
 
 
 def test_historical_milestone_keeps_legacy_verify_path_rule(sv, tmp_path):

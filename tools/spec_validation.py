@@ -704,24 +704,33 @@ def validate_version_traceability(
     validate_trace_data(data, spec_path.read_text(encoding="utf-8"), errors, root)
 
 
-def _ac_task_coverage(tasks_text: str) -> dict[int, list[str]]:
-    """AC 编号 -> 覆盖它的任务块列表；范围声明 `AC-001`—`AC-012` 会被展开。"""
-    coverage: dict[int, list[str]] = {}
+_AC_RANGE_SPAN = re.compile(r"`AC-(\d+)`—`AC-(\d+)`")
+
+
+def _ac_task_coverage(tasks_text: str) -> dict[int, list[tuple[str, bool]]]:
+    """AC 编号 -> 覆盖它的 (任务块, 是否逐条点名) 列表；范围声明 `AC-001`—`AC-012` 会被展开。
+
+    展开得到的覆盖标为非点名：汇总任务（「运行全部 AC 的测试」）只证明有人会跑，
+    不证明这条 AC 有自己的测试文件（循环 30/31 的 aggregate-verify-masks-missing-file）。
+    """
+    coverage: dict[int, list[tuple[str, bool]]] = {}
     for _mark, _tid, block in _task_blocks(tasks_text):
-        numbers: set[int] = set()
-        for start, end in re.findall(r"`AC-(\d+)`—`AC-(\d+)`", block):
-            numbers.update(range(int(start), int(end) + 1))
-        numbers.update(int(n) for n in re.findall(r"`AC-(\d+)`", block))
-        for number in numbers:
-            coverage.setdefault(number, []).append(block)
+        ranged: set[int] = set()
+        for start, end in _AC_RANGE_SPAN.findall(block):
+            ranged.update(range(int(start), int(end) + 1))
+        # 范围的两个端点也长得像逐条引用，先整体剔掉范围再找点名。
+        named = {int(n) for n in re.findall(r"`AC-(\d+)`", _AC_RANGE_SPAN.sub("", block))}
+        for number in ranged | named:
+            coverage.setdefault(number, []).append((block, number in named))
     return coverage
 
 
-def _block_has_existing_path(block: str, root: pathlib.Path) -> bool:
-    """任务的 verify 段是否指向仓库 ``tests/`` 下真实存在的文件。"""
+def _verify_test_paths(block: str, root: pathlib.Path) -> list[pathlib.Path]:
+    """任务 verify 段里落在仓库 ``tests/`` 下的路径（不论是否存在）。"""
     match = _VERIFY_TOKENS.search(block)
     if not match:
-        return False
+        return []
+    paths: list[pathlib.Path] = []
     for token in re.findall(r"`([^`]+)`", match.group("verify")):
         for candidate in token.split():
             candidate = candidate.strip().rstrip("；,，")
@@ -733,9 +742,18 @@ def _block_has_existing_path(block: str, root: pathlib.Path) -> bool:
                 candidate_path.relative_to((root / "tests").resolve())
             except ValueError:
                 continue
-            if candidate_path.is_file():
-                return True
-    return False
+            paths.append(candidate_path)
+    return paths
+
+
+def _block_has_existing_path(block: str, root: pathlib.Path) -> bool:
+    """任务 verify 列出的 ``tests/`` 路径至少一条、且**全部**真实存在。
+
+    只要求「有一条存在」时，列多个文件的任务可以藏住缺失的那一条（循环 30
+    aggregate-verify-masks-missing-file）。
+    """
+    paths = _verify_test_paths(block, root)
+    return bool(paths) and all(path.is_file() for path in paths)
 
 
 # 「本 spec 声明的需求必须有 AC 认领」规则的引入日；此前 created 的里程碑不追溯执法
@@ -806,8 +824,14 @@ def _check_ac_references(
         if not blocks:
             fail(errors, f"{where}: {ac} 没有任何任务引用，验收无实施锚点")
             continue
-        if path_required and not any(_block_has_existing_path(b, root) for b in blocks):
-            fail(errors, f"{where}: {ac} 的覆盖任务没有一条 verify 指向 tests/ 下真实存在的文件")
+        if path_required and not any(
+            named and _block_has_existing_path(block, root) for block, named in blocks
+        ):
+            fail(
+                errors,
+                f"{where}: {ac} 没有一个逐条点名它、且 verify 列出的 tests/ 路径全部真实存在的任务"
+                "（区间引用的汇总任务不计入）",
+            )
 
 
 def validate_gate1(
