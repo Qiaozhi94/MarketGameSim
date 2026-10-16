@@ -12,7 +12,7 @@ topics:
   - stability-effect-size
 doc_kind: tasks
 created: 2026-09-20
-updated: 2026-10-15
+updated: 2026-10-16
 ---
 
 # 0.4.2：人类扰动实验 - 任务
@@ -31,85 +31,100 @@ updated: 2026-10-15
 - 命题形态由 PRD §15 的可证伪化桥接条款唯一拥有：结论是效应量命题，不是「人类能否
   造成崩盘」；任务不得就地改写这一形态。
 - L1 合同与 0.4.1 已冻结口径不可改。
-- 预注册（`T1127`）提交后，不得改动 N、种子清单与最小可检出效应，不得在配对结果之后增减种子。
+- 预注册（`T1127`）提交后，不得改动其中任何字段，不得在配对结果之后增减种子或处理会话；
+  预注册提交之前不得运行任何正式配对。
 
 ## 1. 前置条件
 
 - [ ] T1120 (`FR-601`, `AC-601`): 在任何 owner 自由场次之前冻结 `PerturbationSession` 格式
-      （字段含 `advance_index`、分配的逻辑时间戳、`submitted_at`、`order_id`、回放模式与原场
-      事件摘要；版本号与内容哈希口径），并写成可被校验入口消费的冻结记录 — verify:
+      （会话单位为一次市场进程；动作日志逐条追加的字段含 `advance_index`、分配的逻辑时间戳、
+      `submitted_at`、`order_id`、`decision_event_id`；封口记录含结束 `advance` 序号与该序号处的
+      事件摘要；封口状态、版本号与内容哈希口径），并写成可被校验入口消费的冻结记录 — verify:
       `tests/unit/experiment/test_perturbation_session.py`
 - [ ] T1121 (`FR-603`, `DR-602`, `AC-605`): 冻结四个稳定性指标的计算口径与退化判定规则（spec
       SC-603）：盘口可用率与大波动频次取自 0.4.1 已冻结定义、只加窗口；最大回撤与最大涨幅
-      （窗口起点重置的峰谷/谷峰）写入 [`指标字典`](../../../research/metrics-dictionary.md)
-      后冻结，不另立第二份 — verify: `tests/unit/metrics/test_stability_effect.py`
+      （窗口起点重置的峰谷/谷峰，含 `P_t` 取样方式与跨窗口起点分钟变动对的处理）写入
+      [`指标字典`](../../../research/metrics-dictionary.md) 后冻结，不另立第二份 — verify:
+      `tests/unit/metrics/test_stability_effect.py`
 
 ## 2. 实现任务
 
-### Phase 1：会话格式冻结、注入确定性、载体与无人类基线
+### Phase 1：会话格式冻结、注入确定性、载体、同种子重放与功效分析
 
-- [ ] T1122 (`FR-601`, `DR-601`, `AC-601`, `AC-602`): 实现 `PerturbationSession` 的写入/读取/
-      校验入口；缺字段、错版本号、含画像字段三类非法输入给稳定原因码（正反用例都要有）
-      — verify: `tests/unit/experiment/test_perturbation_session.py`
+- [ ] T1122 (`FR-601`, `DR-601`, `AC-601`, `AC-602`): 实现 `PerturbationSession` 的动作日志追加、
+      封口、读取与校验入口；缺字段、错版本号、含画像字段三类非法输入给稳定原因码；在任意
+      一条动作之后终止进程时已受理动作不丢、会话标 `UNSEALED`（正反用例都要有） — verify:
+      `tests/unit/experiment/test_perturbation_session.py`
 - [ ] T1123 (`FR-604`, `NFR-602`, `AC-606`): 在校验入口拒绝对错判定/行为画像字段与直接身份
       信息，并断言合法 artifact 不被误拒 — verify:
       `tests/unit/experiment/test_perturbation_session.py`
-- [ ] T1124 (`FR-601`, `NFR-601`, `IR-601`, `AC-602`, `AC-603`): 修复 live 市场注入路径的
-      三处竞态——时间戳、`submitted_at` 与 `order_id` 序号改在 `advance()` 持锁取出时分配，
-      每条动作记录取出时的 `advance` 序号；会话结束与断线时落盘 artifact。回归测试覆盖
-      多线程并发提交多笔委托（`order_id` 不重复、落地点只由序号决定）与修复前可复现的竞态；
-      纯 AI 运行的 0.4.1/0.4.3 入库摘要不变 — verify:
+- [ ] T1124 (`FR-601`, `NFR-601`, `IR-601`, `TR-601`, `AC-602`, `AC-603`): 修复 live 市场注入路径——
+      HTTP 线程只入队载荷；`advance()` 持锁取出时在同一临界区内分配 `order_id`、逻辑时间戳与
+      `submitted_at`，补发 `AGENT_DECIDE`（参与者类别写入其 `internal_state`，先于委托入队），
+      记录 `advance` 序号并追加动作日志；进程正常结束时封口。回归测试用确定性交错钩子构造
+      「同一 advance 内多笔提交」「提交恰在推进中途」两类交错（`order_id` 不重复、
+      `submitted_at` 只由取出序号决定），并断言纯 AI 运行的 0.4.1/0.4.3 入库摘要不变 — verify:
       `tests/integration/test_perturbation_injection.py`
 - [ ] T1125 (`FR-605`, `AC-608`): 把载体 C（count 6 / sensitivity 150，其余同 0.4.3 T1109
       固定项）按种子落盘到 `docs/experiments/0.4.2-rosters/`；live 市场新增预热：开放终端前
-      不等待墙钟推进到窗口起点，期间拒绝下单，起点不成立时拒绝开放（正反两侧） — verify:
+      不等待墙钟推进到 `W0`，期间拒绝下单，推进到 5700 s 仍未退出冷启动时拒绝开放（正反
+      两侧）；改正 `--tick-seconds` 帮助文字里「1:1 实时」的说法 — verify:
       `tests/integration/test_perturbation_carrier.py`
-- [ ] T1126 (`FR-602`, `NFR-601`, `TR-601`, `AC-603`, `AC-604`): 实现无人类基线臂——同装配
-      同种子逐点可复现；owner 委托的参与者类别标识写入既有决策记录，不新增事件类型
-      — verify: `tests/integration/test_perturbation_paired.py`
+- [ ] T1126 (`FR-602`, `NFR-601`, `TR-601`, `AC-603`, `AC-604`): 实现同种子两臂——无人类基线臂
+      同装配同种子逐点可复现；同种子重放臂按 `advance` 序号投递动作日志、推进到结束序号后
+      比对封口事件摘要（补发的 `AGENT_DECIDE` 计入摘要），不一致返回 `REPLAY_DIVERGED`；
+      owner 委托的 `decision_event_id` 解析到补发的决策记录 — verify:
+      `tests/integration/test_perturbation_paired.py`
 - [ ] T1127 (`SC-605`, `AC-609`): 在 20 个种子上跑载体 C 的无人类基线，产出四指标跨种子
-      标准差与功效分析报告；N、开环回放种子清单与最小可检出效应（owner 在功效报告产出后
-      登记）写入单一预注册文件并**先于任何正式配对运行提交**；配对入口只读该文件，缺失
-      或哈希不一致时 fail closed — verify:
+      标准差 `σ_b` 与功效分析报告（`σ_d ≤ √2 · σ_b`、`ρ ≥ 0` 假设与 N 公式见 spec SC-605）；
+      处理会话（预注册提交时已存在的全部会话）的内容哈希、逐指标 MDE（owner 在功效报告产出后
+      登记）、N、有效配对下限与开环回放种子清单写入单一预注册文件并**先于任何正式配对运行
+      提交**；配对入口只读该文件，缺失、哈希不一致或处理会话不在其中时 fail closed — verify:
       `tests/unit/experiment/test_perturbation_preregistration.py`
-- [ ] T1128 `[成果门:H2-F1]` (`US-601`, `FR-601`, `SC-601`, `SC-605`, `AC-601`, `AC-602`, `E1`, `E2`):
-      交付一场可重放的自由会话 artifact、无人类基线运行记录与功效分析报告——仅凭 artifact
-      即可在同种子上重放出与原场事件摘要逐位相同的运行；证据标签为 `experiment-preview`
-      — verify: `tests/integration/test_perturbation_paired.py`
+- [ ] T1128 `[成果门:H2-F1]` (`US-601`, `FR-601`, `SC-601`, `SC-605`, `AC-601`, `AC-602`, `E1`, `E2`, `E3`):
+      交付一场可重放的自由会话 artifact、无人类基线运行记录、功效分析报告与预注册文件——
+      仅凭 artifact 即可在同种子上重放出与原场事件摘要逐位相同的运行；证据标签为
+      `experiment-preview` — verify: `tests/integration/test_perturbation_paired.py`、
+      `tests/unit/experiment/test_perturbation_session.py`
 
-### Phase 2：同种子对照与效应量报告
+### Phase 2：开环跨种子回放与效应量报告
 
-- [ ] T1129 (`FR-602`, `IR-601`, `AC-603`): 实现回放臂——同种子重放（结束后比对事件摘要，
-      不一致返回 `REPLAY_DIVERGED`）与开环跨种子回放（按 `advance` 序号在推进循环中投递）；
-      无法投递时判失败并给稳定原因码，不静默丢弃动作 — verify:
-      `tests/integration/test_perturbation_paired.py`
+- [ ] T1129 (`FR-602`, `IR-601`, `DR-601`, `AC-610`): 实现开环跨种子回放——按 `advance` 序号把
+      处理会话的动作日志投到预注册种子上并推进到 5700 s；无法投递时判失败并给稳定原因码，
+      撤单目标在该种子上不存在时记录原因码，不静默丢弃动作；配对集合可由预注册文件与会话
+      哈希重建 — verify: `tests/integration/test_perturbation_open_loop.py`
 - [ ] T1130 (`TR-501`, `TR-601`, `AC-604`): 人类与 AI 委托并存时的批量因果链用例——多条记录
-      同时存在，参与者类别可区分且撮合路径一致 — verify:
-      `tests/integration/test_perturbation_paired.py`
-- [ ] T1131 (`FR-603`, `DR-602`, `AC-605`): 实现效应量报告——四指标两臂分布、逐种子差值、
-      差值中位数与配对 bootstrap [5%, 95%] 区间、失效边界与原场个案；配对 bootstrap 原语加在
-      `experiment/stats.py`、沿用其种子与重采样约定；退化输入时效应量字段缺省而不是填 0
-      — verify: `tests/unit/metrics/test_stability_effect.py`
-- [ ] T1132 `[成果门:H2-F2]` (`US-602`, `FR-602`, `FR-603`, `SC-602`, `SC-603`, `AC-603`, `AC-605`, `E3`, `E4`):
+      同时存在，owner 与 AI 委托的 `decision_event_id` 都解析到 `AGENT_DECIDE`，参与者类别可
+      区分且撮合路径一致 — verify: `tests/integration/test_perturbation_paired.py`
+- [ ] T1131 (`FR-603`, `DR-602`, `NFR-602`, `AC-605`, `AC-607`): 实现效应量报告——四指标两臂
+      分布、逐种子差值、差值中位数与配对 bootstrap 90% 区间（原语加在 `experiment/stats.py`，
+      `ci_level = 0.90`、10000 次、种子 0）、实测 `σ_d` 与功效判定、失效边界（退化配对、人类臂
+      中止配对、载体 SC-501 失效的种子）与原场个案；有效配对数低于下限时效应量字段缺省而不是
+      填 0；artifact 与报告携带 `experiment-preview` 与 `run_mode: interactive`，交给 evidence
+      index 构建入口时被拒 — verify: `tests/unit/metrics/test_stability_effect.py`、
+      `tests/integration/test_perturbation_evidence_guard.py`
+- [ ] T1132 `[成果门:H2-F2]` (`US-602`, `FR-602`, `FR-603`, `SC-602`, `SC-603`, `AC-605`, `AC-610`, `E4`, `E5`):
       在预注册种子集合上交付一组配对运行与可打开的效应量报告——分布移动 + 区间 + 失效边界
-      + 原场个案，开环结果标注「固定订单流扰动」，退化路径如实输出退化判定；证据标签为
-      `experiment-preview`，不进入任何 evidence index — verify:
-      `tests/integration/test_perturbation_paired.py`
+      + 原场个案 + 功效判定，开环结果标注「固定订单流扰动」，退化路径如实输出退化判定；
+      证据标签为 `experiment-preview`，不进入任何 evidence index — verify:
+      `tests/integration/test_perturbation_open_loop.py`、`tests/unit/metrics/test_stability_effect.py`
 
 ## 3. 验证与验收任务
 
-- [ ] T1133 (`AC-601`, `AC-602`, `AC-606`): 运行 artifact 冻结格式与拒绝规则的正反测试 — verify:
-      `tests/unit/experiment/test_perturbation_session.py`
+- [ ] T1133 (`AC-601`, `AC-602`, `AC-606`): 运行 artifact 冻结格式、逐条追加与拒绝规则的正反
+      测试 — verify: `tests/unit/experiment/test_perturbation_session.py`
 - [ ] T1134 (`AC-603`, `AC-604`, `AC-608`): 运行注入确定性、载体与预热、同种子基线复现、
       同种子重放逐位一致与人类/AI 并存批量因果链测试 — verify:
       `tests/integration/test_perturbation_injection.py`、
       `tests/integration/test_perturbation_carrier.py`、
       `tests/integration/test_perturbation_paired.py`
-- [ ] T1135 (`AC-605`, `AC-607`, `AC-609`): 运行效应量报告的有效/退化两种输入、预注册守卫，
-      并断言产物不进入任何既有 evidence index — verify:
+- [ ] T1135 (`AC-605`, `AC-607`, `AC-609`, `AC-610`): 运行效应量报告的有效/退化/中止三类输入、
+      预注册守卫、开环回放与证据索引隔离测试 — verify:
       `tests/unit/metrics/test_stability_effect.py`、
-      `tests/unit/experiment/test_perturbation_preregistration.py`
-- [ ] T1136 (`AC-601`—`AC-609`): 运行项目统一质量门，并确认 0.4.1 质量门、0.4.3 锚定市场门、
+      `tests/unit/experiment/test_perturbation_preregistration.py`、
+      `tests/integration/test_perturbation_open_loop.py`、
+      `tests/integration/test_perturbation_evidence_guard.py`
+- [ ] T1136 (`AC-601`—`AC-610`): 运行项目统一质量门，并确认 0.4.1 质量门、0.4.3 锚定市场门、
       0.3.1 配对轨与 0.3.2 终端路径无回归 — verify: `python tools/verify.py`；既有回归门：
       `tests/integration/test_h2_owner_web.py`、`tests/integration/test_anchored_market.py`
 - [ ] T1137 `[状态门]`: 回写 spec 验收证据、版本索引与状态；必须是本文件最后一项 — verify:
@@ -117,12 +132,13 @@ updated: 2026-10-15
 
 ## 4. 依赖与并行关系
 
-- `T1120 -> T1122 -> T1123`：格式先冻结，再实现写入/校验，再加拒绝规则。
-- `T1120 -> T1124`：注入修复按冻结格式记录动作字段。
-- `T1121 -> T1131`、`T1121 -> T1127`：指标口径先冻结，才谈得上功效分析与效应量。
-- `T1125 -> T1126 -> T1127`：基线臂跑在载体 C 上，功效分析依赖跨种子基线。
-- `T1122, T1123, T1124, T1127 -> T1128`：T1128 是 Phase 1 成果门，须在预注册提交之后。
-- `T1128 -> T1129 -> T1130 [P]` 与 `T1128 -> T1131 [P]`：回放臂与效应量实现改不同文件，可并行。
+- `T1120 -> T1122 -> T1123`：格式先冻结，再实现日志/封口/校验，再加拒绝规则。
+- `T1120, T1122 -> T1124`：注入修复按冻结格式追加动作日志。
+- `T1121 -> T1127`、`T1121 -> T1131`：指标口径先冻结，才谈得上功效分析与效应量。
+- `T1124, T1125 -> T1126 -> T1127`：同种子两臂跑在载体 C 上、依赖确定的注入路径；功效分析
+  依赖跨种子基线。
+- `T1123, T1126, T1127 -> T1128`：T1128 是 Phase 1 成果门，须在预注册提交之后。
+- `T1128 -> T1129 -> T1130 [P]` 与 `T1128 -> T1131 [P]`：开环回放与效应量实现改不同文件，可并行。
 - `T1129, T1130, T1131 -> T1132`：配对与报告齐备后才产出 Phase 2 成果门。
 - `T1133 [P]`、`T1134 [P]`、`T1135 [P]` 可并行；`T1133, T1134, T1135 -> T1136 -> T1137`。
 
