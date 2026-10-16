@@ -104,7 +104,7 @@ live 市场（0.4.1，本里程碑改注入路径）
     `roster_id`、`seed`、`engine_config_digest`、`evidence_class: experiment-preview`、
     `run_mode: interactive`；
   - **动作行**（每笔动作被 `advance()` 取出时追加）：`advance_index`、`action_seq`（会话内单调）、
-    动作类型与载荷（撤单含 `target_order_id`）、`wall_clock`；
+    动作类型与载荷（撤单以 `target_action_seq` 指向被撤的下单动作，不记 `order_id`）、`wall_clock`；
   - **封口行**（进程正常结束时追加）：`end_advance_index`、`event_digest`（结束序号处的事件
     摘要）、`observation_digest[]`。
   `content_hash` = 头记录与全部动作行的规范化 JSON 的 sha256，封口与否都可计算；缺封口行即
@@ -143,11 +143,23 @@ live 市场（0.4.1，本里程碑改注入路径）
      owner 决策延迟处入队 `AGENT_DECIDE`，**不**参与周期性观察重排；
   3. 该决策走 `_handle_external_decide`（`experiment/runner.py:433-480`），外部源按
      `_owner_action_seq` 从会话动作源取载荷，返回 `MARKET` / `LIMIT` / `CANCEL`（撤单为本里程碑
-     新增 `kind`）；接缝生成 `ORDER_ARRIVAL`，`decision_event_id = e{txn}_0`，`order_id`、
-     到达时间（决策时间 + owner 延迟）与 `submitted_at` 均由内核确定；参与者类别 `human` 写入
-     决策记录的 `internal_state`（沿用 0.2.1 `interactive/adapter.py` 的做法）。
-  owner 的代理规格（延迟常量）在两臂都注册并计入引擎配置指纹；T1124 断言注册后纯 AI 运行的
-  事件流与 0.4.1/0.4.3 入库摘要逐位不变，不成立即回到本节重新设计。
+     新增 `kind`）；接缝生成 `ORDER_ARRIVAL`，`decision_event_id = e{txn}_0`，`order_id`
+     （`o-owner-e{txn}_0-{seq}`，`experiment/runner.py:456`、`:479`）、到达时间（决策时间 + owner
+     延迟）与 `submitted_at` 均由内核确定；参与者类别 `human` 由 owner 源追加进决策记录的
+     `internal_state`（接缝现只写 `decision_source` / `window_index`，`:504-506`）。
+  4. **撤单目标的解析**：owner 决策源在每次运行内维护 `action_seq → order_id` 映射，下单委托
+     生成时登记；撤单载荷带 `target_action_seq`，源据映射解析出本次运行的 `order_id`，映射中
+     没有（该下单在本种子上被拒）或目标已不在簿时按既有撤单语义处理并留原因码。终端按委托
+     视图里的 `order_id` 撤单（`owner_terminal.html:143-145`），live 市场在入队前用同一映射把它
+     反查成 `target_action_seq` 再写入动作行——换种子后 `order_id` 必然不同，动作行里不能出现它。
+  **owner 规格的注册位置与约束**：
+  - 只注入运行时 `world["agent_specs"]`（`live_market.py:244` 处），**不**进 `config.agent_specs`——
+    后者会让 `live_market.py:263-273` 在 t=0 给 owner 排一条观察并周期重排，改变纯 AI 摘要；
+  - 两臂都注入、计入引擎配置指纹；`_handle_external_decide` 依赖 `agent_specs[owner]`（`:455`，
+    缺则 `KeyError`）与 `accounts[owner]`（`:458`，`live_market.py:219` 已建）；
+  - owner 的 `latency_ns ≥ 1`：`AGENT_DECIDE → ORDER_ARRIVAL` 是优先级类回退，调度白名单要求
+    时间戳至少前进 1 ns（`kernel/scheduling.py:31`），否则 `KernelAbort`；
+  - T1124 断言注入后纯 AI 运行的事件流与 0.4.1/0.4.3 入库摘要逐位不变，不成立即回到本节重新设计。
 - 证据索引隔离（AC-607）：既有拦截点是 `showcase/evidence_index.py::_validate_common_scope`
   （只接受 `run_family = SPONTANEOUS` 且 `evidence_class = formal-research`）与
   `evidence/evidence_guard.py` 的 `RunMode.INTERACTIVE`；本里程碑的 artifact 与报告显式携带
@@ -211,7 +223,7 @@ live 市场（0.4.1，本里程碑改注入路径）
 | AC-607 | artifact 与报告交给 evidence index 构建入口被拒；合规输入不受影响 | 集成 |
 | AC-608 | 载体清单哈希与参数；预热前拒单、预热后开放、5700 s 仍未退出冷启动时拒绝开放 | 集成 |
 | AC-609 | 预注册文件缺失 / 哈希不一致 / 处理会话不在其中时配对入口 fail closed | 单元 |
-| AC-610 | 开环回放按序号投递并推进到 5700 s；配对集合可重建；撤单目标不存在时记原因码 | 集成 |
+| AC-610 | 开环回放按序号投递并推进到 5700 s；配对集合可重建；撤单按 `target_action_seq` 解析，仍挂着的被撤、已成交/被拒的记原因码 | 集成 |
 
 既有回归：0.4.1 质量门、0.4.3 锚定市场门、0.3.1 配对轨与 0.3.2 终端测试必须全绿；
 纯 AI 运行的 0.4.1/0.4.3 入库摘要不变。
