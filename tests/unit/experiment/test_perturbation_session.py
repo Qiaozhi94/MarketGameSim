@@ -16,7 +16,9 @@ def test_session_artifact_frozen_format_round_trips_and_rejects_invalid():
 @pytest.mark.xfail(strict=True, reason="T1122 not implemented yet")
 def test_action_journal_survives_termination_as_unsealed():
     """AC-602：
-    任意动作后终止进程不丢已受理动作、标 UNSEALED；空会话、多动作封口会话、未封口会话三种场景
+    头记录先于动作落盘；任意动作后终止进程不丢已取出动作、标 UNSEALED，
+    未封口会话可校验、内容哈希稳定、种子与 roster_id 可读；
+    空会话、多动作封口会话、未封口会话三种场景
     """
     pytest.fail("T1122 pending")
 

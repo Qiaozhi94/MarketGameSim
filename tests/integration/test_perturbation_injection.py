@@ -10,8 +10,8 @@ import pytest
 @pytest.mark.xfail(strict=True, reason="T1124 not implemented yet")
 def test_fields_assigned_at_drain_under_deterministic_interleaving():
     """AC-603：
-    同一 advance 内多笔提交、提交恰在推进中途两类交错下 order_id 不重复、
-    submitted_at 只由取出序号决定
+    同一 advance 内多笔提交、提交恰在推进中途两类交错下，
+    order_id、时间戳与 submitted_at 只由 advance 序号、动作序号与载荷决定且不重复
     """
     pytest.fail("T1124 pending")
 
@@ -24,5 +24,5 @@ def test_action_journal_appended_per_accepted_action():
 
 @pytest.mark.xfail(strict=True, reason="T1124 not implemented yet")
 def test_pure_ai_runs_keep_recorded_digests():
-    """AC-603：纯 AI 运行的 0.4.1/0.4.3 入库摘要不变"""
+    """AC-603：注册 owner 代理规格后，纯 AI 运行的 0.4.1/0.4.3 入库摘要不变"""
     pytest.fail("T1124 pending")

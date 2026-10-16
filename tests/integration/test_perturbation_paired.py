@@ -24,6 +24,7 @@ def test_same_seed_replay_matches_seal_and_detects_tampering():
 @pytest.mark.xfail(strict=True, reason="T1130 not implemented yet")
 def test_owner_and_ai_orders_resolve_to_agent_decide_in_batch():
     """AC-604：
-    多条记录并存时 owner 与 AI 委托的 decision_event_id 都解析到 AGENT_DECIDE，参与者类别可区分
+    多条记录并存时 chain_verifier 对含 owner 下单与撤单的事件流通过，
+    owner 与 AI 委托的 decision_event_id 都解析到 AGENT_DECIDE，参与者类别可区分
     """
     pytest.fail("T1130 pending")

@@ -37,9 +37,9 @@ updated: 2026-10-16
 ## 1. 前置条件
 
 - [ ] T1120 (`FR-601`, `AC-601`): 在任何 owner 自由场次之前冻结 `PerturbationSession` 格式
-      （会话单位为一次市场进程；动作日志逐条追加的字段含 `advance_index`、分配的逻辑时间戳、
-      `submitted_at`、`order_id`、`decision_event_id`；封口记录含结束 `advance` 序号与该序号处的
-      事件摘要；封口状态、版本号与内容哈希口径），并写成可被校验入口消费的冻结记录 — verify:
+      （会话单位为一次市场进程；头记录含版本号、会话标识、`roster_id`、种子、引擎配置指纹；
+      动作行含 `advance_index`、`action_seq` 与载荷；封口行含结束 `advance` 序号与该序号处的
+      事件摘要；内容哈希对「头记录 + 动作行」定义），并写成可被校验入口消费的冻结记录 — verify:
       `tests/unit/experiment/test_perturbation_session.py`
 - [ ] T1121 (`FR-603`, `DR-602`, `AC-605`): 冻结四个稳定性指标的计算口径与退化判定规则（spec
       SC-603）：盘口可用率与大波动频次取自 0.4.1 已冻结定义、只加窗口；最大回撤与最大涨幅
@@ -51,19 +51,21 @@ updated: 2026-10-16
 
 ### Phase 1：会话格式冻结、注入确定性、载体、同种子重放与功效分析
 
-- [ ] T1122 (`FR-601`, `DR-601`, `AC-601`, `AC-602`): 实现 `PerturbationSession` 的动作日志追加、
-      封口、读取与校验入口；缺字段、错版本号、含画像字段三类非法输入给稳定原因码；在任意
-      一条动作之后终止进程时已受理动作不丢、会话标 `UNSEALED`（正反用例都要有） — verify:
+- [ ] T1122 (`FR-601`, `DR-601`, `AC-601`, `AC-602`): 实现 `PerturbationSession` 的头记录、动作行
+      追加、封口、读取与校验入口；缺字段、错版本号、含画像字段三类非法输入给稳定原因码；在任意
+      一条动作之后终止进程时已取出动作不丢、会话标 `UNSEALED`，且未封口会话可通过校验、内容
+      哈希稳定、种子与 `roster_id` 可读（正反用例都要有） — verify:
       `tests/unit/experiment/test_perturbation_session.py`
 - [ ] T1123 (`FR-604`, `NFR-602`, `AC-606`): 在校验入口拒绝对错判定/行为画像字段与直接身份
       信息，并断言合法 artifact 不被误拒 — verify:
       `tests/unit/experiment/test_perturbation_session.py`
-- [ ] T1124 (`FR-601`, `NFR-601`, `IR-601`, `TR-601`, `AC-602`, `AC-603`): 修复 live 市场注入路径——
-      HTTP 线程只入队载荷；`advance()` 持锁取出时在同一临界区内分配 `order_id`、逻辑时间戳与
-      `submitted_at`，补发 `AGENT_DECIDE`（参与者类别写入其 `internal_state`，先于委托入队），
-      记录 `advance` 序号并追加动作日志；进程正常结束时封口。回归测试用确定性交错钩子构造
-      「同一 advance 内多笔提交」「提交恰在推进中途」两类交错（`order_id` 不重复、
-      `submitted_at` 只由取出序号决定），并断言纯 AI 运行的 0.4.1/0.4.3 入库摘要不变 — verify:
+- [ ] T1124 (`FR-601`, `NFR-601`, `IR-601`, `TR-601`, `AC-602`, `AC-603`): 修复 live 市场注入路径
+      （design §4、§5）——HTTP 线程只入队载荷；`advance()` 持锁取出时分配 `action_seq`、入队
+      owner 的 `AGENT_OBSERVE` 并追加动作行；`experiment/runner.py` 增加 owner 观察分支（不参与
+      周期性重排），决策走 `_handle_external_decide` 并扩展撤单 `kind`；进程正常结束时封口。
+      回归测试用确定性交错钩子构造「同一 advance 内多笔提交」「提交恰在推进中途」两类交错
+      （`order_id`、时间戳、`submitted_at` 只由序号与载荷决定且不重复），并断言注册 owner 规格后
+      纯 AI 运行的 0.4.1/0.4.3 入库摘要不变 — verify:
       `tests/integration/test_perturbation_injection.py`
 - [ ] T1125 (`FR-605`, `AC-608`): 把载体 C（count 6 / sensitivity 150，其余同 0.4.3 T1109
       固定项）按种子落盘到 `docs/experiments/0.4.2-rosters/`；live 市场新增预热：开放终端前
@@ -71,9 +73,9 @@ updated: 2026-10-16
       两侧）；改正 `--tick-seconds` 帮助文字里「1:1 实时」的说法 — verify:
       `tests/integration/test_perturbation_carrier.py`
 - [ ] T1126 (`FR-602`, `NFR-601`, `TR-601`, `AC-603`, `AC-604`): 实现同种子两臂——无人类基线臂
-      同装配同种子逐点可复现；同种子重放臂按 `advance` 序号投递动作日志、推进到结束序号后
-      比对封口事件摘要（补发的 `AGENT_DECIDE` 计入摘要），不一致返回 `REPLAY_DIVERGED`；
-      owner 委托的 `decision_event_id` 解析到补发的决策记录 — verify:
+      同装配同种子逐点可复现；同种子重放臂按 `advance` 序号与 `action_seq` 投递动作行、推进到
+      结束序号后比对封口事件摘要（owner 的观察、决策与委托都计入摘要），不一致返回
+      `REPLAY_DIVERGED`；`chain_verifier` 对含 owner 委托的事件流通过 — verify:
       `tests/integration/test_perturbation_paired.py`
 - [ ] T1127 (`SC-605`, `AC-609`): 在 20 个种子上跑载体 C 的无人类基线，产出四指标跨种子
       标准差 `σ_b` 与功效分析报告（`σ_d ≤ √2 · σ_b`、`ρ ≥ 0` 假设与 N 公式见 spec SC-605）；
@@ -94,8 +96,9 @@ updated: 2026-10-16
       撤单目标在该种子上不存在时记录原因码，不静默丢弃动作；配对集合可由预注册文件与会话
       哈希重建 — verify: `tests/integration/test_perturbation_open_loop.py`
 - [ ] T1130 (`TR-501`, `TR-601`, `AC-604`): 人类与 AI 委托并存时的批量因果链用例——多条记录
-      同时存在，owner 与 AI 委托的 `decision_event_id` 都解析到 `AGENT_DECIDE`，参与者类别可
-      区分且撮合路径一致 — verify: `tests/integration/test_perturbation_paired.py`
+      同时存在，`chain_verifier` 对含 owner 下单与撤单的事件流通过，owner 与 AI 委托的
+      `decision_event_id` 都解析到 `AGENT_DECIDE`，参与者类别可区分且撮合路径一致 — verify:
+      `tests/integration/test_perturbation_paired.py`
 - [ ] T1131 (`FR-603`, `DR-602`, `NFR-602`, `AC-605`, `AC-607`): 实现效应量报告——四指标两臂
       分布、逐种子差值、差值中位数与配对 bootstrap 90% 区间（原语加在 `experiment/stats.py`，
       `ci_level = 0.90`、10000 次、种子 0）、实测 `σ_d` 与功效判定、失效边界（退化配对、人类臂
