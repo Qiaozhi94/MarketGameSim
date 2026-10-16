@@ -15,5 +15,8 @@ def test_open_loop_replay_to_window_end_and_rebuildable_pairs():
 
 @pytest.mark.xfail(strict=True, reason="T1129 not implemented yet")
 def test_missing_cancel_target_records_reason_code():
-    """AC-610：撤单目标在该种子上不存在时记录原因码而不跳过（正反两侧）"""
+    """AC-610：
+    撤单按 target_action_seq 解析——原场撤掉的挂单在开环种子上仍挂着时照常撤掉，
+    已成交或被拒时记录原因码而不跳过（正反两侧）
+    """
     pytest.fail("T1129 pending")

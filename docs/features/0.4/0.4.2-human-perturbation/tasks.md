@@ -62,7 +62,9 @@ updated: 2026-10-16
 - [ ] T1124 (`FR-601`, `NFR-601`, `IR-601`, `TR-601`, `AC-602`, `AC-603`): 修复 live 市场注入路径
       （design §4、§5）——HTTP 线程只入队载荷；`advance()` 持锁取出时分配 `action_seq`、入队
       owner 的 `AGENT_OBSERVE` 并追加动作行；`experiment/runner.py` 增加 owner 观察分支（不参与
-      周期性重排），决策走 `_handle_external_decide` 并扩展撤单 `kind`；进程正常结束时封口。
+      周期性重排），决策走 `_handle_external_decide` 并扩展撤单 `kind`；owner 规格只注入
+      `world["agent_specs"]`、`latency_ns ≥ 1`；撤单在入队前把终端给的 `order_id` 反查成
+      `target_action_seq` 写入动作行；进程正常结束时封口。
       回归测试用确定性交错钩子构造「同一 advance 内多笔提交」「提交恰在推进中途」两类交错
       （`order_id`、时间戳、`submitted_at` 只由序号与载荷决定且不重复），并断言注册 owner 规格后
       纯 AI 运行的 0.4.1/0.4.3 入库摘要不变 — verify:
@@ -92,9 +94,10 @@ updated: 2026-10-16
 ### Phase 2：开环跨种子回放与效应量报告
 
 - [ ] T1129 (`FR-602`, `IR-601`, `DR-601`, `AC-610`): 实现开环跨种子回放——按 `advance` 序号把
-      处理会话的动作日志投到预注册种子上并推进到 5700 s；无法投递时判失败并给稳定原因码，
-      撤单目标在该种子上不存在时记录原因码，不静默丢弃动作；配对集合可由预注册文件与会话
-      哈希重建 — verify: `tests/integration/test_perturbation_open_loop.py`
+      处理会话的动作日志投到预注册种子上并推进到 5700 s；无法投递时判失败并给稳定原因码；
+      撤单按 `target_action_seq` 经本次运行的 `action_seq → order_id` 映射解析——原场撤掉的挂单
+      在开环种子上仍挂着时照常撤掉，已成交或被拒时记录原因码，不静默丢弃动作；配对集合可由
+      预注册文件与会话哈希重建 — verify: `tests/integration/test_perturbation_open_loop.py`
 - [ ] T1130 (`TR-501`, `TR-601`, `AC-604`): 人类与 AI 委托并存时的批量因果链用例——多条记录
       同时存在，`chain_verifier` 对含 owner 下单与撤单的事件流通过，owner 与 AI 委托的
       `decision_event_id` 都解析到 `AGENT_DECIDE`，参与者类别可区分且撮合路径一致 — verify:
