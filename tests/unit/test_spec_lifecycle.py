@@ -1103,6 +1103,66 @@ def test_one_missing_path_in_multi_path_verify_fails_ac_path_gate(sv, tmp_path):
     assert fixed_errors == []
 
 
+def test_done_rejects_xfail_skeleton_still_naming_the_ac(sv, tmp_path):
+    """循环 31 d-done-gate-accepts-xfail-skeletons：骨架无条件 pytest.fail，实现后也不会
+    XPASS，strict 绊线不起作用；review/done 时门禁须确认骨架已换成真实断言。"""
+    skeleton = (
+        "import pytest\n\n\n"
+        '@pytest.mark.xfail(strict=True, reason="T001 not implemented yet")\n'
+        "def test_feature():\n"
+        '    """AC-001：做到某事。"""\n'
+        '    pytest.fail("T001 pending")\n'
+    )
+    _touch_test(tmp_path, "tests/unit/test_feature.py")
+    (tmp_path / "tests/unit/test_feature.py").write_text(skeleton, encoding="utf-8")
+    spec = _spec_with_ac("- [x] **AC-001** (`FR-001`): 做到某事。")
+    tasks = (
+        "## 2. 实现任务\n\n- [x] **T001** (`AC-001`): 实施 — verify: `tests/unit/test_feature.py`\n"
+    )
+
+    ready_errors: list[str] = []
+    sv._check_ac_references(
+        spec, tasks, "", "", tmp_path, ready_errors, "m", "ready-for-development"
+    )
+    assert ready_errors == []
+
+    for status in ("review", "done"):
+        errors: list[str] = []
+        sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", status)
+        assert any("test_feature" in e and "xfail" in e for e in errors), status
+
+    (tmp_path / "tests/unit/test_feature.py").write_text(
+        'def test_feature():\n    """AC-001：做到某事。"""\n    assert True\n', encoding="utf-8"
+    )
+    done_errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, done_errors, "m", "done")
+    assert done_errors == []
+
+
+def test_done_gate_ignores_xfail_tests_of_other_acs(sv, tmp_path):
+    """只拦提到本 AC 编号的 xfail 测试；AC-0010 不能被当成 AC-001 命中，
+    后一个函数的 xfail 装饰器也不能被算到前一个函数头上。"""
+    (tmp_path / "tests/unit").mkdir(parents=True)
+    (tmp_path / "tests/unit/test_feature.py").write_text(
+        "import pytest\n\n\n"
+        '@pytest.mark.xfail(strict=True, reason="known defect")\n'
+        "def test_known_defect():\n"
+        '    """AC-0010：已知缺陷。"""\n'
+        "    assert False\n\n\n"
+        "def test_feature():\n"
+        '    """AC-001：真实断言。"""\n'
+        "    assert True\n",
+        encoding="utf-8",
+    )
+    spec = _spec_with_ac("- [x] **AC-001** (`FR-001`): 做到某事。")
+    tasks = (
+        "## 2. 实现任务\n\n- [x] **T001** (`AC-001`): 实施 — verify: `tests/unit/test_feature.py`\n"
+    )
+    errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "done")
+    assert errors == []
+
+
 def test_historical_milestone_keeps_legacy_verify_path_rule(sv, tmp_path):
     spec = _spec_with_ac("- [ ] **AC-001** (`FR-001`): 历史验收。")
     tasks = "## 2. 实现任务\n\n- [ ] **T001** (`AC-001`): 历史门禁 — verify: `tools/verify.py`\n"

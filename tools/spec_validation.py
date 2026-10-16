@@ -756,6 +756,28 @@ def _block_has_existing_path(block: str, root: pathlib.Path) -> bool:
     return bool(paths) and all(path.is_file() for path in paths)
 
 
+_TEST_FUNCTION = re.compile(
+    r"(?P<decorators>(?:^[ \t]*@[^\n]*\n)*)^[ \t]*def (?P<name>test_\w+)\("
+    r".*?(?=^[ \t]*(?:@|def |class )|\Z)",
+    re.MULTILINE | re.DOTALL,
+)
+
+
+def _xfailed_tests_naming(path: pathlib.Path, ac: str) -> list[str]:
+    """文件里提到 ``ac`` 编号、却仍带 ``xfail`` 标记的测试函数名。
+
+    strict-xfail 骨架无条件 ``pytest.fail``，实现落地后也不会 XPASS——strict 绊线
+    在这里不起作用；`review`/`done` 时必须由门禁确认骨架已换成真实断言（循环 31
+    d-done-gate-accepts-xfail-skeletons）。
+    """
+    mention = re.compile(rf"\b{re.escape(ac)}(?!\d)")
+    return [
+        m.group("name")
+        for m in _TEST_FUNCTION.finditer(path.read_text(encoding="utf-8"))
+        if "xfail" in m.group("decorators") and mention.search(m.group(0))
+    ]
+
+
 # 「本 spec 声明的需求必须有 AC 认领」规则的引入日；此前 created 的里程碑不追溯执法
 # （0.1.4 的 US-004/US-005/TR-001/SC-006 就没有 AC，规则出现时它已经 done）。
 AC_COVERAGE_RULE_DATE = "2026-08-15"
@@ -824,6 +846,22 @@ def _check_ac_references(
         if not blocks:
             fail(errors, f"{where}: {ac} 没有任何任务引用，验收无实施锚点")
             continue
+        if path_required and status in ("review", "done"):
+            named_paths = {
+                path
+                for block, named in blocks
+                if named
+                for path in _verify_test_paths(block, root)
+                if path.is_file()
+            }
+            for path in sorted(named_paths):
+                for name in _xfailed_tests_naming(path, ac):
+                    rel = path.relative_to(root.resolve()).as_posix()
+                    fail(
+                        errors,
+                        f"{where}: {ac} 的测试 {rel}::{name} 仍带 xfail，"
+                        f"status={status} 时骨架必须已换成真实断言",
+                    )
         if path_required and not any(
             named and _block_has_existing_path(block, root) for block, named in blocks
         ):
