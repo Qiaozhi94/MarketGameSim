@@ -1189,6 +1189,39 @@ _SKELETON_BYPASSES = {
         '        """AC-001：做到某事。"""\n'
         '        pytest.fail("T001 pending")\n'
     ),
+    "runtime_skip_call": (
+        "import pytest\n\n\n"
+        "def test_feature():\n"
+        '    """AC-001：做到某事。"""\n'
+        '    pytest.skip("T001 not implemented yet")\n'
+    ),
+    "runtime_xfail_call": (
+        "import pytest\n\n\n"
+        "def test_feature():\n"
+        '    """AC-001：做到某事。"""\n'
+        '    pytest.xfail("T001 not implemented yet")\n'
+    ),
+    "runtime_skip_module_alias": (
+        "import pytest as pt\n\n\n"
+        "def test_feature():\n"
+        '    """AC-001：做到某事。"""\n'
+        '    pt.skip("T001 not implemented yet")\n'
+    ),
+    "runtime_skip_imported_name": (
+        "from pytest import skip as later\n\n\n"
+        "def test_feature():\n"
+        '    """AC-001：做到某事。"""\n'
+        '    later("T001 not implemented yet")\n'
+    ),
+    "aliased_mark": (
+        "import pytest\n\n"
+        'pending = pytest.mark.xfail(strict=True, reason="T001 not implemented yet")\n'
+        "later = pending\n\n\n"
+        "@later\n"
+        "def test_feature():\n"
+        '    """AC-001：做到某事。"""\n'
+        '    pytest.fail("T001 pending")\n'
+    ),
     "skip_decorator": (
         "import pytest\n\n\n"
         '@pytest.mark.skip(reason="T001 not implemented yet")\n'
@@ -1214,6 +1247,31 @@ def test_done_gate_sees_through_skeleton_bypasses(sv, tmp_path, variant):
     errors: list[str] = []
     sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "done")
     assert any("test_feature" in e and "xfail" in e for e in errors), variant
+
+
+def test_done_gate_does_not_flag_non_skipping_aliases_or_calls(sv, tmp_path):
+    """反例：parametrize 别名、pytest.raises、名为 skip 的普通局部函数都不是跳过。"""
+    (tmp_path / "tests/unit").mkdir(parents=True)
+    (tmp_path / "tests/unit/test_feature.py").write_text(
+        "import pytest\n\n"
+        'cases = pytest.mark.parametrize("n", [1, 2])\n\n\n'
+        "def skip(items):\n"
+        "    return items[1:]\n\n\n"
+        "@cases\n"
+        "def test_feature(n):\n"
+        '    """AC-001：真实断言。"""\n'
+        "    with pytest.raises(ZeroDivisionError):\n"
+        "        n / 0\n"
+        "    assert skip([0, n]) == [n]\n",
+        encoding="utf-8",
+    )
+    spec = _spec_with_ac("- [x] **AC-001** (`FR-001`): 做到某事。")
+    tasks = (
+        "## 2. 实现任务\n\n- [x] **T001** (`AC-001`): 实施 — verify: `tests/unit/test_feature.py`\n"
+    )
+    errors: list[str] = []
+    sv._check_ac_references(spec, tasks, "", "", tmp_path, errors, "m", "done")
+    assert errors == []
 
 
 def test_historical_milestone_keeps_legacy_verify_path_rule(sv, tmp_path):

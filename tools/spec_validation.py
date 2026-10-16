@@ -758,20 +758,80 @@ def _block_has_existing_path(block: str, root: pathlib.Path) -> bool:
 
 
 _SKIPPING_MARKS = frozenset({"xfail", "skip", "skipif"})
+# 运行期跳过：测试体内调 pytest.skip()/xfail()/importorskip()，没有任何装饰器。
+_RUNTIME_SKIPS = frozenset({"skip", "xfail", "importorskip"})
 
 
-def _marks_skipping(node: ast.AST) -> bool:
-    """装饰器或 ``pytestmark`` 表达式里是否出现 ``pytest.mark.xfail/skip/skipif``。
+def _marks_skipping(node: ast.AST, aliases: frozenset[str] = frozenset()) -> bool:
+    """表达式里是否出现 ``pytest.mark.xfail/skip/skipif``，或已知的跳过标记别名。
 
     走 AST 而不是逐行正则：装饰器被 ``ruff format`` 折成多行、或写成模块级/类级
-    ``pytestmark`` 时，正则都看不见（循环 31 R3 d-done-gate-xfail-bypass）。
+    ``pytestmark`` 时，正则都看不见（循环 31 R3 d-done-gate-xfail-bypass）；标记先赋给
+    变量再 ``@别名`` 使用时，只认属性名也看不见（循环 31 R4 d-done-gate-runtime-skip-bypass）。
     """
     return any(
-        isinstance(sub, ast.Attribute) and sub.attr in _SKIPPING_MARKS for sub in ast.walk(node)
+        (isinstance(sub, ast.Attribute) and sub.attr in _SKIPPING_MARKS)
+        or (isinstance(sub, ast.Name) and sub.id in aliases)
+        for sub in ast.walk(node)
     )
 
 
-def _pytestmark_skips(body: list[ast.stmt]) -> bool:
+def _assignments(tree: ast.AST) -> list[tuple[list[ast.expr], ast.expr]]:
+    pairs: list[tuple[list[ast.expr], ast.expr]] = []
+    for stmt in ast.walk(tree):
+        if isinstance(stmt, ast.Assign):
+            pairs.append((stmt.targets, stmt.value))
+        elif isinstance(stmt, ast.AnnAssign) and stmt.value is not None:
+            pairs.append(([stmt.target], stmt.value))
+    return pairs
+
+
+def _skip_mark_aliases(tree: ast.AST) -> frozenset[str]:
+    """被赋成跳过标记的名字，含链式转赋（``xf = pytest.mark.xfail(...)``、``later = xf``）。"""
+    aliases: set[str] = set()
+    pairs = _assignments(tree)
+    changed = True
+    while changed:
+        changed = False
+        for targets, value in pairs:
+            if not _marks_skipping(value, frozenset(aliases)):
+                continue
+            for target in targets:
+                if isinstance(target, ast.Name) and target.id not in aliases | {"pytestmark"}:
+                    aliases.add(target.id)
+                    changed = True
+    return frozenset(aliases)
+
+
+def _runtime_skip_names(tree: ast.AST) -> tuple[frozenset[str], frozenset[str]]:
+    """(pytest 模块的本地名, 从 pytest 直接导入的跳过函数本地名)。"""
+    modules, functions = {"pytest"}, set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            modules.update(a.asname or a.name for a in node.names if a.name == "pytest")
+        elif isinstance(node, ast.ImportFrom) and node.module == "pytest":
+            functions.update(a.asname or a.name for a in node.names if a.name in _RUNTIME_SKIPS)
+    return frozenset(modules), frozenset(functions)
+
+
+def _calls_runtime_skip(node: ast.AST, modules: frozenset[str], functions: frozenset[str]) -> bool:
+    for sub in ast.walk(node):
+        if not isinstance(sub, ast.Call):
+            continue
+        func = sub.func
+        if (
+            isinstance(func, ast.Attribute)
+            and func.attr in _RUNTIME_SKIPS
+            and isinstance(func.value, ast.Name)
+            and func.value.id in modules
+        ):
+            return True
+        if isinstance(func, ast.Name) and func.id in functions:
+            return True
+    return False
+
+
+def _pytestmark_skips(body: list[ast.stmt], aliases: frozenset[str]) -> bool:
     for stmt in body:
         if isinstance(stmt, ast.Assign):
             targets, value = stmt.targets, stmt.value
@@ -780,18 +840,19 @@ def _pytestmark_skips(body: list[ast.stmt]) -> bool:
         else:
             continue
         if any(isinstance(t, ast.Name) and t.id == "pytestmark" for t in targets) and (
-            _marks_skipping(value)
+            _marks_skipping(value, aliases)
         ):
             return True
     return False
 
 
 def _xfailed_tests_naming(path: pathlib.Path, ac: str) -> list[str]:
-    """文件里提到 ``ac`` 编号、却仍被 xfail/skip 标记（函数、类或模块级）的测试。
+    """文件里提到 ``ac`` 编号、却仍会被跳过或预期失败的测试。
 
-    strict-xfail 骨架无条件 ``pytest.fail``，实现落地后也不会 XPASS——strict 绊线
-    在这里不起作用；`review`/`done` 时必须由门禁确认骨架已换成真实断言（循环 31
-    d-done-gate-accepts-xfail-skeletons）。
+    覆盖：函数/类装饰器、模块级与类级 ``pytestmark``、跳过标记的别名、测试体内的
+    ``pytest.skip()``/``xfail()``/``importorskip()`` 调用。strict-xfail 骨架无条件
+    ``pytest.fail``，实现落地后也不会 XPASS——strict 绊线在这里不起作用；`review`/`done`
+    时必须由门禁确认骨架已换成真实断言（循环 31 d-done-gate-accepts-xfail-skeletons）。
     """
     text = path.read_text(encoding="utf-8")
     try:
@@ -799,18 +860,24 @@ def _xfailed_tests_naming(path: pathlib.Path, ac: str) -> list[str]:
     except SyntaxError:
         return []
     mention = re.compile(rf"\b{re.escape(ac)}(?!\d)")
+    aliases = _skip_mark_aliases(tree)
+    modules, functions = _runtime_skip_names(tree)
     found: list[str] = []
 
     def visit(body: list[ast.stmt], inherited: bool, prefix: str) -> None:
-        skipped = inherited or _pytestmark_skips(body)
+        skipped = inherited or _pytestmark_skips(body, aliases)
         for node in body:
             if isinstance(node, ast.ClassDef):
-                marked = skipped or any(_marks_skipping(d) for d in node.decorator_list)
+                marked = skipped or any(_marks_skipping(d, aliases) for d in node.decorator_list)
                 visit(node.body, marked, f"{prefix}{node.name}::")
             elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) and (
                 node.name.startswith("test_")
             ):
-                marked = skipped or any(_marks_skipping(d) for d in node.decorator_list)
+                marked = (
+                    skipped
+                    or any(_marks_skipping(d, aliases) for d in node.decorator_list)
+                    or _calls_runtime_skip(node, modules, functions)
+                )
                 if marked and mention.search(ast.get_source_segment(text, node) or ""):
                     found.append(prefix + node.name)
 
