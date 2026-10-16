@@ -150,8 +150,10 @@ live 市场（0.4.1，本里程碑改注入路径）
   4. **撤单目标的解析**：owner 决策源在每次运行内维护 `action_seq → order_id` 映射，下单委托
      生成时登记；撤单载荷带 `target_action_seq`，源据映射解析出本次运行的 `order_id`，映射中
      没有（该下单在本种子上被拒）或目标已不在簿时按既有撤单语义处理并留原因码。终端按委托
-     视图里的 `order_id` 撤单（`owner_terminal.html:143-145`），live 市场在入队前用同一映射把它
-     反查成 `target_action_seq` 再写入动作行——换种子后 `order_id` 必然不同，动作行里不能出现它。
+     视图里的 `order_id` 撤单（`owner_terminal.html:143-145`）：HTTP 线程只把它原样入队（§5，
+     HTTP 线程不读内核状态），由 `advance()` 持锁取出时用同一映射反查成 `target_action_seq`
+     再写入动作行——换种子后 `order_id` 必然不同，动作行里不能出现它；反查不到（非 owner 委托
+     或不存在的编号）时按格式校验失败处理：丢弃该载荷、不进内核、不入动作日志。
   **owner 规格的注册位置与约束**：
   - 只注入运行时 `world["agent_specs"]`（`live_market.py:244` 处），**不**进 `config.agent_specs`——
     后者会让 `live_market.py:263-273` 在 t=0 给 owner 排一条观察并周期重排，改变纯 AI 摘要；
