@@ -44,8 +44,9 @@ updated: 2026-10-16
    的动作日志追加、封口、读取与校验入口，格式带版本号与内容哈希。**必须先于任何 owner 自由
    场次落地**。
 2. **注入路径确定性修复**——改 `experiment/h2/live_market.py`（见 §5「并发」）：HTTP 线程
-   只入队载荷；`advance()` 持锁取出时分配 `order_id`、逻辑时间戳与 `submitted_at`，补发
-   `AGENT_DECIDE`，记录 `advance` 序号并追加动作日志；进程正常结束时封口。
+   只入队载荷；`advance()` 持锁取出时为每笔动作入队一条 owner 的 `AGENT_OBSERVE`（携带会话内
+   动作序号），记录 `advance` 序号并追加动作日志；内核再经外部决策接缝派生决策与委托
+   （见 §4、§5）；进程正常结束时封口。
 3. **载体与预热**——载体 C 的 roster 按种子用 `experiment/roster.py::save_roster` 落盘到
    `docs/experiments/0.4.2-rosters/`（构造方式同 `metrics/anchor_scan.py::config_roster`）；
    live 市场新增预热：开放终端前连续调用 `advance()` 而不等待 `--tick-seconds`。
@@ -57,8 +58,9 @@ updated: 2026-10-16
    `two_sided_book_uptime`、`instability.py` 的分钟变动与强平连锁扫描，后者补窗口参数）；
    配对 bootstrap 原语加在 `experiment/stats.py`（见 DQ-603）。
 
-影响面：`experiment/h2/live_market.py`（注入确定性、决策记录补发、动作日志、预热、回放
-动作源）、`metrics/instability.py`（扫描函数增加可选窗口参数，缺省行为不变）、
+影响面：`experiment/h2/live_market.py`（注入确定性、owner 观察事件入队、动作日志、预热、
+回放动作源）、`experiment/runner.py`（`_dispatch_agents` 增加 owner 观察分支；
+`_handle_external_decide` 增加撤单 `kind`）、`metrics/instability.py`（扫描函数增加可选窗口参数，缺省行为不变）、
 `experiment/stats.py`（新增配对 bootstrap 原语）。**不影响** `experiment/h2/runner.py` 的
 0.3.1 配对轨与 0.4.1、0.4.3 的质量门路径；纯 AI 运行不经过注入路径，事件流与入库摘要不变
 （由既有回归门与专门断言证明）。
@@ -80,7 +82,8 @@ L2 交易者策略层（0.4.1 / 0.4.3，不改）
         ▲
         │
 live 市场（0.4.1，本里程碑改注入路径）
-  experiment/h2/live_market.py     advance() 持锁取出 → 分配字段 → 补发 AGENT_DECIDE → 追加日志
+  experiment/h2/live_market.py     advance() 持锁取出 → 入队 owner AGENT_OBSERVE → 追加日志
+  experiment/runner.py             owner 观察 → AGENT_DECIDE → _handle_external_decide → ORDER_ARRIVAL
         ▲
         │
 人类扰动（本里程碑新增）
@@ -90,18 +93,23 @@ live 市场（0.4.1，本里程碑改注入路径）
 ```
 
 边界规则：人类动作只能通过既有的外部注入路径进入内核，与 AI 委托共用撮合与风控；
-本里程碑不新增事件类型，只为人类动作补发既有类型 `AGENT_DECIDE` 的实例。
+本里程碑不新增事件类型，人类动作只产生既有类型（`AGENT_OBSERVE` / `AGENT_DECIDE` /
+`ORDER_ARRIVAL`）的新实例。
 
 ## 3. 数据模型与 Migration
 
-- `PerturbationSession`（新增）：动作日志为 JSONL，每受理一笔动作追加一行并 `flush`；封口
-  记录为同目录下的 JSON。字段：`format_version`、`session_id`、`arm`（`baseline` / `human`）、
-  `replay_mode`（`original` / `same_seed_replay` / `open_loop_replay`）、`seal_status`
-  （`SEALED` / `UNSEALED`）、`roster_id`、`seed`、`engine_config_digest`、`actions[]`
-  （`advance_index`、`timestamp_ns`、`submitted_at_ns`、`order_id`、`decision_event_id`、
-  动作类型与载荷、`wall_clock`、受理原因码）、`end_advance_index`、`observation_digest[]`、
-  `event_digest`（结束序号处的事件摘要）、`content_hash`、`evidence_class: experiment-preview`、
-  `run_mode: interactive`。缺封口记录即 `UNSEALED`。
+- `PerturbationSession`（新增）：一个 JSONL 文件，每行 `flush`。
+  - **头记录**（第一行，会话开始时写入）：`format_version`、`session_id`、`arm`
+    （`baseline` / `human`）、`replay_mode`（`original` / `same_seed_replay` / `open_loop_replay`）、
+    `roster_id`、`seed`、`engine_config_digest`、`evidence_class: experiment-preview`、
+    `run_mode: interactive`；
+  - **动作行**（每笔动作被 `advance()` 取出时追加）：`advance_index`、`action_seq`（会话内单调）、
+    动作类型与载荷（撤单含 `target_order_id`）、`wall_clock`；
+  - **封口行**（进程正常结束时追加）：`end_advance_index`、`event_digest`（结束序号处的事件
+    摘要）、`observation_digest[]`。
+  `content_hash` = 头记录与全部动作行的规范化 JSON 的 sha256，封口与否都可计算；缺封口行即
+  `UNSEALED`。`order_id`、时间戳、`submitted_at`、`decision_event_id` 是内核派生结果，不写入
+  动作行，由重放复现。
 - `PerturbationPreregistration`（新增，JSON，单一文件）：功效分析报告引用、`σ_b` 与功效公式、
   处理会话内容哈希清单、逐指标 MDE、N、有效配对下限、开环回放种子清单；sha256 由测试钉住，
   配对入口只读该文件。
@@ -123,10 +131,23 @@ live 市场（0.4.1，本里程碑改注入路径）
   取出阶段投递 `advance_index` 等于当前序号的动作，按日志顺序入队；同种子重放推进到
   `end_advance_index` 后比较事件摘要，不一致返回 `REPLAY_DIVERGED`；动作序号早于当前序号
   （无法投递）返回稳定原因码并判失败，不得跳过动作或改写时点。开环回放推进到 5700 s。
-- 事件（TR-601）：**不新增事件类型**。每笔 owner 动作补发一条 `AGENT_DECIDE`（沿用 0.2.1
-  `interactive/adapter.py` 的形状：`internal_state` 带参与者类别 `human` 与动作序号），委托的
-  `intent_id` / `decision_event_id` 指向它，满足 `event-schema.md` §4.1 对 `origin = AGENT`
-  的因果外键要求；补发的决策记录与委托同批入队（见 §5），计入事件摘要。
+- 事件（TR-601）：**不新增事件类型**。不能在注入时直接入队决策与委托：队列键是
+  `(timestamp, priority_class, enqueue_seq)`，同一时间戳下委托类（0）先于决策类（4）处理
+  （`kernel/keys.py:36-40`、`:80-85`）；决策的 `event_id` 是事务提交时的 `e{txn}_0`
+  （`kernel/runner.py:482`），入队时拿不到；`chain_verifier` 要求 观察 → 决策 → 委托 严格先后
+  （`evidence/chain_verifier.py:85-110`）。因此走既有链：
+  1. `advance()` 入队一条 owner 的 `AGENT_OBSERVE`（时间戳取现有 `_safe_ts()` 口径，携带
+     `_owner_action_seq`）；
+  2. `_dispatch_agents` 对带 `_owner_action_seq` 的观察走 owner 分支（参照
+     `_handle_stress_observe` 的「记录为真实 观察 → 决策 链」做法）：记录观察，在观察时间戳 +
+     owner 决策延迟处入队 `AGENT_DECIDE`，**不**参与周期性观察重排；
+  3. 该决策走 `_handle_external_decide`（`experiment/runner.py:433-480`），外部源按
+     `_owner_action_seq` 从会话动作源取载荷，返回 `MARKET` / `LIMIT` / `CANCEL`（撤单为本里程碑
+     新增 `kind`）；接缝生成 `ORDER_ARRIVAL`，`decision_event_id = e{txn}_0`，`order_id`、
+     到达时间（决策时间 + owner 延迟）与 `submitted_at` 均由内核确定；参与者类别 `human` 写入
+     决策记录的 `internal_state`（沿用 0.2.1 `interactive/adapter.py` 的做法）。
+  owner 的代理规格（延迟常量）在两臂都注册并计入引擎配置指纹；T1124 断言注册后纯 AI 运行的
+  事件流与 0.4.1/0.4.3 入库摘要逐位不变，不成立即回到本节重新设计。
 - 证据索引隔离（AC-607）：既有拦截点是 `showcase/evidence_index.py::_validate_common_scope`
   （只接受 `run_family = SPONTANEOUS` 且 `evidence_class = formal-research`）与
   `evidence/evidence_guard.py` 的 `RunMode.INTERACTIVE`；本里程碑的 artifact 与报告显式携带
@@ -143,17 +164,17 @@ live 市场（0.4.1，本里程碑改注入路径）
   逻辑时间不是固定 1 秒**，窗口 3660→5700 s 实测 1459 次 advance，`--tick-seconds 1.0` 下约
   28 分钟墙钟。`--tick-seconds` 帮助文字里「1:1 实时」的说法随 T1125 改正。
 - 并发（注入确定性）：
-  - HTTP 线程只做载荷校验并把载荷放入队列；不读 `logical_ns`、不扫描内核队列、不分配
-    `order_id` 序号；
-  - `advance()` 持 `LiveMarket.lock` 依次取出载荷，在同一临界区内为每笔动作分配 `order_id`、
-    逻辑时间戳（同现有 `max(…, _safe_ts())` 口径）、`submitted_at`（取出时的逻辑时间）、补发的
-    `AGENT_DECIDE` 及其时间戳，按「决策记录先于委托」的次序入队，记录当前 `advance` 序号并
-    追加动作日志——决策记录与委托在同一次取出中分配，不在 HTTP 线程里生成任何字段；
+  - HTTP 线程只做格式校验并把载荷放入队列；不读 `logical_ns`、不扫描内核队列、不分配任何
+    序号或标识，返回的是「已入队」而不是 `order_id`（`order_id` 由内核在决策事务里生成，
+    终端从盘口与委托视图读取）；
+  - `advance()` 持 `LiveMarket.lock` 依次取出载荷，在同一临界区内分配 `action_seq`、按
+    `_safe_ts()` 口径入队 owner 的 `AGENT_OBSERVE`、记录当前 `advance` 序号并追加动作行——
+    HTTP 线程不生成任何进入事件流的字段；决策记录与委托由内核在随后的事务里派生（§4）；
   - 人类思考时间不阻塞内核推进（ADR-006 的连续市场前提）；
   - 回归测试用确定性交错钩子（在入队与 `advance()` 之间注入可控的调度点）构造「同一 advance
     内多笔提交」「提交恰在推进中途」两类交错，不用真线程碰运气。
-- 采集与回放的关系：实时采集产出带 `advance_index` 的动作日志；由于全部字段只由序号与载荷
-  决定，同种子重放应与原场逐位一致，不一致即视为实现缺陷（`REPLAY_DIVERGED`），不作为
+- 采集与回放的关系：实时采集产出带 `advance_index` 与 `action_seq` 的动作日志；由于事件流里
+  的全部 owner 字段只由这两个序号与载荷决定，同种子重放应与原场逐位一致，不一致即视为实现缺陷（`REPLAY_DIVERGED`），不作为
   可报告的「差异」（spec Q-604）。
 
 ## 6. UI 与可观测性
@@ -167,7 +188,8 @@ live 市场（0.4.1，本里程碑改注入路径）
 
 ## 7. 失败、恢复、安全与兼容
 
-- 市场进程被异常终止：动作日志已逐条落盘，会话为 `UNSEALED`，可作开环处理，不作原场个案。
+- 市场进程被异常终止：头记录与动作行已逐条落盘，会话为 `UNSEALED`，身份、种子与内容哈希
+  可读可校验，可作开环处理并被预注册收录，不作原场个案。
 - 同种子重放与原场不一致：`REPLAY_DIVERGED`，fail closed，该会话不进入配对。
 - 动作回放无法投递（序号已过）：判失败并给稳定原因码；不得跳过动作或改写时点。
 - 预注册文件缺失、哈希不一致或处理会话不在其中：配对入口 fail closed。
@@ -181,9 +203,9 @@ live 市场（0.4.1，本里程碑改注入路径）
 | AC | 主要测试 | 层次 |
 |---|---|---|
 | AC-601 | artifact 冻结格式的正反校验（合法落盘 / 缺字段与错版本号被拒） | 单元 |
-| AC-602 | 逐条追加：任意动作后终止进程不丢动作、标 `UNSEALED`；空会话与多动作封口会话 | 单元 + 集成 |
+| AC-602 | 头记录先写、逐条追加：任意动作后终止进程不丢动作、标 `UNSEALED` 且可校验；空会话与多动作封口会话 | 单元 + 集成 |
 | AC-603 | 同种子基线逐点复现；同种子重放逐位一致与篡改判失败；确定性交错下的注入 | 集成 |
-| AC-604 | owner 与 AI 委托的因果外键都解析到 `AGENT_DECIDE`；并存批量场景 | 集成 |
+| AC-604 | `chain_verifier` 对含 owner 下单与撤单的事件流通过；并存批量场景 | 集成 |
 | AC-605 | 效应量报告：有效 / 退化 / 人类臂中止三类输入；回撤/涨幅窗口起点重置；功效不足标注 | 单元 + 集成 |
 | AC-606 | 画像/对错判定字段与身份信息的拒绝用例 | 单元 |
 | AC-607 | artifact 与报告交给 evidence index 构建入口被拒；合规输入不受影响 | 集成 |
@@ -198,7 +220,7 @@ live 市场（0.4.1，本里程碑改注入路径）
 
 - 已确认：命题形态为效应量命题；artifact 格式先于第一场冻结；不判对错、不做画像；
   不新增事件类型；分析单元为种子、主效应量取开环回放（spec Q-601—Q-604）；功效分析取保守
-  近似；owner 委托补发 `AGENT_DECIDE`（spec §7 决策表）。
+  近似；owner 委托经 观察 → 决策 → 委托 链由内核派生（spec §7 决策表）。
 - 残余风险 1：开环回放把动作与市场状态的对应关系打断——限价单的绝对价格在其他种子上
   可能远离盘口。缓解是报告标签强制写「固定订单流扰动」，并逐场列出原场个案作对照。
 - 残余风险 2：`ρ ≥ 0` 假设不成立导致功效被高估——缓解是报告给出实测 `σ_d`，超出上界即标注
