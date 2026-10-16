@@ -19,6 +19,7 @@
 | requirement owner 与 exit | 对应版本的 `traceability.json`（当前为 [`v0.4`](features/0.4/traceability.json)） |
 | 开发纪律与质量门 | [`docs/SOP.md`](SOP.md) |
 | 当前项目入口和强提醒 | [`CLAUDE.md`](../CLAUDE.md) |
+| 漏洞披露与密钥处置 | [`SECURITY.md`](../SECURITY.md) |
 | 实验协议与结果索引 | [`docs/experiments/`](experiments/experiment-template.md) |
 | 性能基准与判定协议 | [`benchmarks/`](../benchmarks/README.md) |
 | 检视与复盘报告 | [`docs/reviews/`](reviews/RETROSPECTIVE.md) |

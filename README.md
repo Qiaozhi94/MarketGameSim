@@ -201,3 +201,7 @@ python -m market_game_sim.interactive.delivery
 
 生成与查看说明见 [`docs/experiments/interactive-H1.md`](docs/experiments/interactive-H1.md)；
 成果生成后可离线打开其中的 `replay.html`。
+
+## 许可证
+
+MIT，见 [`LICENSE`](LICENSE)。
