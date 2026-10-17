@@ -12,7 +12,7 @@ topics:
   - stability-effect-size
 doc_kind: tasks
 created: 2026-09-20
-updated: 2026-10-16
+updated: 2026-10-17
 ---
 
 # 0.4.2：人类扰动实验 - 任务
@@ -36,10 +36,12 @@ updated: 2026-10-16
 
 ## 1. 前置条件
 
-- [ ] T1120 (`FR-601`, `AC-601`): 在任何 owner 自由场次之前冻结 `PerturbationSession` 格式
+- [x] T1120 (`FR-601`, `AC-601`): 在任何 owner 自由场次之前冻结 `PerturbationSession` 格式
       （会话单位为一次市场进程；头记录含版本号、会话标识、`roster_id`、种子、引擎配置指纹；
       动作行含 `advance_index`、`action_seq` 与载荷；封口行含结束 `advance` 序号与该序号处的
-      事件摘要；内容哈希对「头记录 + 动作行」定义），并写成可被校验入口消费的冻结记录 — verify:
+      事件摘要；内容哈希对「头记录 + 动作行」定义），并写成可被校验入口消费的冻结记录（已落地：
+      [`0.4.2-perturbation-session-format.json`](../../../experiments/0.4.2-perturbation-session-format.json)
+      v1，`session.py::FROZEN_FORMATS` 钉 sha256） — verify:
       `tests/unit/experiment/test_perturbation_session.py`
 - [ ] T1121 (`FR-603`, `DR-602`, `AC-605`): 冻结四个稳定性指标的计算口径与退化判定规则（spec
       SC-603）：盘口可用率与大波动频次取自 0.4.1 已冻结定义、只加窗口；最大回撤与最大涨幅

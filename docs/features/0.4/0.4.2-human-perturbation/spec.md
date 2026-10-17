@@ -3,8 +3,8 @@ kind: milestone
 id: 0.4.2
 parent: v0.4-market-ecology
 version: "0.4"
-status: ready-for-development
-status_evidence: 2026-10-17 owner 批准 G1，流转 ready-for-development——需求设计专项文档检视循环 31 已于第 7 轮闭环（35e285a，CI run 38999648628 5/5 绿；30 条中 fixed 29、tracked 1（T1121 d-drawdown-sampling-unspecified），无 open），owner 此前「待检视收敛后再流转」的条件已满足；此前 2aca58e 的流转早于检视收敛，已由 02256a4 退回；2026-10-16 23:12 一次「批准流转」答复系误注入、无效；检视记录见 docs/reviews/0.4.md 循环 31；2026-10-15 owner 裁决 Q-601—Q-604、选定载体 C（0.4.3 扫描格 count 6 / sensitivity 150）；2026-09-20 立项为北极星研究问题 #1（人类扰动）的承接载体
+status: in-progress
+status_evidence: 2026-10-17 开发启动——前置 T1120 落地：会话 artifact 格式 v1 冻结为 docs/experiments/0.4.2-perturbation-session-format.json，sha256 由 session.py::FROZEN_FORMATS 钉住；同日 owner 批准 G1 流转 ready-for-development——需求设计专项文档检视循环 31 已于第 7 轮闭环（35e285a，CI run 38999648628 5/5 绿；30 条中 fixed 29、tracked 1（T1121 d-drawdown-sampling-unspecified），无 open），owner 此前「待检视收敛后再流转」的条件已满足；此前 2aca58e 的流转早于检视收敛，已由 02256a4 退回；2026-10-16 23:12 一次「批准流转」答复系误注入、无效；检视记录见 docs/reviews/0.4.md 循环 31；2026-10-15 owner 裁决 Q-601—Q-604、选定载体 C（0.4.3 扫描格 count 6 / sensitivity 150）；2026-09-20 立项为北极星研究问题 #1（人类扰动）的承接载体
 research_claim_status: not-applicable
 research_claim_required: false
 evidence_class: experiment-preview

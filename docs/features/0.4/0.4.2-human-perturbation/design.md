@@ -12,7 +12,7 @@ topics:
   - stability-effect-size
 doc_kind: design
 created: 2026-09-20
-updated: 2026-10-16
+updated: 2026-10-17
 ---
 
 # 0.4.2：人类扰动实验 - 技术设计
@@ -98,17 +98,23 @@ live 市场（0.4.1，本里程碑改注入路径）
 
 ## 3. 数据模型与 Migration
 
-- `PerturbationSession`（新增）：一个 JSONL 文件，每行 `flush`。
+- `PerturbationSession`（新增）：一个 JSONL 文件，每行 `flush`。字段、取值范围、记录顺序、
+  内容哈希定义与稳定原因码的**唯一冻结记录**是
+  [`0.4.2-perturbation-session-format.json`](../../../experiments/0.4.2-perturbation-session-format.json)
+  （T1120，v1）；`experiment/perturbation/session.py::FROZEN_FORMATS` 把版本钉到该文件的
+  sha256，文件改动而未新建版本即 `FORMAT_DRIFT`。下面只列结构，细则以冻结记录为准。每条
+  记录带 `record_type`（`header` / `action` / `seal`）。
   - **头记录**（第一行，会话开始时写入）：`format_version`、`session_id`、`arm`
     （`baseline` / `human`）、`replay_mode`（`original` / `same_seed_replay` / `open_loop_replay`）、
     `roster_id`、`seed`、`engine_config_digest`、`evidence_class: experiment-preview`、
     `run_mode: interactive`；
   - **动作行**（每笔动作被 `advance()` 取出时追加）：`advance_index`、`action_seq`（会话内单调）、
-    动作类型与载荷（撤单以 `target_action_seq` 指向被撤的下单动作，不记 `order_id`）、`wall_clock`；
+    动作类型与载荷（撤单以 `target_action_seq` 指向被撤的下单动作，不记 `order_id`）、`wall_clock_ms`；
   - **封口行**（进程正常结束时追加）：`end_advance_index`、`event_digest`（结束序号处的事件
-    摘要）、`observation_digest[]`。
-  `content_hash` = 头记录与全部动作行的规范化 JSON 的 sha256，封口与否都可计算；缺封口行即
-  `UNSEALED`。`order_id`、时间戳、`submitted_at`、`decision_event_id` 是内核派生结果，不写入
+    摘要，E-002 滚动摘要）、`observation_digests[]`（每条已提交的 owner 观察一项：
+    `action_seq` + 其 `information_set` 的摘要）、`content_hash`（须等于重算值）。
+  `content_hash` = 头记录与全部动作行的规范行字节的 sha256，封口与否都可计算；缺封口行即
+  `UNSEALED`；文件末尾未以换行结束的残片（写入中途被终止）不是记录，排除并报告。`order_id`、时间戳、`submitted_at`、`decision_event_id` 是内核派生结果，不写入
   动作行，由重放复现。
 - `PerturbationPreregistration`（新增，JSON，单一文件）：功效分析报告引用、`σ_b` 与功效公式、
   处理会话内容哈希清单、逐指标 MDE、N、有效配对下限、开环回放种子清单；sha256 由测试钉住，

@@ -1,8 +1,8 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "3cd1ee1e6226aa1725effa2456d5f1e0e0fa3390161272d638816bb016f67789",
-    "reason": "2026-10-04 重绑（当日第六次）：0.4.3 T1110/T1111 工具。源码改动：metrics/quality_run.py 的 run_market_quality 新增可选参数 segment_seconds（给出时诊断另带分段末价格与窗口成交价区间，不给时报告与诊断不变）；新增 metrics/anchor_diagnostics.py（锚过强诊断块，只呈现不判定）；metrics/anchor_scan.py 新增按预注册的可续跑扫描、筛选与逐种子达标汇总、扫描报告载入时重建校验。均为度量工具，不触碰撮合、账本、策略族与 T215 的决策路径。按 ADR-015 以经济等价证明为据：当前源码树重跑 T215 全部 128 块，1024/1024 经济投影与冻结检查点一致（economic_projection v2，python tools/prove_economic_equivalence.py --t215）。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
-    "rebound_at": "2026-10-04",
+    "attested_source_tree_sha256": "578bc1bbc4811bd7ed14dd20244bd0e1babe136dc999cdcfa3c91d4623d9875b",
+    "reason": "2026-10-17 重绑：0.4.2 T1120 会话 artifact 格式冻结。源码改动只有纯新增模块 experiment/perturbation/__init__.py 与 experiment/perturbation/session.py（冻结格式记录的读取与摘要核对、内容哈希定义），仓库内没有任何既有模块导入它们，T215 运行路径不受影响。以实测为据：本机没有 artifacts/formal/T215 冻结检查点（该目录不入库），无法运行 python tools/prove_economic_equivalence.py --t215，改为在上次盖章的源码树 3cd1ee1e…（提交 afe92c5，git worktree）与当前源码树上各重跑 T215 全部 128 块，1024/1024 个主跑的经济投影（economic_projection v2）及终止态、abort_code、终局价格、运行分类逐一相同；3cd1ee1e… 本身已于 2026-10-04 经 --t215 证明与冻结检查点经济等价，故等价关系可传递到冻结证据。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "rebound_at": "2026-10-17",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
     "t215_source_tree_sha256": "81984fdc6f39f535cc1763a7f4da15a9be8e15b0e15261b9248c0550d01b64a8"
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "3cd1ee1e6226aa1725effa2456d5f1e0e0fa3390161272d638816bb016f67789"
+    "source_tree_sha256": "578bc1bbc4811bd7ed14dd20244bd0e1babe136dc999cdcfa3c91d4623d9875b"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {

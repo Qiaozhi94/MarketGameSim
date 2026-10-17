@@ -1,0 +1,133 @@
+{
+  "format_id": "perturbation-session",
+  "format_version": 1,
+  "status": "FROZEN",
+  "frozen_on": "2026-10-17",
+  "owner": "docs/features/0.4/0.4.2-human-perturbation/spec.md（FR-601、DR-601）",
+  "consumer": "src/market_game_sim/experiment/perturbation/session.py",
+  "change_rule": "任何改动都必须新建 format_version 并在 session.py 的 FROZEN_FORMATS 登记新摘要；已登记版本的文件不得就地修改，已落盘会话按其头记录声明的版本解析",
+  "file": {
+    "encoding": "utf-8",
+    "layout": "JSONL：每条记录一行，行内容为 config.serialization.canonical_serialize(record)（键排序、无空白、NFC、不转义非 ASCII、禁止浮点数），以单个 \\n 结尾；非规范形态的行拒绝",
+    "order": "第 1 行为头记录且只有 1 条；其后 0 条或多条动作行；封口行至多 1 条且必须是最后一行",
+    "unterminated_tail": "文件末尾不以 \\n 结尾的残片不是记录（进程在写入中途被终止）：读取时排除、报告 truncated_tail，不计入内容哈希；残片之前已出现封口行则拒绝",
+    "seal_status": "派生而非存储：有封口行为 SEALED，否则为 UNSEALED"
+  },
+  "content_hash": {
+    "algorithm": "sha256",
+    "input": "头记录与全部动作行的规范行字节（含各自结尾 \\n）按文件顺序拼接；不含封口行与末尾残片",
+    "encoding": "64 位小写十六进制"
+  },
+  "records": {
+    "header": {
+      "fields": {
+        "record_type": {"type": "string", "enum": ["header"]},
+        "format_version": {"type": "integer", "enum": [1]},
+        "session_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]{0,63}$"},
+        "arm": {"type": "string", "enum": ["baseline", "human"]},
+        "replay_mode": {
+          "type": "string",
+          "enum": ["original", "same_seed_replay", "open_loop_replay"]
+        },
+        "roster_id": {"type": "string", "pattern": "^roster-[0-9a-f]{32}$"},
+        "seed": {"type": "integer", "minimum": 0},
+        "engine_config_digest": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+        "evidence_class": {"type": "string", "enum": ["experiment-preview"]},
+        "run_mode": {"type": "string", "enum": ["interactive"]}
+      }
+    },
+    "action": {
+      "fields": {
+        "record_type": {"type": "string", "enum": ["action"]},
+        "advance_index": {"type": "integer", "minimum": 0},
+        "action_seq": {"type": "integer", "minimum": 1},
+        "kind": {"type": "string", "enum": ["MARKET", "LIMIT", "CANCEL"]},
+        "payload": {"type": "object", "by_kind": true},
+        "wall_clock_ms": {"type": "integer", "minimum": 0}
+      },
+      "payload_by_kind": {
+        "MARKET": {
+          "side": {"type": "string", "enum": ["BUY", "SELL"]},
+          "quantity_units": {"type": "integer", "minimum": 1, "maximum": 1000}
+        },
+        "LIMIT": {
+          "side": {"type": "string", "enum": ["BUY", "SELL"]},
+          "quantity_units": {"type": "integer", "minimum": 1, "maximum": 1000},
+          "price_ticks": {"type": "integer", "minimum": 1}
+        },
+        "CANCEL": {
+          "target_action_seq": {"type": "integer", "minimum": 1}
+        }
+      },
+      "sequence_rules": [
+        "action_seq 从 1 起逐条加 1，不跳号、不重复",
+        "advance_index 随行单调不减（同一 advance 内可有多条）",
+        "CANCEL 的 target_action_seq 必须指向本会话更早的一条 LIMIT 动作；同一目标可被撤多次（第二次由内核按既有撤单语义拒绝并留痕）",
+        "对齐只用 advance_index 与 action_seq；wall_clock_ms（Unix 纪元毫秒）只作辅助字段，不参与重放"
+      ],
+      "derived_not_recorded": ["order_id", "timestamp", "submitted_at", "decision_event_id"]
+    },
+    "seal": {
+      "fields": {
+        "record_type": {"type": "string", "enum": ["seal"]},
+        "end_advance_index": {"type": "integer", "minimum": 0},
+        "event_digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "observation_digests": {"type": "array", "items": "observation_digest"},
+        "content_hash": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "observation_digest": {
+        "action_seq": {"type": "integer", "minimum": 1},
+        "digest": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      },
+      "rules": [
+        "end_advance_index 不小于最后一条动作行的 advance_index",
+        "event_digest 为 eventlog.digest.rolling_digest_hex（E-002 摘要投影、blake2b-256）对第 end_advance_index 次 advance 结束时内核已提交的全部 EVENT 记录",
+        "observation_digests 为截至该时点已提交的每条 owner AGENT_OBSERVE 一项：action_seq 取其携带的会话内动作序号，digest 为 blake2b-256(canonical_serialize(information_set)) 的十六进制；按 action_seq 严格递增，且每个 action_seq 都是本会话的动作",
+        "content_hash 必须等于按本记录 content_hash 定义重算的值"
+      ]
+    }
+  },
+  "closed_world": "每类记录与每种载荷只允许上列字段，缺一个或多一个都拒绝",
+  "forbidden_fields": {
+    "rule": "对错判定、行为画像与直接身份信息不得以任何键名出现在任何记录或载荷中（spec FR-604 / NFR-602）；命中时给 FORBIDDEN_FIELD，先于 UNKNOWN_FIELD 判定",
+    "keys": [
+      "verdict",
+      "judgement",
+      "judgment",
+      "mistake",
+      "misuse",
+      "violation",
+      "error_usage",
+      "score",
+      "grade",
+      "profile",
+      "persona",
+      "behavior_profile",
+      "skill_level",
+      "risk_appetite",
+      "name",
+      "real_name",
+      "user_name",
+      "username",
+      "email",
+      "phone",
+      "ip",
+      "ip_address",
+      "address",
+      "device_id",
+      "account_name"
+    ]
+  },
+  "reason_codes": {
+    "MISSING_HEADER": "文件为空，或第 1 行不是头记录",
+    "UNSUPPORTED_VERSION": "format_version 不在已登记版本中",
+    "MISSING_FIELD": "记录或载荷缺必需字段",
+    "UNKNOWN_FIELD": "记录或载荷含本格式未定义的字段",
+    "FORBIDDEN_FIELD": "记录或载荷含对错判定、行为画像或直接身份信息字段",
+    "INVALID_VALUE": "字段类型、取值范围或格式不符",
+    "NON_CANONICAL_RECORD": "行不是 JSON 对象，或不是规范序列化形态",
+    "OUT_OF_ORDER": "记录类型顺序不符（重复头记录、封口行之后仍有记录）",
+    "INVALID_SEQUENCE": "action_seq 跳号或重复、advance_index 回退、撤单目标不是更早的 LIMIT 动作、封口序号早于最后一条动作，或观察摘要的序号不合法",
+    "CONTENT_HASH_MISMATCH": "封口行记录的 content_hash 与重算值不一致"
+  }
+}
