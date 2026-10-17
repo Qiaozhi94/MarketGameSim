@@ -23,6 +23,15 @@ def test_action_journal_appended_per_accepted_action():
 
 
 @pytest.mark.xfail(strict=True, reason="T1124 not implemented yet")
+def test_invalid_cancel_found_after_enqueue_is_dropped_without_journal():
+    """AC-602：
+    入队后才判定的无效撤单（反查不到 order_id）被丢弃，不进内核、不入动作日志；
+    同批里有效的动作照常处理
+    """
+    pytest.fail("T1124 pending")
+
+
+@pytest.mark.xfail(strict=True, reason="T1124 not implemented yet")
 def test_pure_ai_runs_keep_recorded_digests():
     """AC-603：注册 owner 代理规格后，纯 AI 运行的 0.4.1/0.4.3 入库摘要不变"""
     pytest.fail("T1124 pending")

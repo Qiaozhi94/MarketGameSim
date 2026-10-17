@@ -63,8 +63,9 @@ updated: 2026-10-16
       （design §4、§5）——HTTP 线程只入队载荷；`advance()` 持锁取出时分配 `action_seq`、入队
       owner 的 `AGENT_OBSERVE` 并追加动作行；`experiment/runner.py` 增加 owner 观察分支（不参与
       周期性重排），决策走 `_handle_external_decide` 并扩展撤单 `kind`；owner 规格只注入
-      `world["agent_specs"]`、`latency_ns ≥ 1`；撤单在入队前把终端给的 `order_id` 反查成
-      `target_action_seq` 写入动作行；进程正常结束时封口。
+      `world["agent_specs"]`、`latency_ns ≥ 1`；撤单由 HTTP 线程原样入队，`advance()` 持锁取出时
+      把终端给的 `order_id` 反查成 `target_action_seq` 写入动作行，反查不到的按「入队后才判定的
+      无效撤单」丢弃（不进内核、不入动作日志，断言二者都不发生）；进程正常结束时封口。
       回归测试用确定性交错钩子构造「同一 advance 内多笔提交」「提交恰在推进中途」两类交错
       （`order_id`、时间戳、`submitted_at` 只由序号与载荷决定且不重复），并断言注册 owner 规格后
       纯 AI 运行的 0.4.1/0.4.3 入库摘要不变 — verify:
