@@ -480,7 +480,7 @@ v0.1 已完成 R1—R5 并于 2026-08-30 正式签收。当前可见交付包括
 | **H2-C AI 正式研究** | H2-B 后；H2-C 与 H2-D 均可独立开始，owner 轨只受自身 Web/协议门控 | 交付 AI 正式研究包（0.3.1，已 `done`/`established`） | 独立 AI `formal-research`，不与 H1 或 owner 样本合并 |
 | **H2-D Web 终端** | H2-B 后 | 真实终端形态的本地页面：价格、K 线、市价/限价下单（0.3.2 Phase 1 已交付） | `experiment-preview`；N-of-1 采集轨已由 ADR-010 归档 |
 | **H2-E owner 可自由游玩** | **v0.4 成果门 `H2-E2` 之后** | 在一个会自发成交、由异质策略族形成价格的持续 AI 市场里随时进出、自由下单 | `engineering-demonstration`；这是 owner 研究问题 #1/#3 的载体与对照基线 |
-| **H2-F 人类扰动实验** | H2-E 之后；里程碑 [`0.4.2`](features/0.4/0.4.2-human-perturbation/spec.md) 已于 2026-09-20 立项（draft） | 同种子对照（无人类基线 vs 有人类）× N 个种子（市场确定，N 来自不同种子），测量一段冻结的人类订单流对稳定性的影响 | `experiment-preview`；0.4.2 Q-601 已裁决（2026-10-15）：分析单元为种子，升级 `formal-research` 须另立预注册 |
+| **H2-F 人类扰动实验** | H2-E 之后；里程碑 [`0.4.2`](features/0.4/0.4.2-human-perturbation/spec.md) 已于 2026-09-20 立项（状态见其 spec frontmatter） | 同种子对照（无人类基线 vs 有人类）× N 个种子（市场确定，N 来自不同种子），测量一段冻结的人类订单流对稳定性的影响 | `experiment-preview`；0.4.2 Q-601 已裁决（2026-10-15）：分析单元为种子，升级 `formal-research` 须另立预注册 |
 
 **人类扰动问题的可证伪化桥接条款（H2-F 的命题形态，本节唯一拥有）**：
 研究北极星的「扰动即数据、不存在错误用法」是 **owner 侧的设计判据**——系统不拦截、

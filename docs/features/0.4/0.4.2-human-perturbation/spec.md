@@ -3,14 +3,14 @@ kind: milestone
 id: 0.4.2
 parent: v0.4-market-ecology
 version: "0.4"
-status: draft
-status_evidence: 2026-10-16 循环 31 第 1、2 轮文档检视整改（owner 同日裁决功效分析取保守近似、确认增补最大涨幅、owner 委托补发 AGENT_DECIDE）；2026-10-15 owner 裁决 Q-601—Q-604 与 DQ-601—DQ-603、选定载体 C（0.4.3 扫描格 count 6 / sensitivity 150）；2026-09-20 立项为北极星研究问题 #1（人类扰动）的承接载体
+status: ready-for-development
+status_evidence: 2026-10-17 owner 批准 G1，流转 ready-for-development——批准以「循环 31 第 5 轮新增的 2 条 Low（d-done-gate-static-residual-bypass、d-cancel-lookup-fail-category）修完、门禁绿」为条件，两条已修（结局门禁 tools/ac_outcome_gate.py；spec 新增「入队后才判定的无效撤单」边界场景）；2026-10-16 23:12 一次「批准流转」答复经 owner 否认、系误注入，无效，G1 以本次为准；需求设计专项文档检视（docs/reviews/0.4.md 循环 31，含文档对代码）收敛，Critical/High/Medium 全部到终态；Q-601—Q-604 与 DQ-601—DQ-603 全部关闭；AC-601—AC-610 均有 strict-xfail 测试锚点，review/done 时由静态检查与实跑结局门禁拦截未换成真实断言的骨架；2026-10-15 owner 裁决 Q-601—Q-604、选定载体 C（0.4.3 扫描格 count 6 / sensitivity 150）；2026-09-20 立项为北极星研究问题 #1（人类扰动）的承接载体
 research_claim_status: not-applicable
 research_claim_required: false
 evidence_class: experiment-preview
 gate_version: 1
 created: 2026-09-20
-updated: 2026-10-16
+updated: 2026-10-17
 prerequisites:
   - 0.4.1
   - 0.4.3
