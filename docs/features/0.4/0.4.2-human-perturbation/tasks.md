@@ -53,12 +53,12 @@ updated: 2026-10-17
 
 ### Phase 1：会话格式冻结、注入确定性、载体、同种子重放与功效分析
 
-- [ ] T1122 (`FR-601`, `DR-601`, `AC-601`, `AC-602`): 实现 `PerturbationSession` 的头记录、动作行
+- [x] T1122 (`FR-601`, `DR-601`, `AC-601`, `AC-602`): 实现 `PerturbationSession` 的头记录、动作行
       追加、封口、读取与校验入口；缺字段、错版本号、含画像字段三类非法输入给稳定原因码；在任意
       一条动作之后终止进程时已取出动作不丢、会话标 `UNSEALED`，且未封口会话可通过校验、内容
       哈希稳定、种子与 `roster_id` 可读（正反用例都要有） — verify:
       `tests/unit/experiment/test_perturbation_session.py`
-- [ ] T1123 (`FR-604`, `NFR-602`, `AC-606`): 在校验入口拒绝对错判定/行为画像字段与直接身份
+- [x] T1123 (`FR-604`, `NFR-602`, `AC-606`): 在校验入口拒绝对错判定/行为画像字段与直接身份
       信息，并断言合法 artifact 不被误拒 — verify:
       `tests/unit/experiment/test_perturbation_session.py`
 - [ ] T1124 (`FR-601`, `NFR-601`, `IR-601`, `TR-601`, `AC-602`, `AC-603`): 修复 live 市场注入路径

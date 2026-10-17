@@ -1,7 +1,7 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "578bc1bbc4811bd7ed14dd20244bd0e1babe136dc999cdcfa3c91d4623d9875b",
-    "reason": "2026-10-17 重绑：0.4.2 T1120 会话 artifact 格式冻结。源码改动只有纯新增模块 experiment/perturbation/__init__.py 与 experiment/perturbation/session.py（冻结格式记录的读取与摘要核对、内容哈希定义），仓库内没有任何既有模块导入它们，T215 运行路径不受影响。以实测为据：本机没有 artifacts/formal/T215 冻结检查点（该目录不入库），无法运行 python tools/prove_economic_equivalence.py --t215，改为在上次盖章的源码树 3cd1ee1e…（提交 afe92c5，git worktree）与当前源码树上各重跑 T215 全部 128 块，1024/1024 个主跑的经济投影（economic_projection v2）及终止态、abort_code、终局价格、运行分类逐一相同；3cd1ee1e… 本身已于 2026-10-04 经 --t215 证明与冻结检查点经济等价，故等价关系可传递到冻结证据。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "attested_source_tree_sha256": "51ae0a3a4ee152fafec25f6af9ef813125931534be629a3640d2be532f92e5b8",
+    "reason": "2026-10-17 重绑（当日第二次）：0.4.2 T1122/T1123 会话落盘与校验入口。源码改动只在纯新增模块 experiment/perturbation/session.py：SessionWriter（逐条 flush+fsync 落盘、写前校验）、validate_session/load_session（按冻结格式逐条校验、稳定原因码）、禁用判定/画像/身份键；仓库内没有任何既有模块导入该包，T215 运行路径不受影响。以实测为据：本机没有 artifacts/formal/T215 冻结检查点（该目录不入库），无法运行 python tools/prove_economic_equivalence.py --t215，改为在上次盖章的源码树 578bc1bb…（提交 86c4586，git worktree）与当前源码树上各重跑 T215 全部 128 块，1024/1024 个主跑的经济投影（economic_projection v2）及终止态、abort_code、终局价格、运行分类逐一相同；578bc1bb… 经同法（当日第一次重绑）与 3cd1ee1e… 等价，后者已于 2026-10-04 经 --t215 证明与冻结检查点经济等价，故等价关系可传递到冻结证据。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
     "rebound_at": "2026-10-17",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "578bc1bbc4811bd7ed14dd20244bd0e1babe136dc999cdcfa3c91d4623d9875b"
+    "source_tree_sha256": "51ae0a3a4ee152fafec25f6af9ef813125931534be629a3640d2be532f92e5b8"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {
