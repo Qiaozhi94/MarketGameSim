@@ -846,13 +846,14 @@ def _pytestmark_skips(body: list[ast.stmt], aliases: frozenset[str]) -> bool:
     return False
 
 
-def _xfailed_tests_naming(path: pathlib.Path, ac: str) -> list[str]:
-    """文件里提到 ``ac`` 编号、却仍会被跳过或预期失败的测试。
+def _tests_naming(path: pathlib.Path, ac: str) -> list[tuple[str, bool]]:
+    """文件里提到 ``ac`` 编号的测试：(``Class::name`` 形式的名字, 是否被静态标记为跳过)。
 
-    覆盖：函数/类装饰器、模块级与类级 ``pytestmark``、跳过标记的别名、测试体内的
-    ``pytest.skip()``/``xfail()``/``importorskip()`` 调用。strict-xfail 骨架无条件
-    ``pytest.fail``，实现落地后也不会 XPASS——strict 绊线在这里不起作用；`review`/`done`
-    时必须由门禁确认骨架已换成真实断言（循环 31 d-done-gate-accepts-xfail-skeletons）。
+    静态标记覆盖：函数/类装饰器、模块级与类级 ``pytestmark``、跳过标记的别名、测试体内的
+    ``pytest.skip()``/``xfail()``/``importorskip()`` 调用。它只是快速前置检查——模块级
+    ``skip(allow_module_level=True)``、autouse fixture、辅助函数里的跳过在源码形态上无穷无尽，
+    由 ``tools/ac_outcome_gate.py`` 按**实跑结局**兜底
+    （循环 31 R6 d-done-gate-static-residual-bypass）。
     """
     text = path.read_text(encoding="utf-8")
     try:
@@ -862,7 +863,7 @@ def _xfailed_tests_naming(path: pathlib.Path, ac: str) -> list[str]:
     mention = re.compile(rf"\b{re.escape(ac)}(?!\d)")
     aliases = _skip_mark_aliases(tree)
     modules, functions = _runtime_skip_names(tree)
-    found: list[str] = []
+    found: list[tuple[str, bool]] = []
 
     def visit(body: list[ast.stmt], inherited: bool, prefix: str) -> None:
         skipped = inherited or _pytestmark_skips(body, aliases)
@@ -873,16 +874,67 @@ def _xfailed_tests_naming(path: pathlib.Path, ac: str) -> list[str]:
             elif isinstance(node, ast.FunctionDef | ast.AsyncFunctionDef) and (
                 node.name.startswith("test_")
             ):
+                if not mention.search(ast.get_source_segment(text, node) or ""):
+                    continue
                 marked = (
                     skipped
                     or any(_marks_skipping(d, aliases) for d in node.decorator_list)
                     or _calls_runtime_skip(node, modules, functions)
                 )
-                if marked and mention.search(ast.get_source_segment(text, node) or ""):
-                    found.append(prefix + node.name)
+                found.append((prefix + node.name, marked))
 
     visit(tree.body, False, "")
     return found
+
+
+def _xfailed_tests_naming(path: pathlib.Path, ac: str) -> list[str]:
+    """文件里提到 ``ac`` 编号、却在源码上就会被跳过或预期失败的测试。
+
+    strict-xfail 骨架无条件 ``pytest.fail``，实现落地后也不会 XPASS——strict 绊线
+    在这里不起作用；`review`/`done` 时必须由门禁确认骨架已换成真实断言（循环 31
+    d-done-gate-accepts-xfail-skeletons）。
+    """
+    return [name for name, marked in _tests_naming(path, ac) if marked]
+
+
+def ac_outcome_requirements(
+    features_dir: pathlib.Path, root: pathlib.Path
+) -> dict[str, dict[str, list[str]]]:
+    """`review`/`done` 里程碑中，必须以 **passed** 结局运行的测试。
+
+    返回 ``{仓库相对路径: {Class::name: ["milestone <id> AC-xxx", ...]}}``：每条 AC 的逐条
+    点名任务列出的 verify 文件里，提到该 AC 编号的测试。范围与 ``_check_ac_references``
+    的测试路径门一致（gate v1、``created >= AC_TEST_FILE_RULE_DATE``）。
+    """
+    resolved_root = root.resolve()
+    required: dict[str, dict[str, list[str]]] = {}
+    for mid, (mdir, front) in collect_all_milestones(features_dir).items():
+        status = front.get("status", "")
+        created = front.get("created")
+        if front.get("gate_version") != 1 or status not in ("review", "done"):
+            continue
+        if not isinstance(created, str) or created < AC_TEST_FILE_RULE_DATE:
+            continue
+        spec_path, tasks_path = mdir / "spec.md", mdir / "tasks.md"
+        if not spec_path.is_file() or not tasks_path.is_file():
+            continue
+        coverage = _ac_task_coverage(tasks_path.read_text(encoding="utf-8"))
+        for match in _AC_DECL.finditer(_without_fenced_code(spec_path.read_text("utf-8"))):
+            ac = match.group("ac")
+            paths = {
+                path
+                for block, named in coverage.get(int(ac.split("-")[1]), [])
+                if named
+                for path in _verify_test_paths(block, root)
+                if path.is_file()
+            }
+            for path in sorted(paths):
+                rel = path.relative_to(resolved_root).as_posix()
+                for name, _marked in _tests_naming(path, ac):
+                    required.setdefault(rel, {}).setdefault(name, []).append(
+                        f"milestone {mid} {ac}"
+                    )
+    return required
 
 
 # 「本 spec 声明的需求必须有 AC 认领」规则的引入日；此前 created 的里程碑不追溯执法
