@@ -145,17 +145,24 @@ live 市场（0.4.1，本里程碑改注入路径）
   1. `advance()` 入队一条 owner 的 `AGENT_OBSERVE`（时间戳取现有 `_safe_ts()` 口径，携带
      `_owner_action_seq`）；
   2. `_dispatch_agents` 对带 `_owner_action_seq` 的观察走 owner 分支（参照
-     `_handle_stress_observe` 的「记录为真实 观察 → 决策 链」做法）：记录观察，在观察时间戳 +
-     owner 决策延迟处入队 `AGENT_DECIDE`，**不**参与周期性观察重排；
+     `_handle_stress_observe` 的「记录为真实 观察 → 决策 链」做法）：记录观察（`information_set`
+     为 `{owner_action_seq, market_data_event_id}`，封口的 `observation_digests` 即对它取摘要），
+     在**同一时间戳**入队 `AGENT_DECIDE`（类 3 → 4 是前进类，与 stress 路径同口径；owner 的
+     思考时间已发生在终端侧，内核里不再加一段决策延迟），**不**参与周期性观察重排；
   3. 该决策走 `_handle_external_decide`（`experiment/runner.py:433-480`），外部源按
      `_owner_action_seq` 从会话动作源取载荷，返回 `MARKET` / `LIMIT` / `CANCEL`（撤单为本里程碑
      新增 `kind`）；接缝生成 `ORDER_ARRIVAL`，`decision_event_id = e{txn}_0`，`order_id`
      （`o-owner-e{txn}_0-{seq}`，`experiment/runner.py:456`、`:479`）、到达时间（决策时间 + owner
      延迟）与 `submitted_at` 均由内核确定；参与者类别 `human` 由 owner 源追加进决策记录的
-     `internal_state`（接缝现只写 `decision_source` / `window_index`，`:504-506`）。
+     `internal_state`（接缝现只写 `decision_source` / `window_index`，`:504-506`）——T1124 落地为
+     外部源可附 `internal_state`（owner 源写 `decision_source: live_owner_terminal`、
+     `participant_class: human`、`owner_action_seq`），并以可选的 `orders_submitted` 回调把
+     新下委托的 `order_id` 交回源。
   4. **撤单目标的解析**：owner 决策源在每次运行内维护 `action_seq → order_id` 映射，下单委托
      生成时登记；撤单载荷带 `target_action_seq`，源据映射解析出本次运行的 `order_id`，映射中
-     没有（该下单在本种子上被拒）或目标已不在簿时按既有撤单语义处理并留原因码。终端按委托
+     没有（该下单在本种子上未生成委托）时决策为 `NO_ACTION` 并留原因码
+     `CANCEL_TARGET_UNRESOLVED`，目标已不在簿时撤单照常入内核、按既有撤单语义不产生
+     `ORDER_CANCELLED`；撤单委托与 AI 撤单同形（`order_id` 即被撤目标）。终端按委托
      视图里的 `order_id` 撤单（`owner_terminal.html:143-145`）：HTTP 线程只把它原样入队（§5，
      HTTP 线程不读内核状态），由 `advance()` 持锁取出时用同一映射反查成 `target_action_seq`
      再写入动作行——换种子后 `order_id` 必然不同，动作行里不能出现它；反查不到（非 owner 委托
@@ -165,11 +172,16 @@ live 市场（0.4.1，本里程碑改注入路径）
   **owner 规格的注册位置与约束**：
   - 只注入运行时 `world["agent_specs"]`（`live_market.py:244` 处），**不**进 `config.agent_specs`——
     后者会让 `live_market.py:263-273` 在 t=0 给 owner 排一条观察并周期重排，改变纯 AI 摘要；
-  - 两臂都注入、计入引擎配置指纹；`_handle_external_decide` 依赖 `agent_specs[owner]`（`:455`，
+  - 两臂都注入、计入引擎配置指纹（会话头记录的 `engine_config_digest` =
+    `live_market.session_engine_config_digest`：roster 引擎块 + `OWNER_SPEC` 的 blake2b-128）；`_handle_external_decide` 依赖 `agent_specs[owner]`（`:455`，
     缺则 `KeyError`）与 `accounts[owner]`（`:458`，`live_market.py:219` 已建）；
-  - owner 的 `latency_ns ≥ 1`：`AGENT_DECIDE → ORDER_ARRIVAL` 是优先级类回退，调度白名单要求
+  - owner 的 `latency_ns ≥ 1`（`OWNER_SPEC` 取 1 ms，与 `_safe_ts()` 的间隔一致）：`AGENT_DECIDE → ORDER_ARRIVAL` 是优先级类回退，调度白名单要求
     时间戳至少前进 1 ns（`kernel/scheduling.py:31`），否则 `KernelAbort`；
   - T1124 断言注入后纯 AI 运行的事件流与 0.4.1/0.4.3 入库摘要逐位不变，不成立即回到本节重新设计。
+  - **会话落盘**：`LiveMarket(session_path=...)`（CLI `--session-out`，须同时给
+    `--roster-file`）在构造时写头记录；动作行在取出时先落盘再入队观察；进程正常退出时
+    `seal_session()` 封口，`end_advance_index` 取已开始的 `advance()` 次数（即下一次 advance
+    的序号，回放推进到序号等于它为止），`event_digest` 为封口时全部已提交事件的 E-002 滚动摘要。
 - 证据索引隔离（AC-607）：既有拦截点是 `showcase/evidence_index.py::_validate_common_scope`
   （只接受 `run_family = SPONTANEOUS` 且 `evidence_class = formal-research`）与
   `evidence/evidence_guard.py` 的 `RunMode.INTERACTIVE`；本里程碑的 artifact 与报告显式携带

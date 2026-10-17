@@ -57,6 +57,19 @@ alphamill 证据链，ADR-011 §决策 5），落盘前自检，缺声明或出�
 同样是 `engineering-demonstration`。实测记录见
 [`docs/experiments/0.4.3-anchored-market.md`](docs/experiments/0.4.3-anchored-market.md)。
 
+## 0.4.2 人类扰动：会话 artifact 落盘
+
+```bash
+# 按装配清单启动并把 owner 的每笔动作逐条落盘（文件须不存在；Ctrl-C 正常退出时封口）
+.venv/bin/python -m market_game_sim.experiment.h2.live_market --port 8793 \
+    --roster-file docs/experiments/0.4.3-rosters/roster-2425a8200ca1a1e748a34a7e9d8b99ba.json \
+    --session-out /tmp/owner-session.jsonl
+```
+
+格式见 [`docs/experiments/0.4.2-perturbation-session-format.json`](docs/experiments/0.4.2-perturbation-session-format.json)；
+产出为 `experiment-preview`、`run_mode: interactive`，不进任何 evidence index。载体 C 的清单与
+预热由 T1125 落地，正式会话应等它就绪后再开始。
+
 ## 已归档入口（随 ADR-010 归档，机械保留但当前不执行）
 
 下列入口属于已归档的 **N-of-1 采集轨**（6 训练 + 24 正式场景）。归档是

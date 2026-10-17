@@ -61,7 +61,7 @@ updated: 2026-10-17
 - [x] T1123 (`FR-604`, `NFR-602`, `AC-606`): 在校验入口拒绝对错判定/行为画像字段与直接身份
       信息，并断言合法 artifact 不被误拒 — verify:
       `tests/unit/experiment/test_perturbation_session.py`
-- [ ] T1124 (`FR-601`, `NFR-601`, `IR-601`, `TR-601`, `AC-602`, `AC-603`): 修复 live 市场注入路径
+- [x] T1124 (`FR-601`, `NFR-601`, `IR-601`, `TR-601`, `AC-602`, `AC-603`): 修复 live 市场注入路径
       （design §4、§5）——HTTP 线程只入队载荷；`advance()` 持锁取出时分配 `action_seq`、入队
       owner 的 `AGENT_OBSERVE` 并追加动作行；`experiment/runner.py` 增加 owner 观察分支（不参与
       周期性重排），决策走 `_handle_external_decide` 并扩展撤单 `kind`；owner 规格只注入

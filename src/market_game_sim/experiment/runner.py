@@ -321,6 +321,8 @@ def _dispatch_agents(event: dict, world: dict, kernel: EventKernel) -> list[dict
     if et == "AGENT_OBSERVE":
         if event.get("_stress_trigger") is not None:
             return _handle_stress_observe(event, world, kernel)
+        if event.get("_owner_action_seq") is not None:
+            return _handle_owner_observe(event, world, kernel)
         records = handle_agent_observe(event, world, kernel)
         _reschedule_next_observe(event, world, kernel)
         return records
@@ -362,6 +364,39 @@ def _handle_stress_observe(event: dict, world: dict, kernel: EventKernel) -> lis
             "intents": [],
             "internal_state": {},
             "_stress_trigger": dict(trigger),
+            "_observed_cursor_from": boundary,
+            "_observed_cursor_to": boundary,
+        }
+    )
+    return []
+
+
+def _handle_owner_observe(event: dict, world: dict, kernel: EventKernel) -> list[dict]:
+    """0.4.2 T1124（TR-601）：owner 一笔动作的观察 → 决策链。
+
+    live 市场在 ``advance()`` 取出动作时入队这条观察（携带会话内动作序号）；这里把它
+    记为真实观察，并在同一时间戳入队 owner 的 ``AGENT_DECIDE``（3 → 4 是前进类，不需要
+    白名单）。决策由 ``external_decision_sources`` 里的 owner 源经
+    ``_handle_external_decide`` 生成委托，``decision_event_id`` 与 ``order_id`` 都由内核
+    在决策事务里确定。owner 不参与周期性观察重排：没有下一笔动作就没有下一次观察。
+    """
+    seq = event["_owner_action_seq"]
+    boundary = world.get("last_market_data_event_id", "e1_0")
+    event["market_data_event_id"] = boundary
+    event["cursor_from_event_id"] = boundary
+    event["cursor_to_event_id"] = boundary
+    event["information_set"] = {"owner_action_seq": seq, "market_data_event_id": boundary}
+    observation_event_id = f"e{kernel.current_transaction_seq}_0"
+    kernel.enqueue(
+        {
+            "event_type": "AGENT_DECIDE",
+            "timestamp": event["timestamp"],
+            "agent_id": event["agent_id"],
+            "observation_event_id": observation_event_id,
+            "rule_id": "owner_manual_v1",
+            "intents": [],
+            "internal_state": {},
+            "_owner_action_seq": seq,
             "_observed_cursor_from": boundary,
             "_observed_cursor_to": boundary,
         }
@@ -445,10 +480,16 @@ def _handle_external_decide(event: dict, world: dict, kernel: EventKernel, sourc
     * ``{"kind": "NO_ACTION", "reason_code": str | None}``
     * ``{"kind": "MARKET", "side", "quantity_units", "intent_id"}``
     * ``{"kind": "LIMIT", "side", "quantity_units", "price_ticks", "intent_id"}``（0.4.1 T975）
+    * ``{"kind": "CANCEL", "target_order_id", "intent_id"}``（0.4.2 T1124；与 AI 撤单同形，
+      委托的 ``order_id`` 即被撤目标）
 
     任何一种都可以附 ``"signal": {"source_id", "signal_version"}``——量化族的决策
-    必须能追溯到信号来源与版本（TR-501）。未知 ``kind`` 按 IR-502 降级为不动作并
+    必须能追溯到信号来源与版本（TR-501）；也可以附 ``"internal_state": {...}``，并入
+    决策记录（0.4.2 owner 源写参与者类别 ``human``）。未知 ``kind`` 按 IR-502 降级为不动作并
     记 ``EXTERNAL_DECISION_INVALID``，**不抛异常**：外部源的故障不得阻塞内核。
+
+    源回调若有 ``orders_submitted(event, order_ids)`` 方法，委托入队后以本次新下的
+    ``order_id`` 列表回调它（撤单不算新下）——owner 源据此维护 ``action_seq → order_id``。
     """
     decision = source_fn(event, world)
     agent_id = event["agent_id"]
@@ -465,18 +506,43 @@ def _handle_external_decide(event: dict, world: dict, kernel: EventKernel, sourc
     elif decision["kind"] in ("MARKET", "LIMIT"):
         signed_qty = decision["quantity_units"] * (1 if decision["side"] == "BUY" else -1)
         intents = [decision]
+    elif decision["kind"] == "CANCEL":
+        signed_qty = 0
+        intents = [decision]
     else:
         # IR-502：非法决策降级为不动作并留稳定原因码，不抛异常阻塞内核。
         intents, signed_qty = [], 0
         reason_code = "EXTERNAL_DECISION_INVALID"
 
+    submitted: list[str] = []
     for order_seq, intent in enumerate(intents):
+        if intent["kind"] == "CANCEL":
+            kernel.enqueue(
+                {
+                    "event_type": "ORDER_ARRIVAL",
+                    "timestamp": arrival_ts,
+                    "agent_id": agent_id,
+                    "order_id": intent["target_order_id"],
+                    "action": "CANCEL",
+                    "target_order_id": intent["target_order_id"],
+                    "side": None,
+                    "order_type": None,
+                    "price_ticks": None,
+                    "quantity_units": None,
+                    "intent_id": intent["intent_id"],
+                    "decision_event_id": decision_event_id,
+                    "submitted_at": event["timestamp"],
+                }
+            )
+            continue
+        order_id = f"o-{agent_id}-{decision_event_id}-{order_seq}"
+        submitted.append(order_id)
         kernel.enqueue(
             {
                 "event_type": "ORDER_ARRIVAL",
                 "timestamp": arrival_ts,
                 "agent_id": agent_id,
-                "order_id": f"o-{agent_id}-{decision_event_id}-{order_seq}",
+                "order_id": order_id,
                 "action": "SUBMIT",
                 "side": intent["side"],
                 "order_type": intent["kind"],
@@ -490,6 +556,15 @@ def _handle_external_decide(event: dict, world: dict, kernel: EventKernel, sourc
 
     event["intents"] = [
         {
+            "intent_id": intent["intent_id"],
+            "action": "CANCEL",
+            "side": None,
+            "order_type": None,
+            "price_ticks": None,
+            "quantity_units": None,
+        }
+        if intent["kind"] == "CANCEL"
+        else {
             "intent_id": intent["intent_id"],
             "action": "SUBMIT",
             "side": intent["side"],
@@ -513,6 +588,7 @@ def _handle_external_decide(event: dict, world: dict, kernel: EventKernel, sourc
         internal_state["signal_version"] = signal.get("signal_version")
     if reason_code is not None:
         internal_state["external_reason_code"] = reason_code
+    internal_state.update(decision.get("internal_state") or {})
     internal_state.update(strategy_tags(spec))
     event["internal_state"] = internal_state
     event["decision_evidence"] = {
@@ -528,6 +604,9 @@ def _handle_external_decide(event: dict, world: dict, kernel: EventKernel, sourc
         "cursor_from_event_id": event.get("_observed_cursor_from", "e1_0"),
         "cursor_to_event_id": event.get("_observed_cursor_to", "e1_0"),
     }
+    notify = getattr(source_fn, "orders_submitted", None)
+    if notify is not None:
+        notify(event, submitted)
     return []
 
 

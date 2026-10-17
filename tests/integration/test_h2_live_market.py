@@ -62,10 +62,11 @@ def test_owner_limit_order_rests_in_book():
     result = market.push_order(
         {"side": "BUY", "order_type": "LIMIT", "quantity_units": 4, "price_ticks": int(last) - 5}
     )
-    assert result["accepted"] is True
+    assert result == {"accepted": True, "reason_code": "QUEUED"}
     market.advance()
     view = market.view()
-    resting = [o for o in view["account"]["active_orders"] if o["order_id"] == "owner-1"]
+    # 0.4.2 T1124：order_id 由内核在决策事务里生成（o-owner-<决策事件>-0），终端从委托视图读取。
+    resting = [o for o in view["account"]["active_orders"] if o["order_id"].startswith("o-owner-")]
     filled = view["account"]["position_units"] >= 4
     assert resting or filled, "限价单既未挂单也未成交"
     if resting:
@@ -81,10 +82,14 @@ def test_owner_cancel_removes_resting_order():
         {"side": "BUY", "order_type": "LIMIT", "quantity_units": 2, "price_ticks": int(bid) - 20}
     )
     market.advance()
-    market.push_cancel("owner-1")
+    resting = market.view()["account"]["active_orders"]
+    assert len(resting) == 1, "远离盘口的限价单应在簿上"
+    order_id = resting[0]["order_id"]
+    assert market.push_cancel(order_id) == {"accepted": True, "reason_code": "QUEUED"}
+    market.advance()
     market.advance()
     view = market.view()
-    assert not [o for o in view["account"]["active_orders"] if o["order_id"] == "owner-1"], (
+    assert not [o for o in view["account"]["active_orders"] if o["order_id"] == order_id], (
         "撤单后挂单应消失"
     )
 
