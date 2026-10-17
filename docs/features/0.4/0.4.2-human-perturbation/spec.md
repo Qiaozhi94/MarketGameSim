@@ -3,8 +3,8 @@ kind: milestone
 id: 0.4.2
 parent: v0.4-market-ecology
 version: "0.4"
-status: draft
-status_evidence: 2026-10-17 owner 决定先退回 draft（显式人工更正）——owner 确认 [MGS-R6] 由本人发出、G1 的有条件批准有效（条件「循环 31 第 5 轮的 2 条 Low 修完、门禁绿」已满足，见 2aca58e），但第 6 轮核对又带出 1 条 Medium（d-outcome-gate-selector-untested，已在 1b79406 修复），owner 要求待检视方确认循环 31 收敛后再流转 ready-for-development；2aca58e 的流转在检视收敛前做出，其 status_evidence 中「Critical/High/Medium 全部到终态」一句在第 6 轮时已不成立，故一并撤回；2026-10-16 23:12 一次「批准流转」答复系误注入、无效；需求设计专项文档检视见 docs/reviews/0.4.md 循环 31；2026-10-15 owner 裁决 Q-601—Q-604、选定载体 C（0.4.3 扫描格 count 6 / sensitivity 150）；2026-09-20 立项为北极星研究问题 #1（人类扰动）的承接载体
+status: ready-for-development
+status_evidence: 2026-10-17 owner 批准 G1，流转 ready-for-development——需求设计专项文档检视循环 31 已于第 7 轮闭环（35e285a，CI run 38999648628 5/5 绿；30 条中 fixed 29、tracked 1（T1121 d-drawdown-sampling-unspecified），无 open），owner 此前「待检视收敛后再流转」的条件已满足；此前 2aca58e 的流转早于检视收敛，已由 02256a4 退回；2026-10-16 23:12 一次「批准流转」答复系误注入、无效；检视记录见 docs/reviews/0.4.md 循环 31；2026-10-15 owner 裁决 Q-601—Q-604、选定载体 C（0.4.3 扫描格 count 6 / sensitivity 150）；2026-09-20 立项为北极星研究问题 #1（人类扰动）的承接载体
 research_claim_status: not-applicable
 research_claim_required: false
 evidence_class: experiment-preview
