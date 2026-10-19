@@ -217,12 +217,41 @@ def test_cli_power_writes_the_report(tmp_path, monkeypatch):
     """CLI power：跑逐种子基线（此处以桩代替全窗口运行）并写出功效报告。"""
     calls = []
 
-    def fake(seeds=pr.POWER_SEEDS, *, jobs=1):
-        calls.append((tuple(seeds), jobs))
+    def fake(seeds=pr.POWER_SEEDS, *, jobs=1, cache_dir=None):
+        calls.append((tuple(seeds), jobs, cache_dir))
         return _points()
 
     monkeypatch.setattr(pr, "run_power_baseline", fake)
     out = tmp_path / "power.json"
-    assert pr.main(["power", "--jobs", "1", "--out", str(out)]) == 0
-    assert calls == [(pr.POWER_SEEDS, 1)]
+    cache = tmp_path / "cache"
+    assert pr.main(["power", "--jobs", "1", "--out", str(out), "--cache-dir", str(cache)]) == 0
+    assert calls == [(pr.POWER_SEEDS, 1, cache)]
     assert json.loads(out.read_text()) == json.loads(json.dumps(pr.power_report(_points())))
+
+
+def test_power_baseline_resumes_from_its_cache(tmp_path, monkeypatch):
+    """被中断后续跑：已落盘的种子不重跑；清单标识对不上的缓存作废重跑；结果原子落盘。"""
+    from market_game_sim.experiment.perturbation import carrier
+
+    ran = []
+
+    def fake_point(seed):
+        ran.append(seed)
+        return {"seed": seed, "roster_id": carrier.carrier_roster(seed).roster_id, "degenerate": []}
+
+    monkeypatch.setattr(pr, "_baseline_point", fake_point)
+    seeds = (1001, 1002)
+    first = pr.run_power_baseline(seeds, cache_dir=tmp_path)
+    assert ran == [1001, 1002] and sorted(p.name for p in tmp_path.iterdir()) == [
+        "seed-1001.json",
+        "seed-1002.json",
+    ]
+    assert pr.run_power_baseline(seeds, cache_dir=tmp_path) == first
+    assert ran == [1001, 1002], "缓存命中不重跑"
+
+    stale = json.loads((tmp_path / "seed-1002.json").read_text())
+    (tmp_path / "seed-1002.json").write_text(json.dumps({**stale, "roster_id": "roster-old"}))
+    pr.run_power_baseline(seeds, cache_dir=tmp_path)
+    assert ran == [1001, 1002, 1002], "清单变了的缓存不可复用"
+    pr.run_power_baseline(seeds)
+    assert ran[-2:] == [1001, 1002], "不给缓存目录时照常全跑"

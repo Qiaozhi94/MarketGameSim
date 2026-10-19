@@ -71,7 +71,9 @@ alphamill 证据链，ADR-011 §决策 5），落盘前自检，缺声明或出�
 ```
 
 ```bash
-# 功效基线：20 个种子的无人类基线全窗口（单进程约 4 小时；并行时每进程峰值 5 GB 以上）
+# 功效基线：20 个种子的无人类基线全窗口（单进程约 4 小时，单个种子峰值内存 11 GB 以上，
+# 15 GB 内存的机器上只能 --jobs 1 且不要同时跑别的重任务）。每跑完一个种子即写入
+# artifacts/0.4.2-power-cache/，被中断后重跑同一命令会跳过已完成的种子
 .venv/bin/python -m market_game_sim.experiment.perturbation.preregistration power --jobs 1
 
 # 读功效报告后登记 MDE（四个指标依次为 H2F-S-001..004），收录目录下全部会话，写预注册文件；

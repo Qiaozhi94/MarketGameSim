@@ -1,7 +1,7 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "6298ba26db9fead90fc384c165fa8ec81d5b209bf53296c112d64ab4007e3e34",
-    "reason": "2026-10-19 重绑：0.4.2 T1127/T1129/T1131 预注册、开环配对与效应量报告。源码改动：新增 experiment/perturbation/preregistration.py（功效基线、预注册文件、配对入口守卫）；experiment/perturbation/paired.py 新增正式配对入口、SC-501 基线判定、命令行；metrics/stability_effect.py 新增效应量报告；experiment/stats.py 新增连续指标的配对 bootstrap 原语（新函数，既有函数不变）。均不在 T215 运行路径上。以实测为据：本机没有 artifacts/formal/T215 冻结检查点（该目录不入库），无法运行 python tools/prove_economic_equivalence.py --t215，改为在上次盖章的源码树 e30e60c2…（提交 38a1579，git worktree）与当前源码树上各重跑 T215 全部 128 块，1024/1024 个主跑的经济投影（economic_projection v2）及终止态、abort_code、终局价格、运行分类逐一相同；上次盖章树经同法逐次等价回溯到 3cd1ee1e…，后者已于 2026-10-04 经 --t215 证明与冻结检查点经济等价，故等价关系可传递到冻结证据。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "attested_source_tree_sha256": "baebed2536f4965bf8d79c0fc8368978a5d59f5677178cbddd46a541fa6db275",
+    "reason": "2026-10-19 重绑：0.4.2 T1127 功效基线续跑缓存。源码改动只在 experiment/perturbation/preregistration.py：逐种子结果原子落盘到 artifacts/0.4.2-power-cache/，续跑跳过已完成且清单标识一致的种子。不在 T215 运行路径上。以实测为据：本机没有 artifacts/formal/T215 冻结检查点（该目录不入库），无法运行 python tools/prove_economic_equivalence.py --t215，改为在上次盖章的源码树 6298ba26…（提交 1d3190f，git worktree）与当前源码树上各重跑 T215 全部 128 块，1024/1024 个主跑的经济投影（economic_projection v2）及终止态、abort_code、终局价格、运行分类逐一相同；上次盖章树经同法逐次等价回溯到 3cd1ee1e…，后者已于 2026-10-04 经 --t215 证明与冻结检查点经济等价，故等价关系可传递到冻结证据。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
     "rebound_at": "2026-10-19",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "6298ba26db9fead90fc384c165fa8ec81d5b209bf53296c112d64ab4007e3e34"
+    "source_tree_sha256": "baebed2536f4965bf8d79c0fc8368978a5d59f5677178cbddd46a541fa6db275"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {

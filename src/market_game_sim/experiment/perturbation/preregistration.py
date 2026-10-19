@@ -34,6 +34,9 @@ from market_game_sim.metrics.stability_effect import METRIC_IDS, METRICS_DICTION
 
 ROOT = pathlib.Path(__file__).resolve().parents[4]
 POWER_REPORT_PATH = ROOT / "docs" / "experiments" / "0.4.2-power-baseline.json"
+#: 逐种子基线结果的续跑缓存（``artifacts/`` 不入库）：一次全窗口运行要十分钟以上、单进程
+#: 峰值内存 10 GB 以上，进程被中断时已完成的种子不重跑。
+POWER_CACHE_DIR = ROOT / "artifacts" / "0.4.2-power-cache"
 PREREGISTRATION_PATH = ROOT / "docs" / "experiments" / "0.4.2-preregistration.json"
 SCHEMA_VERSION = 1
 
@@ -157,13 +160,34 @@ def power_report(points: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     }
 
 
+def _cached_point(args: tuple[int, pathlib.Path | None]) -> dict[str, Any]:
+    """一个种子的基线点；缓存命中（且清单标识仍一致）即不重跑，跑完立即落盘。"""
+    seed, cache_dir = args
+    path = None if cache_dir is None else cache_dir / f"seed-{seed}.json"
+    if path is not None and path.is_file():
+        cached = json.loads(path.read_text(encoding="utf-8"))
+        if cached.get("roster_id") == carrier.carrier_roster(seed).roster_id:
+            return cached
+    point = _baseline_point(seed)
+    if path is not None:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = path.with_suffix(".tmp")
+        tmp.write_text(_dump(point), encoding="utf-8")
+        tmp.replace(path)  # 原子替换：中断时不会留下半份结果
+    return point
+
+
 def run_power_baseline(
-    seeds: Sequence[int] = POWER_SEEDS, *, jobs: int = 1
+    seeds: Sequence[int] = POWER_SEEDS,
+    *,
+    jobs: int = 1,
+    cache_dir: pathlib.Path | None = None,
 ) -> list[dict[str, Any]]:
+    work = [(seed, cache_dir) for seed in seeds]
     if jobs <= 1:
-        return [_baseline_point(seed) for seed in seeds]
+        return [_cached_point(item) for item in work]
     with ProcessPoolExecutor(max_workers=jobs) as pool:
-        return list(pool.map(_baseline_point, seeds))
+        return list(pool.map(_cached_point, work))
 
 
 # --------------------------------------------------------------------------- #
@@ -313,6 +337,9 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="command", required=True)
     power = sub.add_parser("power", help="跑 20 个种子的无人类基线并写功效报告")
     power.add_argument("--jobs", type=int, default=1)
+    power.add_argument(
+        "--cache-dir", default=str(POWER_CACHE_DIR), help="逐种子结果缓存，被中断后续跑不重跑"
+    )
     power.add_argument("--out", default=str(POWER_REPORT_PATH))
     prereg = sub.add_parser("preregister", help="登记 MDE 并写预注册文件（先于任何正式配对）")
     prereg.add_argument("--sessions-dir", required=True)
@@ -326,7 +353,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "power":
-        report = power_report(run_power_baseline(jobs=args.jobs))
+        report = power_report(
+            run_power_baseline(jobs=args.jobs, cache_dir=pathlib.Path(args.cache_dir))
+        )
         pathlib.Path(args.out).write_text(_dump(report), encoding="utf-8")
         print(f"power report: {args.out} (valid seeds {report['valid_seeds']}/{len(POWER_SEEDS)})")
         return 0
