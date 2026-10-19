@@ -133,7 +133,10 @@ live 市场（0.4.1，本里程碑改注入路径）
 
 - 会话写入/读取（IR-601）：`append_action(journal, action)` / `seal_session(path, seal)` /
   `load_session(path)` / `validate_session(payload)`；校验失败返回稳定原因码，不抛裸异常。
-- 动作回放：`replay_actions(actions, market, end_advance_index)` 在推进循环中，于每次 `advance()`
+- 动作回放（T1126 落地为 `LiveMarket.schedule_actions` + `perturbation/paired.py::run_arm` /
+  `replay_same_seed`；序号已过给 `REPLAY_ACTION_LATE`，投递时重新分配的序号与动作行不符给
+  `REPLAY_SEQUENCE_MISMATCH`，两者都归入 `REPLAY_DIVERGED`；封口与重放共用
+  `LiveMarket.seal_digests()`，事件摘要与 owner 观察摘要分别比对）：在推进循环中，于每次 `advance()`
   取出阶段投递 `advance_index` 等于当前序号的动作，按日志顺序入队；同种子重放推进到
   `end_advance_index` 后比较事件摘要，不一致返回 `REPLAY_DIVERGED`；动作序号早于当前序号
   （无法投递）返回稳定原因码并判失败，不得跳过动作或改写时点。开环回放推进到 5700 s。

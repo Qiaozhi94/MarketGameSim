@@ -25,7 +25,7 @@ import json
 import queue
 import threading
 import time
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -246,6 +246,8 @@ class LiveMarket:
         #: 本次运行的 action_seq <-> order_id（只登记 owner 新下的委托）。
         self._owner_order_ids: dict[int, str] = {}
         self._owner_action_by_order: dict[str, int] = {}
+        #: 回放（T1126/T1129）：advance 序号 -> 该次 advance 要投递的冻结动作行。
+        self._scheduled: dict[int, list[dict[str, Any]]] = {}
         self._wall_clock_ms = wall_clock_ms or (lambda: int(time.time() * 1000))
         # 预热（T1125）：``warmup=False`` 时终端一开始就开放，0.4.1/0.4.3 的既有用法不变。
         self.terminal = TERMINAL_WARMING_UP if warmup else TERMINAL_OPEN
@@ -435,8 +437,33 @@ class LiveMarket:
         self.orders.put({"kind": "CANCEL", "order_id": order_id})
         return {"accepted": True, "reason_code": "QUEUED"}
 
+    def schedule_actions(self, actions: Sequence[Mapping[str, Any]]) -> None:
+        """回放入口（IR-601）：冻结动作行按其 ``advance_index`` 在那次 advance 的取出阶段投递。
+
+        序号已过（早于下一次 advance）的动作无法投递，以 ``REPLAY_ACTION_LATE`` 拒绝——不跳过
+        动作、不改写时点。投递时重新分配的 ``action_seq`` 必须与动作行一致，否则
+        ``REPLAY_SEQUENCE_MISMATCH``：撤单靠 ``target_action_seq`` 解析，序号错位即解析错位。
+        """
+        with self.lock:
+            for action in actions:
+                index = int(action["advance_index"])
+                if index < self.advance_index:
+                    raise ReplayError(
+                        "REPLAY_ACTION_LATE",
+                        f"action {action['action_seq']} is due at advance {index}, "
+                        f"market is at {self.advance_index}",
+                    )
+                self._scheduled.setdefault(index, []).append(dict(action))
+
     def _drain_owner_actions(self, advance_index: int) -> None:
         """持锁取出全部已入队的 owner 载荷：分配动作序号、追加动作行、入队 owner 观察。"""
+        for action in self._scheduled.pop(advance_index, ()):
+            seq = self._accept_owner_action(advance_index, action["kind"], dict(action["payload"]))
+            if seq != action["action_seq"]:
+                raise ReplayError(
+                    "REPLAY_SEQUENCE_MISMATCH",
+                    f"replayed action got seq {seq}, journal says {action['action_seq']}",
+                )
         while True:
             try:
                 item = self.orders.get_nowait()
@@ -482,11 +509,9 @@ class LiveMarket:
         )
         return seq
 
-    def seal_session(self) -> dict[str, Any] | None:
-        """进程正常结束时封口：结束序号、该时点的事件摘要与 owner 观察摘要。"""
+    def seal_digests(self) -> tuple[str, list[dict[str, Any]]]:
+        """当前时点的事件摘要与 owner 观察摘要——封口与重放比对用同一份定义。"""
         with self.lock:
-            if self.session is None or self.session.sealed:
-                return None
             records = self.kernel.committed_records
             observations = [
                 {
@@ -498,9 +523,17 @@ class LiveMarket:
                 for r in records
                 if r.get("event_type") == "AGENT_OBSERVE" and r.get("agent_id") == HUMAN_AGENT
             ]
+            return rolling_digest_hex(records, get_registry()), observations
+
+    def seal_session(self) -> dict[str, Any] | None:
+        """进程正常结束时封口：结束序号、该时点的事件摘要与 owner 观察摘要。"""
+        with self.lock:
+            if self.session is None or self.session.sealed:
+                return None
+            event_digest, observations = self.seal_digests()
             return self.session.seal(
                 end_advance_index=self.advance_index,
-                event_digest=rolling_digest_hex(records, get_registry()),
+                event_digest=event_digest,
                 observation_digests=observations,
             )
 
@@ -704,6 +737,14 @@ class LiveMarket:
         }
         out.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         return out
+
+
+class ReplayError(Exception):
+    """冻结动作无法按序号投递；``code`` 为稳定原因码。"""
+
+    def __init__(self, code: str, message: str) -> None:
+        super().__init__(f"{code}: {message}")
+        self.code = code
 
 
 class _OwnerSource:

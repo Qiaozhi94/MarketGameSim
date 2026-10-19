@@ -77,7 +77,7 @@ updated: 2026-10-17
       不等待墙钟推进到 `W0`，期间拒绝下单，推进到 5700 s 仍未退出冷启动时拒绝开放（正反
       两侧）；改正 `--tick-seconds` 帮助文字里「1:1 实时」的说法 — verify:
       `tests/integration/test_perturbation_carrier.py`
-- [ ] T1126 (`FR-602`, `NFR-601`, `TR-601`, `AC-603`, `AC-604`): 实现同种子两臂——无人类基线臂
+- [x] T1126 (`FR-602`, `NFR-601`, `TR-601`, `AC-603`, `AC-604`): 实现同种子两臂——无人类基线臂
       同装配同种子逐点可复现；同种子重放臂按 `advance` 序号与 `action_seq` 投递动作行、推进到
       结束序号后比对封口事件摘要（owner 的观察、决策与委托都计入摘要），不一致返回
       `REPLAY_DIVERGED`；`chain_verifier` 对含 owner 委托的事件流通过 — verify:
@@ -101,7 +101,7 @@ updated: 2026-10-17
       撤单按 `target_action_seq` 经本次运行的 `action_seq → order_id` 映射解析——原场撤掉的挂单
       在开环种子上仍挂着时照常撤掉，已成交或被拒时记录原因码，不静默丢弃动作；配对集合可由
       预注册文件与会话哈希重建 — verify: `tests/integration/test_perturbation_open_loop.py`
-- [ ] T1130 (`TR-501`, `TR-601`, `AC-604`): 人类与 AI 委托并存时的批量因果链用例——多条记录
+- [x] T1130 (`TR-501`, `TR-601`, `AC-604`): 人类与 AI 委托并存时的批量因果链用例——多条记录
       同时存在，`chain_verifier` 对含 owner 下单与撤单的事件流通过，owner 与 AI 委托的
       `decision_event_id` 都解析到 `AGENT_DECIDE`，参与者类别可区分且撮合路径一致 — verify:
       `tests/integration/test_perturbation_paired.py`
