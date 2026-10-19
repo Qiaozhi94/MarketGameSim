@@ -13,22 +13,32 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import pathlib
+import sys
 from collections.abc import Mapping, Sequence
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass, field
 from typing import Any
 
 from market_game_sim.experiment.h2.live_market import HUMAN_AGENT, LiveMarket, ReplayError
 from market_game_sim.experiment.perturbation import carrier, session
 from market_game_sim.experiment.roster import StrategyRoster, load_roster
+from market_game_sim.metrics.market_quality import FAIL, QUALITY_THRESHOLDS, _quality_verdict
+from market_game_sim.metrics.quality_run import measure_quality
 from market_game_sim.metrics.stability_effect import (
     WINDOW_END_NS,
     ArmMeasurement,
+    build_effect_report,
     measure_arm,
+    original_case,
     pair_window_start,
 )
+
+#: SC-501 里与种子无关的一项（墙钟性能取决于机器），不用来判定「载体在该种子上失效」。
+_MACHINE_ITEMS = frozenset({"wall_seconds_per_logical_second"})
 
 BASELINE = "baseline"
 HUMAN = "human"
@@ -79,6 +89,8 @@ class ArmRun:
     actions: int = 0
     out_of_window_actions: int = 0
     cancel_outcomes: tuple[dict[str, Any], ...] = field(default_factory=tuple)
+    #: 基线臂上未通过的 SC-501 市场项（失效边界「载体 SC-501 失效的种子」）；人类臂为 None。
+    sc501_failed: tuple[str, ...] | None = None
 
     @property
     def window_complete(self) -> bool:
@@ -211,6 +223,16 @@ def run_arm(
             window_end=window_end_ns,
             aborted=market.dead is not None,
         )
+    sc501_failed = None
+    if arm == BASELINE and measurement is not None:
+        quality = measure_quality(
+            records, window_start=start, window_end=window_end_ns, wall_seconds=0.0
+        )
+        sc501_failed = tuple(
+            item
+            for item in QUALITY_THRESHOLDS
+            if item not in _MACHINE_ITEMS and _quality_verdict(item, quality.get(item)) == FAIL
+        )
     event_digest, observations = market.seal_digests()
     return ArmRun(
         roster_id=roster.roster_id,
@@ -228,7 +250,21 @@ def run_arm(
         actions=len(actions),
         out_of_window_actions=_out_of_window(records, actions, start, window_end_ns),
         cancel_outcomes=tuple(_cancel_outcomes(records, actions)),
+        sc501_failed=sc501_failed,
     )
+
+
+def arm_summary(run: ArmRun) -> dict[str, Any]:
+    """效应量报告（``stability_effect.build_effect_report``）要的一臂摘要。"""
+    return {
+        "run_digest": run.event_digest,
+        "aborted": run.aborted,
+        "logical_ns": run.logical_ns,
+        "measurement": run.measurement,
+        "sc501_failed": list(run.sc501_failed) if run.sc501_failed is not None else None,
+        "out_of_window_actions": run.out_of_window_actions,
+        "cancel_outcomes": list(run.cancel_outcomes),
+    }
 
 
 def run_baseline(
@@ -312,3 +348,202 @@ def replay_open_loop(
         window_start_ns=window_start_ns,
         window_end_ns=window_end_ns,
     )
+
+
+# --------------------------------------------------------------------------- #
+# 正式配对（T1129 / T1132）：只读预注册
+# --------------------------------------------------------------------------- #
+
+
+def _failed_arm(code: str) -> dict[str, Any]:
+    return {
+        "run_digest": None,
+        "aborted": None,
+        "logical_ns": None,
+        "measurement": None,
+        "sc501_failed": None,
+        "out_of_window_actions": 0,
+        "cancel_outcomes": [],
+        "failure": code,
+    }
+
+
+def _pair_seed(args: tuple[pathlib.Path, int, int | None, int]) -> dict[str, Any]:
+    """一个开环种子：基线臂定 W0，人类臂按 advance 序号回放同一段动作并推进到窗口终点。"""
+    treatment_path, seed, start_override, end = args
+    check = session.load_session(treatment_path)
+    baseline = run_baseline(
+        carrier.carrier_roster(seed), window_end_ns=end, window_start_ns=start_override
+    )
+    if baseline.window_start_ns is None:
+        human = _failed_arm("BASELINE_WINDOW_NOT_ESTABLISHED")
+    else:
+        try:
+            human = arm_summary(
+                replay_open_loop(
+                    check, seed, window_start_ns=baseline.window_start_ns, window_end_ns=end
+                )
+            )
+        except ReplayError as exc:
+            # 无法按序号投递：该种子判失败并留原因码，不跳过动作、不改写时点。
+            human = _failed_arm(exc.code)
+    return {
+        "seed": seed,
+        "replay_mode": OPEN_LOOP_REPLAY,
+        "baseline": arm_summary(baseline),
+        "human": human,
+    }
+
+
+def _original(
+    check: session.SessionCheck,
+    roster_dir: pathlib.Path,
+    start_override: int | None,
+    end: int,
+) -> dict[str, Any]:
+    header = check.header
+    assert header is not None
+    if check.status != session.SEALED:
+        return original_case(
+            session_id=header["session_id"],
+            seed=header["seed"],
+            replay_ok=False,
+            replay_reason=SESSION_UNSEALED,
+            baseline=None,
+            human=None,
+            out_of_window_actions=0,
+        )
+    baseline = run_baseline(
+        roster_for(header["roster_id"], roster_dir),
+        window_end_ns=end,
+        window_start_ns=start_override,
+    )
+    replay = replay_same_seed(
+        check, roster_dir=roster_dir, window_start_ns=baseline.window_start_ns, window_end_ns=end
+    )
+    return original_case(
+        session_id=header["session_id"],
+        seed=header["seed"],
+        replay_ok=replay.ok,
+        replay_reason=replay.reason_code,
+        baseline=baseline.measurement,
+        human=replay.run.measurement if replay.ok and replay.run else None,
+        out_of_window_actions=replay.run.out_of_window_actions if replay.run else 0,
+    )
+
+
+def run_pairing(
+    treatment_path: str | pathlib.Path,
+    *,
+    preregistration_path: str | pathlib.Path | None = None,
+    pinned_sha256: str | None = None,
+    power_report_path: str | pathlib.Path | None = None,
+    roster_dir: pathlib.Path = carrier.ROSTER_DIR,
+    window_start_ns: int | None = None,
+    window_end_ns: int = WINDOW_END_NS,
+    jobs: int = 1,
+) -> dict[str, Any]:
+    """一个处理会话的正式配对与效应量报告（spec FR-602 / FR-603）。
+
+    唯一的预注册读取点是 ``preregistration.begin_pairing``：缺失、未钉住、哈希不一致、功效
+    报告被改或处理会话不在其中即 fail closed。配对集合（开环种子清单）只取自预注册文件，
+    报告写出前再核一次预注册未变。``window_start_ns`` 只供测试用短窗口驱动。
+    """
+    from market_game_sim.experiment.perturbation import preregistration as prereg_mod
+
+    kwargs: dict[str, Any] = {"pinned_sha256": pinned_sha256}
+    if power_report_path is not None:
+        kwargs["power_report_path"] = power_report_path
+    prereg_path = pathlib.Path(preregistration_path or prereg_mod.PREREGISTRATION_PATH)
+    prereg, sha = prereg_mod.begin_pairing(prereg_path, **kwargs)
+    if prereg["carrier"]["count"] != carrier.CARRIER_COUNT or (
+        prereg["carrier"]["sensitivity_x1000"] != carrier.CARRIER_SENSITIVITY_X1000
+    ):
+        raise PairingError(ROSTER_MISMATCH, "预注册的载体与 carrier.py 不符")
+    path = pathlib.Path(treatment_path)
+    check = load_treatment(path)
+    entry = prereg_mod.require_treatment(prereg, check)
+
+    work = [(path, int(seed), window_start_ns, window_end_ns) for seed in prereg["open_loop_seeds"]]
+    if jobs <= 1:
+        pairs = [_pair_seed(item) for item in work]
+    else:
+        with ProcessPoolExecutor(max_workers=jobs) as pool:
+            pairs = list(pool.map(_pair_seed, work))
+    case = _original(check, roster_dir, window_start_ns, window_end_ns)
+    prereg_mod.verify_preregistration(sha, prereg_path)
+    return build_effect_report(
+        pairs=pairs,
+        original_cases=[case],
+        preregistration=prereg,
+        preregistration_sha256=sha,
+        treatment=entry,
+        label=OPEN_LOOP_LABEL,
+        carrier_disclaimer=carrier.CARRIER_DISCLAIMER,
+    )
+
+
+# --------------------------------------------------------------------------- #
+# CLI
+# --------------------------------------------------------------------------- #
+
+
+def _run_json(run: ArmRun) -> dict[str, Any]:
+    m = run.measurement
+    return {
+        "roster_id": run.roster_id,
+        "seed": run.seed,
+        "arm": run.arm,
+        "replay_mode": run.replay_mode,
+        "evidence_class": "experiment-preview",
+        "run_mode": "interactive",
+        "advances": run.advances,
+        "logical_ns": run.logical_ns,
+        "aborted": run.aborted,
+        "window_start_ns": run.window_start_ns,
+        "event_digest": run.event_digest,
+        "metrics": dict(m.metrics) if m is not None else None,
+        "degenerate": list(m.degenerate) if m is not None else None,
+        "sc501_failed": list(run.sc501_failed) if run.sc501_failed is not None else None,
+        "out_of_window_actions": run.out_of_window_actions,
+        "cancel_outcomes": list(run.cancel_outcomes),
+    }
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(
+        prog="python -m market_game_sim.experiment.perturbation.paired"
+    )
+    sub = parser.add_subparsers(dest="command", required=True)
+    baseline = sub.add_parser("baseline", help="无人类基线臂（全窗口）")
+    baseline.add_argument("--seed", type=int, required=True)
+    replay = sub.add_parser("replay", help="同种子重放：与封口记录逐位比对")
+    replay.add_argument("--session", required=True)
+    pair = sub.add_parser("pair", help="正式配对与效应量报告（只读已钉住的预注册）")
+    pair.add_argument("--session", required=True)
+    pair.add_argument("--jobs", type=int, default=1)
+    for p in (baseline, replay, pair):
+        p.add_argument("--out", required=True)
+    args = parser.parse_args(argv)
+
+    if args.command == "baseline":
+        payload: dict[str, Any] = _run_json(run_baseline(carrier.carrier_roster(args.seed)))
+    elif args.command == "replay":
+        result = replay_same_seed(load_treatment(args.session))
+        payload = {
+            "ok": result.ok,
+            "reason_code": result.reason_code,
+            "detail": result.detail,
+            "run": _run_json(result.run) if result.run else None,
+        }
+    else:
+        payload = run_pairing(args.session, jobs=args.jobs)
+    pathlib.Path(args.out).write_text(
+        json.dumps(payload, sort_keys=True, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    print(args.out)
+    return 0 if args.command != "replay" or payload["ok"] else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

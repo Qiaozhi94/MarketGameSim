@@ -70,6 +70,20 @@ alphamill 证据链，ADR-011 §决策 5），落盘前自检，缺声明或出�
 .venv/bin/python -m market_game_sim.experiment.perturbation.carrier --seeds 7
 ```
 
+```bash
+# 功效基线：20 个种子的无人类基线全窗口（单进程约 4 小时；并行时每进程峰值 5 GB 以上）
+.venv/bin/python -m market_game_sim.experiment.perturbation.preregistration power --jobs 1
+
+# 读功效报告后登记 MDE（四个指标依次为 H2F-S-001..004），收录目录下全部会话，写预注册文件；
+# 提交后把输出的 sha256 钉进 preregistration.PREREGISTRATION_SHA256
+.venv/bin/python -m market_game_sim.experiment.perturbation.preregistration preregister \
+    --sessions-dir <会话目录> --mde <m1> <m2> <m3> <m4> --open-loop-seeds <种子…>
+
+# 同种子重放（与封口逐位比对）、正式配对与效应量报告（只读已钉住的预注册）
+.venv/bin/python -m market_game_sim.experiment.perturbation.paired replay --session <会话> --out /tmp/replay.json
+.venv/bin/python -m market_game_sim.experiment.perturbation.paired pair --session <会话> --out /tmp/effect.json
+```
+
 格式见 [`docs/experiments/0.4.2-perturbation-session-format.json`](docs/experiments/0.4.2-perturbation-session-format.json)；
 产出为 `experiment-preview`、`run_mode: interactive`，不进任何 evidence index。载体 C 未达
 0.4.3 `QUALIFIED`、SC-502 不稳定，只作载体。

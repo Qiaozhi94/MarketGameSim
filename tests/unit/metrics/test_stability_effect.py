@@ -1,8 +1,7 @@
-"""0.4.2 T1121 稳定性指标口径（AC-605）；T1131 skeleton。
+"""0.4.2 T1121 稳定性指标口径、T1131 效应量报告（AC-605）。
 
-T1131 的 strict-xfail 骨架：实现时替换为真实断言并摘除 xfail。口径见
-docs/research/metrics-dictionary.md §9，规格见
-docs/features/0.4/0.4.2-human-perturbation/spec.md §6。
+口径见 docs/research/metrics-dictionary.md §9，规格见
+docs/features/0.4/0.4.2-human-perturbation/spec.md FR-603、SC-603、§6。
 """
 
 import pathlib
@@ -43,15 +42,6 @@ def _margin_call(seconds, depth):
 def _arm(trades, *, start=W0, end=W0 + 600 * S, extra=(), aborted=False):
     events = [_book(0), *trades, *extra]
     return se.measure_arm(events, window_start=start, window_end=end, aborted=aborted)
-
-
-@pytest.mark.xfail(strict=True, reason="T1131 not implemented yet")
-def test_effect_report_valid_degenerate_and_aborted_pairs():
-    """AC-605：
-    四指标逐种子差值、效应量与 90% 区间；退化配对与人类臂中止配对列入失效边界；
-    有效配对低于下限时效应量缺省
-    """
-    pytest.fail("T1131 pending")
 
 
 def test_drawdown_and_rise_reset_peak_at_window_start():
@@ -185,7 +175,159 @@ def test_metric_ids_and_version_live_in_the_dictionary():
         assert f"`{code}`" in section
 
 
-@pytest.mark.xfail(strict=True, reason="T1131 not implemented yet")
+# --------------------------------------------------------------------------- #
+# T1131：效应量报告
+# --------------------------------------------------------------------------- #
+
+
+def _measurement(base_value, codes=()):
+    metrics = {m: base_value + 0.001 * k for k, m in enumerate(se.METRIC_IDS)}
+    return se.ArmMeasurement(W0, W0 + 600 * S, metrics, tuple(codes), 0, 10)
+
+
+def _arm_summary(measurement, *, aborted=None, sc501=None, digest="d"):
+    return {
+        "run_digest": digest,
+        "aborted": aborted,
+        "logical_ns": 5000 * S if aborted else 5700 * S,
+        "measurement": measurement,
+        "sc501_failed": sc501,
+        "out_of_window_actions": 1,
+        "cancel_outcomes": [{"action_seq": 3, "target_action_seq": 1, "outcome": "CANCELLED"}],
+    }
+
+
+def _pair(seed, base, human, **arm):
+    return {
+        "seed": seed,
+        "replay_mode": "open_loop_replay",
+        "baseline": _arm_summary(base, sc501=arm.pop("sc501", []), digest=f"b{seed}"),
+        "human": _arm_summary(human, digest=f"h{seed}", **arm),
+    }
+
+
+def _prereg(floor=3, sigma_b=0.05):
+    return {
+        "min_valid_pairs": floor,
+        "sigma_b": dict.fromkeys(se.METRIC_IDS, sigma_b),
+        "statistics": {"ci_level": 0.90, "n_resamples": 2000, "bootstrap_seed": 0},
+    }
+
+
+def _pairs():
+    return [
+        _pair(2001, _measurement(0.10), _measurement(0.13)),
+        _pair(2002, _measurement(0.20), _measurement(0.21), sc501=["trades_per_minute"]),
+        _pair(2003, _measurement(0.30), _measurement(0.35)),
+        _pair(2004, _measurement(0.10, ["NO_TRADES_IN_WINDOW"]), _measurement(0.2)),
+        _pair(2005, _measurement(0.10), _measurement(0.4, ["KERNEL_ABORT"]), aborted="INTERNAL: x"),
+        _pair(2006, _measurement(0.10), None),
+    ]
+
+
+def _report(pairs=None, **prereg):
+    case = se.original_case(
+        session_id="s-1",
+        seed=7,
+        replay_ok=True,
+        replay_reason=None,
+        baseline=_measurement(0.1),
+        human=_measurement(0.15),
+        out_of_window_actions=0,
+    )
+    return se.build_effect_report(
+        pairs=_pairs() if pairs is None else pairs,
+        original_cases=[case],
+        preregistration=_prereg(**prereg),
+        preregistration_sha256="p" * 64,
+        treatment={"content_hash": "c" * 64, "session_id": "s-1"},
+        label="固定订单流扰动",
+        carrier_disclaimer="载体 C 只作载体",
+    )
+
+
+def _keys(value):
+    if isinstance(value, dict):
+        for key, item in value.items():
+            yield key
+            yield from _keys(item)
+    elif isinstance(value, list):
+        for item in value:
+            yield from _keys(item)
+
+
+def test_effect_report_valid_degenerate_and_aborted_pairs():
+    """AC-605：
+    四指标逐种子差值、效应量与 90% 区间；退化配对与人类臂中止配对列入失效边界；
+    有效配对低于下限时效应量缺省
+    """
+    report = _report()
+    assert report["verdict"] == se.REPORTED and report["valid_pairs"] == 3
+    assert [p["status"] for p in report["pairs"]] == [
+        se.VALID,
+        se.VALID,
+        se.VALID,
+        se.DEGENERATE,
+        se.ABORTED,
+        se.DEGENERATE,
+    ]
+    for metric in se.METRIC_IDS:
+        block = report["metrics"][metric]
+        assert block["differences"] == pytest.approx([0.03, 0.01, 0.05])
+        assert block["effect"] == pytest.approx(0.03)
+        assert block["ci_low"] <= block["effect"] <= block["ci_high"]
+    boundary = report["failure_boundary"]
+    assert [d["seed"] for d in boundary["degenerate"]] == [2004, 2006]
+    assert boundary["degenerate"][1]["human"] == [se.WINDOW_INCOMPLETE]
+    assert boundary["aborted"] == [{"seed": 2005, "abort": "INTERNAL: x", "logical_ns": 5000 * S}]
+    assert boundary["sc501_failed"] == [{"seed": 2002, "items": ["trades_per_minute"]}]
+    assert report["original_cases"][0]["differences"][se.MAX_DRAWDOWN] == pytest.approx(0.05)
+    assert report["out_of_window_actions"] == 6
+    assert report["evidence_class"] == "experiment-preview" and report["run_mode"] == "interactive"
+    assert report["label"] == "固定订单流扰动"
+    body = {k: v for k, v in report.items() if k != "content_hash"}
+    assert report["content_hash"] == se._digest(body)
+    assert not [k for k in _keys(report) if "crash" in k.lower()], "不以崩盘与否作结论形态"
+
+    # 有效配对数低于下限：整份报告退化，效应量字段缺省而不是填 0。
+    short = _report(floor=4)
+    assert short["verdict"] == se.DEGENERATE_REPORT
+    for block in short["metrics"].values():
+        assert not {"effect", "ci_low", "ci_high"} & set(block)
+        assert block["differences"], "差值与失效边界照常给出"
+
+
 def test_underpowered_flag_when_observed_sd_exceeds_bound():
     """AC-605：实测 σ_d 超出 √2·σ_b 时报告带功效不足标注，未超出时不带"""
-    pytest.fail("T1131 pending")
+    loose = _report(sigma_b=0.05)["metrics"][se.MAX_DRAWDOWN]
+    assert loose["observed_sigma_d"] == pytest.approx(0.02)
+    assert loose["sigma_d_bound"] == pytest.approx(0.05 * 2**0.5)
+    assert loose["underpowered"] is False and "power_note" not in loose
+    tight = _report(sigma_b=0.01)["metrics"][se.MAX_DRAWDOWN]
+    assert tight["underpowered"] is True and tight["power_note"] == se.UNDERPOWERED_NOTE
+
+
+def test_original_cases_are_listed_but_never_pooled():
+    matched = se.original_case(
+        session_id="s",
+        seed=7,
+        replay_ok=True,
+        replay_reason=None,
+        baseline=_measurement(0.1),
+        human=None,
+        out_of_window_actions=2,
+    )
+    assert matched["window_complete"] is False and "differences" not in matched
+    diverged = se.original_case(
+        session_id="s",
+        seed=7,
+        replay_ok=False,
+        replay_reason="REPLAY_DIVERGED",
+        baseline=_measurement(0.1),
+        human=_measurement(0.2),
+        out_of_window_actions=0,
+    )
+    assert diverged["replay"] == "REPLAY_DIVERGED" and "differences" not in diverged
+    # 原场个案不进入主效应量：只有开环配对的差值。
+    report = _report()
+    assert report["metrics"][se.MAX_DRAWDOWN]["valid_pairs"] == 3

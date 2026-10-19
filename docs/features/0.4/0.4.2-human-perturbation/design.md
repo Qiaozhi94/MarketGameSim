@@ -230,8 +230,16 @@ live 市场（0.4.1，本里程碑改注入路径）
   下单。
 - 可观测产物：会话 artifact、功效分析报告、预注册文件与效应量报告；退化判定、功效判定与
   载体未达标声明在报告顶层可见。
-- CLI：`python -m market_game_sim.experiment.perturbation.paired`（基线/重放/开环三种运行），
-  命令与端口在 `RUN.md` 记录。
+- CLI：`python -m market_game_sim.experiment.perturbation.paired`（`baseline` / `replay` /
+  `pair`：基线、同种子重放、只读预注册的正式配对，开环回放在 `pair` 内按预注册种子运行）与
+  `python -m market_game_sim.experiment.perturbation.preregistration`（`power` / `preregister`），
+  命令在 `RUN.md` 记录。
+- 实现落地（T1127/T1129/T1131）：配对入口唯一的预注册读取点是 `preregistration.begin_pairing`
+  （缺失 / 未钉住 `PREREGISTRATION_SHA256` / 哈希不一致 / 功效报告被改 / 处理会话不在其中即
+  fail closed），报告写出前 `verify_preregistration` 再核一次；开环撤单的结局（`CANCELLED` /
+  `TARGET_NOT_ACTIVE` / `TARGET_UNRESOLVED` / `NOT_PROCESSED`）从事件流归类并逐对列入报告，不改
+  内核撤单语义；失效边界的「载体 SC-501 失效的种子」按 SC-501 的五个市场项判定，墙钟性能项与
+  种子无关、不计；全窗口运行单进程峰值内存约 5 GB 以上，本机 15 GB 下功效基线只宜单进程跑。
 
 ## 7. 失败、恢复、安全与兼容
 

@@ -14,10 +14,15 @@ live 市场自带的 ``max_drawdown`` 与 ``big-move`` 是 0.4.1 终端的遗留
 
 from __future__ import annotations
 
+import hashlib
+import json
+import math
+import statistics
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
+from market_game_sim.experiment.stats import bootstrap_paired_median
 from market_game_sim.metrics.instability import (
     CHAIN_DEPTH_THRESHOLD,
     MINUTE_MOVE_THRESHOLD,
@@ -48,6 +53,9 @@ KERNEL_ABORT = "KERNEL_ABORT"
 NO_TRADES_IN_WINDOW = "NO_TRADES_IN_WINDOW"
 NO_PRICE_AT_WINDOW_START = "NO_PRICE_AT_WINDOW_START"
 NEVER_TWO_SIDED = "NEVER_TWO_SIDED"
+
+#: 人类臂在窗口终点之前就停下（没有中止）：没有可比指标。
+WINDOW_INCOMPLETE = "WINDOW_INCOMPLETE"
 
 # 配对状态。
 VALID = "VALID"
@@ -210,3 +218,173 @@ def pair_status(baseline: ArmMeasurement | None, human: ArmMeasurement) -> str:
     if human.degenerate:
         return DEGENERATE
     return VALID
+
+
+# --------------------------------------------------------------------------- #
+# T1131：效应量报告（FR-603 / DR-602 / SC-603）
+# --------------------------------------------------------------------------- #
+
+REPORT_SCHEMA_VERSION = 1
+REPORTED = "REPORTED"
+#: spec §5 PAIRED → DEGENERATE：有效配对数低于预注册下限，如实报告退化，不输出效应量。
+DEGENERATE_REPORT = "DEGENERATE"
+#: 实测差值标准差超出 √2·σ_b：功效近似的 ρ ≥ 0 假设不成立（spec SC-605）。
+UNDERPOWERED_NOTE = "功效不足（ρ ≥ 0 假设不成立）"
+
+
+def _status(pair: Mapping[str, Any]) -> tuple[str, list[str], list[str]]:
+    base, human = pair["baseline"]["measurement"], pair["human"]["measurement"]
+    base_codes = list(base.degenerate) if base is not None else [WINDOW_NOT_ESTABLISHED]
+    if human is None:
+        return DEGENERATE, base_codes, [pair["human"].get("failure") or WINDOW_INCOMPLETE]
+    return pair_status(base, human), base_codes, list(human.degenerate)
+
+
+def _digest(payload: Any) -> str:
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, ensure_ascii=False, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def build_effect_report(
+    *,
+    pairs: Sequence[Mapping[str, Any]],
+    original_cases: Sequence[Mapping[str, Any]],
+    preregistration: Mapping[str, Any],
+    preregistration_sha256: str,
+    treatment: Mapping[str, Any],
+    label: str,
+    carrier_disclaimer: str,
+) -> dict[str, Any]:
+    """一个处理会话（一段动作序列）的效应量报告；不跨会话合并（spec FR-602 末句）。
+
+    ``pairs`` 每项为 ``{"seed", "replay_mode", "baseline": arm, "human": arm}``，``arm`` 含
+    ``run_digest`` / ``aborted`` / ``logical_ns`` / ``measurement``（:class:`ArmMeasurement`
+    或 ``None``）/ ``sc501_failed`` / ``out_of_window_actions`` / ``cancel_outcomes``。只有
+    ``VALID`` 配对进入效应量；有效配对数低于预注册下限时**效应量字段缺省**（不是 0）。
+    """
+    floor = int(preregistration["min_valid_pairs"])
+    stats_cfg = preregistration["statistics"]
+    rows, valid = [], []
+    boundary: dict[str, list[dict[str, Any]]] = {
+        "degenerate": [],
+        "aborted": [],
+        "sc501_failed": [],
+    }
+    for pair in sorted(pairs, key=lambda p: p["seed"]):
+        status, base_codes, human_codes = _status(pair)
+        rows.append(
+            {
+                "seed": pair["seed"],
+                "replay_mode": pair["replay_mode"],
+                "status": status,
+                "baseline_run": pair["baseline"]["run_digest"],
+                "human_run": pair["human"]["run_digest"],
+                "baseline_degenerate": base_codes,
+                "human_degenerate": human_codes,
+                "out_of_window_actions": pair["human"]["out_of_window_actions"],
+                "cancel_outcomes": list(pair["human"]["cancel_outcomes"]),
+            }
+        )
+        if status == VALID:
+            valid.append(pair)
+        elif status == ABORTED:
+            boundary["aborted"].append(
+                {
+                    "seed": pair["seed"],
+                    "abort": pair["human"]["aborted"],
+                    "logical_ns": pair["human"]["logical_ns"],
+                }
+            )
+        else:
+            boundary["degenerate"].append(
+                {"seed": pair["seed"], "baseline": base_codes, "human": human_codes}
+            )
+        failed = pair["baseline"].get("sc501_failed")
+        if failed:
+            boundary["sc501_failed"].append({"seed": pair["seed"], "items": list(failed)})
+
+    reported = len(valid) >= floor
+    metrics: dict[str, dict[str, Any]] = {}
+    for metric in METRIC_IDS:
+        base = [float(p["baseline"]["measurement"].metrics[metric]) for p in valid]
+        human = [float(p["human"]["measurement"].metrics[metric]) for p in valid]
+        diffs = [h - b for h, b in zip(human, base, strict=True)]
+        sigma_b = preregistration["sigma_b"][metric]
+        bound = math.sqrt(2) * float(sigma_b)
+        observed = statistics.stdev(diffs) if len(diffs) >= 2 else None
+        block: dict[str, Any] = {
+            "baseline": base,
+            "human": human,
+            "differences": diffs,
+            "valid_pairs": len(diffs),
+            "observed_sigma_d": observed,
+            "sigma_d_bound": bound,
+            "underpowered": observed is not None and observed > bound,
+        }
+        if block["underpowered"]:
+            block["power_note"] = UNDERPOWERED_NOTE
+        if reported:
+            result = bootstrap_paired_median(
+                diffs,
+                n_resamples=int(stats_cfg["n_resamples"]),
+                ci_level=float(stats_cfg["ci_level"]),
+                seed=int(stats_cfg["bootstrap_seed"]),
+            )
+            block |= {"effect": result.median, "ci_low": result.ci_low, "ci_high": result.ci_high}
+        metrics[metric] = block
+
+    body = {
+        "schema_version": REPORT_SCHEMA_VERSION,
+        "evidence_class": "experiment-preview",
+        "run_mode": "interactive",
+        "metrics_dictionary_version": METRICS_DICTIONARY_VERSION,
+        "label": label,
+        "carrier_disclaimer": carrier_disclaimer,
+        "claim_scope": "该订单流在载体 C 上使稳定性指标移动多少；不外推至人类，不跨会话合并",
+        "preregistration_sha256": preregistration_sha256,
+        "treatment_session_hash": treatment["content_hash"],
+        "treatment_session_id": treatment["session_id"],
+        "pair_set_id": _digest(
+            [(r["seed"], r["replay_mode"], r["baseline_run"], r["human_run"]) for r in rows]
+        ),
+        "verdict": REPORTED if reported else DEGENERATE_REPORT,
+        "valid_pairs": len(valid),
+        "min_valid_pairs": floor,
+        "ci_level": float(stats_cfg["ci_level"]),
+        "pairs": rows,
+        "metrics": metrics,
+        "failure_boundary": boundary,
+        "original_cases": [dict(c) for c in original_cases],
+        "out_of_window_actions": sum(r["out_of_window_actions"] for r in rows),
+    }
+    body["content_hash"] = _digest(body)
+    return body
+
+
+def original_case(
+    *,
+    session_id: str,
+    seed: int,
+    replay_ok: bool,
+    replay_reason: str | None,
+    baseline: ArmMeasurement | None,
+    human: ArmMeasurement | None,
+    out_of_window_actions: int,
+) -> dict[str, Any]:
+    """原场（同种子）配对逐场列为个案、不并入主效应量；窗口不完整或重放不一致如实标注。"""
+    case: dict[str, Any] = {
+        "session_id": session_id,
+        "seed": seed,
+        "replay": "MATCHED" if replay_ok else replay_reason,
+        "window_complete": human is not None,
+        "out_of_window_actions": out_of_window_actions,
+    }
+    if replay_ok and human is not None and baseline is not None:
+        status = pair_status(baseline, human)
+        case["status"] = status
+        if status == VALID:
+            case["differences"] = {
+                m: float(human.metrics[m]) - float(baseline.metrics[m]) for m in METRIC_IDS
+            }
+    return case

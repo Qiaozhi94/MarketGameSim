@@ -177,3 +177,22 @@ class TestBuildConditionalConclusion:
         text = build_conditional_conclusion(self._result(0.05, 0.35), "S", "R")
         assert "未声明" in text
         assert "不得外推" in text
+
+
+def test_bootstrap_paired_median_is_deterministic_and_brackets_the_median():
+    """0.4.2 T1131：连续指标的配对 bootstrap——同输入同种子逐位相同，区间包住中位数。"""
+    from market_game_sim.experiment.stats import bootstrap_paired_median
+
+    diffs = [0.03, -0.01, 0.05, 0.02, 0.04, 0.00, 0.06]
+    first = bootstrap_paired_median(diffs, n_resamples=5000, ci_level=0.90, seed=0)
+    assert first == bootstrap_paired_median(diffs, n_resamples=5000, ci_level=0.90, seed=0)
+    assert first.median == 0.03
+    assert first.ci_low <= first.median <= first.ci_high
+    assert first.ci_low >= min(diffs) and first.ci_high <= max(diffs)
+    wider = bootstrap_paired_median(diffs, n_resamples=5000, ci_level=0.99, seed=0)
+    assert wider.ci_low <= first.ci_low and wider.ci_high >= first.ci_high
+    assert bootstrap_paired_median([0.1] * 4, n_resamples=100).ci_low == 0.1
+    with pytest.raises(ValueError):
+        bootstrap_paired_median([])
+    with pytest.raises(ValueError):
+        bootstrap_paired_median([0.1], ci_level=1.0)

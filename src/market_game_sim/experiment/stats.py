@@ -3,6 +3,9 @@
 * :func:`bootstrap_proportion_diff` -- effect size + CI for the difference
   in economic-endpoint rate between a paired control/treatment group
   (方法论 §10.2's "效应量（含置信区间）").
+* :func:`bootstrap_paired_median` -- median of per-seed paired differences
+  with a paired-bootstrap percentile interval (0.4.2 T1131, continuous
+  stability metrics).
 * :func:`holm_bonferroni` -- step-down multiple-comparison correction
   (T604), for when more than one metric/hypothesis is tested at once.
 * :func:`build_conditional_conclusion` -- formats a bootstrap result into
@@ -18,6 +21,7 @@ reproducible resampling.
 from __future__ import annotations
 
 import random
+import statistics
 from dataclasses import dataclass
 
 
@@ -98,6 +102,56 @@ def bootstrap_proportion_diff(
         ci_level=ci_level,
         n_control=n_c,
         n_treatment=n_t,
+        n_resamples=n_resamples,
+        seed=seed,
+    )
+
+
+@dataclass(frozen=True)
+class PairedMedianResult:
+    """0.4.2 T1131：逐种子差值的中位数及其配对 bootstrap 分位区间。"""
+
+    median: float
+    ci_low: float
+    ci_high: float
+    ci_level: float
+    n_pairs: int
+    n_resamples: int
+    seed: int
+
+
+def bootstrap_paired_median(
+    differences: list[float],
+    n_resamples: int = 10_000,
+    ci_level: float = 0.90,
+    seed: int = 0,
+) -> PairedMedianResult:
+    """配对 bootstrap：对逐种子差值有放回重采样，报中位数与 ``ci_level`` 分位区间。
+
+    0.4.2 DQ-603（owner 2026-10-15 裁决）：连续指标的效应量是差值中位数，区间为
+    ``[(1 − ci_level)/2, (1 + ci_level)/2]`` 分位；重采样次数与种子的缺省与
+    :func:`bootstrap_proportion_diff` 一致，``ci_level`` 由调用方显式传 0.90。分位下标
+    与 :func:`bootstrap_proportion_diff` 同一取法，同输入同种子逐位可复现。
+    """
+    n = len(differences)
+    if n == 0:
+        raise ValueError("bootstrap_paired_median requires at least one paired difference")
+    if not (0 < ci_level < 1):
+        raise ValueError(f"ci_level must be in (0, 1), got {ci_level}")
+    rng = random.Random(seed)
+    medians = sorted(
+        statistics.median(differences[rng.randrange(n)] for _ in range(n))
+        for _ in range(n_resamples)
+    )
+    alpha = 1 - ci_level
+    lo_idx = max(int((alpha / 2) * n_resamples), 0)
+    hi_idx = min(int((1 - alpha / 2) * n_resamples), n_resamples - 1)
+    return PairedMedianResult(
+        median=statistics.median(differences),
+        ci_low=medians[lo_idx],
+        ci_high=medians[hi_idx],
+        ci_level=ci_level,
+        n_pairs=n,
         n_resamples=n_resamples,
         seed=seed,
     )
