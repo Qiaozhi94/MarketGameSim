@@ -123,7 +123,14 @@ async function refresh(){
   $("clock").textContent="t="+Math.round(v.logical_timestamp/1e9)+"s";
   renderBook(v);renderTape(v);renderBottom(v);renderOrderPanel(v);renderChart(v);
   if(!$("view-assets").hidden)renderAssets(v);
+  renderTerminalPhase(v);
 }
+function renderTerminalPhase(v){const tp=v.terminal||{phase:"OPEN"};const closed=tp.phase!=="OPEN";
+  $("btn-action").disabled=closed;
+  if(tp.phase==="WARMING_UP")hint(`预热中：t=${Math.round(v.logical_timestamp/1e9)}s，至少到 ${Math.round(tp.warmup_target_ns/1e9)}s 且全部代理退出冷启动后开放下单`,false);
+  else if(closed)hint(`统计窗口不成立（${tp.reason_code}）：终端不开放`,false);
+  else if(state.wasClosed)hint("预热完成，终端已开放",true);
+  state.wasClosed=closed}
 function renderBook(v){const m=v.market;$("mid").textContent=fmt(m.last_ticks);
   const rows=(levels,rev)=>{let out="",cum=0;const list=rev?[...levels].reverse():levels;
     for(const l of list){out+=`<tr><td class="num ${rev?"":"down"}">${fmt(l.price_ticks)}</td>
@@ -315,7 +322,7 @@ async function submitOrder(){const v=state.view;if(!v)return;
       quantity_units:qty,price_ticks:state.type==="LIMIT"?parseInt($("px").value||"0",10):null};
     const res=await post("/api/v1/h2/owner/session/orders",{...payload,client_request_id:rid()});
     hint(res.accepted?"已接受委托":"已拒绝："+res.reason_code,res.accepted)
-  }finally{btn.disabled=false}}
+  }finally{btn.disabled=!!(state.view&&state.view.terminal&&state.view.terminal.phase!=="OPEN")}}
 async function cancelOrder(orderId){await post("/api/v1/h2/owner/session/cancels",
   {order_id:orderId,client_request_id:rid()})}
 async function control(action){const res=await post("/api/v1/h2/owner/session/control",

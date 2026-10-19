@@ -56,6 +56,17 @@ TERMINAL_HTML = (Path(__file__).resolve().parent / "owner_terminal.html").read_t
 
 HUMAN_AGENT = "owner"
 
+#: 0.4.2 T1125（FR-605）：开放终端前的预热快进。窗口起点 ``W0 = max(冷启动退出, burn-in)``
+#: 沿用 0.4.1 口径（``metrics/quality_run.py::window_start_ns``、指标字典 §2 的
+#: ``61 × 60`` 逻辑秒）；推进到 5700 逻辑秒仍有代理处于冷启动锚即判窗口不成立、拒绝开放。
+WARMUP_BURN_IN_NS = 61 * 60 * 1_000_000_000
+WARMUP_CAP_NS = 5700 * 1_000_000_000
+
+#: 终端阶段：预热中拒单；开放后受理；窗口不成立时永不开放。
+TERMINAL_WARMING_UP = "WARMING_UP"
+TERMINAL_OPEN = "OPEN"
+TERMINAL_NOT_APPLICABLE = "NOT_APPLICABLE"
+
 #: 0.4.2 T1124：owner 的代理规格。只注册进运行时 ``world["agent_specs"]``（外部决策接缝
 #: 要它的 ``latency_ns``），不进 ``config.agent_specs``——后者会在 t=0 给 owner 排观察并
 #: 周期重排，改变纯 AI 运行的事件流。``latency_ns`` 必须 ≥ 1：决策（类 4）→ 委托（类 0）
@@ -197,6 +208,9 @@ class LiveMarket:
         roster: StrategyRoster | Mapping[str, Any] | None = None,
         session_path: str | Path | None = None,
         wall_clock_ms: Any = None,
+        warmup: bool = False,
+        warmup_burn_in_ns: int = WARMUP_BURN_IN_NS,
+        warmup_cap_ns: int = WARMUP_CAP_NS,
     ) -> None:
         self.session_id = session_id
         self.seed = seed
@@ -233,6 +247,15 @@ class LiveMarket:
         self._owner_order_ids: dict[int, str] = {}
         self._owner_action_by_order: dict[str, int] = {}
         self._wall_clock_ms = wall_clock_ms or (lambda: int(time.time() * 1000))
+        # 预热（T1125）：``warmup=False`` 时终端一开始就开放，0.4.1/0.4.3 的既有用法不变。
+        self.terminal = TERMINAL_WARMING_UP if warmup else TERMINAL_OPEN
+        self.terminal_reason: str | None = None
+        self.window_start_ns: int | None = None
+        self._warmup_burn_in_ns = warmup_burn_in_ns
+        self._warmup_cap_ns = warmup_cap_ns
+        self._warmup_seen = 0
+        self._last_decision: dict[str, int] = {}
+        self._last_anchored: dict[str, int] = {}
         self._prev_last: int | None = None
         self._peak: int | None = None
         self._max_drawdown = 0.0
@@ -310,14 +333,25 @@ class LiveMarket:
                 }
             )
         self.session: SessionWriter | None = None
-        if session_path is not None:
+        self._session_path = None if session_path is None else Path(session_path)
+        if self._session_path is not None:
             if self.roster is None:
                 raise ValueError("a perturbation session needs a roster (roster_id, seed)")
+            if self._session_path.exists():
+                # 预热要几分钟：已落盘的会话不被改写，这一点在开始预热前就该失败。
+                raise FileExistsError(self._session_path)
+        if self.terminal == TERMINAL_OPEN:
+            self._open_session()
+
+    def _open_session(self) -> None:
+        """会话随终端开放而建立：先落盘头记录，之后才可能有动作。"""
+        if self._session_path is not None and self.session is None:
+            assert self.roster is not None
             self.session = SessionWriter.create(
-                session_path,
+                self._session_path,
                 {
                     "format_version": 1,
-                    "session_id": session_id,
+                    "session_id": self.session_id,
                     "arm": "human",
                     "replay_mode": "original",
                     "roster_id": self.roster.roster_id,
@@ -327,6 +361,38 @@ class LiveMarket:
                     "run_mode": "interactive",
                 },
             )
+
+    # ---------- 预热（T1125）----------
+
+    def warm_up(self, stop: threading.Event | None = None) -> str:
+        """不等墙钟连续推进，直到终端开放或窗口不成立（或 ``stop`` 被置位）；返回终端阶段。"""
+        while self.terminal == TERMINAL_WARMING_UP and not (stop is not None and stop.is_set()):
+            self.advance()
+        return self.terminal
+
+    def _track_warmup(self) -> None:
+        total = self.kernel.committed_record_count
+        for record in self.kernel.committed_records_tail(total - self._warmup_seen):
+            if record.get("event_type") != "AGENT_DECIDE":
+                continue
+            agent_id = record.get("agent_id", "")
+            timestamp = int(record.get("timestamp", 0))
+            self._last_decision[agent_id] = timestamp
+            if "bootstrap_anchor" in (record.get("internal_state") or {}):
+                self._last_anchored[agent_id] = timestamp
+        self._warmup_seen = total
+        # 与 window_start_ns 同一判据：某代理的最后一条决策仍带锚，说明它还在冷启动。
+        exited = all(
+            self._last_decision[agent] > anchored for agent, anchored in self._last_anchored.items()
+        )
+        start = max(max(self._last_anchored.values(), default=0), self._warmup_burn_in_ns)
+        if exited and start < self._warmup_cap_ns and self.logical_ns >= start:
+            self.window_start_ns = start
+            self.terminal = TERMINAL_OPEN
+            self._open_session()
+        elif self.logical_ns >= self._warmup_cap_ns:
+            self.terminal = TERMINAL_NOT_APPLICABLE
+            self.terminal_reason = "COLD_START_NOT_EXITED"
 
     # ---------- 人类委托 ----------
 
@@ -349,6 +415,8 @@ class LiveMarket:
 
     def push_order(self, payload: dict[str, Any]) -> dict[str, Any]:
         """HTTP 线程：格式校验后原样入队，返回「已入队」；``order_id`` 由内核在决策事务里生成。"""
+        if self.terminal != TERMINAL_OPEN:
+            return {"accepted": False, "reason_code": self.terminal}
         item = _validate_order(payload)
         if isinstance(item, str):
             return {"accepted": False, "reason_code": item}
@@ -360,6 +428,8 @@ class LiveMarket:
 
         ``order_id`` 能否反查成 owner 的挂单，要等 ``advance()`` 取出时判定。
         """
+        if self.terminal != TERMINAL_OPEN:
+            return {"accepted": False, "reason_code": self.terminal}
         if not order_id:
             return {"accepted": False, "reason_code": "INVALID_INPUT"}
         self.orders.put({"kind": "CANCEL", "order_id": order_id})
@@ -454,6 +524,9 @@ class LiveMarket:
                     self.kernel.run(_dispatch_agents, self.world, max_transactions=self._tx_budget)
                 except KernelAbort as exc:
                     self.dead = f"{exc.abort_code}: {exc}"
+                    if self.terminal == TERMINAL_WARMING_UP:
+                        self.terminal = TERMINAL_NOT_APPLICABLE
+                        self.terminal_reason = "KERNEL_ABORT"
                     self.stability_events.append(
                         {"t_ns": self.logical_ns, "kind": "kernel-abort", "detail": self.dead}
                     )
@@ -463,6 +536,8 @@ class LiveMarket:
                     self.logical_ns = max(self.logical_ns, newest)
             self.logical_ns = max(self.logical_ns, target_logical)
             self._snapshot()
+            if self.terminal == TERMINAL_WARMING_UP:
+                self._track_warmup()
 
     #: 推进循环每逻辑秒最多读 32 次尾部，只为取最新时间戳。
     _NEWEST_TAIL = 64
@@ -541,6 +616,12 @@ class LiveMarket:
                     "active_orders": self._active_orders(),
                 },
                 "recent_input_results": [],
+                "terminal": {
+                    "phase": self.terminal,
+                    "reason_code": self.terminal_reason,
+                    "window_start_ns": self.window_start_ns,
+                    "warmup_target_ns": self._warmup_burn_in_ns,
+                },
                 "session_state": "RUNNING",
                 "ui_state": None,
                 "snapshot_revision": len(self.snapshots),
@@ -771,7 +852,10 @@ def build_market(
             raise ValueError("--session-out requires --roster-file")
         return LiveMarket(seed=seed)
     path = Path(roster_file)
-    return LiveMarket(roster=load_roster(path.parent, path.stem), session_path=session_out)
+    # 按清单启动的市场一律先预热（T1125）：owner 进入的是已在运行、已过窗口起点的市场。
+    return LiveMarket(
+        roster=load_roster(path.parent, path.stem), session_path=session_out, warmup=True
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -782,7 +866,13 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--seed", type=int, default=7)
     parser.add_argument("--port", type=int, default=8791)
     parser.add_argument(
-        "--tick-seconds", type=float, default=1.0, help="每个逻辑秒的墙钟时长（1:1 实时）"
+        "--tick-seconds",
+        type=float,
+        default=1.0,
+        help=(
+            "两次 advance 之间的墙钟间隔（秒）。每次 advance 至少推进 1 逻辑秒、实际推进量随事件"
+            "而变，所以这不是 1:1 实时；预热阶段不等待这个间隔"
+        ),
     )
     parser.add_argument(
         "--roster-file",
@@ -803,6 +893,16 @@ def main(argv: list[str] | None = None) -> int:
     stop = threading.Event()
 
     def _loop() -> None:
+        if market.terminal == TERMINAL_WARMING_UP:
+            print("warming up to the window start (orders refused until then) ...")
+            phase = market.warm_up(stop)
+            if phase == TERMINAL_WARMING_UP:
+                return  # 预热中途被 Ctrl-C
+            if phase != TERMINAL_OPEN:
+                print(f"window not established ({market.terminal_reason}); terminal stays closed")
+                server.shutdown()
+                return
+            print(f"terminal open at t={market.logical_ns // 1_000_000_000}s")
         while not stop.is_set():
             market.advance()
             stop.wait(args.tick_seconds)
@@ -818,7 +918,7 @@ def main(argv: list[str] | None = None) -> int:
         thread.join()
         server.server_close()
         market.seal_session()
-    return 0
+    return 0 if market.terminal == TERMINAL_OPEN else 2
 
 
 if __name__ == "__main__":

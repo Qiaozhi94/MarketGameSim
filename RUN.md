@@ -60,15 +60,19 @@ alphamill 证据链，ADR-011 §决策 5），落盘前自检，缺声明或出�
 ## 0.4.2 人类扰动：会话 artifact 落盘
 
 ```bash
-# 按装配清单启动并把 owner 的每笔动作逐条落盘（文件须不存在；Ctrl-C 正常退出时封口）
+# 载体 C（count 6 / sensitivity 150）种子 7：先预热到窗口起点（约 3 分钟，期间终端拒单），
+# 开放后把 owner 的每笔动作逐条落盘（文件须不存在；Ctrl-C 正常退出时封口）
 .venv/bin/python -m market_game_sim.experiment.h2.live_market --port 8793 \
-    --roster-file docs/experiments/0.4.3-rosters/roster-2425a8200ca1a1e748a34a7e9d8b99ba.json \
+    --roster-file docs/experiments/0.4.2-rosters/roster-e7c9bdeeb558c5b7ed849d73e0e33704.json \
     --session-out /tmp/owner-session.jsonl
+
+# 按种子生成载体 C 的清单（只用 0.4.3 扫描预注册登记的固定项）
+.venv/bin/python -m market_game_sim.experiment.perturbation.carrier --seeds 7
 ```
 
 格式见 [`docs/experiments/0.4.2-perturbation-session-format.json`](docs/experiments/0.4.2-perturbation-session-format.json)；
-产出为 `experiment-preview`、`run_mode: interactive`，不进任何 evidence index。载体 C 的清单与
-预热由 T1125 落地，正式会话应等它就绪后再开始。
+产出为 `experiment-preview`、`run_mode: interactive`，不进任何 evidence index。载体 C 未达
+0.4.3 `QUALIFIED`、SC-502 不稳定，只作载体。
 
 ## 已归档入口（随 ADR-010 归档，机械保留但当前不执行）
 

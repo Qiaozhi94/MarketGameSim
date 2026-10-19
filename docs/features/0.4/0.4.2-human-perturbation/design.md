@@ -197,6 +197,16 @@ live 市场（0.4.1，本里程碑改注入路径）
   需 2545 次 advance、墙钟约 164 s。之后按 `--tick-seconds` 节拍推进；**每次 advance 推进的
   逻辑时间不是固定 1 秒**，窗口 3660→5700 s 实测 1459 次 advance，`--tick-seconds 1.0` 下约
   28 分钟墙钟。`--tick-seconds` 帮助文字里「1:1 实时」的说法随 T1125 改正。
+- 预热的落地（T1125）：`LiveMarket(warmup=True)`（`--roster-file` 启动时一律开启）的终端阶段为
+  `WARMING_UP → OPEN`，或 `WARMING_UP → NOT_APPLICABLE`（原因码 `COLD_START_NOT_EXITED` /
+  `KERNEL_ABORT`）。预热期间逐次 advance 增量跟踪各代理最后一条决策是否带锚，判据与
+  `quality_run.window_start_ns` 相同；逻辑时间第一次越过 `W0` 的那次 advance 之后开放，
+  HTTP 入口在非 `OPEN` 阶段直接以阶段名拒绝、不入队、不入日志；会话文件随开放建立（头记录
+  先于任何动作），文件已存在则在预热开始前就失败。载体 C 的清单由
+  `experiment/perturbation/carrier.py` 用 0.4.3 预注册的固定项生成，种子 7 已落盘为
+  `docs/experiments/0.4.2-rosters/roster-e7c9bdeeb558c5b7ed849d73e0e33704.json`；功效与开环
+  种子随 T1127 预注册用同一函数生成。实测（真实常量）：种子 7 的 30 个锚定代理在第一次
+  决策后即退出冷启动，`W0 = 3660 s`，2545 次 advance、墙钟约 170 s 后开放。
 - 并发（注入确定性）：
   - HTTP 线程只做格式校验并把载荷放入队列；不读 `logical_ns`、不扫描内核队列、不分配任何
     序号或标识，返回的是「已入队」而不是 `order_id`（`order_id` 由内核在决策事务里生成，

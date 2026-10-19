@@ -72,7 +72,7 @@ updated: 2026-10-17
       （`order_id`、时间戳、`submitted_at` 只由序号与载荷决定且不重复），并断言注册 owner 规格后
       纯 AI 运行的 0.4.1/0.4.3 入库摘要不变 — verify:
       `tests/integration/test_perturbation_injection.py`
-- [ ] T1125 (`FR-605`, `AC-608`): 把载体 C（count 6 / sensitivity 150，其余同 0.4.3 T1109
+- [x] T1125 (`FR-605`, `AC-608`): 把载体 C（count 6 / sensitivity 150，其余同 0.4.3 T1109
       固定项）按种子落盘到 `docs/experiments/0.4.2-rosters/`；live 市场新增预热：开放终端前
       不等待墙钟推进到 `W0`，期间拒绝下单，推进到 5700 s 仍未退出冷启动时拒绝开放（正反
       两侧）；改正 `--tick-seconds` 帮助文字里「1:1 实时」的说法 — verify:
