@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from market_game_sim.evidence.chain_verifier import (
@@ -213,3 +215,28 @@ def test_owner_and_ai_orders_resolve_to_agent_decide_in_batch(recorded):
     broken[target]["decision_event_id"] = "e0_0"
     with pytest.raises(ChainVerificationError):
         verify_decision_evidence_chain(broken)
+
+
+def test_cli_replay_and_pair(recorded, tmp_path):
+    """CLI：replay 输出与封口比对的结果；pair 在没有钉住的预注册时 fail closed。"""
+    from market_game_sim.experiment.perturbation import preregistration as pr
+
+    path, _ = recorded
+    out = tmp_path / "replay.json"
+    assert paired.main(["replay", "--session", str(path), "--out", str(out)]) == 0
+    payload = json.loads(out.read_text())
+    assert payload["ok"] is True and payload["run"]["replay_mode"] == paired.SAME_SEED_REPLAY
+    assert payload["run"]["evidence_class"] == "experiment-preview"
+
+    forged = tmp_path / "forged.jsonl"
+    check = session.load_session(path)
+    seal = {**check.seal, "event_digest": "0" * 64}
+    forged.write_bytes(
+        b"".join(session.record_line(r) for r in [check.header, *check.actions, seal])
+    )
+    assert paired.main(["replay", "--session", str(forged), "--out", str(out)]) == 1
+    assert json.loads(out.read_text())["reason_code"] == paired.REPLAY_DIVERGED
+
+    if pr.PREREGISTRATION_SHA256 is None:
+        with pytest.raises(pr.PreregistrationError):
+            paired.main(["pair", "--session", str(path), "--out", str(tmp_path / "e.json")])

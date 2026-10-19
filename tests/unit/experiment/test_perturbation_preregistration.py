@@ -211,3 +211,18 @@ def test_cli_never_rewrites_a_preregistration(tmp_path):
     fresh = tmp_path / "fresh.json"
     assert pr.main(args[:-1] + [str(fresh)]) == 0
     assert json.loads(fresh.read_text())["power_report_sha256"] == pr.file_sha256(power_path)
+
+
+def test_cli_power_writes_the_report(tmp_path, monkeypatch):
+    """CLI power：跑逐种子基线（此处以桩代替全窗口运行）并写出功效报告。"""
+    calls = []
+
+    def fake(seeds=pr.POWER_SEEDS, *, jobs=1):
+        calls.append((tuple(seeds), jobs))
+        return _points()
+
+    monkeypatch.setattr(pr, "run_power_baseline", fake)
+    out = tmp_path / "power.json"
+    assert pr.main(["power", "--jobs", "1", "--out", str(out)]) == 0
+    assert calls == [(pr.POWER_SEEDS, 1)]
+    assert json.loads(out.read_text()) == json.loads(json.dumps(pr.power_report(_points())))
