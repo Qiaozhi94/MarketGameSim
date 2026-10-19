@@ -120,14 +120,14 @@ updated: 2026-10-17
 
 ## 3. 验证与验收任务
 
-- [ ] T1133 (`AC-601`, `AC-602`, `AC-606`): 运行 artifact 冻结格式、逐条追加与拒绝规则的正反
+- [x] T1133 (`AC-601`, `AC-602`, `AC-606`): 运行 artifact 冻结格式、逐条追加与拒绝规则的正反
       测试 — verify: `tests/unit/experiment/test_perturbation_session.py`
-- [ ] T1134 (`AC-603`, `AC-604`, `AC-608`): 运行注入确定性、载体与预热、同种子基线复现、
+- [x] T1134 (`AC-603`, `AC-604`, `AC-608`): 运行注入确定性、载体与预热、同种子基线复现、
       同种子重放逐位一致与人类/AI 并存批量因果链测试 — verify:
       `tests/integration/test_perturbation_injection.py`、
       `tests/integration/test_perturbation_carrier.py`、
       `tests/integration/test_perturbation_paired.py`
-- [ ] T1135 (`AC-605`, `AC-607`, `AC-609`, `AC-610`): 运行效应量报告的有效/退化/中止三类输入、
+- [x] T1135 (`AC-605`, `AC-607`, `AC-609`, `AC-610`): 运行效应量报告的有效/退化/中止三类输入、
       预注册守卫、开环回放与证据索引隔离测试 — verify:
       `tests/unit/metrics/test_stability_effect.py`、
       `tests/unit/experiment/test_perturbation_preregistration.py`、
