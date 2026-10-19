@@ -1,8 +1,8 @@
 {
   "attestation": {
-    "attested_source_tree_sha256": "ca16c7b06d202e0ad783306ce1a0412731244d121114defccbcb543279f431a9",
-    "reason": "2026-10-17 重绑（当日第三次）：0.4.2 T1124 注入路径确定性修复。源码改动：experiment/runner.py 的 _dispatch_agents 增加 owner 观察分支（只对携带 _owner_action_seq 的 AGENT_OBSERVE 生效），_handle_external_decide 增加 CANCEL 决策、可选 internal_state 并入与 orders_submitted 回调（只在外部决策源返回这些内容时生效）；experiment/h2/live_market.py 的 owner 注入改为 advance() 持锁取出时分配序号、落盘并入队 owner 观察，运行时 world 注册 owner 规格与决策源。runner.py 在 T215 运行路径上，但 T215 的事件不携带 _owner_action_seq、不配置外部决策源。以实测为据：本机没有 artifacts/formal/T215 冻结检查点（该目录不入库），无法运行 python tools/prove_economic_equivalence.py --t215，改为在上次盖章的源码树 51ae0a3a…（提交 00de439，git worktree）与当前源码树上各重跑 T215 全部 128 块，1024/1024 个主跑的经济投影（economic_projection v2）及终止态、abort_code、终局价格、运行分类逐一相同；51ae0a3a… 经同法与 578bc1bb…、3cd1ee1e… 逐次等价，后者已于 2026-10-04 经 --t215 证明与冻结检查点经济等价，故等价关系可传递到冻结证据。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
-    "rebound_at": "2026-10-17",
+    "attested_source_tree_sha256": "873172c0f96e5903a5ec1f7469724b2e60a19a5d53f01115567dd03b5fc4fdec",
+    "reason": "2026-10-19 重绑：0.4.2 T1121 稳定性指标口径。源码改动只有纯新增模块 metrics/stability_effect.py（指标字典 §9 的四项指标与退化判定，复用 quality_run 的盘口网格与 instability 的分钟收盘价），仓库内没有任何既有模块导入它，T215 运行路径不受影响。以实测为据：本机没有 artifacts/formal/T215 冻结检查点（该目录不入库），无法运行 python tools/prove_economic_equivalence.py --t215，改为在上次盖章的源码树 ca16c7b0…（提交 556b510，git worktree）与当前源码树上各重跑 T215 全部 128 块，1024/1024 个主跑的经济投影（economic_projection v2）及终止态、abort_code、终局价格、运行分类逐一相同；上次盖章树经同法逐次等价回溯到 3cd1ee1e…，后者已于 2026-10-04 经 --t215 证明与冻结检查点经济等价，故等价关系可传递到冻结证据。未重建分析与索引，故仍为 rerun: false；统计证据仍只由 t215_source_tree_sha256 那棵源码树产出。",
+    "rebound_at": "2026-10-19",
     "rerun": false,
     "t215_bound_at": "2026-08-30",
     "t215_source_tree_sha256": "81984fdc6f39f535cc1763a7f4da15a9be8e15b0e15261b9248c0550d01b64a8"
@@ -652,7 +652,7 @@
   "code": {
     "config_hash": "9ad8aa51092c9bf3eac808b02c14e6f9",
     "package_version": "0.1.0",
-    "source_tree_sha256": "ca16c7b06d202e0ad783306ce1a0412731244d121114defccbcb543279f431a9"
+    "source_tree_sha256": "873172c0f96e5903a5ec1f7469724b2e60a19a5d53f01115567dd03b5fc4fdec"
   },
   "direction_asymmetry": {
     "risk_budget_linear_v1": {

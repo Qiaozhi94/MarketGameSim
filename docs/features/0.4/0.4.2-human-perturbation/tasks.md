@@ -43,10 +43,10 @@ updated: 2026-10-17
       [`0.4.2-perturbation-session-format.json`](../../../experiments/0.4.2-perturbation-session-format.json)
       v1，`session.py::FROZEN_FORMATS` 钉 sha256） — verify:
       `tests/unit/experiment/test_perturbation_session.py`
-- [ ] T1121 (`FR-603`, `DR-602`, `AC-605`): 冻结四个稳定性指标的计算口径与退化判定规则（spec
+- [x] T1121 (`FR-603`, `DR-602`, `AC-605`): 冻结四个稳定性指标的计算口径与退化判定规则（spec
       SC-603）：盘口可用率与大波动频次取自 0.4.1 已冻结定义、只加窗口；最大回撤与最大涨幅
       （窗口起点重置的峰谷/谷峰，含 `P_t` 取样方式与跨窗口起点分钟变动对的处理）写入
-      [`指标字典`](../../../research/metrics-dictionary.md) 后冻结，不另立第二份 — verify:
+      [`指标字典`](../../../research/metrics-dictionary.md) 后冻结，不另立第二份（已落地：指标字典 0.3.0 §9，owner 2026-10-19 裁决 `P_t` 取 1 秒网格最新成交价、分钟变动对只计两端都在窗口内；实现 `metrics/stability_effect.py`） — verify:
       `tests/unit/metrics/test_stability_effect.py`
 
 ## 2. 实现任务
